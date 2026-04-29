@@ -103,7 +103,12 @@ def save_contacted(data):
 
 def email_hash(email): return hashlib.md5(email.lower().encode()).hexdigest()[:12]
 
-# ── Build professional HTML email with signature ──
+# ── Bob's actual Gmail signature (extracted from Gmail settings) ──
+PHOTO_URL = 'https://lh7-rt.googleusercontent.com/docsz/AD_4nXdTFpRiWmBy6NPYZ4s2J9tMu1RN8HSnyakDELLUiBK4MhkV-W-wO9EQJvCK5DNrSuV4hVHjOQ85QuNff994QwraSCUHcIXnGAYaRyWa8eF43nJqFlEV4-VSYyAcOgkAYT1cWiDbZ0zuvhpmyr8XsfBmUaDI?key=f7Af-7daiBWgEMeWs4Hs_Q'
+BOOK_URL = 'https://calendar.app.google/DG7ug2xFUuQneV2r6'
+
+SIGNATURE_HTML = f'''<table style="border:none;border-collapse:collapse"><colgroup><col width="262"><col width="331"></colgroup><tbody><tr style="height:207pt"><td style="border-left:solid #ffffff 0.75pt;border-right:solid #1155cc 3pt;border-bottom:solid #ffffff 0.75pt;border-top:solid #ffffff 0.75pt;vertical-align:top;padding:5pt"><p dir="ltr" style="line-height:1.44;margin:0"><span style="border:none;display:inline-block;overflow:hidden;width:248px;height:248px"><img src="{PHOTO_URL}" width="248" height="248" style="margin:0"></span></p></td><td style="border-left:solid #1155cc 3pt;border-right:solid #ffffff 0.75pt;border-bottom:solid #ffffff 0.75pt;border-top:solid #ffffff 0.75pt;vertical-align:top;padding:5pt"><p dir="ltr" style="line-height:1.44;text-align:center;margin:0"><span style="font-size:18pt;font-family:\'Times New Roman\',serif;color:#1155cc;font-weight:700">Bob Rikh</span></p><p dir="ltr" style="line-height:1.44;text-align:center;margin:0"><span style="font-size:13pt;font-family:\'Times New Roman\',serif">Parker, CO, 80314&nbsp; </span><a href="mailto:bobrikh75@gmail.com"><span style="font-size:13pt;font-family:\'Times New Roman\',serif;color:#1155cc;font-weight:700">Gmail</span></a><span style="font-size:13pt;font-family:\'Times New Roman\',serif;font-weight:700">&nbsp; 347-268-5917 </span><a href="{BOOK_URL}"><span style="font-size:13pt;font-family:\'Times New Roman\',serif;color:#1155cc;font-weight:700">Book an appointment</span></a><span style="font-size:13pt;font-family:\'Times New Roman\',serif;font-weight:700">&nbsp;&nbsp;</span><a href="{CV_URL}"><b style="font-size:13pt;font-family:\'Times New Roman\',serif;color:#1155cc">CV</b></a></p><br><h1 dir="ltr" style="line-height:1.44;text-align:center;margin:0"><span style="font-size:12pt;font-family:\'Times New Roman\',serif;color:#000;font-weight:normal">Experienced Java Back-End Developer &amp; Specializing in Spring Ecosystem with QA Automation Test Agile Methodologies&#x2551;RESTful APIs&#x2551;QA&#x2551;Microservices&#x2551;AWS Cloud &#x2551;Apache Kafka &#x2551;Docker &#x2551; Kubernetes</span></h1></td></tr></tbody></table>'''
+
 def build_outreach_email(recruiter_name, job_title, company):
     name = recruiter_name or ''
     first = name.split()[0] if name else ''
@@ -132,30 +137,7 @@ def build_outreach_email(recruiter_name, job_title, company):
 <p>I'd welcome the opportunity to discuss how I can contribute to your team. Please feel free to review my CV or schedule a call at your convenience.</p>
 
 <br>
-<table cellpadding="0" cellspacing="0" style="border-collapse:collapse">
-<tr>
-<td style="padding-right:15px;border-right:3px solid #2b5797;vertical-align:top">
-<img src="https://lh3.googleusercontent.com/a/ACg8ocLmKJxJGxKJxKJxKJx" alt="Bob Rikh" width="100" height="100" style="border-radius:50%;border:2px solid #ddd">
-</td>
-<td style="padding-left:15px;vertical-align:top;font-family:Arial,sans-serif">
-<div style="font-size:18px;font-weight:bold;color:#2b5797">Bob Rikh</div>
-<div style="font-size:13px;color:#555;margin-top:2px">Parker, CO 80314</div>
-<div style="font-size:13px;margin-top:5px">
-<a href="mailto:bobrikh75@gmail.com" style="color:#2b5797;text-decoration:none">bobrikh75@gmail.com</a>&nbsp;&nbsp;
-<span style="color:#555">347-268-5917</span>
-</div>
-<div style="font-size:13px;margin-top:5px">
-<a href="{APPOINTMENT_URL}" style="color:#2b5797;text-decoration:none;font-weight:bold">📅 Book an Appointment</a>&nbsp;&nbsp;
-<a href="{CV_URL}" style="color:#2b5797;text-decoration:none;font-weight:bold">📄 CV</a>&nbsp;&nbsp;
-<a href="https://www.linkedin.com/in/bobrikh75/" style="color:#2b5797;text-decoration:none;font-weight:bold">🔗 LinkedIn</a>
-</div>
-<div style="font-size:12px;color:#666;margin-top:8px;font-weight:bold">
-Experienced Java Back-End Developer &amp; Specializing in Spring Ecosystem<br>
-<span style="font-weight:normal">RESTful APIs ║ Microservices ║ AWS Cloud ║ Apache Kafka ║ Docker ║ Kubernetes</span>
-</div>
-</td>
-</tr>
-</table>
+{SIGNATURE_HTML}
 </div>"""
 
     return subject, html
