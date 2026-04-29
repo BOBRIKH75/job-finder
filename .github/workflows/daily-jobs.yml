@@ -2,7 +2,8 @@ name: Daily C2C Job Search
 
 on:
   schedule:
-    - cron: '30 15 * * *'  # 9:30 AM Colorado (MDT)
+    - cron: '30 15 * * *'  # 9:30 AM Colorado (MDT) — job search daily
+    - cron: '0 14 * * 1,4'  # 8:00 AM Colorado Mon & Thu — LinkedIn posts
   workflow_dispatch:
 
 jobs:
@@ -25,6 +26,7 @@ jobs:
             seen_jobs.json
             learned.json
             contacted.json
+            posted_topics.json
           key: job-data
 
       - name: Run job search + outreach
@@ -34,6 +36,11 @@ jobs:
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
         run: python find_jobs.py
 
+      - name: Generate LinkedIn posts (Mon & Thu only)
+        env:
+          RESEND_KEY: ${{ secrets.RESEND_KEY }}
+        run: python linkedin_posts.py
+
       - name: Save cache
         if: always()
         uses: actions/cache/save@v4
@@ -42,4 +49,5 @@ jobs:
             seen_jobs.json
             learned.json
             contacted.json
+            posted_topics.json
           key: job-data-${{ github.run_number }}
