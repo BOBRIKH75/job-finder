@@ -272,11 +272,14 @@ def build_email(posts):
     for i, p in enumerate(posts, 1):
         badge = {'insight': '💡', 'tip': '📝', 'hot_take': '🔥', 'story': '📖', 'availability': '✅'}.get(p['type'], '📋')
         content_html = p['content'].replace('\n', '<br>')
+        # LinkedIn share URL — pre-fills the post text
+        share_text = urllib.request.quote(p['content'][:2800])
+        linkedin_share = f'https://www.linkedin.com/feed/?shareActive=true&text={share_text}'
         cards += f'''<div style="background:white;border:1px solid #ddd;border-radius:8px;padding:20px;margin-bottom:15px">
 <div style="font-size:12px;color:#666;margin-bottom:10px">{badge} Post {i} — {p['type'].upper()} — {p['tech']}</div>
 <div style="font-size:14px;line-height:1.6;color:#333;white-space:pre-line">{content_html}</div>
-<div style="margin-top:15px;padding-top:10px;border-top:1px solid #eee">
-<span style="font-size:12px;color:#888">Copy this post → Open LinkedIn → Paste → Publish</span>
+<div style="margin-top:15px;padding-top:10px;border-top:1px solid #eee;text-align:center">
+<a href="{linkedin_share}" style="display:inline-block;background:#0077b5;color:white;padding:12px 30px;border-radius:25px;text-decoration:none;font-size:14px;font-weight:bold">🔗 Publish to LinkedIn →</a>
 </div></div>'''
 
     return f'''<html><body style="font-family:Arial,sans-serif;max-width:650px;margin:0 auto;background:#f5f5f5;padding:20px">
