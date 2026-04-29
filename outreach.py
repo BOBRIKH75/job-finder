@@ -114,7 +114,7 @@ def build_outreach_email(recruiter_name, job_title, company):
     first = name.split()[0] if name else ''
     greeting = f'Hi {first},' if first else 'Hello,'
 
-    subject = f'Java Backend Developer — C2C Available — Bob Rikh'
+    subject = f'{job_title} — C2C Available — Bob Rikh'
 
     html = f"""<div style="font-family:Arial,sans-serif;font-size:14px;color:#333">
 <p>{greeting}</p>
@@ -152,6 +152,27 @@ def send_outreach(to_email, subject, html):
     msg['From'] = f'Bob Rikh <{EMAIL}>'
     msg['To'] = to_email
     msg['Subject'] = subject
+    msg['Reply-To'] = EMAIL
+    msg['X-Mailer'] = 'Gmail'
+    # Plain text version (required — emails without it get flagged as spam)
+    plain = f"""Hello,
+
+I came across a position at your company and wanted to reach out.
+
+I'm an experienced Java Backend Developer (Spring Boot, Kafka, Kubernetes, AWS, Microservices) currently contracting at Charter Communications.
+
+Available for C2C / Corp-to-Corp. Green Card holder — no sponsorship needed.
+
+CV: {CV_URL}
+Book a call: {BOOK_URL}
+LinkedIn: https://www.linkedin.com/in/bobrikh75/
+
+Best regards,
+Bob Rikh
+Parker, CO 80314
+347-268-5917
+bobrikh75@gmail.com"""
+    msg.attach(MIMEText(plain, 'plain'))
     msg.attach(MIMEText(html, 'html'))
 
     try:
