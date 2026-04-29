@@ -460,7 +460,7 @@ def main():
     # ── Step 2: Auto-outreach to recruiters ──
     if os.environ.get('GMAIL_APP_PASSWORD'):
         print('\n📧 Starting recruiter outreach...')
-        from outreach import process_jobs
+        from outreach import process_jobs, send_followups
         # Only outreach to high-scoring C2C jobs
         top_jobs = df[df['score'] >= 40].head(20).to_dict('records')
         if top_jobs:
@@ -470,6 +470,9 @@ def main():
             print(f'📧 {len(sent)} emails sent to recruiters')
             if no_email:
                 print(f'🔍 {len(no_email)} jobs — no email found. LinkedIn search links in daily email.')
+        # Follow up on contacts from 3+ days ago
+        print('\n📬 Checking for follow-ups...')
+        send_followups()
     else:
         print('\n⚠️  No GMAIL_APP_PASSWORD — skipping recruiter outreach')
 

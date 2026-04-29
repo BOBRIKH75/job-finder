@@ -249,3 +249,74 @@ def process_jobs(jobs_list):
     save_contacted(contacted)
     print(f'\n📊 Outreach: {sent_count} sent / {len(contacted)} total contacted / {len(jobs_list)} jobs processed')
     return results
+
+
+# ── Follow-up emails (3 days after first contact, max 1 follow-up per person) ──
+def build_followup_email(recruiter_name, job_title, company):
+    name = recruiter_name or ''
+    first = name.split()[0] if name else ''
+    greeting = f'Hi {first},' if first else 'Hello,'
+
+    html = f"""<div style="font-family:Arial,sans-serif;font-size:14px;color:#333">
+<p>{greeting}</p>
+
+<p>I wanted to follow up on my previous email regarding the <strong>{job_title}</strong> position at <strong>{company}</strong>.</p>
+
+<p>I understand you're busy, so I'll keep this brief — I'm still very interested in this opportunity and available to start immediately on a <strong>C2C / Corp-to-Corp</strong> basis.</p>
+
+<p>Would you have 15 minutes this week for a quick call? Happy to work around your schedule.</p>
+
+<br>
+{SIGNATURE_HTML}
+</div>"""
+
+    subject = f'Re: {job_title} — C2C Available — Bob Rikh'
+    return subject, html
+
+def send_followups():
+    """Check contacted.json for people contacted 3+ days ago with no follow-up sent."""
+    if not GMAIL_APP_PASSWORD:
+        print('  ⚠️  No GMAIL_APP_PASSWORD — skipping follow-ups')
+        return 0
+
+    contacted = load_contacted()
+    now = datetime.now()
+    sent = 0
+    MAX_FOLLOWUPS = 5  # max follow-ups per run
+
+    for key, info in contacted.items():
+        if sent >= MAX_FOLLOWUPS:
+            break
+        # Skip if already followed up
+        if info.get('followed_up'):
+            continue
+        # Check if 3+ days since first contact
+        try:
+            contact_date = datetime.fromisoformat(info['date'])
+            days_since = (now - contact_date).days
+        except:
+            continue
+
+        if days_since < 3 or days_since > 10:  # 3-10 day window only
+            continue
+
+        email = info.get('email', '')
+        job = info.get('job', '')
+        company = info.get('company', '')
+        recruiter = info.get('recruiter', '')
+
+        if not email or not job:
+            continue
+
+        subject, html = build_followup_email(recruiter, job, company)
+        print(f'  📧 Follow-up to {email} ({days_since} days) for "{job}" @ {company}...')
+
+        if send_outreach(email, subject, html):
+            contacted[key]['followed_up'] = True
+            contacted[key]['followup_date'] = now.isoformat()
+            sent += 1
+            print(f'  ✅ Follow-up sent! ({sent}/{MAX_FOLLOWUPS})')
+
+    save_contacted(contacted)
+    print(f'📬 Follow-ups: {sent} sent')
+    return sent
