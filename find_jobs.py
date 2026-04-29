@@ -52,10 +52,10 @@ def save_seen(seen):
 def job_hash(url): return hashlib.md5(url.encode()).hexdigest()[:12]
 
 def is_relevant(title, desc):
-    combined = ((title or '') + ' ' + (desc or '')).lower()
+    combined = (str(title or '') + ' ' + str(desc or '')).lower()
     if 'java' not in combined: return False
     for skip in ['sales only','data entry','intern ','marketing']:
-        if skip in (title or '').lower(): return False
+        if skip in str(title or '').lower(): return False
     return True
 
 def score_job(row):
