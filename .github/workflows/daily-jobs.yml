@@ -24,11 +24,14 @@ jobs:
           path: |
             seen_jobs.json
             learned.json
+            contacted.json
           key: job-data
 
-      - name: Run job search
+      - name: Run job search + outreach
         env:
           RESEND_KEY: ${{ secrets.RESEND_KEY }}
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
         run: python find_jobs.py
 
       - name: Save cache
@@ -38,4 +41,5 @@ jobs:
           path: |
             seen_jobs.json
             learned.json
+            contacted.json
           key: job-data-${{ github.run_number }}

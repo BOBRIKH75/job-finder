@@ -457,7 +457,23 @@ def main():
     if send_email(html, len(df)):
         print(f'\n✅ Email sent to {EMAIL}')
 
-    print(f'📊 {len(df)} new / {len(all_jobs)} searched / {len(seen)} tracked')
+    # ── Step 2: Auto-outreach to recruiters ──
+    if os.environ.get('GMAIL_APP_PASSWORD'):
+        print('\n📧 Starting recruiter outreach...')
+        from outreach import process_jobs
+        # Only outreach to high-scoring C2C jobs
+        top_jobs = df[df['score'] >= 40].head(20).to_dict('records')
+        if top_jobs:
+            outreach_results = process_jobs(top_jobs)
+            sent = [r for r in outreach_results if r['status'] == 'sent']
+            no_email = [r for r in outreach_results if r['status'] == 'no_email']
+            print(f'📧 {len(sent)} emails sent to recruiters')
+            if no_email:
+                print(f'🔍 {len(no_email)} jobs — no email found. LinkedIn search links in daily email.')
+    else:
+        print('\n⚠️  No GMAIL_APP_PASSWORD — skipping recruiter outreach')
+
+    print(f'\n📊 {len(df)} new / {len(all_jobs)} searched / {len(seen)} tracked')
     print(f'🧠 {len(learned["vendors"])} learned vendors / {len(learned["keywords"])} learned keywords')
 
 if __name__ == '__main__':
