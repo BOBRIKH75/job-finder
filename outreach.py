@@ -103,44 +103,74 @@ def save_contacted(data):
 
 def email_hash(email): return hashlib.md5(email.lower().encode()).hexdigest()[:12]
 
-# ── Build personalized email ──
+# ── Build professional HTML email with signature ──
 def build_outreach_email(recruiter_name, job_title, company):
-    name = recruiter_name or 'Hiring Manager'
-    first = name.split()[0] if recruiter_name else 'Hi'
+    name = recruiter_name or ''
+    first = name.split()[0] if name else ''
+    greeting = f'Hi {first},' if first else 'Hello,'
 
     subject = f'Java Backend Developer — C2C Available — Bob Rikh'
 
-    body = f"""Hi {first},
+    html = f"""<div style="font-family:Arial,sans-serif;font-size:14px;color:#333">
+<p>{greeting}</p>
 
-I came across the {job_title} position at {company} and I'm very interested.
+<p>I hope this message finds you well. I came across the <strong>{job_title}</strong> position at <strong>{company}</strong> and wanted to reach out directly as I believe my background is a strong match for this role.</p>
 
-I'm a Java Backend Developer with hands-on experience in Spring Boot, Kafka, Kubernetes, Microservices, AWS, GraphQL, and MongoDB. Currently working as a contractor at Charter Communications.
+<p>I'm an experienced Java Backend Developer currently working as a contractor at Charter Communications, with hands-on expertise in:</p>
 
-Available for C2C / Corp-to-Corp. Green Card holder — no sponsorship needed.
+<ul style="margin:5px 0;padding-left:20px">
+<li><strong>Java 17, Spring Boot, Spring Cloud, Spring Security</strong></li>
+<li><strong>Apache Kafka, Kubernetes, Docker, AWS</strong></li>
+<li><strong>Microservices, GraphQL, REST APIs</strong></li>
+<li><strong>MongoDB, Cassandra, PostgreSQL, Redis</strong></li>
+<li><strong>CI/CD, Jenkins, DataDog, Splunk</strong></li>
+</ul>
 
-📄 My CV: {CV_URL}
-📅 Book a call: {APPOINTMENT_URL}
-🔗 LinkedIn: https://www.linkedin.com/in/bobrikh75/
+<p>I'm available for <strong>C2C / Corp-to-Corp</strong> engagement and can start immediately.<br>
+<strong>Green Card holder — no sponsorship required.</strong></p>
 
-Best regards,
-Bob Rikh
-Parker, CO 80314
-347-268-5917
-bobrikh75@gmail.com"""
+<p>I'd welcome the opportunity to discuss how I can contribute to your team. Please feel free to review my CV or schedule a call at your convenience.</p>
 
-    return subject, body
+<br>
+<table cellpadding="0" cellspacing="0" style="border-collapse:collapse">
+<tr>
+<td style="padding-right:15px;border-right:3px solid #2b5797;vertical-align:top">
+<img src="https://lh3.googleusercontent.com/a/ACg8ocLmKJxJGxKJxKJxKJx" alt="Bob Rikh" width="100" height="100" style="border-radius:50%;border:2px solid #ddd">
+</td>
+<td style="padding-left:15px;vertical-align:top;font-family:Arial,sans-serif">
+<div style="font-size:18px;font-weight:bold;color:#2b5797">Bob Rikh</div>
+<div style="font-size:13px;color:#555;margin-top:2px">Parker, CO 80314</div>
+<div style="font-size:13px;margin-top:5px">
+<a href="mailto:bobrikh75@gmail.com" style="color:#2b5797;text-decoration:none">bobrikh75@gmail.com</a>&nbsp;&nbsp;
+<span style="color:#555">347-268-5917</span>
+</div>
+<div style="font-size:13px;margin-top:5px">
+<a href="{APPOINTMENT_URL}" style="color:#2b5797;text-decoration:none;font-weight:bold">📅 Book an Appointment</a>&nbsp;&nbsp;
+<a href="{CV_URL}" style="color:#2b5797;text-decoration:none;font-weight:bold">📄 CV</a>&nbsp;&nbsp;
+<a href="https://www.linkedin.com/in/bobrikh75/" style="color:#2b5797;text-decoration:none;font-weight:bold">🔗 LinkedIn</a>
+</div>
+<div style="font-size:12px;color:#666;margin-top:8px;font-weight:bold">
+Experienced Java Back-End Developer &amp; Specializing in Spring Ecosystem<br>
+<span style="font-weight:normal">RESTful APIs ║ Microservices ║ AWS Cloud ║ Apache Kafka ║ Docker ║ Kubernetes</span>
+</div>
+</td>
+</tr>
+</table>
+</div>"""
+
+    return subject, html
 
 # ── Send email via Gmail SMTP ──
-def send_outreach(to_email, subject, body):
+def send_outreach(to_email, subject, html):
     if not GMAIL_APP_PASSWORD:
         print(f'  ⚠️  No GMAIL_APP_PASSWORD — skipping {to_email}')
         return False
 
-    msg = MIMEMultipart()
+    msg = MIMEMultipart('alternative')
     msg['From'] = f'Bob Rikh <{EMAIL}>'
     msg['To'] = to_email
     msg['Subject'] = subject
-    msg.attach(MIMEText(body, 'plain'))
+    msg.attach(MIMEText(html, 'html'))
 
     try:
         with smtplib.SMTP('smtp.gmail.com', 587) as s:
@@ -196,10 +226,10 @@ def process_jobs(jobs_list):
                 print(f'  ⏭️  Already contacted: {email}')
                 continue
 
-            subject, body = build_outreach_email(recruiter_name, title, company)
+            subject, html = build_outreach_email(recruiter_name, title, company)
             print(f'  📧 Sending to {email} for "{title}" @ {company}...')
 
-            if send_outreach(email, subject, body):
+            if send_outreach(email, subject, html):
                 contacted[eh] = {
                     'email': email, 'date': datetime.now().isoformat(),
                     'job': title, 'company': company, 'url': url,
