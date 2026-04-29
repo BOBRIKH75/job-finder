@@ -1,0 +1,38 @@
+name: Daily C2C Job Search
+
+on:
+  schedule:
+    # 9:30 AM Colorado (MDT = UTC-6, so 15:30 UTC)
+    - cron: '30 15 * * *'
+  workflow_dispatch: # manual trigger button in GitHub UI
+
+jobs:
+  find-jobs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install python-jobspy
+
+      - name: Restore seen jobs cache
+        uses: actions/cache/restore@v4
+        with:
+          path: seen_jobs.json
+          key: seen-jobs
+
+      - name: Run job search
+        env:
+          RESEND_KEY: ${{ secrets.RESEND_KEY }}
+        run: python find_jobs.py
+
+      - name: Save seen jobs cache
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: seen_jobs.json
+          key: seen-jobs-${{ github.run_number }}
