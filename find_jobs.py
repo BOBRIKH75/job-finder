@@ -110,7 +110,7 @@ def build_email(scored_jobs, total):
     for _, j in scored_jobs.iterrows():
         rate = ''
         if pd.notna(j.get('min_amount')) and pd.notna(j.get('max_amount')):
-            rate = f"${int(j['min_amount'])}-${int(j['max_amount'])}/{j.get('interval','?')}"
+            rate = f"${int(j['min_amount'])}-${int(j['max_amount'])}/{str(j.get('interval','')) or '?'}"
         bg = '#f0fff0' if j['score']>=50 else '#f8f9fa' if j['score']>=30 else 'white'
         badge = '🔥' if j['score']>=50 else '✅' if j['score']>=30 else '📋'
         c2c = ' <span style="background:#34a853;color:white;padding:1px 5px;border-radius:3px;font-size:10px">C2C</span>' if j.get('is_c2c') else ''
