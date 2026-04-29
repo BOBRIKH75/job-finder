@@ -2,9 +2,8 @@ name: Daily C2C Job Search
 
 on:
   schedule:
-    # 9:30 AM Colorado (MDT = UTC-6, so 15:30 UTC)
-    - cron: '30 15 * * *'
-  workflow_dispatch: # manual trigger button in GitHub UI
+    - cron: '30 15 * * *'  # 9:30 AM Colorado (MDT)
+  workflow_dispatch:
 
 jobs:
   find-jobs:
@@ -19,20 +18,24 @@ jobs:
       - name: Install dependencies
         run: pip install python-jobspy
 
-      - name: Restore seen jobs cache
+      - name: Restore cache
         uses: actions/cache/restore@v4
         with:
-          path: seen_jobs.json
-          key: seen-jobs
+          path: |
+            seen_jobs.json
+            learned.json
+          key: job-data
 
       - name: Run job search
         env:
           RESEND_KEY: ${{ secrets.RESEND_KEY }}
         run: python find_jobs.py
 
-      - name: Save seen jobs cache
+      - name: Save cache
         if: always()
         uses: actions/cache/save@v4
         with:
-          path: seen_jobs.json
-          key: seen-jobs-${{ github.run_number }}
+          path: |
+            seen_jobs.json
+            learned.json
+          key: job-data-${{ github.run_number }}
