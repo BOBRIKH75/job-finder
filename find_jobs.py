@@ -86,7 +86,7 @@ def search_all():
     for s in SEARCHES:
         try:
             jobs = scrape_jobs(
-                site_name=['indeed','zip_recruiter','google'],
+                site_name=['indeed','linkedin','zip_recruiter','glassdoor','google'],
                 search_term=s['term'],
                 google_search_term=s['term'] + ' jobs',
                 location=s['location'],
