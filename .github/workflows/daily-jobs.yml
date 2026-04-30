@@ -27,6 +27,7 @@ jobs:
             learned.json
             contacted.json
             posted_topics.json
+            found_jobs.json
           key: job-data
 
       - name: Run job search + outreach
@@ -50,4 +51,14 @@ jobs:
             learned.json
             contacted.json
             posted_topics.json
+            found_jobs.json
           key: job-data-${{ github.run_number }}
+
+      - name: Commit found_jobs.json for ai-job-agent
+        if: always()
+        run: |
+          git config user.name "Bob Rikh"
+          git config user.email "bobrikh75@gmail.com"
+          git add found_jobs.json 2>/dev/null || true
+          git diff --cached --quiet || git commit -m "Update found_jobs.json [skip ci]"
+          git push || true

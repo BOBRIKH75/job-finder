@@ -454,6 +454,12 @@ def main():
         print(f"  {badge} {j['score']:3d}% | {j['title']} @ {j.get('company', '?')}{c2c}")
 
     html = build_email(df, len(all_jobs), learned)
+
+    # ── Export for ai-job-agent ecosystem ──
+    from bridge import export_jobs_for_agent
+    n_exported = export_jobs_for_agent(df)
+    print(f'📤 Exported {n_exported} jobs for ai-job-agent')
+
     if send_email(html, len(df)):
         print(f'\n✅ Email sent to {EMAIL}')
 
