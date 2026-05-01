@@ -78,7 +78,7 @@ def run_apply(db, jobs, dry_run=False):
         return []
 
     from src.applier import run_applications
-    results = run_applications(automatable, dry_run=dry_run, max_apps=10)
+    results = run_applications(automatable, dry_run=dry_run, max_apps=10, db=db)
 
     # Update DB with results
     for r in results:

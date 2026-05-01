@@ -393,12 +393,21 @@ def submit_and_verify(page, page_data, original_url) -> dict:
 
 # ─── MAIN: The self-learning retry loop ───
 
-def apply_to_job(page, profile, job, learned, dry_run=False) -> dict:
+def apply_to_job(page, profile, job, learned, dry_run=False, db=None) -> dict:
     """Apply to one job. Retries up to 3 times, learning from each failure."""
     url = job.get("url", "")
     domain = re.sub(r'https?://(www\.)?', '', url).split('/')[0]
     result = {"url": url, "title": job.get("title", ""), "company": job.get("company", ""),
               "status": "pending", "attempts": [], "fields_filled": 0}
+
+    # Check if this domain is known to be blocked
+    if db:
+        from src.learning_engine import is_blocked_site
+        blocked_reason = is_blocked_site(db, domain)
+        if blocked_reason:
+            result["status"] = "known_blocked"
+            print(f"    ⏭️  Skipping {domain} — previously blocked: {blocked_reason}")
+            return result
 
     for attempt in range(1, MAX_RETRIES + 1):
         print(f"    Attempt {attempt}/{MAX_RETRIES}")
@@ -428,7 +437,11 @@ def apply_to_job(page, profile, job, learned, dry_run=False) -> dict:
             if detect_captcha(page):
                 result["status"] = "captcha_blocked"
                 snap(page, f"captcha_{attempt}")
-                print(f"      ⚠️  CAPTCHA detected — skipping this job")
+                # LEARN: mark this domain as blocked
+                if db:
+                    from src.learning_engine import learn_blocked_site
+                    learn_blocked_site(db, domain, "captcha")
+                print(f"      ⚠️  CAPTCHA detected — blocking domain for future")
                 break
 
             # READ the entire page
@@ -499,12 +512,23 @@ def apply_to_job(page, profile, job, learned, dry_run=False) -> dict:
                 result["fields_filled"] = attempt_result["filled"]
                 learned.setdefault("success_count", {})[domain] = learned.get("success_count", {}).get(domain, 0) + 1
                 print(f"      ✅ SUBMITTED via '{submit_result.get('method', '?')}'")
+                # LEARN: save everything that worked to DB
+                if db:
+                    from src.learning_engine import learn_from_success, learn_selector
+                    learn_from_success(db, domain, url, [f[1] for f in fill_result["filled"]], attempt_result["filled"])
+                    for profile_key, sel in fill_result["filled"]:
+                        if not profile_key.startswith("ai:") and not profile_key.startswith("checkbox:"):
+                            learn_selector(db, domain, sel, profile_key, worked=True)
                 result["attempts"].append(attempt_result)
                 save_learned(learned)
                 return result
             else:
                 attempt_result["error"] = submit_result["reason"]
                 print(f"      ❌ Submit failed: {submit_result['reason']}")
+                # LEARN: save failure to DB
+                if db:
+                    from src.learning_engine import learn_from_failure
+                    learn_from_failure(db, domain, url, [submit_result["reason"]] + errors if 'errors' in dir() else [submit_result["reason"]], attempt)
                 # DOCTOR: read error messages and try to fix
                 errors = read_errors(page)
                 if errors:
@@ -562,7 +586,7 @@ def apply_to_job(page, profile, job, learned, dry_run=False) -> dict:
     return result
 
 
-def run_applications(jobs: list[dict], dry_run: bool = True, max_apps: int = 10) -> list[dict]:
+def run_applications(jobs: list[dict], dry_run: bool = True, max_apps: int = 10, db=None) -> list[dict]:
     """Apply to multiple jobs with self-learning."""
     profile = load_profile()
     learned = load_learned()
@@ -589,7 +613,7 @@ def run_applications(jobs: list[dict], dry_run: bool = True, max_apps: int = 10)
             print(f"\n  {'='*50}")
             print(f"  {job.get('title','?')} @ {job.get('company','?')}")
 
-            r = apply_to_job(page, profile, job, learned, dry_run)
+            r = apply_to_job(page, profile, job, learned, dry_run, db=db)
             results.append(r)
             if r["status"] in ("submitted", "dry_run"):
                 applied += 1
