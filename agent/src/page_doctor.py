@@ -178,6 +178,198 @@ def detect_captcha(page) -> bool:
         return False
 
 
+def detect_turnstile(page) -> str | None:
+    """Return the Turnstile sitekey if a cf-turnstile widget is on the page, else None."""
+    try:
+        return page.evaluate("""() => {
+            const el = document.querySelector('.cf-turnstile, [data-sitekey]');
+            return el ? el.getAttribute('data-sitekey') : null;
+        }""")
+    except Exception:
+        return None
+
+
+def solve_turnstile_via_docker(page, url: str) -> bool:
+    """Try to solve a Turnstile CAPTCHA using the Theyka/Turnstile-Solver Docker service.
+
+    The service runs at TURNSTILE_SOLVER_URL (default http://localhost:5000).
+    It opens a real browser internally, solves the challenge, returns the token.
+    We inject the token into the page's hidden input and the form can submit.
+
+    Returns True if solved, False if not available or failed.
+    """
+    import os, time
+    solver_url = os.environ.get("TURNSTILE_SOLVER_URL", "")
+    if not solver_url:
+        return False
+
+    sitekey = detect_turnstile(page)
+    if not sitekey:
+        return False
+
+    print(f"      🔓 Turnstile detected (sitekey={sitekey[:20]}...) — calling solver...")
+    try:
+        import requests as _req
+        # Submit solve request
+        resp = _req.get(f"{solver_url}/turnstile",
+                        params={"url": url, "sitekey": sitekey}, timeout=10)
+        task_id = resp.json().get("task_id")
+        if not task_id:
+            print(f"      ⚠️  Solver returned no task_id")
+            return False
+
+        # Poll for token (typically 4-8 seconds)
+        for _ in range(20):
+            time.sleep(2)
+            r = _req.get(f"{solver_url}/result",
+                         params={"id": task_id}, timeout=10).json()
+            if "value" in r:
+                token = r["value"]
+                # Inject token into the page
+                page.evaluate(f"""(token) => {{
+                    // Set the hidden input that Turnstile populates
+                    const inp = document.querySelector('[name="cf-turnstile-response"]');
+                    if (inp) inp.value = token;
+                    // Also try the callback approach
+                    const cb = document.querySelector('.cf-turnstile');
+                    if (cb && cb.getAttribute('data-callback')) {{
+                        const fn = window[cb.getAttribute('data-callback')];
+                        if (fn) fn(token);
+                    }}
+                }}""", token)
+                print(f"      ✅ Turnstile solved in {r.get('elapsed_time', '?')}s — token injected")
+                return True
+
+        print(f"      ⚠️  Turnstile solver timed out")
+        return False
+    except Exception as e:
+        print(f"      ⚠️  Turnstile solver error: {e}")
+        return False
+
+
+def detect_captcha_type(page) -> dict | None:
+    """Detect CAPTCHA type and sitekey. Returns {type, sitekey, url} or None."""
+    try:
+        return page.evaluate("""() => {
+            const r = {};
+            const url = window.location.href;
+            const hc = document.querySelector('.h-captcha, [data-hcaptcha-sitekey]');
+            if (hc) { r.type = 'hcaptcha'; r.sitekey = hc.dataset.sitekey || hc.dataset.hcaptchaSitekey; }
+            if (!r.type && document.querySelector('script[src*="hcaptcha.com"], iframe[src*="hcaptcha.com"]')) {
+                const el = document.querySelector('[data-sitekey]');
+                if (el) { r.type = 'hcaptcha'; r.sitekey = el.dataset.sitekey; }
+            }
+            if (!r.type) {
+                const cf = document.querySelector('.cf-turnstile, [data-turnstile-sitekey]');
+                if (cf) { r.type = 'turnstile'; r.sitekey = cf.dataset.sitekey || cf.dataset.turnstileSitekey; }
+            }
+            if (!r.type) {
+                const s = document.querySelector('script[src*="recaptcha"][src*="render="]');
+                if (s) { const m = s.src.match(/render=([^&]+)/); if (m && m[1] !== 'explicit') { r.type = 'recaptchav3'; r.sitekey = m[1]; } }
+            }
+            if (!r.type) {
+                const rc = document.querySelector('.g-recaptcha');
+                if (rc) { r.type = 'recaptchav2'; r.sitekey = rc.dataset.sitekey; }
+            }
+            if (!r.type && document.querySelector('script[src*="recaptcha"]')) {
+                const el = document.querySelector('[data-sitekey]');
+                if (el) { r.type = 'recaptchav2'; r.sitekey = el.dataset.sitekey; }
+            }
+            if (r.type) { r.url = url; return r; }
+            return null;
+        }""")
+    except Exception:
+        return None
+
+
+def solve_recaptcha_v2_docker(page, url: str) -> bool:
+    """Solve reCAPTCHA v2 via sarperavci/GoogleRecaptchaBypass Docker sidecar. FREE."""
+    import os
+    solver_url = os.environ.get("RECAPTCHA_SOLVER_URL", "")
+    if not solver_url:
+        return False
+    print(f"      🔓 reCAPTCHA v2 — calling audio solver...")
+    try:
+        import requests as _req
+        resp = _req.get(f"{solver_url}/recaptcha", params={"url": url}, timeout=60)
+        data = resp.json()
+        token = data.get("token") or data.get("g-recaptcha-response", "")
+        if token and len(token) > 20:
+            page.evaluate("""(token) => {
+                document.querySelectorAll('[name="g-recaptcha-response"]').forEach(el => { el.value = token; });
+                if (window.___grecaptcha_cfg) {
+                    const clients = window.___grecaptcha_cfg.clients;
+                    for (const key in clients) {
+                        const walk = (obj, d) => {
+                            if (d > 4 || !obj) return;
+                            for (const k in obj) {
+                                if (typeof obj[k] === 'function' && k.length < 3) try { obj[k](token); } catch(e) {}
+                                else if (typeof obj[k] === 'object') walk(obj[k], d+1);
+                            }
+                        };
+                        walk(clients[key], 0);
+                    }
+                }
+            }""", token)
+            print(f"      ✅ reCAPTCHA v2 solved via audio")
+            return True
+        return False
+    except Exception as e:
+        print(f"      ⚠️  reCAPTCHA v2 solver error: {e}")
+        return False
+
+
+def solve_recaptcha_v3_http(page, captcha_info: dict) -> bool:
+    """Solve reCAPTCHA v3 via PyPasser HTTP bypass. FREE, no browser needed."""
+    sitekey = captcha_info.get("sitekey", "")
+    if not sitekey:
+        return False
+    anchor_url = f"https://www.google.com/recaptcha/api2/anchor?ar=1&k={sitekey}&co=aHR0cHM6Ly93d3cuZ29vZ2xlLmNvbQ..&v=jF0Oy4JxFv0&size=invisible"
+    print(f"      🔓 reCAPTCHA v3 — trying PyPasser HTTP bypass...")
+    try:
+        from pypasser import reCaptchaV3
+        token = reCaptchaV3(anchor_url, timeout=15)
+        if token and len(token) > 20:
+            page.evaluate("""(token) => {
+                document.querySelectorAll('[name="g-recaptcha-response"]').forEach(el => { el.value = token; });
+            }""", token)
+            print(f"      ✅ reCAPTCHA v3 solved via HTTP")
+            return True
+    except Exception:
+        pass
+    print(f"      ⚠️  reCAPTCHA v3 HTTP bypass failed")
+    return False
+
+
+def solve_captcha(page, url: str) -> bool:
+    """Full CAPTCHA solve chain — tries all free solvers by type.
+
+    Turnstile  → Theyka Docker sidecar
+    reCAPTCHA v2 → sarperavci audio Docker sidecar
+    reCAPTCHA v3 → PyPasser HTTP bypass
+    hCaptcha   → no free solver, skip
+    """
+    captcha_info = detect_captcha_type(page)
+    if not captcha_info:
+        if not detect_captcha(page):
+            return True  # No CAPTCHA
+        return solve_turnstile_via_docker(page, url)
+
+    ctype = captcha_info["type"]
+    print(f"      🔍 CAPTCHA: {ctype} (sitekey={captcha_info.get('sitekey', '?')[:20]}...)")
+
+    if ctype == "turnstile":
+        return solve_turnstile_via_docker(page, url)
+    if ctype == "recaptchav2":
+        return solve_recaptcha_v2_docker(page, url)
+    if ctype == "recaptchav3":
+        return solve_recaptcha_v3_http(page, captcha_info)
+    if ctype == "hcaptcha":
+        print(f"      ⚠️  hCaptcha — no free solver, skipping")
+        return False
+    return False
+
+
 def detect_multi_step(page) -> bool:
     """Check if this is a multi-step form (has progress indicator or Next button)."""
     signals = ['step', 'progress', 'wizard', 'stage', 'page 1', 'step 1']

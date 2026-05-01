@@ -14,6 +14,23 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
+    services:
+      # Free Cloudflare bypass — real Firefox in xvfb, returns cookies + HTML
+      cf-bypass:
+        image: ghcr.io/sarperavci/cloudflarebypassforscraping:latest
+        ports:
+          - 8000:8000
+      # Free Turnstile token solver — patchright browser, returns cf-turnstile-response
+      turnstile-solver:
+        image: theyka/turnstile_solver:latest
+        ports:
+          - 5000:5000
+      # Free reCAPTCHA v2 solver — audio challenge + speech-to-text
+      recaptcha-solver:
+        image: ghcr.io/sarperavci/googlerecaptchabypass:latest
+        ports:
+          - 8001:8001
+
     steps:
       - uses: actions/checkout@v4
 
@@ -23,7 +40,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install playwright seleniumbase curl_cffi camoufox httpx resend pydantic beautifulsoup4 python-jobspy pandas pytest
+          pip install playwright seleniumbase curl_cffi camoufox httpx resend pydantic beautifulsoup4 python-jobspy pandas pytest requests cloudscraper PyPasser
           playwright install chromium --with-deps
           python -c "from camoufox.sync_api import Camoufox; print('camoufox OK')" || true
 
@@ -86,6 +103,9 @@ jobs:
         env:
           RESEND_KEY: ${{ secrets.RESEND_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          CF_BYPASS_URL: http://localhost:8000
+          TURNSTILE_SOLVER_URL: http://localhost:5000
+          RECAPTCHA_SOLVER_URL: http://localhost:8001
 
       - name: Save agent memory
         if: always()

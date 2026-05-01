@@ -19,7 +19,7 @@ PROFILE_PATH = Path(__file__).parent.parent / "config" / "profile.json"
 RESUME_PATH = Path(__file__).parent.parent / "resume.pdf"
 SCREENSHOTS = Path(__file__).parent.parent / "screenshots"
 LEARNED_FILE = Path(__file__).parent.parent / "data" / "learned.json"
-MAX_RETRIES = 3
+MAX_RETRIES = 1
 
 # Maps label keywords → profile keys
 FIELD_MAP = {
@@ -84,7 +84,7 @@ def snap(page, name):
     return str(p)
 
 
-def wait(a=0.3, b=1.0):
+def wait(a=0.2, b=0.5):
     time.sleep(random.uniform(a, b))
 
 
@@ -415,6 +415,7 @@ def apply_to_job(page, profile, job, learned, dry_run=False, db=None) -> dict:
     for attempt in range(1, MAX_RETRIES + 1):
         print(f"    Attempt {attempt}/{MAX_RETRIES}")
         attempt_result = {"attempt": attempt, "filled": 0, "unfilled": 0, "error": None}
+        page_data = None
 
         try:
             # Navigate
@@ -431,21 +432,25 @@ def apply_to_job(page, profile, job, learned, dry_run=False, db=None) -> dict:
                 break
 
             # DOCTOR: dismiss popups/cookie banners first
-            from src.page_doctor import dismiss_popups, read_errors, fix_errors_and_retry, detect_captcha, detect_multi_step, click_next_button, fix_field_format
+            from src.page_doctor import dismiss_popups, read_errors, fix_errors_and_retry, detect_captcha, detect_multi_step, click_next_button, fix_field_format, solve_turnstile_via_docker, solve_captcha
             dismissed = dismiss_popups(page)
             if dismissed:
                 print(f"      Dismissed {dismissed} popups/banners")
 
-            # Check for CAPTCHA
+            # Check for CAPTCHA — try full solve chain (Turnstile + reCAPTCHA v2/v3)
             if detect_captcha(page):
-                result["status"] = "captcha_blocked"
-                snap(page, f"captcha_{attempt}")
-                # LEARN: mark this domain as blocked
-                if db:
-                    from src.learning_engine import learn_blocked_site
-                    learn_blocked_site(db, domain, "captcha")
-                print(f"      ⚠️  CAPTCHA detected — blocking domain for future")
-                break
+                solved = solve_captcha(page, apply_url)
+                if solved:
+                    print(f"      🔓 CAPTCHA solved — continuing with application")
+                    wait(1, 2)
+                else:
+                    result["status"] = "captcha_blocked"
+                    snap(page, f"captcha_{attempt}")
+                    if db:
+                        from src.learning_engine import learn_blocked_site
+                        learn_blocked_site(db, domain, "captcha")
+                    print(f"      ⚠️  CAPTCHA unsolvable — blocking domain")
+                    break
 
             # READ the entire page
             page_data = read_page(page)
@@ -453,10 +458,31 @@ def apply_to_job(page, profile, job, learned, dry_run=False, db=None) -> dict:
             print(f"      Found: {len(page_data['inputs'])} inputs, {len(page_data['selects'])} selects, "
                   f"{len(page_data['fileInputs'])} file uploads, {len(page_data['buttons'])} buttons")
 
-            # FILL the form
-            fill_result = fill_form(page, page_data, profile, learned, domain)
-            attempt_result["filled"] = len(fill_result["filled"])
-            attempt_result["unfilled"] = len(fill_result["unfilled"])
+            # FILL the form (loop for multi-step)
+            all_filled = []
+            all_unfilled = []
+            step = 1
+            while True:
+                fill_result = fill_form(page, page_data, profile, learned, domain)
+                all_filled.extend(fill_result["filled"])
+                all_unfilled.extend(fill_result["unfilled"])
+                print(f"      Step {step}: filled {len(fill_result['filled'])}, unfilled {len(fill_result['unfilled'])}")
+
+                # Check for multi-step form — click Next/Continue if present
+                if detect_multi_step(page) and click_next_button(page):
+                    step += 1
+                    print(f"      ➡️  Advanced to step {step}")
+                    snap(page, f"step{step}_{attempt}")
+                    dismiss_popups(page)
+                    page_data = read_page(page)
+                    if not page_data["inputs"] and not page_data["selects"] and not page_data["textareas"]:
+                        break  # No more fields on this step
+                    continue
+                break
+
+            fill_result = {"filled": all_filled, "unfilled": all_unfilled}
+            attempt_result["filled"] = len(all_filled)
+            attempt_result["unfilled"] = len(all_unfilled)
             snap(page, f"filled_{attempt}")
             print(f"      Filled {attempt_result['filled']} fields, {attempt_result['unfilled']} unfilled")
 
@@ -529,11 +555,11 @@ def apply_to_job(page, profile, job, learned, dry_run=False, db=None) -> dict:
                 attempt_result["error"] = submit_result["reason"]
                 print(f"      ❌ Submit failed: {submit_result['reason']}")
                 # LEARN: save failure to DB
-                if db:
-                    from src.learning_engine import learn_from_failure
-                    learn_from_failure(db, domain, url, [submit_result["reason"]] + errors if 'errors' in dir() else [submit_result["reason"]], attempt)
                 # DOCTOR: read error messages and try to fix
                 errors = read_errors(page)
+                if db:
+                    from src.learning_engine import learn_from_failure
+                    learn_from_failure(db, domain, url, [submit_result["reason"]] + errors, attempt)
                 if errors:
                     print(f"      🔧 Found {len(errors)} errors: {errors[:3]}")
                     fixed = fix_errors_and_retry(page, profile, errors)
@@ -563,10 +589,9 @@ def apply_to_job(page, profile, job, learned, dry_run=False, db=None) -> dict:
                     for f in visual["fields"]:
                         val = f.get("value", "")
                         field_desc = f.get("field", "").lower()
-                        if not val:
+                        if not val or not page_data:
                             continue
-                        # Find matching input by trying common selectors
-                        for inp in page_data.get("inputs", []) if 'page_data' in dir() else []:
+                        for inp in page_data.get("inputs", []):
                             if field_desc in (inp.get("label", "") + inp.get("placeholder", "")).lower():
                                 try:
                                     page.locator(inp["selector"]).fill(val)
@@ -587,6 +612,21 @@ def apply_to_job(page, profile, job, learned, dry_run=False, db=None) -> dict:
         result["status"] = "failed_all_retries"
     save_learned(learned)
     return result
+
+
+def _try_cloudscraper(url: str) -> list[dict]:
+    """Try cloudscraper to bypass Cloudflare. Returns Playwright-compatible cookies or []."""
+    try:
+        import cloudscraper
+        scraper = cloudscraper.create_scraper(browser="chrome", interpreter="js2py", delay=5)
+        resp = scraper.get(url, timeout=30)
+        if resp.status_code < 400 and "just a moment" not in resp.text.lower():
+            domain = re.sub(r'https?://(www\.)?', '', url).split('/')[0]
+            return [{"name": k, "value": v, "domain": domain, "path": "/"}
+                    for k, v in resp.cookies.items()]
+    except Exception:
+        pass
+    return []
 
 
 def run_applications(jobs: list[dict], dry_run: bool = True, max_apps: int = 10, db=None) -> list[dict]:
@@ -622,9 +662,15 @@ def run_applications(jobs: list[dict], dry_run: bool = True, max_apps: int = 10,
             if probe.success and "captcha" not in probe.html.lower() and "just a moment" not in probe.html.lower():
                 print(f"    🟢 Direct access OK ({probe.elapsed:.1f}s)")
             else:
-                # Site has protection — use stealth toolkit to harvest cookies
-                print(f"    🔴 Site protected — trying stealth tools...")
-                stealth_result = stealth_fetch(url, tools=["seleniumbase_uc", "camoufox", "cf_bypass"], headless=True)
+                # Try cloudscraper (free, pure Python, handles JS challenges)
+                cf_cookies = _try_cloudscraper(url)
+                if cf_cookies:
+                    context.add_cookies(cf_cookies)
+                    print(f"    🟢 cloudscraper bypassed CF — injected {len(cf_cookies)} cookies")
+                else:
+                    # Site has protection — use stealth toolkit to harvest cookies
+                    print(f"    🔴 Site protected — trying stealth tools...")
+                    stealth_result = stealth_fetch(url, tools=["sarperavci", "seleniumbase_uc", "camoufox", "cf_bypass"], headless=True)
                 if stealth_result.success and stealth_result.cookies:
                     # Inject harvested cookies into Playwright context
                     pw_cookies = []
@@ -647,7 +693,7 @@ def run_applications(jobs: list[dict], dry_run: bool = True, max_apps: int = 10,
             results.append(r)
             if r["status"] in ("submitted", "dry_run"):
                 applied += 1
-            wait(3, 6)
+            wait(1, 2)
 
         browser.close()
 
