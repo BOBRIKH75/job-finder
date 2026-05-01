@@ -1,16 +1,19 @@
 """Self-learning browser applier.
 
 Strategy:
-1. Open page → read EVERY element (inputs, labels, buttons, text)
-2. Build a map of what the page wants
-3. Fill fields from profile using multiple matching strategies
-4. If submit fails → analyze WHY → try different approach
-5. Retry up to 3 times, each time smarter than the last
-6. Save what worked for next time
+1. Pre-check URL with stealth toolkit (curl_cffi → seleniumbase_uc → camoufox)
+2. If blocked, harvest cookies with stealth tools and inject into Playwright
+3. Open page → read EVERY element (inputs, labels, buttons, text)
+4. Build a map of what the page wants
+5. Fill fields from profile using multiple matching strategies
+6. If submit fails → analyze WHY → try different approach
+7. Retry up to 3 times, each time smarter than the last
+8. Save what worked for next time
 """
 import json, os, re, time, random
 from pathlib import Path
 from playwright.sync_api import sync_playwright, TimeoutError as PwTimeout
+from src.stealth_toolkit import stealth_fetch, fetch_curl_cffi, list_available_tools, StealthResult
 
 PROFILE_PATH = Path(__file__).parent.parent / "config" / "profile.json"
 RESUME_PATH = Path(__file__).parent.parent / "resume.pdf"
@@ -587,18 +590,17 @@ def apply_to_job(page, profile, job, learned, dry_run=False, db=None) -> dict:
 
 
 def run_applications(jobs: list[dict], dry_run: bool = True, max_apps: int = 10, db=None) -> list[dict]:
-    """Apply to multiple jobs with self-learning."""
+    """Apply to multiple jobs with self-learning and stealth anti-detection."""
     profile = load_profile()
     learned = load_learned()
     results = []
 
-    try:
-        from playwright_stealth import Stealth
-        ctx = Stealth().use_sync(sync_playwright())
-    except ImportError:
-        ctx = sync_playwright()
+    # Log available stealth tools
+    tools = list_available_tools()
+    available = [t["name"] for t in tools if t["available"]]
+    print(f"  🛡️ Stealth tools available: {', '.join(available)}")
 
-    with ctx as p:
+    with sync_playwright() as p:
         browser = p.chromium.launch(headless=True, args=["--no-sandbox", "--disable-blink-features=AutomationControlled"])
         context = browser.new_context(
             viewport={"width": 1920, "height": 1080}, locale="en-US", timezone_id="America/Denver",
@@ -610,8 +612,36 @@ def run_applications(jobs: list[dict], dry_run: bool = True, max_apps: int = 10,
         for job in jobs:
             if applied >= max_apps:
                 break
+            url = job.get("url", "")
+            domain = re.sub(r'https?://(www\.)?', '', url).split('/')[0]
             print(f"\n  {'='*50}")
             print(f"  {job.get('title','?')} @ {job.get('company','?')}")
+
+            # STEALTH PRE-CHECK: probe the URL with curl_cffi first (fast, no browser)
+            probe = fetch_curl_cffi(url)
+            if probe.success and "captcha" not in probe.html.lower() and "just a moment" not in probe.html.lower():
+                print(f"    🟢 Direct access OK ({probe.elapsed:.1f}s)")
+            else:
+                # Site has protection — use stealth toolkit to harvest cookies
+                print(f"    🔴 Site protected — trying stealth tools...")
+                stealth_result = stealth_fetch(url, tools=["seleniumbase_uc", "camoufox", "cf_bypass"], headless=True)
+                if stealth_result.success and stealth_result.cookies:
+                    # Inject harvested cookies into Playwright context
+                    pw_cookies = []
+                    for c in stealth_result.cookies:
+                        if isinstance(c, dict) and c.get("name") and c.get("value"):
+                            pw_cookies.append({
+                                "name": c["name"], "value": c["value"],
+                                "domain": c.get("domain", domain),
+                                "path": c.get("path", "/"),
+                            })
+                    if pw_cookies:
+                        context.add_cookies(pw_cookies)
+                        print(f"    🍪 Injected {len(pw_cookies)} cookies from {stealth_result.tool}")
+                elif stealth_result.success:
+                    print(f"    🟡 {stealth_result.tool} got page but no cookies to inject")
+                else:
+                    print(f"    ⚠️ All stealth tools failed: {stealth_result.error[:100]}")
 
             r = apply_to_job(page, profile, job, learned, dry_run, db=db)
             results.append(r)

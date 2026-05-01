@@ -23,8 +23,9 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install playwright playwright-stealth httpx resend pydantic beautifulsoup4 python-jobspy pandas pytest
+          pip install playwright seleniumbase curl_cffi camoufox httpx resend pydantic beautifulsoup4 python-jobspy pandas pytest
           playwright install chromium --with-deps
+          python -c "from camoufox.sync_api import Camoufox; print('camoufox OK')" || true
 
       - name: Restore agent memory
         continue-on-error: true
