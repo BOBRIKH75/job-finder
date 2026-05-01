@@ -16,16 +16,40 @@ from src.ats_detector import detect_ats
 from src.job_scout import match_skills
 from src.form_filler import load_profile, can_automate_url
 from src.email_handler import EmailThrottle, render_template
-from src.bridge import import_jobs_from_finder
 
 
 def run_discover(db, profile):
-    jobs = import_jobs_from_finder("found_jobs.json")
-    if jobs:
-        print(f"  Phase 1: Loaded {len(jobs)} jobs from job-finder pipeline")
-    else:
-        print("  Phase 1: No found_jobs.json — waiting for job-finder to run")
-    return jobs
+    """Phase 1: Discover jobs from job-finder pipeline + company portal scanner."""
+    all_jobs = []
+
+    # Source 1: Jobs from job-finder pipeline (found_jobs.json)
+    from src.bridge import import_jobs_from_finder
+    finder_jobs = import_jobs_from_finder("found_jobs.json")
+    if finder_jobs:
+        all_jobs.extend(finder_jobs)
+        print(f"  Phase 1a: {len(finder_jobs)} jobs from job-finder pipeline")
+
+    # Source 2: Direct company career page scanning (Lever + Greenhouse APIs)
+    from src.portal_scanner import scan_all_companies, load_companies, discover_company, save_companies
+    portal_jobs = scan_all_companies(max_companies=25)
+    if portal_jobs:
+        all_jobs.extend(portal_jobs)
+        print(f"  Phase 1b: {len(portal_jobs)} jobs from company portal scanner")
+
+    # Discover new companies from all jobs found
+    if all_jobs:
+        companies = load_companies()
+        for job in all_jobs:
+            company = job.get("company", "")
+            if company and len(company) > 2:
+                discover_company(company, companies)
+        save_companies(companies)
+
+    if not all_jobs:
+        print("  Phase 1: No jobs found from any source")
+
+    print(f"  Phase 1 total: {len(all_jobs)} jobs")
+    return all_jobs
 
 
 def run_filter(db, jobs):
