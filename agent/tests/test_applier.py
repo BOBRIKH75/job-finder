@@ -1,5 +1,5 @@
-"""Tests for browser applier — tests field detection and matching logic (no real browser)."""
-from src.applier import load_profile, FIELD_MAP, LEVER_SELECTORS, KNOWN_ANSWERS, load_learned, save_learned
+"""Tests for self-learning browser applier."""
+from src.applier import load_profile, FIELD_MAP, KNOWN_ANSWERS, load_learned, save_learned, match_field, match_answer
 
 
 def test_load_profile():
@@ -16,16 +16,24 @@ def test_field_map_covers_basics():
     assert "linkedin" in FIELD_MAP
 
 
-def test_lever_selectors():
-    assert "name" in LEVER_SELECTORS
-    assert "email" in LEVER_SELECTORS
-    assert "resume" in LEVER_SELECTORS
-    assert "submit" in LEVER_SELECTORS
-
-
 def test_known_answers():
-    assert "authorized to work" in KNOWN_ANSWERS
+    assert "authorized" in KNOWN_ANSWERS
     assert KNOWN_ANSWERS["sponsorship"] == "No"
+    assert KNOWN_ANSWERS["start"] == "Immediately"
+
+
+def test_match_field_by_label():
+    assert match_field("Full Name", "", "", "") == "name"
+    assert match_field("", "email", "", "") == "email"
+    assert match_field("", "", "Enter phone number", "") == "phone"
+    assert match_field("", "", "", "LinkedIn URL") == "linkedin"
+    assert match_field("", "", "", "") is None
+
+
+def test_match_answer():
+    assert match_answer("Are you authorized to work in the US?") == "Yes"
+    assert match_answer("Do you require visa sponsorship?") == "No"
+    assert match_answer("What is your favorite color?") is None
 
 
 def test_learned_persistence(tmp_path):
@@ -33,14 +41,15 @@ def test_learned_persistence(tmp_path):
     original = applier.LEARNED_FILE
     applier.LEARNED_FILE = tmp_path / "learned.json"
 
-    save_learned({"successes": {"lever.co": 3}, "failures": {}, "selectors": {}})
+    save_learned({"winning_selectors": {"lever.co": {"#name": "name"}}, "success_count": {"lever.co": 3}, "fail_reasons": {}})
     data = load_learned()
-    assert data["successes"]["lever.co"] == 3
+    assert data["success_count"]["lever.co"] == 3
+    assert data["winning_selectors"]["lever.co"]["#name"] == "name"
 
     applier.LEARNED_FILE = original
 
 
-def test_field_map_matches_profile_keys():
+def test_field_map_matches_profile():
     p = load_profile()
     for label, key in FIELD_MAP.items():
-        assert key in p or key in ("company", "location"), f"Profile missing key: {key}"
+        assert key in p or key in ("company", "location"), f"Missing: {key}"
