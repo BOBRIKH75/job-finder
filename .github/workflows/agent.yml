@@ -25,11 +25,15 @@ jobs:
         image: theyka/turnstile_solver:latest
         ports:
           - 5000:5000
-      # Free reCAPTCHA v2 solver — audio challenge + speech-to-text
-      recaptcha-solver:
-        image: ghcr.io/sarperavci/googlerecaptchabypass:latest
+      # Free universal CAPTCHA solver — reCAPTCHA v2/v3, hCaptcha, Turnstile, FunCaptcha
+      # Self-hosted CapSolver-compatible API (createTask/getTaskResult)
+      ohmycaptcha:
+        image: ghcr.io/shenhao-stu/ohmycaptcha:latest
         ports:
-          - 8001:8001
+          - 8002:8000
+        env:
+          CLIENT_KEY: default
+          BROWSER_HEADLESS: "true"
 
     steps:
       - uses: actions/checkout@v4
@@ -105,7 +109,8 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           CF_BYPASS_URL: http://localhost:8000
           TURNSTILE_SOLVER_URL: http://localhost:5000
-          RECAPTCHA_SOLVER_URL: http://localhost:8001
+          OHMYCAPTCHA_URL: http://localhost:8002
+          OHMYCAPTCHA_KEY: default
 
       - name: Save agent memory
         if: always()

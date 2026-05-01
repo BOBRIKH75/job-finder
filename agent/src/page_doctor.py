@@ -341,23 +341,134 @@ def solve_recaptcha_v3_http(page, captcha_info: dict) -> bool:
     return False
 
 
+def solve_via_ohmycaptcha(page, captcha_info: dict) -> bool:
+    """Solve ANY CAPTCHA via OhMyCaptcha self-hosted service (createTask/getTaskResult API).
+
+    Supports: reCAPTCHA v2/v3, hCaptcha, Turnstile, FunCaptcha — all free, self-hosted.
+    Runs as Docker sidecar at OHMYCAPTCHA_URL (default http://localhost:8002).
+    """
+    import os, time
+    base = os.environ.get("OHMYCAPTCHA_URL", "")
+    if not base:
+        return False
+
+    ctype = captcha_info.get("type", "")
+    sitekey = captcha_info.get("sitekey", "")
+    url = captcha_info.get("url", "")
+    if not ctype or not sitekey:
+        return False
+
+    # Map our type names to OhMyCaptcha task types
+    task_type_map = {
+        "turnstile": "TurnstileTaskProxyless",
+        "recaptchav2": "NoCaptchaTaskProxyless",
+        "recaptchav3": "RecaptchaV3TaskProxyless",
+        "hcaptcha": "HCaptchaTaskProxyless",
+    }
+    task_type = task_type_map.get(ctype)
+    if not task_type:
+        return False
+
+    client_key = os.environ.get("OHMYCAPTCHA_KEY", "default")
+    print(f"      🧩 OhMyCaptcha: solving {ctype} via {task_type}...")
+
+    try:
+        import requests as _req
+        # Step 1: createTask
+        task = {"type": task_type, "websiteURL": url, "websiteKey": sitekey}
+        if ctype == "recaptchav3":
+            task["pageAction"] = "submit"
+        resp = _req.post(f"{base}/createTask", json={"clientKey": client_key, "task": task}, timeout=15)
+        data = resp.json()
+        if data.get("errorId", 1) != 0:
+            print(f"      ⚠️  OhMyCaptcha createTask error: {data.get('errorDescription', 'unknown')}")
+            return False
+        task_id = data.get("taskId", "")
+        if not task_id:
+            return False
+
+        # Step 2: poll getTaskResult
+        for _ in range(20):
+            time.sleep(3)
+            r = _req.post(f"{base}/getTaskResult", json={"clientKey": client_key, "taskId": task_id}, timeout=10).json()
+            status = r.get("status", "")
+            if status == "ready":
+                sol = r.get("solution", {})
+                token = sol.get("gRecaptchaResponse") or sol.get("token") or ""
+                if token and len(token) > 20:
+                    # Step 3: inject token
+                    _inject_captcha_token(page, ctype, token)
+                    print(f"      ✅ OhMyCaptcha solved {ctype}")
+                    return True
+            elif status != "processing":
+                print(f"      ⚠️  OhMyCaptcha status: {status}")
+                return False
+
+        print(f"      ⚠️  OhMyCaptcha timed out")
+        return False
+    except Exception as e:
+        print(f"      ⚠️  OhMyCaptcha error: {e}")
+        return False
+
+
+def _inject_captcha_token(page, ctype: str, token: str):
+    """Inject a solved CAPTCHA token into the page."""
+    if ctype in ("recaptchav2", "recaptchav3"):
+        page.evaluate("""(token) => {
+            document.querySelectorAll('[name="g-recaptcha-response"]').forEach(el => { el.value = token; });
+            if (window.___grecaptcha_cfg) {
+                const clients = window.___grecaptcha_cfg.clients;
+                for (const key in clients) {
+                    const walk = (obj, d) => {
+                        if (d > 4 || !obj) return;
+                        for (const k in obj) {
+                            if (typeof obj[k] === 'function' && k.length < 3) try { obj[k](token); } catch(e) {}
+                            else if (typeof obj[k] === 'object') walk(obj[k], d+1);
+                        }
+                    };
+                    walk(clients[key], 0);
+                }
+            }
+        }""", token)
+    elif ctype == "hcaptcha":
+        page.evaluate("""(token) => {
+            const ta = document.querySelector('[name="h-captcha-response"], textarea[name*="hcaptcha"]');
+            if (ta) ta.value = token;
+            document.querySelectorAll('iframe[data-hcaptcha-response]').forEach(f => f.setAttribute('data-hcaptcha-response', token));
+        }""", token)
+    elif ctype == "turnstile":
+        page.evaluate("""(token) => {
+            const inp = document.querySelector('[name="cf-turnstile-response"], input[name*="turnstile"]');
+            if (inp) inp.value = token;
+        }""", token)
+
+
 def solve_captcha(page, url: str) -> bool:
     """Full CAPTCHA solve chain — tries all free solvers by type.
 
-    Turnstile  → Theyka Docker sidecar
-    reCAPTCHA v2 → sarperavci audio Docker sidecar
-    reCAPTCHA v3 → PyPasser HTTP bypass
-    hCaptcha   → no free solver, skip
+    Priority order:
+    1. OhMyCaptcha (universal — solves ALL types via self-hosted Docker)
+    2. Type-specific fallbacks:
+       Turnstile  → Theyka Docker sidecar
+       reCAPTCHA v2 → sarperavci audio Docker sidecar
+       reCAPTCHA v3 → PyPasser HTTP bypass
+       hCaptcha   → OhMyCaptcha only (no other free solver)
     """
     captcha_info = detect_captcha_type(page)
     if not captcha_info:
         if not detect_captcha(page):
             return True  # No CAPTCHA
+        # Can't identify type — try Turnstile as default
         return solve_turnstile_via_docker(page, url)
 
     ctype = captcha_info["type"]
     print(f"      🔍 CAPTCHA: {ctype} (sitekey={captcha_info.get('sitekey', '?')[:20]}...)")
 
+    # Try OhMyCaptcha first — handles ALL types
+    if solve_via_ohmycaptcha(page, captcha_info):
+        return True
+
+    # Fallback to type-specific solvers
     if ctype == "turnstile":
         return solve_turnstile_via_docker(page, url)
     if ctype == "recaptchav2":
@@ -365,7 +476,7 @@ def solve_captcha(page, url: str) -> bool:
     if ctype == "recaptchav3":
         return solve_recaptcha_v3_http(page, captcha_info)
     if ctype == "hcaptcha":
-        print(f"      ⚠️  hCaptcha — no free solver, skipping")
+        print(f"      ⚠️  hCaptcha — OhMyCaptcha failed, no other free solver")
         return False
     return False
 
