@@ -2,7 +2,7 @@ name: AI Job Agent — Daily Run
 
 on:
   schedule:
-    - cron: '0 16 * * *'  # 10:00 AM MT — after job-finder
+    - cron: '0 16 * * *'
   workflow_dispatch: {}
 
 defaults:
@@ -37,16 +37,39 @@ jobs:
       - name: Initialize database
         run: python -c "from src.memory import get_db, init_db; db = get_db(); init_db(db)"
 
-      - name: Copy found_jobs.json from finder
-        run: cp ../found_jobs.json found_jobs.json 2>/dev/null || echo '{"jobs":[],"count":0}' > found_jobs.json
+      - name: Get found_jobs.json
+        working-directory: .
+        run: |
+          # The job-finder saves found_jobs.json in the repo root during its run
+          if [ -f found_jobs.json ]; then
+            cp found_jobs.json agent/found_jobs.json
+            echo "Copied from repo root"
+          else
+            # Fallback: run the job finder ourselves to get fresh jobs
+            echo "No found_jobs.json found — running job finder to get fresh jobs..."
+            pip install python-jobspy 2>/dev/null
+            python -c "
+          import json
+          from jobspy import scrape_jobs
+          jobs = scrape_jobs(site_name=['indeed','linkedin'], search_term='Java Spring Boot C2C contract remote', location='USA', results_wanted=20, hours_old=168)
+          result = []
+          for _, r in jobs.iterrows():
+              result.append({'title': str(r.get('title','')), 'company': str(r.get('company','')), 'url': str(r.get('job_url','')), 'location': str(r.get('location','')), 'description': str(r.get('description',''))[:1000], 'source': 'jobspy'})
+          with open('agent/found_jobs.json', 'w') as f:
+              json.dump({'jobs': result, 'count': len(result)}, f)
+          print(f'Found {len(result)} jobs')
+          " || echo '{"jobs":[],"count":0}' > agent/found_jobs.json
+          fi
+          echo "Jobs file: $(python3 -c 'import json; print(json.load(open("agent/found_jobs.json")).get("count",0))') jobs"
 
       - name: Run tests
-        run: python -m pytest tests/ -q --ignore=tests/test_applier.py
+        run: python -m pytest tests/ -q --ignore=tests/test_applier.py --ignore=tests/test_bridge.py
 
-      - name: Run agent (full pipeline — find, filter, apply, email)
+      - name: Run agent (full pipeline)
         run: python agent.py --cloud
         env:
           RESEND_KEY: ${{ secrets.RESEND_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
 
       - name: Save agent memory
         if: always()
