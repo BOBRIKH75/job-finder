@@ -239,6 +239,9 @@ def fill_form(page, page_data, profile, learned, domain) -> dict:
         if profile_key:
             value = profile.get(profile_key, "")
             if value:
+                # Fix format based on field type
+                from src.page_doctor import fix_field_format
+                value = fix_field_format(inp["label"] or inp["name"], str(value))
                 try:
                     page.locator(sel).fill(str(value))
                     filled.append((profile_key, sel))
@@ -415,6 +418,19 @@ def apply_to_job(page, profile, job, learned, dry_run=False) -> dict:
                 snap(page, f"closed_{attempt}")
                 break
 
+            # DOCTOR: dismiss popups/cookie banners first
+            from src.page_doctor import dismiss_popups, read_errors, fix_errors_and_retry, detect_captcha, detect_multi_step, click_next_button, fix_field_format
+            dismissed = dismiss_popups(page)
+            if dismissed:
+                print(f"      Dismissed {dismissed} popups/banners")
+
+            # Check for CAPTCHA
+            if detect_captcha(page):
+                result["status"] = "captcha_blocked"
+                snap(page, f"captcha_{attempt}")
+                print(f"      ⚠️  CAPTCHA detected — skipping this job")
+                break
+
             # READ the entire page
             page_data = read_page(page)
             snap(page, f"read_{attempt}")
@@ -489,8 +505,17 @@ def apply_to_job(page, profile, job, learned, dry_run=False) -> dict:
             else:
                 attempt_result["error"] = submit_result["reason"]
                 print(f"      ❌ Submit failed: {submit_result['reason']}")
+                # DOCTOR: read error messages and try to fix
+                errors = read_errors(page)
+                if errors:
+                    print(f"      🔧 Found {len(errors)} errors: {errors[:3]}")
+                    fixed = fix_errors_and_retry(page, profile, errors)
+                    if fixed:
+                        print(f"      🔧 Fixed {fixed} fields — will retry submit")
+                        # Save what errors we saw for learning
+                        learned.setdefault("error_patterns", {}).setdefault(domain, []).extend(errors[:5])
                 learned.setdefault("fail_reasons", {}).setdefault(domain, []).append(
-                    {"attempt": attempt, "reason": submit_result["reason"]}
+                    {"attempt": attempt, "reason": submit_result["reason"], "errors": errors[:3]}
                 )
 
         except Exception as e:
