@@ -53,11 +53,18 @@ jobs:
           all_jobs = []
           for q in ['Java Spring Boot contract remote', 'Java C2C developer remote', 'Java Kafka Kubernetes contract', 'Senior Java backend developer contract apply']:
               try:
-                  jobs = scrape_jobs(site_name=['google'], google_search_term=q+' jobs apply', search_term=q, location='USA', results_wanted=15, hours_old=336)
+                  jobs = scrape_jobs(site_name=['google','indeed','linkedin','glassdoor','zip_recruiter'], google_search_term=q+' jobs apply', search_term=q, location='USA', results_wanted=15, hours_old=336)
                   for _, r in jobs.iterrows():
                       url = str(r.get('job_url',''))
-                      if not url or 'indeed.com' in url or 'linkedin.com' in url:
+                      if not url:
                           continue
+                      # Keep the job info but swap Indeed/LinkedIn URLs for company_url if available
+                      if 'indeed.com' in url or 'linkedin.com' in url:
+                          company_url = str(r.get('company_url',''))
+                          if company_url and company_url != 'nan' and company_url.startswith('http'):
+                              url = company_url
+                          else:
+                              continue
                       all_jobs.append({'title':str(r.get('title','')),'company':str(r.get('company','')),'url':url,'location':str(r.get('location','')),'description':str(r.get('description',''))[:1000],'source':str(r.get('site',''))})
                   print(f'  "{q[:40]}" -> {len(jobs)} results')
               except Exception as e:
@@ -66,7 +73,7 @@ jobs:
           unique = [j for j in all_jobs if j['url'] not in seen and not seen.add(j['url'])]
           with open('agent/found_jobs.json','w') as f:
               json.dump({'jobs':unique,'count':len(unique)},f)
-          print(f'Found {len(unique)} jobs on company pages (Indeed/LinkedIn filtered)')
+          print(f'Found {len(unique)} jobs from all sources (Indeed/LinkedIn redirected to company pages)')
           PYSCRIPT
           fi
           echo "Jobs: $(python3 -c 'import json;print(json.load(open("agent/found_jobs.json")).get("count",0))')"
