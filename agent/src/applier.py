@@ -261,7 +261,23 @@ def fill_form(page, page_data, profile, learned, domain) -> dict:
             except Exception:
                 pass
 
-        # Unknown field — skip but log it
+        # Unknown field — ask AI for help
+        if inp["label"] or inp["placeholder"]:
+            from src.ai_fallback import ask_ai_about_field
+            ai_answer = ask_ai_about_field(
+                inp["label"] or inp["placeholder"] or inp["ariaLabel"],
+                inp["type"],
+            )
+            if ai_answer:
+                try:
+                    page.locator(sel).fill(ai_answer)
+                    filled.append(("ai:" + (inp["label"] or inp["name"])[:30], sel))
+                    learned.setdefault("winning_selectors", {}).setdefault(domain, {})[sel] = "ai:" + ai_answer[:50]
+                    wait(0.2, 0.5)
+                    continue
+                except Exception:
+                    pass
+
         if inp["required"]:
             unfilled.append(("unknown_required", f"{sel} label='{inp['label'][:50]}'"))
 
@@ -290,13 +306,14 @@ def fill_form(page, page_data, profile, learned, domain) -> dict:
             continue
         label = (ta["label"] or ta["placeholder"]).lower()
         if "cover" in label or "letter" in label:
+            from src.ai_fallback import ask_ai_cover_letter
+            cover = ask_ai_cover_letter(
+                profile.get("title", "Java Developer"),
+                profile.get("company", ""),
+                page_data.get("pageText", "")[:500],
+            )
             try:
-                page.locator(sel).fill(
-                    f"I am a Senior Java Backend Developer with {profile.get('years_experience', 10)}+ years "
-                    f"of experience in Spring Boot, Kafka, Kubernetes, AWS, and MongoDB. "
-                    f"Green Card holder, available immediately for C2C contract. "
-                    f"I would welcome the opportunity to discuss this role further."
-                )
+                page.locator(sel).fill(cover)
                 filled.append(("cover_letter", sel))
             except Exception:
                 pass
@@ -418,9 +435,35 @@ def apply_to_job(page, profile, job, learned, dry_run=False) -> dict:
                 learned.setdefault("fail_reasons", {}).setdefault(domain, []).append(
                     {"attempt": attempt, "unfilled": [u[1] for u in fill_result["unfilled"][:5]]}
                 )
-                print(f"      ⚠️  Only {attempt_result['filled']} fields — retrying...")
-                wait(1, 2)
-                continue
+                # On retry 2+, ask AI to analyze the full page
+                if attempt >= 2 and fill_result["unfilled"]:
+                    print(f"      🤖 Asking AI to analyze page...")
+                    from src.ai_fallback import ask_ai_about_page
+                    unfilled_data = []
+                    for inp in page_data["inputs"]:
+                        if inp["selector"] and not any(inp["selector"] == f[1] for f in fill_result["filled"]):
+                            unfilled_data.append(inp)
+                    ai_suggestions = ask_ai_about_page(page_data.get("pageText", ""), unfilled_data)
+                    for sel, value in ai_suggestions.items():
+                        try:
+                            page.locator(sel).fill(str(value))
+                            fill_result["filled"].append(("ai_page:" + sel[:20], sel))
+                            attempt_result["filled"] += 1
+                            wait(0.2, 0.5)
+                        except Exception:
+                            pass
+                    if attempt_result["filled"] >= 2:
+                        print(f"      🤖 AI helped fill {len(ai_suggestions)} more fields!")
+                        snap(page, f"ai_helped_{attempt}")
+                        # Continue to submit instead of retrying
+                    else:
+                        print(f"      ⚠️  Only {attempt_result['filled']} fields — retrying...")
+                        wait(1, 2)
+                        continue
+                else:
+                    print(f"      ⚠️  Only {attempt_result['filled']} fields — retrying...")
+                    wait(1, 2)
+                    continue
 
             if dry_run:
                 result["status"] = "dry_run"
