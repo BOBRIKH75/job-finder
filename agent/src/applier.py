@@ -523,6 +523,35 @@ def apply_to_job(page, profile, job, learned, dry_run=False) -> dict:
             print(f"      ❌ Error: {str(e)[:100]}")
             snap(page, f"error_{attempt}")
 
+            # On last attempt, use visual analysis
+            if attempt == MAX_RETRIES:
+                print(f"      👁️ Last resort: visual analysis...")
+                from src.visual_analyzer import visual_fill_attempt
+                visual = visual_fill_attempt(page)
+                if visual["fields"]:
+                    print(f"      👁️ AI Vision found {len(visual['fields'])} fields")
+                    for f in visual["fields"]:
+                        print(f"         → {f.get('field','?')}: {f.get('value','?')}")
+                    # Try to fill using AI vision suggestions
+                    for f in visual["fields"]:
+                        val = f.get("value", "")
+                        field_desc = f.get("field", "").lower()
+                        if not val:
+                            continue
+                        # Find matching input by trying common selectors
+                        for inp in page_data.get("inputs", []) if 'page_data' in dir() else []:
+                            if field_desc in (inp.get("label", "") + inp.get("placeholder", "")).lower():
+                                try:
+                                    page.locator(inp["selector"]).fill(val)
+                                    attempt_result["filled"] = attempt_result.get("filled", 0) + 1
+                                except Exception:
+                                    pass
+                                break
+                if visual["advice"]:
+                    print(f"      👁️ AI advice: {visual['advice'][:200]}")
+                if visual["errors"]:
+                    print(f"      👁️ AI saw errors: {visual['errors'][:3]}")
+
         result["attempts"].append(attempt_result)
         wait(2, 4)
 
