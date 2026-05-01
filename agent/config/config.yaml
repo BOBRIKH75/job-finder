@@ -1,0 +1,36 @@
+agent:
+  max_applications_per_day: 15
+  max_emails_per_day: 10
+  max_follow_ups_per_day: 5
+  parallel_browsers: 1
+
+ghost_filter:
+  max_posting_age_days: 30
+  max_applicants: 500
+  min_score_to_apply: 40
+  min_score_auto_apply: 70
+
+confidence:
+  auto_apply_threshold: 0.8
+  skip_threshold: 0.4
+
+ollama:
+  model: "qwen3:8b"
+  vision_model: "llama3.2-vision"
+  embed_model: "nomic-embed-text"
+  base_url: "http://localhost:11434"
+  num_ctx: 8192
+
+browser:
+  headless: true  # cloud mode — no display needed
+  wait_between_actions: 1.5
+
+email:
+  imap_host: "imap.gmail.com"
+  smtp_host: "smtp.gmail.com"
+  follow_up_days: [3, 7, 14]
+
+search:
+  keywords: ["Java", "Spring Boot", "C2C", "corp-to-corp", "contract", "remote"]
+  locations: ["Remote", "Colorado", "Denver"]
+  exclude: ["clearance required", "onsite only", "W2 only"]

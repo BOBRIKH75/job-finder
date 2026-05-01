@@ -1,0 +1,6 @@
+
+# Agent
+agent/.venv/
+agent/__pycache__/
+agent/data/agent_memory.db
+agent/*.pyc
