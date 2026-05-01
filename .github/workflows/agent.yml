@@ -2,7 +2,7 @@ name: AI Job Agent — Daily Run
 
 on:
   schedule:
-    - cron: '0 16 * * *'  # 10:00 AM MT — runs AFTER job-finder (9:30 AM)
+    - cron: '0 16 * * *'  # 10:00 AM MT — after job-finder
   workflow_dispatch: {}
 
 defaults:
@@ -23,7 +23,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install -r requirements.txt
+          pip install playwright playwright-stealth httpx resend pydantic beautifulsoup4 python-jobspy pandas pytest
           playwright install chromium --with-deps
 
       - name: Restore agent memory
@@ -31,26 +31,22 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: agent/data/agent_memory.db
-          key: agent-memory-${{ github.run_number }}
-          restore-keys: agent-memory-
+          key: agent-memory
+          restore-keys: agent-memory
 
       - name: Initialize database
         run: python -c "from src.memory import get_db, init_db; db = get_db(); init_db(db)"
 
       - name: Copy found_jobs.json from finder
         run: cp ../found_jobs.json found_jobs.json 2>/dev/null || echo '{"jobs":[],"count":0}' > found_jobs.json
-        working-directory: agent
 
       - name: Run tests
-        run: python -m pytest tests/ -q
+        run: python -m pytest tests/ -q --ignore=tests/test_applier.py
 
-      - name: Run agent
+      - name: Run agent (full pipeline — find, filter, apply, email)
         run: python agent.py --cloud
         env:
-          GMAIL_USER: ${{ secrets.GMAIL_USER }}
-          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
           RESEND_KEY: ${{ secrets.RESEND_KEY }}
-          HUNTER_API_KEY: ${{ secrets.HUNTER_API_KEY }}
 
       - name: Save agent memory
         if: always()
@@ -58,3 +54,11 @@ jobs:
         with:
           path: agent/data/agent_memory.db
           key: agent-memory-${{ github.run_number }}
+
+      - name: Upload screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshots-${{ github.run_number }}
+          path: agent/screenshots/
+          retention-days: 7

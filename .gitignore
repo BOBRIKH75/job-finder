@@ -4,3 +4,6 @@ agent/.venv/
 agent/__pycache__/
 agent/data/agent_memory.db
 agent/*.pyc
+agent/__pycache__/
+agent/src/__pycache__/
+agent/tests/__pycache__/
