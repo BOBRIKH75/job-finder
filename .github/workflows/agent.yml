@@ -14,27 +14,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
-    services:
-      # Free Cloudflare bypass — real Firefox in xvfb, returns cookies + HTML
-      cf-bypass:
-        image: ghcr.io/sarperavci/cloudflarebypassforscraping:latest
-        ports:
-          - 8000:8000
-      # Free Turnstile token solver — patchright browser, returns cf-turnstile-response
-      turnstile-solver:
-        image: theyka/turnstile_solver:latest
-        ports:
-          - 5000:5000
-      # Free universal CAPTCHA solver — reCAPTCHA v2/v3, hCaptcha, Turnstile, FunCaptcha
-      # Self-hosted CapSolver-compatible API (createTask/getTaskResult)
-      ohmycaptcha:
-        image: ghcr.io/shenhao-stu/ohmycaptcha:latest
-        ports:
-          - 8002:8000
-        env:
-          CLIENT_KEY: default
-          BROWSER_HEADLESS: "true"
-
     steps:
       - uses: actions/checkout@v4
 
@@ -79,7 +58,6 @@ jobs:
                       url = str(r.get('job_url',''))
                       if not url:
                           continue
-                      # Keep the job info but swap Indeed/LinkedIn URLs for company_url if available
                       if 'indeed.com' in url or 'linkedin.com' in url:
                           company_url = str(r.get('company_url',''))
                           if company_url and company_url != 'nan' and company_url.startswith('http'):
@@ -107,10 +85,6 @@ jobs:
         env:
           RESEND_KEY: ${{ secrets.RESEND_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          CF_BYPASS_URL: http://localhost:8000
-          TURNSTILE_SOLVER_URL: http://localhost:5000
-          OHMYCAPTCHA_URL: http://localhost:8002
-          OHMYCAPTCHA_KEY: default
 
       - name: Save agent memory
         if: always()
