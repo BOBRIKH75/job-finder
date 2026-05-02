@@ -31,7 +31,7 @@ def run_discover(db, profile):
 
     # Source 2: Direct company career page scanning (Lever + Greenhouse APIs)
     from src.portal_scanner import scan_all_companies, load_companies, discover_company, save_companies
-    portal_jobs = scan_all_companies(max_companies=25)
+    portal_jobs = scan_all_companies(max_companies=10)
     if portal_jobs:
         all_jobs.extend(portal_jobs)
         print(f"  Phase 1b: {len(portal_jobs)} jobs from company portal scanner")
@@ -102,7 +102,7 @@ def run_apply(db, jobs, dry_run=False):
         return []
 
     from src.applier import run_applications
-    results = run_applications(automatable, dry_run=dry_run, max_apps=10, db=db)
+    results = run_applications(automatable, dry_run=dry_run, max_apps=5, db=db)
 
     # Update DB with results
     for r in results:
