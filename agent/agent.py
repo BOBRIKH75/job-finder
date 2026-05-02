@@ -31,7 +31,7 @@ def run_discover(db, profile):
 
     # Source 2: Direct company career page scanning (Lever + Greenhouse APIs)
     from src.portal_scanner import scan_all_companies, load_companies, discover_company, save_companies
-    portal_jobs = scan_all_companies(max_companies=10)
+    portal_jobs = scan_all_companies(max_companies=25)
     if portal_jobs:
         all_jobs.extend(portal_jobs)
         print(f"  Phase 1b: {len(portal_jobs)} jobs from company portal scanner")
@@ -93,7 +93,22 @@ def run_filter(db, jobs):
 
 def run_apply(db, jobs, dry_run=False):
     """Phase 3: Actually apply to jobs using Playwright."""
-    automatable = [j for j in jobs if j.get("can_automate", False)]
+    automatable = sorted(
+        [j for j in jobs if j.get("can_automate", False)],
+        key=lambda j: (
+            0 if j.get("ats_type") == "lever" else 1,  # Lever first (no CAPTCHA)
+            -j.get("match_score", 0),
+        ),
+    )
+    # Diversify: max 2 per domain
+    seen_domains, diverse = {}, []
+    for j in automatable:
+        from urllib.parse import urlparse
+        d = urlparse(j.get("url", "")).netloc
+        seen_domains[d] = seen_domains.get(d, 0) + 1
+        if seen_domains[d] <= 2:
+            diverse.append(j)
+    automatable = diverse
     email_only = [j for j in jobs if not j.get("can_automate", False)]
 
     print(f"  Phase 3: {len(automatable)} auto-apply, {len(email_only)} email-only")
@@ -182,6 +197,7 @@ def main():
     if args.reset:
         db.execute("DELETE FROM applications")
         db.execute("DELETE FROM audit_log")
+        db.execute("DELETE FROM ats_patterns WHERE ats_type = 'blocked'")
         db.commit()
         print("  🗑️  Database reset")
 

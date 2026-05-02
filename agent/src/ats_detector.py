@@ -62,7 +62,7 @@ ATS_SIGNATURES = {
     },
 }
 
-BLOCKED_ATS = {"greenhouse", "icims", "linkedin", "smartrecruiters"}
+BLOCKED_ATS = {"icims", "linkedin", "smartrecruiters"}
 
 
 @dataclass

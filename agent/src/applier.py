@@ -356,8 +356,11 @@ def submit_and_verify(page, page_data, original_url) -> dict:
     """Find submit button, click it, verify success."""
     # Find submit button
     submit_texts = ["submit application", "submit", "apply now", "apply", "send application", "send", "complete"]
+    skip_texts = ["linkedin", "google", "facebook", "twitter", "sign in", "log in", "dismiss"]
     for btn in page_data["buttons"]:
         btn_lower = btn["text"].lower()
+        if any(s in btn_lower for s in skip_texts):
+            continue
         for st in submit_texts:
             if st in btn_lower:
                 try:
@@ -422,7 +425,8 @@ def apply_to_job(page, profile, job, learned, dry_run=False, db=None) -> dict:
             apply_url = url.rstrip("/")
             if "lever.co" in apply_url and not apply_url.endswith("/apply"):
                 apply_url += "/apply"
-            page.goto(apply_url, wait_until="networkidle", timeout=30000)
+            page.goto(apply_url, wait_until="domcontentloaded", timeout=15000)
+            page.wait_for_timeout(3000)  # let JS render forms
             wait(1, 2)
 
             # Check if page exists
@@ -436,6 +440,13 @@ def apply_to_job(page, profile, job, learned, dry_run=False, db=None) -> dict:
             dismissed = dismiss_popups(page)
             if dismissed:
                 print(f"      Dismissed {dismissed} popups/banners")
+
+            # Hide invisible CAPTCHA overlays (hCaptcha, reCAPTCHA) that block clicks
+            page.evaluate("""() => {
+                document.querySelectorAll('.h-captcha, [id=h-captcha], .g-recaptcha').forEach(e => {
+                    if (e.offsetHeight < 80) e.style.display = 'none';
+                });
+            }""")
 
             # Check for CAPTCHA — try full solve chain (Turnstile + reCAPTCHA v2/v3)
             if detect_captcha(page):
@@ -671,23 +682,23 @@ def run_applications(jobs: list[dict], dry_run: bool = True, max_apps: int = 10,
                     # Site has protection — use stealth toolkit to harvest cookies
                     print(f"    🔴 Site protected — trying stealth tools...")
                     stealth_result = stealth_fetch(url, tools=["sarperavci", "seleniumbase_uc", "camoufox", "cf_bypass"], headless=True)
-                if stealth_result.success and stealth_result.cookies:
-                    # Inject harvested cookies into Playwright context
-                    pw_cookies = []
-                    for c in stealth_result.cookies:
-                        if isinstance(c, dict) and c.get("name") and c.get("value"):
-                            pw_cookies.append({
-                                "name": c["name"], "value": c["value"],
-                                "domain": c.get("domain", domain),
-                                "path": c.get("path", "/"),
-                            })
-                    if pw_cookies:
-                        context.add_cookies(pw_cookies)
-                        print(f"    🍪 Injected {len(pw_cookies)} cookies from {stealth_result.tool}")
-                elif stealth_result.success:
-                    print(f"    🟡 {stealth_result.tool} got page but no cookies to inject")
-                else:
-                    print(f"    ⚠️ All stealth tools failed: {stealth_result.error[:100]}")
+                    if stealth_result.success and stealth_result.cookies:
+                        # Inject harvested cookies into Playwright context
+                        pw_cookies = []
+                        for c in stealth_result.cookies:
+                            if isinstance(c, dict) and c.get("name") and c.get("value"):
+                                pw_cookies.append({
+                                    "name": c["name"], "value": c["value"],
+                                    "domain": c.get("domain", domain),
+                                    "path": c.get("path", "/"),
+                                })
+                        if pw_cookies:
+                            context.add_cookies(pw_cookies)
+                            print(f"    🍪 Injected {len(pw_cookies)} cookies from {stealth_result.tool}")
+                    elif stealth_result.success:
+                        print(f"    🟡 {stealth_result.tool} got page but no cookies to inject")
+                    else:
+                        print(f"    ⚠️ All stealth tools failed: {stealth_result.error[:100]}")
 
             r = apply_to_job(page, profile, job, learned, dry_run, db=db)
             results.append(r)

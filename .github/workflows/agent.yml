@@ -81,7 +81,7 @@ jobs:
         run: python -m pytest tests/ -q --ignore=tests/test_applier.py --ignore=tests/test_bridge.py --ignore=tests/test_stealth_toolkit.py
 
       - name: Run agent (full pipeline)
-        run: python agent.py --cloud --reset
+        run: python agent.py --cloud
         env:
           RESEND_KEY: ${{ secrets.RESEND_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}

@@ -168,12 +168,20 @@ def click_next_button(page) -> bool:
 
 
 def detect_captcha(page) -> bool:
-    """Check if page has a CAPTCHA."""
-    captcha_signals = ['recaptcha', 'captcha', 'hcaptcha', 'turnstile', 'challenge-form',
-                       'g-recaptcha', 'cf-turnstile', 'h-captcha']
+    """Check if page has a VISIBLE CAPTCHA that blocks form filling."""
     try:
-        html = page.content().lower()
-        return any(s in html for s in captcha_signals)
+        return page.evaluate("""() => {
+            const sels = ['.g-recaptcha', '.h-captcha', '.cf-turnstile', '[data-captcha]', '#captcha', '.captcha'];
+            for (const s of sels) {
+                const el = document.querySelector(s);
+                if (el && el.offsetHeight > 0 && el.offsetWidth > 0) return true;
+            }
+            // Check for challenge pages (full-page CAPTCHA)
+            const body = document.body.innerText.toLowerCase();
+            if (body.includes('verify you are human') || body.includes('one more step') || body.includes('checking your browser'))
+                return true;
+            return false;
+        }""")
     except Exception:
         return False
 
