@@ -66,7 +66,7 @@ def run_filter(db, jobs):
             has_salary=job.get("has_salary", bool(job.get("rate"))),
             description=job.get("description", ""),
         )
-        match = match_skills(job.get("description", ""))
+        match = match_skills(job.get("description", ""), title=job.get("title", ""))
 
         if ghost_score > 60:
             print(f"  ⛔ GHOST ({ghost_score}): {job.get('title', '?')}")
@@ -173,10 +173,17 @@ def main():
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--stats", action="store_true")
     parser.add_argument("--cloud", action="store_true")
+    parser.add_argument("--reset", action="store_true", help="Clear DB for fresh run")
     args = parser.parse_args()
 
     db = get_db()
     init_db(db)
+
+    if args.reset:
+        db.execute("DELETE FROM applications")
+        db.execute("DELETE FROM audit_log")
+        db.commit()
+        print("  🗑️  Database reset")
 
     if args.stats:
         run_stats(db)

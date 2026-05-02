@@ -10,27 +10,16 @@ def load_skills() -> set[str]:
     return {s.lower() for s in profile["skills"]}
 
 
-def match_skills(job_description: str, skills: set[str] = None) -> dict:
-    """Match job description against candidate skills."""
+def match_skills(job_description: str, skills: set[str] = None, title: str = "") -> dict:
+    """Match job description + title against candidate skills."""
     skills = skills or load_skills()
-    desc_lower = job_description.lower()
-    # Tokenize description into potential skill phrases (1-3 word ngrams)
-    words = re.findall(r'[a-z][a-z0-9/+#. -]+', desc_lower)
-    desc_tokens = set(words)
-    # Also check multi-word skills
-    for skill in skills:
-        if " " in skill and skill in desc_lower:
-            desc_tokens.add(skill)
-
-    matched = skills & desc_tokens
-    # Also check substring matches for multi-word skills
-    for skill in skills:
-        if skill in desc_lower:
-            matched.add(skill)
+    text = (title + " " + job_description).lower()
+    # Direct substring match — most reliable for multi-word skills
+    matched = {skill for skill in skills if skill in text}
 
     missing = set()
     # Extract likely skill requirements from description
-    tech_pattern = re.findall(r'\b(?:experience with|proficiency in|knowledge of|skills?:?)\s*([^.;]+)', desc_lower)
+    tech_pattern = re.findall(r'\b(?:experience with|proficiency in|knowledge of|skills?:?)\s*([^.;]+)', text)
     for phrase in tech_pattern:
         tokens = [t.strip() for t in re.split(r'[,/&]', phrase)]
         for t in tokens:

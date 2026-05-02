@@ -182,14 +182,48 @@ def fetch_cf_bypass(url: str, headless: bool = True, proxy: str = None, **kw) ->
         return StealthResult(False, "cf_bypass", error=str(e), elapsed=time.time() - start)
 
 
+# ─── 8. sarperavci Docker service (free, unlimited, GitHub Actions sidecar) ──
+
+def fetch_sarperavci(url: str, **kw) -> StealthResult:
+    """Fetch via sarperavci/CloudflareBypassForScraping Docker service.
+
+    Runs as a GitHub Actions service container on CF_BYPASS_URL (default
+    http://localhost:8000).  Uses a real Firefox browser inside xvfb to
+    bypass Cloudflare — returns cookies + HTML.  100 % free, no API key.
+    """
+    import os
+    base = os.environ.get("CF_BYPASS_URL", "")
+    if not base:
+        return StealthResult(False, "sarperavci", error="CF_BYPASS_URL not set")
+    start = time.time()
+    try:
+        import requests as _req
+        # /html returns the full page after Cloudflare bypass
+        resp = _req.get(f"{base}/html", params={"url": url}, timeout=60)
+        html = resp.text
+        ua = resp.headers.get("x-cf-bypasser-user-agent", "")
+        # /cookies returns cf_clearance + user-agent
+        cr = _req.get(f"{base}/cookies", params={"url": url}, timeout=60).json()
+        cookies = [{"name": k, "value": v, "domain": url.split("/")[2]}
+                   for k, v in cr.get("cookies", {}).items()]
+        blocked = any(s in html.lower() for s in ["just a moment", "checking your browser", "access denied"])
+        return StealthResult(
+            not blocked, "sarperavci", html, cookies,
+            resp.status_code, elapsed=time.time() - start,
+        )
+    except Exception as e:
+        return StealthResult(False, "sarperavci", error=str(e), elapsed=time.time() - start)
+
+
 # ─── Auto-fallback chain ────────────────────────────────────────────
 
 TOOL_CHAIN = [
+    ("curl_cffi", fetch_curl_cffi),
+    ("sarperavci", fetch_sarperavci),
     ("seleniumbase_uc", fetch_seleniumbase_uc),
     ("playwright_stealth", fetch_playwright_stealth),
     ("camoufox", fetch_camoufox),
     ("nodriver", fetch_nodriver),
-    ("curl_cffi", fetch_curl_cffi),
     ("flaresolverr", fetch_flaresolverr),
     ("cf_bypass", fetch_cf_bypass),
 ]
@@ -213,11 +247,12 @@ def stealth_fetch(url: str, tools: list[str] = None, headless: bool = True) -> S
 def list_available_tools() -> list[dict]:
     """Check which stealth tools are importable."""
     checks = [
+        ("curl_cffi", "curl_cffi", "curl_cffi — browser TLS mimicry"),
+        ("sarperavci", "requests", "sarperavci Docker — free CF bypass (needs CF_BYPASS_URL)"),
         ("seleniumbase_uc", "seleniumbase", "SeleniumBase UC Mode (70-90%)"),
         ("playwright_stealth", "playwright", "Playwright + Stealth JS (60-80%)"),
         ("camoufox", "camoufox", "Camoufox — Firefox stealth"),
         ("nodriver", "nodriver", "Nodriver — CDP without ChromeDriver"),
-        ("curl_cffi", "curl_cffi", "curl_cffi — browser TLS mimicry"),
         ("flaresolverr", "httpx", "FlareSolverr (needs Docker container)"),
         ("cf_bypass", "seleniumbase", "CF Bypass 2026 — UC + proxy + cookies"),
     ]

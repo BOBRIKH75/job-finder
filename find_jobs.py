@@ -11,6 +11,7 @@ import json, os, hashlib, re, sys, urllib.request, ssl, subprocess, tempfile
 from datetime import datetime
 from jobspy import scrape_jobs
 import pandas as pd
+from cf_bypass import cf_fetch
 
 EMAIL = 'bobrikh75@gmail.com'
 RESEND_KEY = os.environ.get('RESEND_KEY', '')
