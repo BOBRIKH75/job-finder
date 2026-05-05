@@ -34,6 +34,46 @@ LINKEDIN_JOB_QUERIES = [
     "Java contract-to-hire remote",
 ]
 
+# LinkedIn Advanced Search URLs (with filter parameters)
+# f_JT=C → Contract, f_WT=2 → Remote, f_E=4 → Senior, f_TPR=r604800 → Past week
+LINKEDIN_ADVANCED_URLS = [
+    # Contract + Remote + Senior + Past week
+    "https://www.linkedin.com/jobs/search/?keywords=Java%20Spring%20Boot&f_JT=C&f_WT=2&f_E=4&f_TPR=r604800",
+    # Contract + Remote + Java Kafka
+    "https://www.linkedin.com/jobs/search/?keywords=Java%20Kafka%20Kubernetes&f_JT=C&f_WT=2&f_TPR=r604800",
+    # Contract + USA + C2C
+    "https://www.linkedin.com/jobs/search/?keywords=Java%20C2C%20corp-to-corp&f_JT=C&f_WT=2&f_TPR=r604800",
+    # Contract + Remote + Microservices
+    "https://www.linkedin.com/jobs/search/?keywords=Java%20microservices%20backend&f_JT=C&f_WT=2&f_E=4&f_TPR=r604800",
+    # Contract + Colorado
+    "https://www.linkedin.com/jobs/search/?keywords=Java%20developer&f_JT=C&location=Colorado&f_TPR=r604800",
+    # Contract + Remote + Docker AWS
+    "https://www.linkedin.com/jobs/search/?keywords=Java%20Docker%20AWS%20contract&f_JT=C&f_WT=2&f_TPR=r2592000",
+    # All experience levels + Contract + Remote (wider net)
+    "https://www.linkedin.com/jobs/search/?keywords=Java%20Spring%20Boot%20contract%20remote&f_JT=C&f_WT=2",
+    # Contract + Remote + GraphQL MongoDB
+    "https://www.linkedin.com/jobs/search/?keywords=Java%20GraphQL%20MongoDB&f_JT=C&f_WT=2&f_TPR=r604800",
+]
+
+# LinkedIn People Search URLs (find recruiters)
+# network=S → 2nd connections, title filter
+LINKEDIN_RECRUITER_URLS = [
+    # Java recruiters in USA
+    "https://www.linkedin.com/search/results/people/?keywords=Java%20recruiter%20C2C&geoUrn=%5B%22103644278%22%5D&origin=FACETED_SEARCH",
+    # Technical recruiters at staffing companies
+    "https://www.linkedin.com/search/results/people/?keywords=technical%20recruiter%20Java%20Spring%20Boot&geoUrn=%5B%22103644278%22%5D",
+    # Hiring managers Java backend
+    "https://www.linkedin.com/search/results/people/?keywords=hiring%20manager%20Java%20backend%20developer&geoUrn=%5B%22103644278%22%5D",
+    # Talent acquisition Java
+    "https://www.linkedin.com/search/results/people/?keywords=talent%20acquisition%20Java%20contract&geoUrn=%5B%22103644278%22%5D",
+]
+
+# LinkedIn Company Search URLs
+LINKEDIN_COMPANY_URLS = [
+    "https://www.linkedin.com/search/results/companies/?keywords=Java%20staffing%20C2C&origin=SWITCH_SEARCH_VERTICAL",
+    "https://www.linkedin.com/search/results/companies/?keywords=IT%20staffing%20contract%20Java&origin=SWITCH_SEARCH_VERTICAL",
+]
+
 # ═══════════════════════════════════════════════════════════════
 # LINKEDIN RECRUITER SEARCHES (find people, not jobs)
 # ═══════════════════════════════════════════════════════════════
