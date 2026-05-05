@@ -25,6 +25,10 @@ def test_upsert_and_get_application(db):
 def test_application_exists(db):
     assert not application_exists(db, "https://x.com/j/1")
     upsert_application(db, company="X", job_title="Dev", job_url="https://x.com/j/1")
+    # Scored-only jobs should NOT block re-processing
+    assert not application_exists(db, "https://x.com/j/1")
+    # Applied jobs SHOULD block
+    update_application_status(db, "https://x.com/j/1", "applied")
     assert application_exists(db, "https://x.com/j/1")
 
 
