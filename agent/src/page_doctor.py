@@ -291,40 +291,22 @@ def detect_captcha_type(page) -> dict | None:
 
 
 def solve_recaptcha_v2_docker(page, url: str) -> bool:
-    """Solve reCAPTCHA v2 via sarperavci/GoogleRecaptchaBypass Docker sidecar. FREE."""
-    import os
-    solver_url = os.environ.get("RECAPTCHA_SOLVER_URL", "")
-    if not solver_url:
-        return False
-    print(f"      🔓 reCAPTCHA v2 — calling audio solver...")
+    """Solve reCAPTCHA v2 via playwright-recaptcha library (audio + speech recognition). FREE, no Docker."""
+    print(f"      🔓 reCAPTCHA v2 — solving via audio challenge...")
     try:
-        import requests as _req
-        resp = _req.get(f"{solver_url}/recaptcha", params={"url": url}, timeout=60)
-        data = resp.json()
-        token = data.get("token") or data.get("g-recaptcha-response", "")
-        if token and len(token) > 20:
-            page.evaluate("""(token) => {
-                document.querySelectorAll('[name="g-recaptcha-response"]').forEach(el => { el.value = token; });
-                if (window.___grecaptcha_cfg) {
-                    const clients = window.___grecaptcha_cfg.clients;
-                    for (const key in clients) {
-                        const walk = (obj, d) => {
-                            if (d > 4 || !obj) return;
-                            for (const k in obj) {
-                                if (typeof obj[k] === 'function' && k.length < 3) try { obj[k](token); } catch(e) {}
-                                else if (typeof obj[k] === 'object') walk(obj[k], d+1);
-                            }
-                        };
-                        walk(clients[key], 0);
-                    }
-                }
-            }""", token)
-            print(f"      ✅ reCAPTCHA v2 solved via audio")
-            return True
-        return False
+        from playwright_recaptcha import recaptchav2
+        with recaptchav2.SyncSolver(page) as solver:
+            token = solver.solve_recaptcha(wait=True)
+            if token and len(token) > 20:
+                print(f"      ✅ reCAPTCHA v2 solved via audio!")
+                return True
     except Exception as e:
-        print(f"      ⚠️  reCAPTCHA v2 solver error: {e}")
-        return False
+        err = str(e)
+        if "rate limit" in err.lower():
+            print(f"      ⚠️  reCAPTCHA rate limited (too many attempts from this IP)")
+        else:
+            print(f"      ⚠️  reCAPTCHA v2 audio solve failed: {err[:80]}")
+    return False
 
 
 def solve_recaptcha_v3_http(page, captcha_info: dict) -> bool:
