@@ -1,0 +1,30 @@
+name: Refresh Indeed Cookies (Weekly)
+
+on:
+  schedule:
+    - cron: '0 14 * * 0'  # Every Sunday 8 AM MT
+  workflow_dispatch: {}
+
+defaults:
+  run:
+    working-directory: agent
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install deps
+        run: pip install cloakbrowser playwright && playwright install chromium --with-deps
+
+      - name: Refresh cookies
+        env:
+          INDEED_COOKIES: ${{ secrets.INDEED_COOKIES }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python cookie_agent.py --refresh

@@ -726,6 +726,9 @@ def run_applications(jobs: list[dict], dry_run: bool = True, max_apps: int = 10,
     if indeed_cookies:
         context.add_cookies(indeed_cookies)
         print(f"  🍪 Loaded {len(indeed_cookies)} Indeed cookies")
+
+    # Rate limiting
+    from cookie_agent import can_apply, record_apply, human_delay
     page = context.new_page()
     applied = 0
 
@@ -734,6 +737,13 @@ def run_applications(jobs: list[dict], dry_run: bool = True, max_apps: int = 10,
             break
         url = job.get("url", "")
         domain = re.sub(r'https?://(www\.)?', '', url).split('/')[0]
+
+        # Rate limit check — avoid getting restricted
+        site_key = job.get("ats_type", "default")
+        if not can_apply(site_key):
+            print(f"\n  ⏸️ Rate limit reached for {site_key} — skipping")
+            continue
+
         print(f"\n  {'='*50}")
         print(f"  {job.get('title','?')} @ {job.get('company','?')}")
 
@@ -788,7 +798,10 @@ def run_applications(jobs: list[dict], dry_run: bool = True, max_apps: int = 10,
         results.append(r)
         if r["status"] in ("submitted", "dry_run"):
             applied += 1
-        wait(1, 2)
+            record_apply(site_key)
+            human_delay(site_key)  # Random wait to look human
+        else:
+            wait(1, 2)
 
     context.close()
 
