@@ -120,7 +120,6 @@ def run_apply(db, jobs, dry_run=False):
     Never crash — report results even if 0 applications succeed.
     """
     CAPTCHA_FREE_ATS = {"lever", "greenhouse", "ashby", "workable"}
-    is_cloud = os.environ.get("GITHUB_ACTIONS") == "true"
 
     automatable = sorted(
         [j for j in jobs if j.get("can_automate", False)],
@@ -130,23 +129,15 @@ def run_apply(db, jobs, dry_run=False):
         ),
     )
 
-    if is_cloud:
-        # CLOUD MODE: only CAPTCHA-free ATS — no unknown sites
-        automatable = [j for j in automatable if j.get("ats_type") in CAPTCHA_FREE_ATS]
-    else:
-        # LOCAL MODE: include unknown sites that aren't blocked
-        from urllib.parse import urlparse
-        from src.learning_engine import is_blocked_site
-        cloud_safe = []
-        for j in automatable:
-            ats = j.get("ats_type", "unknown")
-            if ats in CAPTCHA_FREE_ATS:
-                cloud_safe.append(j)
-            elif ats == "unknown":
-                domain = urlparse(j.get("url", "")).netloc
-                if not is_blocked_site(db, domain):
-                    cloud_safe.append(j)
-        automatable = cloud_safe
+    # Apply to ALL automatable sites — CloakBrowser handles bot detection
+    from urllib.parse import urlparse
+    from src.learning_engine import is_blocked_site
+    filtered = []
+    for j in automatable:
+        domain = urlparse(j.get("url", "")).netloc
+        if not is_blocked_site(db, domain):
+            filtered.append(j)
+    automatable = filtered
 
     # Diversify: max 2 per domain
     from urllib.parse import urlparse
