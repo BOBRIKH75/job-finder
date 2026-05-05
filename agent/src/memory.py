@@ -53,8 +53,11 @@ def update_application_status(db: sqlite3.Connection, job_url: str, status: str)
 
 
 def application_exists(db: sqlite3.Connection, job_url: str) -> bool:
-    row = db.execute("SELECT 1 FROM applications WHERE job_url=?", (job_url,)).fetchone()
-    return row is not None
+    row = db.execute("SELECT status FROM applications WHERE job_url=?", (job_url,)).fetchone()
+    if row is None:
+        return False
+    # Only skip if already applied/submitted — allow re-processing of scored-only jobs
+    return row[0] in ("applied", "submitted", "dry_run")
 
 
 # --- Recruiters ---
