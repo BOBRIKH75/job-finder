@@ -132,7 +132,7 @@ def run_apply(db, jobs, dry_run=False):
     for j in automatable:
         d = urlparse(j.get("url", "")).netloc
         seen_domains[d] = seen_domains.get(d, 0) + 1
-        if seen_domains[d] <= 2:
+        if seen_domains[d] <= 5:
             diverse.append(j)
     automatable = diverse
     email_only = [j for j in jobs if not j.get("can_automate", False)]

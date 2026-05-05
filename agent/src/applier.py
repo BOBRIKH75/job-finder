@@ -440,6 +440,8 @@ def apply_to_job(page, profile, job, learned, dry_run=False, db=None) -> dict:
             apply_url = url.rstrip("/")
             if "lever.co" in apply_url and not apply_url.endswith("/apply"):
                 apply_url += "/apply"
+            if "greenhouse.io" in apply_url and "#app" not in apply_url:
+                apply_url += "#app"
             page.goto(apply_url, wait_until="domcontentloaded", timeout=15000)
             page.wait_for_timeout(3000)  # let JS render forms
             wait(1, 2)
