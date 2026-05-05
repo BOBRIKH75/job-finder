@@ -69,7 +69,7 @@ jobs:
           import json
           from jobspy import scrape_jobs
           all_jobs = []
-          for q in ['Java Spring Boot contract remote', 'Java C2C developer remote', 'Java Kafka Kubernetes contract', 'Senior Java backend developer contract apply']:
+          for q in ['Java Spring Boot contract remote', 'Java C2C developer remote', 'Java Kafka Kubernetes contract', 'Senior Java backend developer contract apply', 'Java microservices Docker AWS contract', 'Java developer corp-to-corp remote', 'Java backend engineer contract USA', 'Java GraphQL MongoDB contract remote']:
               try:
                   jobs = scrape_jobs(site_name=['google','indeed','linkedin','glassdoor','zip_recruiter'], google_search_term=q+' jobs apply', search_term=q, location='USA', results_wanted=15, hours_old=336)
                   for _, r in jobs.iterrows():
