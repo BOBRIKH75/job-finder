@@ -139,7 +139,17 @@ def run_apply(db, jobs, dry_run=False):
             filtered.append(j)
     automatable = filtered
 
-    # Diversify: max 2 per domain
+    # Dedup: skip same title at same company (different locations)
+    seen_roles = set()
+    unique_roles = []
+    for j in automatable:
+        key = f"{j.get('company','').lower()}|{j.get('title','').lower()}"
+        if key not in seen_roles:
+            seen_roles.add(key)
+            unique_roles.append(j)
+    automatable = unique_roles
+
+    # Diversify: max 5 per domain
     from urllib.parse import urlparse
     seen_domains, diverse = {}, []
     for j in automatable:
