@@ -27,6 +27,20 @@ jobs:
           playwright install chromium --with-deps
           python -c "from camoufox.sync_api import Camoufox; print('camoufox OK')" || true
 
+      - name: Start OhMyCaptcha solver (background)
+        run: |
+          git clone --depth 1 https://github.com/shenhao-stu/ohmycaptcha.git /tmp/ohmycaptcha
+          pip install -r /tmp/ohmycaptcha/requirements.txt -q
+          cd /tmp/ohmycaptcha && python main.py &
+          sleep 3
+          curl -s http://localhost:8000/api/v1/health || echo "OhMyCaptcha not ready (non-blocking)"
+        env:
+          CLOUD_BASE_URL: "https://generativelanguage.googleapis.com/v1beta/openai"
+          CLOUD_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          CLOUD_MODEL: "gemini-2.0-flash"
+          CLIENT_KEY: "job-agent"
+          BROWSER_HEADLESS: "true"
+
       - name: Restore agent memory
         continue-on-error: true
         uses: actions/cache/restore@v4
@@ -90,6 +104,8 @@ jobs:
         env:
           RESEND_KEY: ${{ secrets.RESEND_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          OHMYCAPTCHA_URL: "http://localhost:8000"
+          OHMYCAPTCHA_KEY: "job-agent"
 
       - name: Save agent memory
         if: always()
