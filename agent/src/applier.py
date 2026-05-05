@@ -442,6 +442,10 @@ def apply_to_job(page, profile, job, learned, dry_run=False, db=None) -> dict:
                 apply_url += "/apply"
             if "greenhouse.io" in apply_url and "#app" not in apply_url:
                 apply_url += "#app"
+            if "job-boards.greenhouse.io" in apply_url and "#app" not in apply_url:
+                apply_url += "#app"
+            if "ashbyhq.com" in apply_url and not apply_url.endswith("/application"):
+                apply_url += "/application"
             page.goto(apply_url, wait_until="domcontentloaded", timeout=15000)
             page.wait_for_timeout(3000)  # let JS render forms
             wait(1, 2)
@@ -535,6 +539,22 @@ def apply_to_job(page, profile, job, learned, dry_run=False, db=None) -> dict:
             snap(page, f"read_{attempt}")
             print(f"      Found: {len(page_data['inputs'])} inputs, {len(page_data['selects'])} selects, "
                   f"{len(page_data['fileInputs'])} file uploads, {len(page_data['buttons'])} buttons")
+
+            # If no form, try clicking Apply button (Indeed, Dice, company pages)
+            if len(page_data['inputs']) < 3:
+                apply_texts = ["apply now", "apply", "apply for this job", "submit application", "easy apply"]
+                for btn in page_data.get("buttons", []):
+                    if any(t in btn.get("text", "").lower() for t in apply_texts):
+                        try:
+                            sel = btn.get("selector") or f'button:has-text("{btn["text"][:20]}")'
+                            page.locator(sel).first.click(timeout=5000)
+                            page.wait_for_timeout(3000)
+                            dismiss_popups(page)
+                            page_data = read_page(page)
+                            print(f"      Clicked '{btn['text'][:20]}' → {len(page_data['inputs'])} inputs now")
+                            break
+                        except Exception:
+                            continue
 
             # FILL the form (loop for multi-step)
             all_filled = []
