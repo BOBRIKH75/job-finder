@@ -68,7 +68,7 @@ def run_filter(db, jobs):
                        "spring", "microservice", "site reliability", "sre",
                        "tech lead", "api developer", "integration engineer",
                        "systems engineer", "application engineer", "automation engineer",
-                       "data engineer", "kafka", "kubernetes"]
+                       "data engineer", "kafka", "kubernetes", "sdet"]
         SKIP_TITLES = ["sales", "product manager", "designer", "marketing", "recruiter",
                        "customer success", "account", "rvp", "vp,", "director,", "people",
                        "data governance", "project manager"]
