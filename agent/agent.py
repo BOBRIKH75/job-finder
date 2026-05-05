@@ -71,7 +71,7 @@ def run_filter(db, jobs):
         if ghost_score > 60:
             print(f"  ⛔ GHOST ({ghost_score}): {job.get('title', '?')}")
             continue
-        if match["score"] < 40:
+        if match["score"] < 30:
             print(f"  ⚠️  WEAK ({match['score']}%): {job.get('title', '?')}")
             continue
 

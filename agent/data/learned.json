@@ -1,0 +1,85 @@
+{
+  "winning_selectors": {
+    "jobs.lever.co": {
+      "[name=\"name\"]": "name",
+      "[name=\"email\"]": "email",
+      "[name=\"phone\"]": "phone",
+      "#location-input": "location",
+      "[name=\"urls[LinkedIn]\"]": "linkedin",
+      "[name=\"urls[GitHub]\"]": "github",
+      "[name=\"urls[Stack Overflow]\"]": "linkedin",
+      "[name=\"urls[Portfolio]\"]": "github"
+    },
+    "job-boards.greenhouse.io": {
+      "#first_name": "first_name",
+      "#last_name": "last_name",
+      "#email": "email",
+      "#phone": "phone",
+      "#question_30593309003": "linkedin",
+      "#question_30593311003": "name",
+      "#question_30593312003": "name",
+      "#question_30593318003": "github",
+      "#question_30593320003": "github",
+      "#question_30593339003": "linkedin",
+      "#question_30593341003": "name",
+      "#question_30593342003": "name",
+      "#question_30593347003": "github",
+      "#question_30593349003": "github"
+    },
+    "boards.greenhouse.io": {
+      "#first_name": "first_name",
+      "#last_name": "last_name",
+      "#preferred_name": "first_name",
+      "#email": "email",
+      "#phone": "phone",
+      "#question_36356465002": "linkedin",
+      "#question_34879028002": "linkedin"
+    }
+  },
+  "success_count": {
+    "jobs.lever.co": 1
+  },
+  "fail_reasons": {
+    "careers.datadoghq.com": [
+      {
+        "attempt": 1,
+        "unfilled": []
+      },
+      {
+        "attempt": 1,
+        "unfilled": []
+      },
+      {
+        "attempt": 1,
+        "unfilled": []
+      },
+      {
+        "attempt": 1,
+        "unfilled": []
+      }
+    ],
+    "fivetran.com": [
+      {
+        "attempt": 1,
+        "unfilled": []
+      },
+      {
+        "attempt": 1,
+        "unfilled": []
+      },
+      {
+        "attempt": 1,
+        "unfilled": []
+      }
+    ],
+    "jobs.lever.co": [
+      {
+        "attempt": 1,
+        "reason": "Locator.click: Timeout 30000ms exceeded.\nCall log:\n  - waiting for locator(\"button:has-text(\\\"Apply with LinkedIn\\\")\").first\n    - locator resolved to <button type=\"button\" class=\"template-btn-utility",
+        "errors": [
+          "File exceeds the maximum upload size of 100MB. Please try a smaller size."
+        ]
+      }
+    ]
+  }
+}

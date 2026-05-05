@@ -105,7 +105,7 @@ def scan_greenhouse(company: str) -> list[dict]:
                     "company": company,
                     "url": url,
                     "location": ", ".join(l.get("name", "") for l in posting.get("location", {}).get("locations", []) if l.get("name")),
-                    "description": re.sub(r'<[^>]+>', '', desc)[:1000],
+                    "description": __import__('html').unescape(re.sub(r'<[^>]+>', '', desc))[:1000],
                     "source": "greenhouse_api",
                     "ats_type": "greenhouse",
                 })
