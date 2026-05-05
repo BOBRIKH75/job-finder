@@ -70,8 +70,13 @@ def run_filter(db, jobs):
                        "systems engineer", "application engineer", "automation engineer",
                        "data engineer", "kafka", "kubernetes", "sdet", "quality", "qa ", "test engineer", "reliability"]
         SKIP_TITLES = ["sales", "product manager", "designer", "marketing", "recruiter",
-                       "customer success", "account", "rvp", "vp,", "director,", "people",
-                       "data governance", "project manager"]
+                       "customer success", "account", "rvp", "vp ", "vp,",
+                       "director", "people", "data governance", "project manager",
+                       "analytics manager", "engineering manager", "manager,",
+                       "python", "ruby", "golang", "go developer", "rust",
+                       "ios ", "android", "mobile", "frontend", "front-end",
+                       "machine learning", "data scientist", "ai research",
+                       "product design", "ux ", "ui ", "content"]
         if any(s in title_lower for s in SKIP_TITLES):
             continue
         if not any(v in title_lower for v in VALID_TITLES):
