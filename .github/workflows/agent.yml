@@ -85,6 +85,7 @@ jobs:
         run: python -m pytest test_career_ops_scorer.py -q
 
       - name: Run agent (full pipeline)
+        continue-on-error: true
         run: python agent.py --cloud
         env:
           RESEND_KEY: ${{ secrets.RESEND_KEY }}

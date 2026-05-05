@@ -646,6 +646,10 @@ def run_applications(jobs: list[dict], dry_run: bool = True, max_apps: int = 10,
     learned = load_learned()
     results = []
 
+    # Known CAPTCHA-free ATS domains — skip all stealth probing
+    CAPTCHA_FREE_DOMAINS = {"jobs.lever.co", "lever.co", "boards.greenhouse.io",
+                            "jobs.ashbyhq.com", "apply.workable.com"}
+
     # Log available stealth tools
     tools = list_available_tools()
     available = [t["name"] for t in tools if t["available"]]
@@ -668,37 +672,52 @@ def run_applications(jobs: list[dict], dry_run: bool = True, max_apps: int = 10,
             print(f"\n  {'='*50}")
             print(f"  {job.get('title','?')} @ {job.get('company','?')}")
 
-            # STEALTH PRE-CHECK: probe the URL with curl_cffi first (fast, no browser)
-            probe = fetch_curl_cffi(url)
-            if probe.success and "captcha" not in probe.html.lower() and "just a moment" not in probe.html.lower():
-                print(f"    🟢 Direct access OK ({probe.elapsed:.1f}s)")
+            # SKIP STEALTH for known CAPTCHA-free ATS platforms
+            is_captcha_free = any(d in url for d in CAPTCHA_FREE_DOMAINS)
+
+            if is_captcha_free:
+                print(f"    🟢 CAPTCHA-free ATS — direct access (no stealth needed)")
             else:
-                # Try cloudscraper (free, pure Python, handles JS challenges)
-                cf_cookies = _try_cloudscraper(url)
-                if cf_cookies:
-                    context.add_cookies(cf_cookies)
-                    print(f"    🟢 cloudscraper bypassed CF — injected {len(cf_cookies)} cookies")
-                else:
-                    # Site has protection — use stealth toolkit to harvest cookies
-                    print(f"    🔴 Site protected — trying stealth tools...")
-                    stealth_result = stealth_fetch(url, tools=["sarperavci", "seleniumbase_uc", "camoufox", "cf_bypass"], headless=True)
-                    if stealth_result.success and stealth_result.cookies:
-                        # Inject harvested cookies into Playwright context
-                        pw_cookies = []
-                        for c in stealth_result.cookies:
-                            if isinstance(c, dict) and c.get("name") and c.get("value"):
-                                pw_cookies.append({
-                                    "name": c["name"], "value": c["value"],
-                                    "domain": c.get("domain", domain),
-                                    "path": c.get("path", "/"),
-                                })
-                        if pw_cookies:
-                            context.add_cookies(pw_cookies)
-                            print(f"    🍪 Injected {len(pw_cookies)} cookies from {stealth_result.tool}")
-                    elif stealth_result.success:
-                        print(f"    🟡 {stealth_result.tool} got page but no cookies to inject")
+                # STEALTH PRE-CHECK: probe the URL with curl_cffi first
+                try:
+                    probe = fetch_curl_cffi(url)
+                    if probe.success and "captcha" not in probe.html.lower() and "just a moment" not in probe.html.lower():
+                        print(f"    🟢 Direct access OK ({probe.elapsed:.1f}s)")
                     else:
-                        print(f"    ⚠️ All stealth tools failed: {stealth_result.error[:100]}")
+                        # Try cloudscraper
+                        cf_cookies = _try_cloudscraper(url)
+                        if cf_cookies:
+                            context.add_cookies(cf_cookies)
+                            print(f"    🟢 cloudscraper bypassed CF — injected {len(cf_cookies)} cookies")
+                        else:
+                            # All stealth tools — but graceful failure
+                            print(f"    🔴 Site protected — trying stealth tools...")
+                            stealth_result = stealth_fetch(url, tools=["sarperavci", "seleniumbase_uc", "camoufox", "cf_bypass"], headless=True)
+                            if stealth_result.success and stealth_result.cookies:
+                                pw_cookies = []
+                                for c in stealth_result.cookies:
+                                    if isinstance(c, dict) and c.get("name") and c.get("value"):
+                                        pw_cookies.append({
+                                            "name": c["name"], "value": c["value"],
+                                            "domain": c.get("domain", domain),
+                                            "path": c.get("path", "/"),
+                                        })
+                                if pw_cookies:
+                                    context.add_cookies(pw_cookies)
+                                    print(f"    🍪 Injected {len(pw_cookies)} cookies from {stealth_result.tool}")
+                            elif stealth_result.success:
+                                print(f"    🟡 {stealth_result.tool} got page but no cookies to inject")
+                            else:
+                                # GRACEFUL SKIP — don't crash CI
+                                print(f"    ⏭️ All stealth tools failed — skipping: {stealth_result.error[:80]}")
+                                results.append({"url": url, "title": job.get("title", ""),
+                                                "company": job.get("company", ""), "status": "stealth_failed"})
+                                continue
+                except Exception as e:
+                    print(f"    ⏭️ Stealth probe crashed — skipping: {str(e)[:80]}")
+                    results.append({"url": url, "title": job.get("title", ""),
+                                    "company": job.get("company", ""), "status": "stealth_crashed"})
+                    continue
 
             r = apply_to_job(page, profile, job, learned, dry_run, db=db)
             results.append(r)

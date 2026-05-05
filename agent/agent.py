@@ -92,18 +92,44 @@ def run_filter(db, jobs):
 
 
 def run_apply(db, jobs, dry_run=False):
-    """Phase 3: Actually apply to jobs using Playwright."""
+    """Phase 3: Apply to jobs using Playwright.
+    
+    In cloud mode, only apply to CAPTCHA-free ATS platforms.
+    Never crash — report results even if 0 applications succeed.
+    """
+    CAPTCHA_FREE_ATS = {"lever", "greenhouse", "ashby", "workable"}
+    is_cloud = os.environ.get("GITHUB_ACTIONS") == "true"
+
     automatable = sorted(
         [j for j in jobs if j.get("can_automate", False)],
         key=lambda j: (
-            0 if j.get("ats_type") == "lever" else 1,  # Lever first (no CAPTCHA)
+            0 if j.get("ats_type") in CAPTCHA_FREE_ATS else 1,
             -j.get("match_score", 0),
         ),
     )
+
+    if is_cloud:
+        # CLOUD MODE: only CAPTCHA-free ATS — no unknown sites
+        automatable = [j for j in automatable if j.get("ats_type") in CAPTCHA_FREE_ATS]
+    else:
+        # LOCAL MODE: include unknown sites that aren't blocked
+        from urllib.parse import urlparse
+        from src.learning_engine import is_blocked_site
+        cloud_safe = []
+        for j in automatable:
+            ats = j.get("ats_type", "unknown")
+            if ats in CAPTCHA_FREE_ATS:
+                cloud_safe.append(j)
+            elif ats == "unknown":
+                domain = urlparse(j.get("url", "")).netloc
+                if not is_blocked_site(db, domain):
+                    cloud_safe.append(j)
+        automatable = cloud_safe
+
     # Diversify: max 2 per domain
+    from urllib.parse import urlparse
     seen_domains, diverse = {}, []
     for j in automatable:
-        from urllib.parse import urlparse
         d = urlparse(j.get("url", "")).netloc
         seen_domains[d] = seen_domains.get(d, 0) + 1
         if seen_domains[d] <= 2:
@@ -111,13 +137,17 @@ def run_apply(db, jobs, dry_run=False):
     automatable = diverse
     email_only = [j for j in jobs if not j.get("can_automate", False)]
 
-    print(f"  Phase 3: {len(automatable)} auto-apply, {len(email_only)} email-only")
+    print(f"  Phase 3: {len(automatable)} auto-apply ({'cloud-safe' if is_cloud else 'all'}), {len(email_only)} email-only")
 
     if not automatable:
         return []
 
-    from src.applier import run_applications
-    results = run_applications(automatable, dry_run=dry_run, max_apps=5, db=db)
+    try:
+        from src.applier import run_applications
+        results = run_applications(automatable, dry_run=dry_run, max_apps=5, db=db)
+    except Exception as e:
+        print(f"  ⚠️ Phase 3 crashed (non-fatal): {e}")
+        results = []
 
     # Update DB with results
     for r in results:
