@@ -2,7 +2,9 @@ name: AI Job Agent — Daily Run
 
 on:
   schedule:
-    - cron: '0 16 * * *'
+    - cron: '0 16 * * *'    # 10:00 AM MT — main run
+    - cron: '0 20 * * *'    # 2:00 PM MT — second run (different companies)
+    - cron: '0 2 * * *'     # 8:00 PM MT — evening run (catch new postings)
   workflow_dispatch: {}
 
 defaults:

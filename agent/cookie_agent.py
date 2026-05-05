@@ -21,10 +21,10 @@ RATE_FILE = DATA_DIR / "rate_limits.json"
 
 # Rate limits to avoid restriction
 LIMITS = {
-    "indeed": {"max_applies_per_day": 5, "min_delay_seconds": 30, "max_delay_seconds": 120},
-    "greenhouse": {"max_applies_per_day": 10, "min_delay_seconds": 10, "max_delay_seconds": 30},
-    "dice": {"max_applies_per_day": 8, "min_delay_seconds": 15, "max_delay_seconds": 45},
-    "default": {"max_applies_per_day": 5, "min_delay_seconds": 20, "max_delay_seconds": 60},
+    "indeed": {"max_applies_per_day": 15, "min_delay_seconds": 20, "max_delay_seconds": 60},
+    "greenhouse": {"max_applies_per_day": 30, "min_delay_seconds": 5, "max_delay_seconds": 15},
+    "dice": {"max_applies_per_day": 15, "min_delay_seconds": 10, "max_delay_seconds": 30},
+    "default": {"max_applies_per_day": 15, "min_delay_seconds": 10, "max_delay_seconds": 30},
 }
 
 
