@@ -60,6 +60,17 @@ def run_filter(db, jobs):
         if not url or application_exists(db, url):
             continue
 
+        # Title filter — only apply to engineering/developer roles
+        title_lower = job.get("title", "").lower()
+        VALID_TITLES = ["engineer", "developer", "architect", "programmer", "sde", "swe"]
+        SKIP_TITLES = ["sales", "product manager", "designer", "marketing", "recruiter",
+                       "customer success", "account", "rvp", "vp,", "director,", "people",
+                       "data governance", "project manager"]
+        if any(s in title_lower for s in SKIP_TITLES):
+            continue
+        if not any(v in title_lower for v in VALID_TITLES):
+            continue
+
         ghost_score, _ = calculate_ghost_score(
             posted_days_ago=job.get("posted_days_ago", 0),
             applicant_count=job.get("applicant_count", 0),
