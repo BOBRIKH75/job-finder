@@ -25,6 +25,7 @@ jobs:
 
       - name: Install dependencies
         run: |
+          pip install --upgrade pip setuptools wheel
           pip install playwright playwright-recaptcha seleniumbase curl_cffi camoufox httpx resend pydantic beautifulsoup4 python-jobspy pandas pytest requests cloudscraper PyPasser cloakbrowser
           sudo apt-get install -y ffmpeg
           playwright install chromium --with-deps
