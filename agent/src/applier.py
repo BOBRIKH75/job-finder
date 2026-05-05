@@ -20,7 +20,21 @@ PROFILE_PATH = Path(__file__).parent.parent / "config" / "profile.json"
 RESUME_PATH = Path(__file__).parent.parent / "resume.pdf"
 SCREENSHOTS = Path(__file__).parent.parent / "screenshots"
 LEARNED_FILE = Path(__file__).parent.parent / "data" / "learned.json"
+INDEED_COOKIES_FILE = Path(__file__).parent.parent / "data" / "indeed_cookies.json"
 MAX_RETRIES = 1
+
+
+def load_indeed_cookies() -> list[dict]:
+    """Load Indeed session cookies (saved locally or from CI secret)."""
+    # From file (local)
+    if INDEED_COOKIES_FILE.exists():
+        return json.loads(INDEED_COOKIES_FILE.read_text())
+    # From env var (CI — base64 encoded)
+    encoded = os.environ.get("INDEED_COOKIES", "")
+    if encoded:
+        import base64
+        return json.loads(base64.b64decode(encoded))
+    return []
 
 # Maps label keywords → profile keys
 FIELD_MAP = {
@@ -707,6 +721,11 @@ def run_applications(jobs: list[dict], dry_run: bool = True, max_apps: int = 10,
     print(f"  🛡️ Stealth tools available: {', '.join(available)}")
 
     context = cloakbrowser.launch_context(headless=True)
+    # Inject Indeed cookies for authenticated apply
+    indeed_cookies = load_indeed_cookies()
+    if indeed_cookies:
+        context.add_cookies(indeed_cookies)
+        print(f"  🍪 Loaded {len(indeed_cookies)} Indeed cookies")
     page = context.new_page()
     applied = 0
 

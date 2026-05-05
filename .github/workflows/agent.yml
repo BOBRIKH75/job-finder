@@ -107,6 +107,7 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           OHMYCAPTCHA_URL: "http://localhost:8000"
           OHMYCAPTCHA_KEY: "job-agent"
+          INDEED_COOKIES: ${{ secrets.INDEED_COOKIES }}
 
       - name: Save agent memory
         if: always()
