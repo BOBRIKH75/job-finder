@@ -9,10 +9,10 @@ def test_lever_detected():
     assert r.can_automate is True
 
 
-def test_greenhouse_blocked():
+def test_greenhouse_automatable():
     r = detect_ats("https://boards.greenhouse.io/company/jobs/123")
     assert r.ats_type == "greenhouse"
-    assert r.can_automate is False
+    assert r.can_automate is True
 
 
 def test_workday_detected():

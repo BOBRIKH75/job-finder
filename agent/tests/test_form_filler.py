@@ -31,9 +31,9 @@ def test_can_automate_lever():
     assert "lever" in reason
 
 
-def test_cannot_automate_greenhouse():
+def test_can_automate_greenhouse():
     ok, reason = can_automate_url("https://boards.greenhouse.io/acme/jobs/123")
-    assert ok is False
+    assert ok is True
     assert "greenhouse" in reason
 
 
