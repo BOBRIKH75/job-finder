@@ -150,7 +150,7 @@ def run_apply(db, jobs, dry_run=False):
     automatable = diverse
     email_only = [j for j in jobs if not j.get("can_automate", False)]
 
-    print(f"  Phase 3: {len(automatable)} auto-apply ({'cloud-safe' if is_cloud else 'all'}), {len(email_only)} email-only")
+    print(f"  Phase 3: {len(automatable)} auto-apply (all), {len(email_only)} email-only")
 
     if not automatable:
         return []
