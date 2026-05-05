@@ -65,7 +65,10 @@ def run_filter(db, jobs):
         VALID_TITLES = ["engineer", "developer", "architect", "programmer", "sde", "swe",
                        "software", "java", "backend", "back-end", "back end", "full stack",
                        "fullstack", "devops", "platform", "infrastructure", "cloud",
-                       "spring", "microservice", "site reliability", "sre"]
+                       "spring", "microservice", "site reliability", "sre",
+                       "tech lead", "api developer", "integration engineer",
+                       "systems engineer", "application engineer", "automation engineer",
+                       "data engineer", "kafka", "kubernetes"]
         SKIP_TITLES = ["sales", "product manager", "designer", "marketing", "recruiter",
                        "customer success", "account", "rvp", "vp,", "director,", "people",
                        "data governance", "project manager"]
