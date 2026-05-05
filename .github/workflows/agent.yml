@@ -63,7 +63,7 @@ jobs:
             cp found_jobs.json agent/found_jobs.json
             echo "Copied from repo root"
           else
-            echo "Searching company career pages (skipping Indeed/LinkedIn)..."
+            echo "Searching ALL job boards..."
             pip install python-jobspy 2>/dev/null
             python3 << 'PYSCRIPT'
           import json
@@ -76,12 +76,10 @@ jobs:
                       url = str(r.get('job_url',''))
                       if not url:
                           continue
-                      if 'indeed.com' in url or 'linkedin.com' in url:
-                          company_url = str(r.get('company_url',''))
-                          if company_url and company_url != 'nan' and company_url.startswith('http'):
-                              url = company_url
-                          else:
-                              continue
+                      # Use company career page if available, otherwise keep original URL
+                      company_url = str(r.get('company_url',''))
+                      if company_url and company_url != 'nan' and company_url.startswith('http'):
+                          url = company_url
                       all_jobs.append({'title':str(r.get('title','')),'company':str(r.get('company','')),'url':url,'location':str(r.get('location','')),'description':str(r.get('description',''))[:1000],'source':str(r.get('site',''))})
                   print(f'  "{q[:40]}" -> {len(jobs)} results')
               except Exception as e:
