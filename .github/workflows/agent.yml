@@ -23,7 +23,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install playwright playwright-recaptcha seleniumbase curl_cffi camoufox httpx resend pydantic beautifulsoup4 python-jobspy pandas pytest requests cloudscraper PyPasser
+          pip install playwright playwright-recaptcha seleniumbase curl_cffi camoufox httpx resend pydantic beautifulsoup4 python-jobspy pandas pytest requests cloudscraper PyPasser cloakbrowser
           sudo apt-get install -y ffmpeg
           playwright install chromium --with-deps
           python -c "from camoufox.sync_api import Camoufox; print('camoufox OK')" || true

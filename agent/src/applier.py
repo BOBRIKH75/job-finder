@@ -13,6 +13,7 @@ Strategy:
 import json, os, re, time, random
 from pathlib import Path
 from playwright.sync_api import sync_playwright, TimeoutError as PwTimeout
+import cloakbrowser
 from src.stealth_toolkit import stealth_fetch, fetch_curl_cffi, list_available_tools, StealthResult
 
 PROFILE_PATH = Path(__file__).parent.parent / "config" / "profile.json"
@@ -429,6 +430,56 @@ def apply_to_job(page, profile, job, learned, dry_run=False, db=None) -> dict:
             page.wait_for_timeout(3000)  # let JS render forms
             wait(1, 2)
 
+            # --- Multi-step navigation: dismiss cookie/consent, find apply forms ---
+            # Dismiss cookie consent / popups before anything else
+            for dismiss_sel in [
+                'button:has-text("Accept")', 'button:has-text("Accept All")',
+                'button:has-text("I agree")', 'button:has-text("Got it")',
+                'button:has-text("OK")', 'button:has-text("Close")',
+                '[id*="cookie"] button', '[class*="cookie"] button',
+                '[id*="consent"] button', '[class*="consent"] button',
+            ]:
+                try:
+                    loc = page.locator(dismiss_sel).first
+                    if loc.is_visible(timeout=500):
+                        loc.click()
+                        wait(0.3, 0.6)
+                except Exception:
+                    pass
+
+            # If no form inputs visible, try clicking Apply/Submit buttons to reach the form
+            for nav_step in range(3):
+                input_count = page.locator('input:not([type="hidden"])').count()
+                textarea_count = page.locator('textarea').count()
+                if input_count + textarea_count >= 2:
+                    break  # We have a form
+                # Try clicking an Apply button
+                apply_clicked = False
+                for btn_text in ["Apply Now", "Apply", "Apply for this job", "Submit Application", "Start Application"]:
+                    try:
+                        btn = page.locator(f'a:has-text("{btn_text}"), button:has-text("{btn_text}")').first
+                        if btn.is_visible(timeout=1000):
+                            btn.click()
+                            page.wait_for_timeout(2000)
+                            apply_clicked = True
+                            break
+                    except Exception:
+                        continue
+                if not apply_clicked:
+                    # Check for iframe with form inputs
+                    for frame in page.frames:
+                        if frame == page.main_frame:
+                            continue
+                        try:
+                            if frame.locator('input:not([type="hidden"])').count() >= 2:
+                                page = frame  # Switch to iframe for form filling
+                                apply_clicked = True
+                                break
+                        except Exception:
+                            continue
+                if not apply_clicked:
+                    break  # Nothing more to try
+
             # Check if page exists
             if page.locator("text=/not found|404|expired|closed|no longer/i").count() > 0:
                 result["status"] = "job_closed"
@@ -656,11 +707,7 @@ def run_applications(jobs: list[dict], dry_run: bool = True, max_apps: int = 10,
     print(f"  🛡️ Stealth tools available: {', '.join(available)}")
 
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True, args=["--no-sandbox", "--disable-blink-features=AutomationControlled"])
-        context = browser.new_context(
-            viewport={"width": 1920, "height": 1080}, locale="en-US", timezone_id="America/Denver",
-            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36",
-        )
+        browser, context = cloakbrowser.launch_context(headless=True)
         page = context.new_page()
         applied = 0
 
