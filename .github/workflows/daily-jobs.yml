@@ -35,7 +35,10 @@ jobs:
           RESEND_KEY: ${{ secrets.RESEND_KEY }}
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
-        run: python find_jobs.py
+          HUNTER_API_KEY: ${{ secrets.HUNTER_API_KEY }}
+        run: |
+          python find_jobs.py
+          python linkedin_deep_search.py
 
       - name: Generate LinkedIn posts (Mon & Thu only)
         env:
