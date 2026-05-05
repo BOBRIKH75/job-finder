@@ -43,6 +43,7 @@
     "workday"
   ],
   "greenhouse": [
+    "540",
     "affirm",
     "auth0",
     "axon",
@@ -76,9 +77,13 @@
     "thoughtworks",
     "timescale",
     "twilio",
+    "twosixtechnologies",
     "vercel",
     "vonage",
     "webflow"
   ],
-  "discovered": []
+  "discovered": [
+    "greenhouse:540",
+    "greenhouse:twosixtechnologies"
+  ]
 }
