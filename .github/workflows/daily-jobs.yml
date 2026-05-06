@@ -28,6 +28,7 @@ jobs:
             contacted.json
             posted_topics.json
             found_jobs.json
+            apply_report.json
           key: job-data
 
       - name: Run job search + outreach
@@ -45,6 +46,30 @@ jobs:
           RESEND_KEY: ${{ secrets.RESEND_KEY }}
         run: python linkedin_posts.py
 
+      - name: Email manual apply links
+        if: always()
+        env:
+          RESEND_KEY: ${{ secrets.RESEND_KEY }}
+        run: |
+          python -c "
+          import json, os, subprocess, tempfile
+          from datetime import datetime
+          if not os.path.exists('apply_report.json'): exit(0)
+          report = json.load(open('apply_report.json'))
+          manual = report.get('not_applied_need_manual', [])
+          if not manual: exit(0)
+          rows = ''
+          for j in manual[:30]:
+              rows += f'<tr><td style=\"padding:6px 10px\"><b>{j[\"title\"]}</b><br><span style=\"color:#666\">{j[\"company\"]} | {j.get(\"location\",\"\")}</span></td><td style=\"padding:6px;text-align:center\"><a href=\"{j[\"url\"]}\" style=\"color:white;background:#e53935;padding:6px 12px;border-radius:4px;text-decoration:none;font-size:12px\">APPLY→</a></td></tr>'
+          emailed = len(report.get('applied_via_email', []))
+          html = f'<html><body style=\"font-family:Arial;max-width:700px;margin:0 auto\"><div style=\"background:#e53935;color:white;padding:15px;border-radius:8px 8px 0 0\"><h2 style=\"margin:0\">🎯 {len(manual)} Jobs Need YOUR Apply</h2><p style=\"margin:3px 0 0;opacity:0.9\">{datetime.now().strftime(\"%B %d %Y\")} | {emailed} already emailed to recruiters</p></div><div style=\"padding:10px;border:1px solid #ddd\"><table style=\"border-collapse:collapse;width:100%\" border=\"1\" bordercolor=\"#eee\"><tr style=\"background:#333;color:white\"><th style=\"padding:8px;text-align:left\">Job</th><th style=\"padding:8px;width:70px\">Action</th></tr>{rows}</table></div></body></html>'
+          payload = json.dumps({'from':'Job Agent <onboarding@resend.dev>','to':['bobrikh75@gmail.com'],'subject':f\"🎯 {len(manual)} Jobs — Apply Now (no recruiter found) — {datetime.now().strftime('%b %d')}\", 'html': html})
+          with tempfile.NamedTemporaryFile(mode='w',suffix='.json',delete=False) as f: f.write(payload); tmp=f.name
+          subprocess.run(['curl','-s','-X','POST','https://api.resend.com/emails','-H',f'Authorization: Bearer {os.environ[\"RESEND_KEY\"]}','-H','Content-Type: application/json','-d',f'@{tmp}'],capture_output=True,timeout=30)
+          os.unlink(tmp)
+          print(f'📧 Sent {len(manual)} manual-apply links to email')
+          "
+
       - name: Save cache
         if: always()
         uses: actions/cache/save@v4
@@ -55,6 +80,7 @@ jobs:
             contacted.json
             posted_topics.json
             found_jobs.json
+            apply_report.json
           key: job-data-${{ github.run_number }}
 
       - name: Commit found_jobs.json for ai-job-agent
