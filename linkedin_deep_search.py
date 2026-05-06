@@ -252,41 +252,48 @@ def verify_mx(domain: str) -> bool:
 
 
 def find_recruiter_snov(company: str) -> list[dict]:
-    """Find recruiter via Snov.io free tier (50 credits/month)."""
-    api_key = os.environ.get("SNOV_API_KEY", "")
-    if not api_key:
+    """Find recruiter via Snov.io (uses OAuth: user_id + secret → access_token)."""
+    user_id = os.environ.get("SNOV_USER_ID", "")
+    secret = os.environ.get("SNOV_API_SECRET", "")
+    if not user_id or not secret:
         return []
     try:
-        # Snov.io domain search
-        domain = _guess_domain(company)
-        url = f"https://api.snov.io/v1/get-domain-emails-count?domain={domain}"
-        req = urllib.request.Request(url, headers={
-            "Authorization": f"Bearer {api_key}",
-            "User-Agent": "Mozilla/5.0"
-        })
+        # Step 1: Get access token
         ctx = ssl.create_default_context()
         ctx.check_hostname = False
         ctx.verify_mode = ssl.CERT_NONE
+        token_data = json.dumps({"grant_type": "client_credentials", "client_id": user_id, "client_secret": secret}).encode()
+        req = urllib.request.Request("https://api.snov.io/v1/oauth/access_token", data=token_data,
+                                     headers={"Content-Type": "application/json"})
         with urllib.request.urlopen(req, timeout=10, context=ctx) as r:
-            data = json.loads(r.read())
-        # Get emails
-        if data.get("success"):
-            emails_url = f"https://api.snov.io/v1/get-domain-emails?domain={domain}&type=personal&limit=5"
-            req2 = urllib.request.Request(emails_url, headers={"Authorization": f"Bearer {api_key}"})
-            with urllib.request.urlopen(req2, timeout=10, context=ctx) as r2:
-                edata = json.loads(r2.read())
-            results = []
-            for e in edata.get("emails", []):
+            token = json.loads(r.read()).get("access_token", "")
+        if not token:
+            return []
+
+        # Step 2: Domain search for emails
+        domain = _guess_domain(company)
+        if not domain:
+            return []
+        search_data = json.dumps({"domain": domain, "type": "personal", "limit": 5}).encode()
+        req2 = urllib.request.Request("https://api.snov.io/v2/domain-emails-with-info",
+                                      data=search_data,
+                                      headers={"Content-Type": "application/json", "Authorization": f"Bearer {token}"})
+        with urllib.request.urlopen(req2, timeout=10, context=ctx) as r2:
+            edata = json.loads(r2.read())
+
+        results = []
+        for e in edata.get("emails", []):
+            email = e.get("email", "")
+            if email:
                 results.append({
-                    "email": e.get("email", ""),
+                    "email": email,
                     "name": f"{e.get('first_name', '')} {e.get('last_name', '')}".strip(),
                     "position": e.get("position", ""),
                     "source": "snov.io",
                 })
-            return results
+        return results
     except Exception:
-        pass
-    return []
+        return []
 
 
 def find_all_recruiters(company: str, description: str = "") -> list[dict]:

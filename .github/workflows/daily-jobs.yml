@@ -40,6 +40,9 @@ jobs:
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
           HUNTER_API_KEY: ${{ secrets.HUNTER_API_KEY }}
+          APOLLO_API_KEY: ${{ secrets.APOLLO_API_KEY }}
+          SNOV_USER_ID: ${{ secrets.SNOV_USER_ID }}
+          SNOV_API_SECRET: ${{ secrets.SNOV_API_SECRET }}
         run: |
           python find_jobs.py
           python linkedin_deep_search.py
