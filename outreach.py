@@ -14,7 +14,7 @@ from email import encoders
 CONTACTED_FILE = 'contacted.json'
 CV_URL = 'https://drive.google.com/drive/folders/1sJRyHCTC2Xend6VWn6hM07VufWQdw_qV?usp=sharing'
 APPOINTMENT_URL = 'https://calendar.google.com/calendar/u/0/appointments/AcZssZ22KPDPginBf34kMvb6wAFQUEHtG5sJ3PF_1k8='
-MAX_EMAILS_PER_RUN = 20
+MAX_EMAILS_PER_RUN = 50
 
 EMAIL = os.environ.get('GMAIL_USER', 'bobrikh75@gmail.com')
 GMAIL_APP_PASSWORD = os.environ.get('GMAIL_APP_PASSWORD', '')

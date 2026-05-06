@@ -214,7 +214,55 @@ def deep_search_and_find_recruiters(queries: list[str] = None) -> list[dict]:
     return unique
 
 
+def send_to_all_found_recruiters(results: list[dict]):
+    """Send CV outreach email to ALL found recruiters (not just posting-embedded ones)."""
+    from outreach import send_outreach, build_outreach_email, load_contacted, save_contacted, email_hash
+    from datetime import datetime
+
+    if not os.environ.get("GMAIL_APP_PASSWORD"):
+        print("  ⚠️  No GMAIL_APP_PASSWORD — skipping recruiter emails")
+        return 0
+
+    contacted = load_contacted()
+    sent = 0
+
+    for r in results:
+        email = r["recruiter_email"]
+        eh = email_hash(email)
+        if eh in contacted:
+            print(f"  ⏭️  Already contacted: {email}")
+            continue
+
+        subject, html = build_outreach_email(
+            r.get("recruiter_name", ""),
+            r["job_title"],
+            r["company"]
+        )
+        print(f"  📧 Sending to {email} ({r['company']})...")
+
+        if send_outreach(email, subject, html):
+            contacted[eh] = {
+                "email": email,
+                "date": datetime.now().isoformat(),
+                "job": r["job_title"],
+                "company": r["company"],
+                "url": r.get("job_url", ""),
+                "recruiter": r.get("recruiter_name", ""),
+                "source": r.get("recruiter_source", ""),
+            }
+            sent += 1
+            print(f"  ✅ Sent! ({sent} total)")
+
+    save_contacted(contacted)
+    print(f"\n📧 Deep Search Outreach: {sent} emails sent to new recruiters")
+    return sent
+
+
 if __name__ == "__main__":
     results = deep_search_and_find_recruiters()
-    for r in results[:10]:
+    for r in results[:15]:
         print(f"  {r['company']:20s} | {r['recruiter_email']:30s} | {r['recruiter_source']}")
+
+    # Auto-send CV to ALL found recruiters
+    sent = send_to_all_found_recruiters(results)
+    print(f"\n🎯 Total: {len(results)} found, {sent} emailed")
