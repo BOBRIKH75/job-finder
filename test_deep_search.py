@@ -255,3 +255,78 @@ class TestVerifyMx:
 if __name__ == "__main__":
     import pytest
     sys.exit(pytest.main([__file__, "-v", "--tb=short"]))
+
+
+# ══════════════════════════════════════════════════════════════
+# TESTS — API health check + graceful key expiry
+# ══════════════════════════════════════════════════════════════
+
+class TestApiHealthCheck:
+    @patch("urllib.request.urlopen")
+    def test_hunter_valid(self, mock_urlopen):
+        mock_resp = MagicMock()
+        mock_resp.read.return_value = json.dumps({"data": {"requests": {"searches": {"used": 5, "available": 25}}}}).encode()
+        mock_resp.__enter__ = lambda s: mock_resp
+        mock_resp.__exit__ = MagicMock(return_value=False)
+        mock_urlopen.return_value = mock_resp
+        original = lds.HUNTER_API_KEY
+        lds.HUNTER_API_KEY = "fake_key"
+        try:
+            status = lds.check_api_health()
+            assert "✅" in status["hunter"]
+            assert "20 remaining" in status["hunter"]
+        finally:
+            lds.HUNTER_API_KEY = original
+
+    def test_no_keys_configured(self):
+        # Remove all env vars
+        for k in ["HUNTER_API_KEY", "APOLLO_API_KEY", "SNOV_USER_ID", "SNOV_API_SECRET", "GMAIL_APP_PASSWORD"]:
+            os.environ.pop(k, None)
+        status = lds.check_api_health()
+        assert "⏭️" in status["hunter"]
+        assert "⏭️" in status["apollo"]
+        assert "⏭️" in status["snov"]
+        assert "⏭️" in status["gmail"]
+
+
+class TestGracefulKeyExpiry:
+    @patch("urllib.request.urlopen")
+    def test_hunter_expired_key_returns_empty(self, mock_urlopen):
+        os.environ["HUNTER_API_KEY"] = "expired_key"
+        mock_resp = MagicMock()
+        mock_resp.read.return_value = json.dumps({"errors": [{"details": "No user found for the API key supplied"}]}).encode()
+        mock_resp.__enter__ = lambda s: mock_resp
+        mock_resp.__exit__ = MagicMock(return_value=False)
+        mock_urlopen.return_value = mock_resp
+        try:
+            result = lds.find_recruiter_hunter("Acme Corp")
+            assert result == []  # graceful empty, no crash
+        finally:
+            del os.environ["HUNTER_API_KEY"]
+
+    @patch("urllib.request.urlopen")
+    def test_snov_expired_returns_empty(self, mock_urlopen):
+        os.environ["SNOV_USER_ID"] = "bad_id"
+        os.environ["SNOV_API_SECRET"] = "bad_secret"
+        mock_resp = MagicMock()
+        mock_resp.read.return_value = json.dumps({"error": "invalid_client"}).encode()
+        mock_resp.__enter__ = lambda s: mock_resp
+        mock_resp.__exit__ = MagicMock(return_value=False)
+        mock_urlopen.return_value = mock_resp
+        try:
+            result = lds.find_recruiter_snov("Acme Corp")
+            assert result == []  # graceful empty, no crash
+        finally:
+            del os.environ["SNOV_USER_ID"]
+            del os.environ["SNOV_API_SECRET"]
+
+    def test_pipeline_continues_when_all_apis_fail(self):
+        """Even if all APIs fail, pipeline should still work with free methods (Google, description)."""
+        with patch.object(lds, "find_recruiter_hunter", return_value=[]), \
+             patch.object(lds, "find_recruiter_snov", return_value=[]), \
+             patch.object(lds, "find_recruiters_linkedin_google", return_value=[{"email": "found@google.com", "name": "", "position": "recruiter", "source": "google"}]), \
+             patch.object(lds, "find_recruiter_google", return_value=[]):
+            contacts = lds.find_all_recruiters("SomeCompany", "")
+            # Should still find via LinkedIn/Google (free, no key needed)
+            assert len(contacts) == 1
+            assert contacts[0]["email"] == "found@google.com"

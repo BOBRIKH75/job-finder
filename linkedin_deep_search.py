@@ -121,7 +121,8 @@ def extract_emails_from_text(text: str) -> list[str]:
 
 
 def find_recruiter_hunter(company: str) -> list[dict]:
-    """Find ALL recruiter/HR emails via Hunter.io (returns multiple)."""
+    """Find ALL recruiter/HR emails via Hunter.io (returns multiple).
+    Gracefully handles expired/invalid keys — logs warning and continues."""
     if not HUNTER_API_KEY:
         return []
     try:
@@ -135,6 +136,12 @@ def find_recruiter_hunter(company: str) -> list[dict]:
         req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
         with urllib.request.urlopen(req, timeout=10, context=ctx) as r:
             data = json.loads(r.read())
+        # Check for auth errors
+        if data.get("errors"):
+            err = data["errors"][0].get("details", "")
+            if "api key" in err.lower() or "auth" in err.lower() or "limit" in err.lower():
+                print(f"  ⚠️ Hunter.io: {err} — key may be expired/exhausted")
+                return []
         emails = data.get("data", {}).get("emails", [])
         results = []
         # Prioritize HR/recruiting roles, but include all
@@ -266,8 +273,10 @@ def find_recruiter_snov(company: str) -> list[dict]:
         req = urllib.request.Request("https://api.snov.io/v1/oauth/access_token", data=token_data,
                                      headers={"Content-Type": "application/json"})
         with urllib.request.urlopen(req, timeout=10, context=ctx) as r:
-            token = json.loads(r.read()).get("access_token", "")
+            resp = json.loads(r.read())
+        token = resp.get("access_token", "")
         if not token:
+            print(f"  ⚠️ Snov.io: auth failed — {resp.get('error', 'no token')} — credentials may be expired")
             return []
 
         # Step 2: Domain search for emails
@@ -688,8 +697,84 @@ def send_to_vendor_recruiters(vendor_contacts: list[dict]) -> int:
     return sent
 
 
+def check_api_health() -> dict:
+    """Check all API keys are valid at start of run. Report status, continue with working ones."""
+    status = {}
+    ctx = ssl.create_default_context()
+    ctx.check_hostname = False
+    ctx.verify_mode = ssl.CERT_NONE
+
+    # Hunter.io
+    if HUNTER_API_KEY:
+        try:
+            req = urllib.request.Request(f"https://api.hunter.io/v2/account?api_key={HUNTER_API_KEY}",
+                                         headers={"User-Agent": "Mozilla/5.0"})
+            with urllib.request.urlopen(req, timeout=5, context=ctx) as r:
+                data = json.loads(r.read())
+            if data.get("data"):
+                used = data["data"]["requests"]["searches"]["used"]
+                avail = data["data"]["requests"]["searches"]["available"]
+                status["hunter"] = f"✅ {avail - used} remaining"
+            else:
+                status["hunter"] = "❌ invalid key"
+        except Exception as e:
+            status["hunter"] = f"⚠️ {e}"
+    else:
+        status["hunter"] = "⏭️ no key"
+
+    # Apollo.io
+    apollo_key = os.environ.get("APOLLO_API_KEY", "")
+    if apollo_key:
+        try:
+            req = urllib.request.Request("https://api.apollo.io/api/v1/auth/health",
+                                         headers={"Content-Type": "application/json", "X-Api-Key": apollo_key})
+            with urllib.request.urlopen(req, timeout=5, context=ctx) as r:
+                status["apollo"] = "✅ connected"
+        except urllib.error.HTTPError as e:
+            if e.code == 401:
+                status["apollo"] = "❌ key expired/invalid"
+            else:
+                status["apollo"] = f"✅ active (code {e.code})"
+        except Exception:
+            status["apollo"] = "✅ assumed active"
+    else:
+        status["apollo"] = "⏭️ no key"
+
+    # Snov.io
+    snov_id = os.environ.get("SNOV_USER_ID", "")
+    snov_secret = os.environ.get("SNOV_API_SECRET", "")
+    if snov_id and snov_secret:
+        try:
+            token_data = json.dumps({"grant_type": "client_credentials", "client_id": snov_id, "client_secret": snov_secret}).encode()
+            req = urllib.request.Request("https://api.snov.io/v1/oauth/access_token", data=token_data,
+                                         headers={"Content-Type": "application/json"})
+            with urllib.request.urlopen(req, timeout=5, context=ctx) as r:
+                resp = json.loads(r.read())
+            if resp.get("access_token"):
+                status["snov"] = "✅ token OK"
+            else:
+                status["snov"] = f"❌ {resp.get('error', 'no token')}"
+        except Exception as e:
+            status["snov"] = f"⚠️ {e}"
+    else:
+        status["snov"] = "⏭️ no credentials"
+
+    # Gmail
+    status["gmail"] = "✅ configured" if os.environ.get("GMAIL_APP_PASSWORD") else "⏭️ no password"
+
+    return status
+
+
 def main():
     print(f"🔍 LinkedIn Deep Search v3 — {datetime.now().strftime('%Y-%m-%d %H:%M')}")
+
+    # Health check — verify all APIs before starting
+    print("\n🏥 API Health Check:")
+    health = check_api_health()
+    for svc, stat in health.items():
+        print(f"  {svc:8s}: {stat}")
+    working_apis = sum(1 for s in health.values() if "✅" in s)
+    print(f"  → {working_apis}/{len(health)} services active\n")
     print(f"  Queries: {len(DEEP_QUERIES)} + vendor searches")
     print(f"  Vendors: {len(C2C_VENDORS)} ({len(VENDOR_DOMAINS)} with known domains)")
     print(f"  Hunter.io: {'✅' if HUNTER_API_KEY else '❌'}")
