@@ -17,7 +17,10 @@ jobs:
           python-version: '3.12'
 
       - name: Install dependencies
-        run: pip install python-jobspy dnspython
+        run: pip install python-jobspy dnspython pytest
+
+      - name: Run tests
+        run: python -m pytest test_deep_search.py -q
 
       - name: Restore cache
         uses: actions/cache/restore@v4
