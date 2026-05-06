@@ -38,6 +38,43 @@ DEEP_QUERIES = [
     "Java backend engineer contract 2026",
 ]
 
+# Known C2C vendors — search their postings specifically
+C2C_VENDORS = [
+    "Skiltrek", "Pyramid Consulting", "Collabera", "TEKsystems", "Mastech",
+    "RIT Solutions", "Amerit Consulting", "Han IT Staffing", "XL Impex",
+    "Atika Tech", "Randstad", "Robert Half", "Insight Global", "Kforce",
+    "Modis", "Multivision", "KAnand", "Vinsari", "QTech", "WorkNovas",
+    "Wipro", "Infosys", "TCS", "HCL", "Cognizant", "Mphasis",
+    "Hexaware", "Cyient", "Zensar", "Mindtree", "Apex Systems",
+    "Motion Recruitment", "Matlen Silver", "Aretum",
+]
+
+# Vendor domains (for direct email lookup)
+VENDOR_DOMAINS = {
+    "Skiltrek": "skiltrek.com",
+    "Pyramid Consulting": "pyramidci.com",
+    "Collabera": "collabera.com",
+    "TEKsystems": "teksystems.com",
+    "Mastech": "mastech.com",
+    "RIT Solutions": "ritsolutions.com",
+    "Amerit Consulting": "ameritconsulting.com",
+    "Insight Global": "insightglobal.com",
+    "Kforce": "kforce.com",
+    "Randstad": "randstad.com",
+    "Robert Half": "roberthalf.com",
+    "Apex Systems": "apexsystems.com",
+    "Motion Recruitment": "motionrecruitment.com",
+    "Matlen Silver": "matlensilver.com",
+    "KAnand": "kanandcorp.com",
+    "Multivision": "multivision-inc.com",
+    "Modis": "modis.com",
+    "HCL": "hcltech.com",
+    "Infosys": "infosys.com",
+    "Wipro": "wipro.com",
+    "Cognizant": "cognizant.com",
+    "TCS": "tcs.com",
+}
+
 
 def search_linkedin_jobs(query: str, limit: int = 25) -> list[dict]:
     """Search LinkedIn jobs via jobspy (no login, public listings)."""
@@ -446,14 +483,219 @@ def generate_apply_report(results: list[dict]) -> dict:
 # MAIN
 # ══════════════════════════════════════════════════════════════
 
+# Dynamic learning file — grows over time
+LEARNED_FILE = Path(__file__).parent / "learned.json"
+
+# Only learn keywords that are REAL tech/job skills (not random English)
+VALID_KEYWORD_PATTERNS = re.compile(
+    r'^(java|spring|kafka|kubernetes|docker|aws|azure|gcp|python|node|react|angular|'
+    r'graphql|mongodb|cassandra|redis|postgresql|mysql|oracle|elasticsearch|'
+    r'microservice|rest|api|devops|ci.?cd|jenkins|terraform|ansible|'
+    r'junit|mockito|maven|gradle|git|jira|agile|scrum|'
+    r'oauth|jwt|keycloak|openid|'
+    r'splunk|datadog|kibana|grafana|prometheus|'
+    r'rabbitmq|activemq|solr|lucene|'
+    r'hibernate|jpa|mybatis|'
+    r'lambda|s3|ec2|ecs|eks|fargate|dynamodb|sqs|sns|'
+    r'typescript|javascript|html|css|'
+    r'linux|unix|bash|shell|'
+    r'c2c|corp.to.corp|1099|w2|contract|remote|'
+    r'senior|lead|architect|principal|staff|'
+    r'full.?stack|back.?end|front.?end|'
+    r'\w+\.?js|\.net|c\#|golang|rust|scala|kotlin|'
+    r'spark|hadoop|airflow|databricks|snowflake|'
+    r'tableau|power.?bi|looker|'
+    r'figma|sketch|'
+    r'playwright|selenium|cypress|cucumber|'
+    r'docker.?compose|helm|istio|envoy|'
+    r'vault|consul|nomad|'
+    r'nginx|apache|tomcat|'
+    r'grpc|protobuf|thrift|'
+    r'websocket|sse|'
+    r'oauth2|saml|ldap|sso|'
+    r'ci/cd|github.?actions|gitlab.?ci|circle.?ci|'
+    r'sonar|veracode|checkmarx|fortify)',
+    re.IGNORECASE
+)
+
+VENDOR_SIGNALS = re.compile(
+    r'(consulting|staffing|solutions|technologies|tech|infotech|systems|'
+    r'corporation|corp|inc\b|llc\b|group|partners|global|services|'
+    r'recruitment|recruiting|talent)',
+    re.IGNORECASE
+)
+
+
+def load_learned() -> dict:
+    if LEARNED_FILE.exists():
+        try:
+            with open(LEARNED_FILE) as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return {"vendors": [], "keywords": [], "updated": ""}
+
+
+def save_learned(learned: dict):
+    learned["updated"] = datetime.now().isoformat()
+    with open(LEARNED_FILE, "w") as f:
+        json.dump(learned, f, indent=2)
+
+
+def discover_new_vendors(jobs: list[dict], known_vendors: set) -> set:
+    """Find new C2C staffing vendors from job postings."""
+    new = set()
+    known_lower = {v.lower() for v in known_vendors}
+    for job in jobs:
+        company = job.get("company", "")
+        if not company or len(company) < 3 or company.lower() in known_lower:
+            continue
+        desc = job.get("description", "").lower()
+        is_c2c = any(k in desc for k in ["c2c", "corp-to-corp", "corp to corp", "1099", "w2/c2c"])
+        is_vendor = bool(VENDOR_SIGNALS.search(company))
+        if is_c2c and is_vendor:
+            new.add(company.strip())
+    return new
+
+
+def discover_new_keywords(jobs: list[dict], known_skills: set) -> set:
+    """Find new RELEVANT tech keywords from C2C postings (not random English words)."""
+    keyword_counts = {}
+    for job in jobs:
+        desc = job.get("description", "").lower()
+        if not any(k in desc for k in ["c2c", "contract", "corp", "java"]):
+            continue
+        # Extract potential tech keywords
+        words = re.findall(r'\b[a-z][a-z0-9.#+/-]{2,20}\b', desc)
+        for w in words:
+            if w in known_skills or len(w) < 3:
+                continue
+            # Only keep if it matches known tech patterns
+            if VALID_KEYWORD_PATTERNS.match(w):
+                keyword_counts[w] = keyword_counts.get(w, 0) + 1
+    # Only keep keywords appearing in 2+ postings (real signal)
+    return {k for k, v in keyword_counts.items() if v >= 2}
+
+
+def search_vendor_jobs() -> list[dict]:
+    """Search for Java jobs posted BY known C2C vendors — these are real C2C positions."""
+    print("\n🏢 Searching jobs posted by C2C vendors...")
+    all_jobs = []
+    # Search in batches of 3 vendors
+    for i in range(0, len(C2C_VENDORS), 3):
+        batch = C2C_VENDORS[i:i+3]
+        query = f"Java ({' OR '.join(batch)}) contract"
+        jobs = search_linkedin_jobs(query, limit=15)
+        # Filter to only jobs FROM these vendors
+        vendor_jobs = [j for j in jobs if any(v.lower() in j["company"].lower() for v in batch)]
+        all_jobs.extend(vendor_jobs)
+        if vendor_jobs:
+            print(f"  ✅ {', '.join(batch)}: {len(vendor_jobs)} jobs")
+    print(f"  📊 {len(all_jobs)} vendor jobs found")
+    return all_jobs
+
+
+def find_vendor_recruiters() -> list[dict]:
+    """Directly find recruiters at known C2C vendors using their domains."""
+    print("\n🎯 Finding recruiters at C2C vendors (direct domain lookup)...")
+    results = []
+    contacted = load_contacted()
+    contacted_emails = set(v.get("email", "") for v in contacted.values())
+
+    for vendor, domain in VENDOR_DOMAINS.items():
+        # Use Hunter.io with known domain (no guessing needed)
+        if not HUNTER_API_KEY:
+            break
+        try:
+            url = f"https://api.hunter.io/v2/domain-search?domain={domain}&type=personal&limit=5&api_key={HUNTER_API_KEY}"
+            ctx = ssl.create_default_context()
+            ctx.check_hostname = False
+            ctx.verify_mode = ssl.CERT_NONE
+            req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+            with urllib.request.urlopen(req, timeout=10, context=ctx) as r:
+                data = json.loads(r.read())
+            emails = data.get("data", {}).get("emails", [])
+            hr_keywords = ["recruit", "talent", "hr", "people", "hiring", "staffing", "account manager"]
+            for e in emails:
+                email = e.get("value", "")
+                if email in contacted_emails:
+                    continue
+                position = (e.get("position") or "").lower()
+                dept = (e.get("department") or "").lower()
+                if any(k in position + dept for k in hr_keywords):
+                    results.append({
+                        "email": email,
+                        "name": f"{e.get('first_name', '')} {e.get('last_name', '')}".strip(),
+                        "company": vendor,
+                        "position": e.get("position", ""),
+                        "source": "vendor_direct",
+                    })
+            if results:
+                latest = [r for r in results if r["company"] == vendor]
+                if latest:
+                    print(f"  ✅ {vendor}: {len(latest)} recruiters")
+        except Exception:
+            continue
+
+    print(f"  📊 {len(results)} vendor recruiters found")
+    return results
+
+
+def send_to_vendor_recruiters(vendor_contacts: list[dict]) -> int:
+    """Send CV directly to vendor recruiters — they're actively looking for candidates."""
+    from outreach import send_outreach, build_outreach_email
+
+    if not os.environ.get("GMAIL_APP_PASSWORD"):
+        return 0
+
+    contacted = load_contacted()
+    sent = 0
+
+    for contact in vendor_contacts:
+        eh = email_hash(contact["email"])
+        if eh in contacted:
+            continue
+
+        # Custom subject for vendor outreach
+        subject = f"Java Backend Developer — C2C Available — Bob Rikh"
+        from outreach import build_outreach_email
+        _, html = build_outreach_email(
+            contact.get("name", ""),
+            "Java Backend Developer (C2C)",
+            contact["company"]
+        )
+        print(f"  📧 → {contact['email']} ({contact['company']} | {contact.get('position', 'recruiter')})")
+
+        if send_outreach(contact["email"], subject, html):
+            contacted[eh] = {
+                "email": contact["email"],
+                "date": datetime.now().isoformat(),
+                "job": "Vendor outreach",
+                "company": contact["company"],
+                "recruiter": contact.get("name", ""),
+                "source": "vendor_direct",
+            }
+            sent += 1
+
+    save_contacted(contacted)
+    return sent
+
+
 def main():
-    print(f"🔍 LinkedIn Deep Search v2 — {datetime.now().strftime('%Y-%m-%d %H:%M')}")
-    print(f"  Queries: {len(DEEP_QUERIES)}")
+    print(f"🔍 LinkedIn Deep Search v3 — {datetime.now().strftime('%Y-%m-%d %H:%M')}")
+    print(f"  Queries: {len(DEEP_QUERIES)} + vendor searches")
+    print(f"  Vendors: {len(C2C_VENDORS)} ({len(VENDOR_DOMAINS)} with known domains)")
     print(f"  Hunter.io: {'✅' if HUNTER_API_KEY else '❌'}")
     print(f"  Gmail: {'✅' if os.environ.get('GMAIL_APP_PASSWORD') else '❌'}")
+
+    # Load dynamic learning
+    learned = load_learned()
+    all_vendors = set(C2C_VENDORS) | set(learned.get("vendors", []))
+    print(f"  Learned vendors: {len(learned.get('vendors', []))}")
+    print(f"  Learned keywords: {len(learned.get('keywords', []))}")
     print()
 
-    # Phase 1: Deep search
+    # Phase 1a: Deep search with standard queries
     all_jobs = []
     seen_urls = set()
     for q in DEEP_QUERIES:
@@ -465,6 +707,13 @@ def main():
         if jobs:
             print(f"  ✅ '{q[:45]}' → {len(jobs)} ({len(new)} new)")
 
+    # Phase 1b: Search jobs posted BY vendors specifically
+    vendor_jobs = search_vendor_jobs()
+    for j in vendor_jobs:
+        if j["url"] not in seen_urls:
+            seen_urls.add(j["url"])
+            all_jobs.append(j)
+
     # Deduplicate by company+title
     dedup = {}
     for j in all_jobs:
@@ -474,8 +723,28 @@ def main():
     all_jobs = list(dedup.values())
     print(f"\n📊 {len(all_jobs)} unique jobs found")
 
-    # Phase 2: Find recruiters for each job
-    print("\n🔎 Finding recruiters/HR contacts...")
+    # Phase 1c: Dynamic learning — discover new vendors + keywords
+    new_vendors = discover_new_vendors(all_jobs, all_vendors)
+    known_skills = {'java', 'spring', 'kafka', 'kubernetes', 'docker', 'aws', 'microservices',
+                    'mongodb', 'cassandra', 'redis', 'graphql', 'rest', 'maven', 'junit'}
+    new_keywords = discover_new_keywords(all_jobs, known_skills | set(learned.get("keywords", [])))
+    if new_vendors:
+        learned.setdefault("vendors", []).extend(sorted(new_vendors))
+        learned["vendors"] = sorted(set(learned["vendors"]))
+        print(f"  🧠 Learned {len(new_vendors)} new vendors: {', '.join(list(new_vendors)[:5])}")
+    if new_keywords:
+        learned.setdefault("keywords", []).extend(sorted(new_keywords))
+        learned["keywords"] = sorted(set(learned["keywords"]))
+        print(f"  🧠 Learned {len(new_keywords)} new keywords: {', '.join(list(new_keywords)[:8])}")
+    save_learned(learned)
+
+    # Phase 2a: Find recruiters at VENDORS directly (highest value)
+    vendor_contacts = find_vendor_recruiters()
+    vendor_sent = send_to_vendor_recruiters(vendor_contacts)
+    print(f"  📧 {vendor_sent} vendor recruiter emails sent")
+
+    # Phase 2b: Find recruiters for each job
+    print("\n🔎 Finding recruiters/HR contacts for jobs...")
     results = []
     contacted = load_contacted()
     contacted_emails = set(v.get("email", "") for v in contacted.values())
@@ -486,7 +755,6 @@ def main():
             continue
 
         contacts = find_all_recruiters(company, job.get("description", ""))
-        # Filter already contacted
         new_contacts = [c for c in contacts if c["email"] not in contacted_emails]
 
         is_c2c = any(k in job.get("description", "").lower()
@@ -513,7 +781,7 @@ def main():
     # Phase 3: Send CV to ALL found recruiters
     print("\n📧 Sending CV to all found recruiters...")
     sent = send_to_all_recruiters(results)
-    print(f"✅ {sent} emails sent")
+    print(f"✅ {sent} emails sent (+ {vendor_sent} vendor direct)")
 
     # Mark how many emails sent per job
     contacted_after = load_contacted()
@@ -532,14 +800,15 @@ def main():
     print(f"  ✅ Emailed recruiters: {report['summary']['emailed_recruiters']} jobs")
     print(f"  🔗 Need manual apply: {report['summary']['need_manual_apply']} jobs")
 
-    # Print manual apply links
     if report["not_applied_need_manual"]:
         print("\n🔗 APPLY MANUALLY (no recruiter found):")
-        for j in report["not_applied_need_manual"][:20]:
+        for j in report["not_applied_need_manual"][:15]:
             print(f"  → {j['title']} @ {j['company']}")
             print(f"    {j['url']}")
 
-    print(f"\n🎯 DONE: {len(results)} jobs | {sent} emailed | {added} queued for auto-apply")
+    total_sent = sent + vendor_sent
+    print(f"\n🎯 DONE: {len(results)} jobs | {total_sent} emailed | {added} queued for auto-apply")
+    print(f"🧠 LEARNED: {len(learned.get('vendors',[]))} vendors | {len(learned.get('keywords',[]))} keywords")
 
 
 if __name__ == "__main__":
