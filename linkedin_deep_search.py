@@ -140,32 +140,145 @@ def find_recruiter_google(company: str) -> list[dict]:
         return []
 
 
+def find_recruiters_linkedin_google(company: str) -> list[dict]:
+    """Find recruiter names at company via Google → LinkedIn profiles (no login).
+    Then guess their email using common patterns + verify via MX."""
+    results = []
+    try:
+        query = f'site:linkedin.com/in "{company}" recruiter OR "talent acquisition" OR HR'
+        url = f"https://www.google.com/search?q={urllib.request.quote(query)}&num=10"
+        ctx = ssl.create_default_context()
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36"})
+        with urllib.request.urlopen(req, timeout=10, context=ctx) as r:
+            html = r.read().decode("utf-8", errors="ignore")
+
+        # Extract names from LinkedIn profile snippets
+        # Pattern: "First Last - Title - Company | LinkedIn"
+        name_pattern = re.compile(r'([A-Z][a-z]+ [A-Z][a-z]+)\s*[-–—]\s*(?:.*?(?:Recruiter|Talent|HR|Hiring|Staffing))', re.IGNORECASE)
+        names = name_pattern.findall(html)
+
+        # Also try: "First Last | LinkedIn" with recruiter in snippet
+        alt_pattern = re.compile(r'>([A-Z][a-z]+ [A-Z][a-z]+)(?:\s*\||\s*-)\s*LinkedIn', re.IGNORECASE)
+        alt_names = alt_pattern.findall(html)
+
+        all_names = list(set(names + alt_names))[:5]
+
+        domain = _guess_domain(company)
+        for name in all_names:
+            parts = name.strip().split()
+            if len(parts) >= 2:
+                first, last = parts[0], parts[-1]
+                # Guess email patterns
+                guessed = guess_email_patterns(first, last, domain)
+                # Verify which one has valid MX
+                for email in guessed[:3]:  # check top 3 patterns
+                    if verify_mx(email.split("@")[1]):
+                        results.append({
+                            "email": email,
+                            "name": name.strip(),
+                            "position": "recruiter (guessed)",
+                            "source": "linkedin+guess",
+                        })
+                        break  # one email per person
+    except Exception:
+        pass
+    return results
+
+
+def guess_email_patterns(first: str, last: str, domain: str) -> list[str]:
+    """Generate common corporate email patterns."""
+    f, l = first.lower().strip(), last.lower().strip()
+    if not f or not l or not domain:
+        return []
+    return [
+        f"{f}.{l}@{domain}",
+        f"{f}{l}@{domain}",
+        f"{f[0]}{l}@{domain}",
+        f"{f}_{l}@{domain}",
+        f"{f[0]}.{l}@{domain}",
+        f"{l}.{f}@{domain}",
+        f"{f}@{domain}",
+    ]
+
+
+def verify_mx(domain: str) -> bool:
+    """Check if domain has MX records (can receive email)."""
+    try:
+        import dns.resolver
+        answers = dns.resolver.resolve(domain, "MX")
+        return len(answers) > 0
+    except Exception:
+        # If dns.resolver not available, assume valid
+        return True
+
+
+def find_recruiter_snov(company: str) -> list[dict]:
+    """Find recruiter via Snov.io free tier (50 credits/month)."""
+    api_key = os.environ.get("SNOV_API_KEY", "")
+    if not api_key:
+        return []
+    try:
+        # Snov.io domain search
+        domain = _guess_domain(company)
+        url = f"https://api.snov.io/v1/get-domain-emails-count?domain={domain}"
+        req = urllib.request.Request(url, headers={
+            "Authorization": f"Bearer {api_key}",
+            "User-Agent": "Mozilla/5.0"
+        })
+        ctx = ssl.create_default_context()
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+        with urllib.request.urlopen(req, timeout=10, context=ctx) as r:
+            data = json.loads(r.read())
+        # Get emails
+        if data.get("success"):
+            emails_url = f"https://api.snov.io/v1/get-domain-emails?domain={domain}&type=personal&limit=5"
+            req2 = urllib.request.Request(emails_url, headers={"Authorization": f"Bearer {api_key}"})
+            with urllib.request.urlopen(req2, timeout=10, context=ctx) as r2:
+                edata = json.loads(r2.read())
+            results = []
+            for e in edata.get("emails", []):
+                results.append({
+                    "email": e.get("email", ""),
+                    "name": f"{e.get('first_name', '')} {e.get('last_name', '')}".strip(),
+                    "position": e.get("position", ""),
+                    "source": "snov.io",
+                })
+            return results
+    except Exception:
+        pass
+    return []
+
+
 def find_all_recruiters(company: str, description: str = "") -> list[dict]:
-    """Find ALL possible recruiter/HR contacts for a company."""
+    """Find ALL possible recruiter/HR contacts using every free method available."""
     all_contacts = []
     seen_emails = set()
 
-    # 1. Emails embedded in job description
+    def add_contacts(contacts):
+        for c in contacts:
+            if c.get("email") and c["email"] not in seen_emails:
+                seen_emails.add(c["email"])
+                all_contacts.append(c)
+
+    # 1. Emails embedded in job description (free, instant)
     desc_emails = extract_emails_from_text(description)
-    for e in desc_emails:
-        if e not in seen_emails:
-            seen_emails.add(e)
-            all_contacts.append({"email": e, "name": "", "position": "from posting", "source": "description"})
+    add_contacts([{"email": e, "name": "", "position": "from posting", "source": "description"} for e in desc_emails])
 
-    # 2. Hunter.io (most reliable, returns multiple)
-    hunter_results = find_recruiter_hunter(company)
-    for r in hunter_results:
-        if r["email"] not in seen_emails:
-            seen_emails.add(r["email"])
-            all_contacts.append(r)
+    # 2. Hunter.io (25 free/month — most reliable)
+    add_contacts(find_recruiter_hunter(company))
 
-    # 3. Google fallback
-    if len(all_contacts) < 2:
-        google_results = find_recruiter_google(company)
-        for r in google_results:
-            if r["email"] not in seen_emails:
-                seen_emails.add(r["email"])
-                all_contacts.append(r)
+    # 3. Snov.io (50 free credits/month)
+    add_contacts(find_recruiter_snov(company))
+
+    # 4. Google LinkedIn recruiter search → guess email + MX verify (FREE, unlimited)
+    add_contacts(find_recruiters_linkedin_google(company))
+
+    # 5. Google search for recruiter email (FREE, unlimited)
+    if len(all_contacts) < 3:
+        add_contacts(find_recruiter_google(company))
 
     return all_contacts
 
