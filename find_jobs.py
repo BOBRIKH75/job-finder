@@ -52,6 +52,9 @@ VENDOR_SIGNALS = re.compile(
 GOOGLE_GROUPS = [
     'c2chotlist-requirement-posting', 'only-c2c-req',
     'c2c-w2--requirements', 'C2C-Corp2Corp-Jobs', 'job-bank',
+    'corp-2-corp', 'corp-to-corp-connection', 'c2c-requirements-usa',
+    'c2c-corp-to-corp-remote-jobs', 'c2c-vendor-requirements',
+    'hotlistreqs', 'javamug-jobs',
 ]
 
 # ── Fake job signals ──
