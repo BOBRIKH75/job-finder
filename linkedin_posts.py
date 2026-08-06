@@ -227,7 +227,9 @@ def generate_posts():
 
     # Post 1: Technical insight or tip
     idea = available_ideas[0]
-    template = random.choice([t for t in TEMPLATES if t['type'] in ('insight', 'tip')])
+    # 'tip' template requires 'count' and 'numbered_list' — only pick it if idea has those keys
+    allowed_types = ('insight', 'tip') if 'count' in idea else ('insight',)
+    template = random.choice([t for t in TEMPLATES if t['type'] in allowed_types])
     post1 = template['template'].format(
         **idea,
         company=MY_CONTEXT['company'],

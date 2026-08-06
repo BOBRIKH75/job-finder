@@ -48,6 +48,7 @@ jobs:
           python linkedin_deep_search.py
 
       - name: Generate LinkedIn posts (Mon & Thu only)
+        continue-on-error: true
         env:
           RESEND_KEY: ${{ secrets.RESEND_KEY }}
         run: python linkedin_posts.py

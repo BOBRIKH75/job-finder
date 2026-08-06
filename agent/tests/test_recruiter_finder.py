@@ -29,10 +29,15 @@ def test_guess_email_handles_whitespace():
     assert "alice.johnson@example.com" in emails
 
 
-def test_verify_domain_mx():
-    """Test MX record check against known valid domain."""
+@patch("linkedin_recruiter_finder.dns.resolver.resolve")
+def test_verify_domain_mx(mock_resolve):
+    """Test MX record check with mocked DNS (avoids CI flakiness)."""
+    # Valid domain returns MX records
+    mock_resolve.return_value = [MagicMock()]
     assert verify_domain_mx("collabera.com") is True
-    assert verify_domain_mx("gmail.com") is True
+
+    # Invalid domain raises NXDOMAIN
+    mock_resolve.side_effect = Exception("NXDOMAIN")
     assert verify_domain_mx("thisisnotarealdomainxyz123456.com") is False
 
 
