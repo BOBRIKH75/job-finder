@@ -6,6 +6,9 @@ on:
     - cron: '0 14 * * 1,4'  # 8:00 AM Colorado Mon & Thu — LinkedIn posts
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   find-jobs:
     runs-on: ubuntu-latest
