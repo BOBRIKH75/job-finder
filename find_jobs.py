@@ -55,6 +55,8 @@ GOOGLE_GROUPS = [
     'corp-2-corp', 'corp-to-corp-connection', 'c2c-requirements-usa',
     'c2c-corp-to-corp-remote-jobs', 'c2c-vendor-requirements',
     'hotlistreqs', 'javamug-jobs',
+    'vendor-list-benchsales', 'corp2c-requriments',
+    'pdusrecruiter', 'c2c-with-nexera-solutions',
 ]
 
 # ── Fake job signals ──
