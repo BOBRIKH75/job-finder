@@ -1,0 +1,22 @@
+{
+  "vendors": [
+    {"name": "INSPYR Solutions", "email": "info@inspyrsolutions.com", "source": "manual"},
+    {"name": "TalentBurst", "email": "info@talentburst.com", "source": "manual"},
+    {"name": "Stefanini", "email": "careers@stefanini.com", "source": "manual"},
+    {"name": "NNIT Soft Tech", "email": "info@nnitsoft.com", "source": "manual"},
+    {"name": "Dexian", "email": "info@dexian.com", "source": "manual"},
+    {"name": "Tier2Tek", "email": "careers@tier2tek.com", "source": "manual"},
+    {"name": "Motion Recruitment", "email": "recruiting@motionrecruitment.com", "source": "manual"},
+    {"name": "Collabera", "email": "careers@collabera.com", "source": "manual"},
+    {"name": "Pyramid Consulting", "email": "info@pyramidci.com", "source": "manual"},
+    {"name": "Mastech Digital", "email": "careers@mastechdigital.com", "source": "manual"},
+    {"name": "Skiltrek", "email": "info@skiltrek.com", "source": "manual"},
+    {"name": "RIT Solutions", "email": "info@ritsolutions.com", "source": "manual"},
+    {"name": "ConsultAdd", "email": "careers@consultadd.com", "source": "manual"}
+  ],
+  "auto_discover": true,
+  "discover_sources": ["techfetch", "nvoids", "google_groups"],
+  "ttl_days": 30,
+  "max_emails_per_run": 15,
+  "notes": "This list grows automatically. When the daily job scraper finds new vendor names/emails from TechFetch, NVoids, or Google Groups, they get added here. The monthly outreach workflow reads this file."
+}

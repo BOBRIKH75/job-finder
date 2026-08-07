@@ -461,6 +461,41 @@ def main():
         print(f'🧠 Learned {len(new_keywords)} new keywords: {", ".join(list(new_keywords)[:10])}')
     save_learned(learned)
 
+    # ── Sync discovered vendors to vendor_list.json for monthly outreach ──
+    try:
+        vendor_file = Path('data/vendor_list.json')
+        vendor_file.parent.mkdir(exist_ok=True)
+        vendor_data = {}
+        if vendor_file.exists():
+            with open(vendor_file) as f:
+                vendor_data = json.load(f)
+        existing_emails = {v['email'] for v in vendor_data.get('vendors', [])}
+        
+        # Add newly discovered vendors with guessed emails
+        added = 0
+        for vendor_name in learned.get('vendors', set()):
+            # Construct domain from vendor name
+            domain = vendor_name.lower().replace(' ', '').replace(',', '').replace('.', '').replace('inc', '').replace('llc', '').replace('corp', '').strip()
+            if len(domain) < 3:
+                continue
+            guessed_email = f"info@{domain}.com"
+            if guessed_email not in existing_emails:
+                vendor_data.setdefault('vendors', []).append({
+                    'name': vendor_name,
+                    'email': guessed_email,
+                    'source': 'auto_discovered',
+                    'discovered': datetime.now().isoformat(),
+                })
+                existing_emails.add(guessed_email)
+                added += 1
+        
+        if added > 0:
+            with open(vendor_file, 'w') as f:
+                json.dump(vendor_data, f, indent=2)
+            print(f'🧠 Added {added} new vendors to outreach list (total: {len(vendor_data["vendors"])})')
+    except Exception as e:
+        print(f'⚠️ Vendor sync error: {e}')
+
     # ── Score + filter ──
     results = []
     seen_dedup = set()
