@@ -1,0 +1,64 @@
+name: "Send Resume to Vendors"
+
+on:
+  workflow_dispatch:
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send emails to vendors
+        env:
+          RESEND_KEY: ${{ secrets.RESEND_KEY }}
+        run: |
+          VENDORS=(
+            "info@inspyrsolutions.com"
+            "info@talentburst.com"
+            "careers@stefanini.com"
+            "info@nnitsoft.com"
+            "info@dexian.com"
+            "careers@tier2tek.com"
+            "recruiting@motionrecruitment.com"
+          )
+          
+          SUBJECT="Java Backend Developer Available for C2C Contract — 10+ Years Experience"
+          BODY="<html><body style='font-family:Arial;max-width:600px'>
+          <h2>Senior Java Back-End Developer — Available for C2C Contract</h2>
+          <p>Hi,</p>
+          <p>I am a Senior Java Back-End Developer with 10+ years of experience, available immediately for Corp-to-Corp (C2C) contract opportunities.</p>
+          <h3>Core Skills</h3>
+          <p>Java 17, Spring Boot, Microservices, Apache Kafka, Kubernetes, Docker, AWS, MongoDB, Cassandra, PostgreSQL, Redis, GraphQL, REST APIs, JUnit 5, Maven, Git, CI/CD, Splunk, DataDog</p>
+          <h3>Details</h3>
+          <ul>
+          <li><b>Work Authorization:</b> Green Card Holder — No Sponsorship Required</li>
+          <li><b>Location:</b> Parker, CO (Open to 100% Remote)</li>
+          <li><b>Rate:</b> \$70-95/hr C2C</li>
+          <li><b>Availability:</b> Immediate</li>
+          <li><b>Experience:</b> 10+ years Java/Spring Boot enterprise development</li>
+          </ul>
+          <h3>Contact</h3>
+          <ul>
+          <li><b>Name:</b> Bob Rikh</li>
+          <li><b>Email:</b> bobrikh75@gmail.com</li>
+          <li><b>Phone:</b> 347-268-5917</li>
+          <li><b>LinkedIn:</b> <a href='https://www.linkedin.com/in/bobrikh75/'>linkedin.com/in/bobrikh75</a></li>
+          <li><b>Resume:</b> <a href='https://drive.google.com/drive/folders/1sJRyHCTC2Xend6VWn6hM07VufWQdw_qV'>Download from Google Drive</a></li>
+          </ul>
+          <p>Please add me to your candidate database for Java/Spring Boot contract roles. I am happy to discuss any matching opportunities.</p>
+          <p>Best regards,<br>Bob Rikh</p>
+          </body></html>"
+          
+          for email in "${VENDORS[@]}"; do
+            echo "Sending to: $email"
+            curl -s -X POST "https://api.resend.com/emails" \
+              -H "Authorization: Bearer $RESEND_KEY" \
+              -H "Content-Type: application/json" \
+              -d "{
+                \"from\": \"Bob Rikh <onboarding@resend.dev>\",
+                \"to\": [\"$email\"],
+                \"subject\": \"$SUBJECT\",
+                \"html\": \"$BODY\"
+              }" && echo " ✅" || echo " ❌"
+            sleep 2
+          done
+          echo "Done! Sent to ${#VENDORS[@]} vendors"

@@ -1,0 +1,33 @@
+{
+  "core_skills": [
+    "Java", "Spring Boot", "Spring Cloud", "Spring MVC", "Microservices",
+    "Kafka", "Kubernetes", "Docker", "AWS", "GraphQL", "REST APIs",
+    "MongoDB", "Cassandra", "PostgreSQL", "Redis", "Maven", "Git",
+    "JUnit 5", "Mockito", "CI/CD", "Splunk", "DataDog", "Agile"
+  ],
+  "search_terms": {
+    "indeed": [
+      "Java Spring Boot contract remote",
+      "Java developer contract C2C remote",
+      "Java microservices Kafka contract",
+      "Spring Boot backend developer contract",
+      "Java AWS Kubernetes contract remote",
+      "Senior Java developer remote contract",
+      "Java backend engineer C2C"
+    ],
+    "dice": [
+      "Java Spring Boot contract",
+      "Java developer contract remote",
+      "Java microservices Kafka contract",
+      "Spring Boot backend contract",
+      "Java AWS Kubernetes contract",
+      "Senior Java engineer contract remote",
+      "Java C2C corp-to-corp"
+    ]
+  },
+  "job_type": "contract",
+  "work_auth": "no_sponsorship",
+  "location": "Remote",
+  "rate_range": "$70-95/hr",
+  "minimum_match_percent": 15
+}
