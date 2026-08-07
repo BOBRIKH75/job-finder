@@ -213,8 +213,44 @@ def search_c2c_sites():
                     'site': 'c2c_search', 'description': '',
                 })
         except: pass
+    # Direct TechFetch C2C scraping
+    try:
+        url = 'https://www.techfetch.com/it-jobs/corp-corp-requirements.html'
+        req = urllib.request.Request(url, headers=headers)
+        with urllib.request.urlopen(req, timeout=20, context=ctx) as r:
+            html = r.read().decode('utf-8', errors='ignore')
+        tf_links = re.findall(r'https?://www\.techfetch\.com/job-description/[^"&\s<>]+', html)
+        for link in set(tf_links):
+            if any(kw in link.lower() for kw in ['java', 'spring', 'full-stack', 'backend', 'microservice']):
+                results.append({
+                    'title': 'TechFetch C2C Java Role', 'company': 'C2C Vendor',
+                    'location': 'USA (C2C)', 'job_url': link,
+                    'site': 'techfetch_c2c', 'description': '',
+                })
+        print(f'  ✅ TechFetch C2C → {len(tf_links)} total, {sum(1 for r in results if r["site"]=="techfetch_c2c")} Java')
+    except Exception as e:
+        print(f'  ⚠️ TechFetch error: {e}')
+
+    # Direct Motion Recruitment contract Java scraping
+    try:
+        url = 'https://motionrecruitment.com/tech-jobs/contract?specialties=java'
+        req = urllib.request.Request(url, headers=headers)
+        with urllib.request.urlopen(req, timeout=20, context=ctx) as r:
+            html = r.read().decode('utf-8', errors='ignore')
+        mr_links = re.findall(r'https?://motionrecruitment\.com/tech-jobs/[^"&\s<>]+', html)
+        for link in set(mr_links):
+            if link != url and 'contract' not in link.split('/')[-1]:
+                results.append({
+                    'title': 'Motion Recruitment Java Contract', 'company': 'Motion Recruitment',
+                    'location': 'USA', 'job_url': link,
+                    'site': 'motion_recruitment', 'description': '',
+                })
+        print(f'  ✅ Motion Recruitment → {sum(1 for r in results if r["site"]=="motion_recruitment")} Java contracts')
+    except Exception as e:
+        print(f'  ⚠️ Motion Recruitment error: {e}')
+
     if results:
-        print(f'  ✅ C2C site search → {len(results)} links')
+        print(f'  ✅ C2C site search → {len(results)} total links')
     return results
 
 # ══════════════════════════════════════════════════════════════
