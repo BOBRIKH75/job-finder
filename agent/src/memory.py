@@ -6,9 +6,12 @@ SCHEMA_PATH = Path(__file__).parent.parent / "data" / "schema.sql"
 
 
 def get_db(db_path: str = "data/agent_memory.db") -> sqlite3.Connection:
-    full = Path(__file__).parent.parent / db_path
-    full.parent.mkdir(parents=True, exist_ok=True)
-    db = sqlite3.connect(str(full))
+    if db_path == ":memory:":
+        db = sqlite3.connect(":memory:")
+    else:
+        full = Path(__file__).parent.parent / db_path
+        full.parent.mkdir(parents=True, exist_ok=True)
+        db = sqlite3.connect(str(full))
     db.row_factory = sqlite3.Row
     db.execute("PRAGMA journal_mode=WAL")
     db.execute("PRAGMA foreign_keys=ON")
