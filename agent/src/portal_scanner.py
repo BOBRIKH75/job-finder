@@ -105,6 +105,10 @@ def scan_greenhouse(company: str) -> list[dict]:
             desc = posting.get("content", "")
             if matches_skills(title, desc):
                 url = posting.get("absolute_url", "")
+                job_id = posting.get("id", "")
+                # Always use direct Greenhouse URL (company-hosted URLs often need JS)
+                if "greenhouse.io" not in url and job_id:
+                    url = f"https://job-boards.greenhouse.io/{company}/jobs/{job_id}"
                 jobs.append({
                     "title": title,
                     "company": company,

@@ -446,6 +446,18 @@ def apply_to_job(page, profile, job, learned, dry_run=False, db=None) -> dict:
                 apply_url += "#app"
             if "ashbyhq.com" in apply_url and not apply_url.endswith("/application"):
                 apply_url += "/application"
+            
+            # For company-hosted Greenhouse jobs (e.g., thoughtworks.com/careers/jobs/XXX?gh_jid=XXX)
+            # Redirect directly to the Greenhouse job-boards apply page
+            if "gh_jid=" in apply_url and "greenhouse.io" not in apply_url:
+                import re as _re
+                gh_match = _re.search(r'gh_jid=(\d+)', apply_url)
+                if gh_match:
+                    # Extract company from the portal scanner (stored in job dict)
+                    gh_company = job.get("company", "").lower().replace(" ", "")
+                    apply_url = f"https://job-boards.greenhouse.io/{gh_company}/jobs/{gh_match.group(1)}"
+                    print(f"      📎 Redirected to Greenhouse: {apply_url}")
+
             page.goto(apply_url, wait_until="domcontentloaded", timeout=15000)
             page.wait_for_timeout(3000)  # let JS render forms
             wait(1, 2)
