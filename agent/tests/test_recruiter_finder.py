@@ -85,8 +85,9 @@ def test_company_to_domain():
 
 @patch("linkedin_recruiter_finder.search_recruiters_by_company")
 @patch("linkedin_recruiter_finder.verify_email_smtp")
-def test_full_pipeline_integration(mock_smtp, mock_search):
-    """Full pipeline with mocked LinkedIn, real MX verification."""
+@patch("linkedin_recruiter_finder.verify_domain_mx", return_value=True)
+def test_full_pipeline_integration(mock_mx, mock_smtp, mock_search):
+    """Full pipeline with mocked LinkedIn and mocked MX/SMTP verification."""
     mock_search.return_value = [
         {"name": "Jane Doe", "company": "Collabera", "location": "Dallas, TX", "title": "Recruiter"},
         {"name": "Raj Kumar", "company": "Collabera", "location": "Hyderabad, India", "title": "Recruiter"},
