@@ -367,6 +367,237 @@ def fill_form(page, page_data, profile, learned, domain) -> dict:
 
 # ─── STEP 4: Submit and verify ───
 
+def _fill_remaining_required(page, profile: dict) -> int:
+    """Dynamic adaptation — find and fill ANY remaining empty required fields.
+    
+    This catches:
+    - New questions added after our last code update
+    - Different company's custom questions we haven't seen before
+    - Page layout changes (fields moved, renamed, added)
+    - Multi-step forms where new fields appeared after previous fills
+    
+    Strategy:
+    1. Find all required inputs/comboboxes that are still empty
+    2. Match by label/name/placeholder to profile or known answers
+    3. Use smart defaults for common patterns
+    """
+    filled = 0
+    
+    # Smart answers for common job application patterns
+    SMART_ANSWERS = {
+        # Work authorization
+        "authorized": "Yes", "legally authorized": "Yes", "eligible": "Yes",
+        "right to work": "Yes", "work permit": "Yes", "employment eligibility": "Yes",
+        # Sponsorship  
+        "sponsorship": "No", "visa": "No", "require sponsor": "No", "immigration": "No",
+        # Relocation
+        "relocate": "No", "willing to relocate": "No", "open to relocation": "No",
+        # Availability
+        "start": "Immediately", "when can you": "Immediately", "available": "Immediately",
+        "notice period": "Immediately", "earliest start": "Immediately",
+        # Compensation
+        "salary": "150000", "expected salary": "150000", "desired salary": "150000",
+        "compensation": "150000", "hourly": "75", "rate": "75",
+        # Source
+        "hear about": "Job Board", "how did you": "Job Board", "source": "Job Board",
+        "where did you find": "Job Board", "referred": "No",
+        # Background
+        "background check": "Yes", "consent": "Yes", "agree": "Yes",
+        "acknowledge": "Yes", "terms": "Yes", "privacy": "Yes",
+        # Demographics (decline)
+        "gender": "Decline to self-identify", "race": "Decline to self-identify",
+        "ethnicity": "Decline to self-identify", "veteran": "I am not a protected veteran",
+        "disability": "I do not wish to answer",
+        # Employment
+        "previously employed": "No", "worked here before": "No", "former employee": "No",
+        # Experience
+        "years of experience": "10", "experience": "10",
+        # Education
+        "degree": "Bachelor", "highest education": "Bachelor",
+        # Remote
+        "remote": "Yes", "work remotely": "Yes", "hybrid": "Yes",
+        # Clearance
+        "security clearance": "No", "clearance": "No",
+        # Non-compete
+        "non-compete": "No", "non compete": "No", "restrictive covenant": "No",
+        # Country/Location
+        "country": "United States", "state": profile.get("state", "CO"),
+        "province": profile.get("state", "CO"),
+        # Pronoun
+        "pronoun": "He/Him",
+    }
+    
+    try:
+        # 1. Find empty required TEXT inputs
+        all_inputs = page.locator('input[aria-required="true"]:not([type="hidden"]):not([type="file"]):not([type="checkbox"]):not([type="radio"])').all()
+        
+        for inp in all_inputs:
+            try:
+                val = inp.input_value(timeout=500)
+                if val and val.strip():
+                    continue  # already filled
+                
+                # Get label
+                label = ""
+                label_id = inp.get_attribute("aria-labelledby") or ""
+                if label_id:
+                    try:
+                        label = page.locator(f"#{label_id}").first.inner_text(timeout=300)
+                    except Exception:
+                        pass
+                if not label:
+                    label = inp.get_attribute("aria-label") or inp.get_attribute("placeholder") or inp.get_attribute("name") or ""
+                
+                if not label:
+                    continue
+                
+                label_lower = label.lower()
+                
+                # Try profile fields first
+                profile_map = {
+                    "first name": profile.get("first_name", ""),
+                    "last name": profile.get("last_name", ""),
+                    "email": profile.get("email", ""),
+                    "phone": profile.get("phone", ""),
+                    "linkedin": profile.get("linkedin", ""),
+                    "github": profile.get("github", ""),
+                    "city": profile.get("city", ""),
+                    "zip": profile.get("zip", ""),
+                    "address": profile.get("location", ""),
+                    "location": profile.get("location", ""),
+                    "company": "",  # leave empty (not currently employed)
+                    "title": profile.get("title", ""),
+                    "preferred name": profile.get("first_name", ""),
+                    "name": profile.get("name", ""),
+                    "website": profile.get("linkedin", ""),
+                    "portfolio": profile.get("github", ""),
+                }
+                
+                value = None
+                for key, val in profile_map.items():
+                    if key in label_lower and val:
+                        value = val
+                        break
+                
+                # Try smart answers
+                if not value:
+                    for key, ans in SMART_ANSWERS.items():
+                        if key in label_lower:
+                            value = ans
+                            break
+                
+                if value:
+                    inp.fill(str(value))
+                    filled += 1
+                    
+            except Exception:
+                continue
+        
+        # 2. Find empty required COMBOBOXES (React Select style)
+        comboboxes = page.locator('input[role="combobox"][aria-required="true"]').all()
+        for combo in comboboxes:
+            try:
+                # Check if already has value
+                parent_ctrl = combo.locator("xpath=ancestor::div[contains(@class,'select__control')]")
+                try:
+                    single_val = parent_ctrl.locator('[class*="singleValue"], [class*="single-value"]')
+                    if single_val.count() > 0:
+                        text = single_val.first.inner_text(timeout=300)
+                        if text and text.strip() and text.strip() != "Select...":
+                            continue  # already filled
+                except Exception:
+                    pass
+                
+                # Get label
+                label = ""
+                label_id = combo.get_attribute("aria-labelledby") or ""
+                if label_id:
+                    try:
+                        label = page.locator(f"#{label_id}").first.inner_text(timeout=300)
+                    except Exception:
+                        pass
+                
+                if not label:
+                    continue
+                
+                label_lower = label.lower()
+                
+                # Find answer from smart answers
+                answer = None
+                for key, ans in SMART_ANSWERS.items():
+                    if key in label_lower:
+                        answer = ans
+                        break
+                
+                if not answer:
+                    continue
+                
+                # Type answer to filter, then click option
+                combo.click()
+                time.sleep(0.3)
+                combo.fill(answer)
+                time.sleep(0.5)
+                
+                # Click first matching option
+                options = page.locator('[role="option"]').all()
+                clicked = False
+                for opt in options:
+                    try:
+                        if opt.is_visible(timeout=300):
+                            opt_text = opt.inner_text(timeout=200)
+                            if answer.lower() in opt_text.lower():
+                                opt.click()
+                                clicked = True
+                                filled += 1
+                                time.sleep(0.3)
+                                break
+                    except Exception:
+                        continue
+                
+                if not clicked:
+                    # Click first visible option as fallback
+                    try:
+                        first = page.locator('[role="option"]').first
+                        if first.is_visible(timeout=300):
+                            first.click()
+                            filled += 1
+                            time.sleep(0.3)
+                    except Exception:
+                        page.keyboard.press("Escape")
+                        
+            except Exception:
+                try:
+                    page.keyboard.press("Escape")
+                except Exception:
+                    pass
+                continue
+        
+        # 3. Handle required checkboxes (consent, agree, terms)
+        checkboxes = page.locator('input[type="checkbox"][required], input[type="checkbox"][aria-required="true"]').all()
+        for cb in checkboxes:
+            try:
+                if not cb.is_checked():
+                    # Get label to check if it's safe to check
+                    label = ""
+                    try:
+                        parent = cb.locator("xpath=ancestor::label")
+                        label = parent.inner_text(timeout=300).lower()
+                    except Exception:
+                        pass
+                    # Skip non-compete/exclusivity
+                    if any(skip in label for skip in ["non-compete", "noncompete", "exclusiv"]):
+                        continue
+                    cb.check()
+                    filled += 1
+            except Exception:
+                continue
+                
+    except Exception:
+        pass
+    
+    return filled
+
+
 def submit_and_verify(page, page_data, original_url) -> dict:
     """Find submit button, click it, verify success."""
     # Find submit button
@@ -668,6 +899,13 @@ def apply_to_job(page, profile, job, learned, dry_run=False, db=None) -> dict:
             if gh_filled:
                 attempt_result["filled"] += gh_filled
                 print(f"      🔽 Filled {gh_filled} custom dropdowns (Greenhouse)")
+
+            # DYNAMIC ADAPTATION: catch any remaining unfilled required fields
+            # This handles page changes, new questions, non-standard forms
+            dynamic_filled = _fill_remaining_required(page, profile)
+            if dynamic_filled:
+                attempt_result["filled"] += dynamic_filled
+                print(f"      🔄 Dynamic fill: {dynamic_filled} additional fields")
 
             # SUBMIT
             submit_result = submit_and_verify(page, page_data, url)
