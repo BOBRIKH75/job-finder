@@ -119,7 +119,7 @@ def run_apply(db, jobs, dry_run=False):
     In cloud mode, only apply to CAPTCHA-free ATS platforms.
     Never crash — report results even if 0 applications succeed.
     """
-    CAPTCHA_FREE_ATS = {"lever", "ashby", "workable", "bamboohr", "dice"}
+    CAPTCHA_FREE_ATS = {"lever", "greenhouse", "ashby", "workable", "bamboohr", "dice"}
 
     automatable = sorted(
         [j for j in jobs if j.get("can_automate", False)],

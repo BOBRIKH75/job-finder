@@ -472,54 +472,73 @@ def solve_captcha(page, url: str) -> bool:
 
 
 def fill_greenhouse_custom_fields(page, profile: dict) -> int:
-    """Handle Greenhouse's custom React Select dropdowns and required fields.
+    """Handle Greenhouse's React Select combobox dropdowns.
     
-    Greenhouse renders required dropdowns as custom components with 'Select.' text.
-    These appear as buttons/divs, NOT as <select> elements.
+    Greenhouse renders dropdowns as:
+      <input role="combobox" aria-haspopup="true" aria-required="true" id="question_XXX">
+    With label at: <label id="question_XXX-label">Question text</label>
+    
+    To fill: click the input → type answer text → wait for options → click matching option.
     """
     filled = 0
     
+    # Answers keyed by substring match in the label text
     GH_ANSWERS = {
-        "sponsorship": "No",
-        "immigration": "No",
-        "require visa": "No",
-        "authorized": "Yes",
-        "state": profile.get("state", "Colorado"),
-        "province": profile.get("state", "Colorado"),
-        "reside": profile.get("state", "Colorado"),
-        "hear about": "Job Board",
-        "learn about": "Job Board",
-        "how did you": "Job Board",
-        "first learn": "Job Board",
-        "previously been employed": "No",
+        "require immigration sponsorship": "No",
+        "require sponsorship": "No",
+        "immigration sponsorship": "No",
+        "visa sponsor": "No",
+        "authorized to work": "Yes",
+        "which u.s. state": "Colorado",
+        "state or canadian province": "Colorado",
+        "reside in": "Colorado",
+        "how did you first learn": "Indeed",
+        "how did you hear": "Indeed",
+        "previously been employed": "not previously",
         "previously employed": "No",
-        "worked at": "No",
-        "pronoun": "He/Him",
-        "gender": "Decline",
-        "race": "Decline",
-        "ethnicity": "Decline",
-        "veteran": "not a protected veteran",
-        "disability": "do not wish",
+        "pronoun": "He/him",
+        "gender": "prefer not to say",
+        "race": "prefer not to say",
+        "ethnicity": "prefer not to say",
     }
     
     try:
-        select_triggers = page.locator('text="Select."').all()
+        # Find all required React Select comboboxes
+        comboboxes = page.locator('input[role="combobox"][aria-required="true"]').all()
         
-        for trigger in select_triggers:
+        for combo in comboboxes:
             try:
-                parent = trigger.locator("xpath=ancestor::*[contains(@class,'field') or contains(@class,'question') or @data-qa]").first
-                label_text = ""
+                combo_id = combo.get_attribute("id") or ""
+                # Skip the "country" select (already handled by standard fill)
+                if combo_id == "country":
+                    continue
+                    
+                # Check if already has a value selected
+                value_container = combo.locator("xpath=ancestor::div[contains(@class,'select__control')]//div[contains(@class,'single-value')]")
                 try:
-                    label_text = parent.inner_text(timeout=1000)
+                    if value_container.count() > 0 and value_container.first.inner_text(timeout=300).strip():
+                        continue  # Already filled
                 except Exception:
+                    pass
+                
+                # Get label text
+                label_text = ""
+                label_id = combo.get_attribute("aria-labelledby") or ""
+                if label_id:
                     try:
-                        label_text = trigger.locator("xpath=preceding::label[1]").inner_text(timeout=500)
+                        label_text = page.locator(f"#{label_id}").first.inner_text(timeout=500)
+                    except Exception:
+                        pass
+                if not label_text:
+                    try:
+                        label_text = combo.get_attribute("aria-label") or ""
                     except Exception:
                         pass
                 
                 if not label_text:
                     continue
                 
+                # Find matching answer
                 answer = None
                 label_lower = label_text.lower()
                 for key, val in GH_ANSWERS.items():
@@ -530,28 +549,44 @@ def fill_greenhouse_custom_fields(page, profile: dict) -> int:
                 if not answer:
                     continue
                 
-                trigger.click()
+                # Fill the combobox: click → type → select option
+                combo.click()
+                time.sleep(0.3)
+                combo.fill(answer)
                 time.sleep(0.5)
                 
-                option_found = False
-                for opt_sel in ['[role="option"]', '[class*="option"]', '[class*="select__option"]',
-                                'li[class*="option"]', '[data-qa*="option"]']:
+                # Click the first visible option
+                option_clicked = False
+                for opt_sel in ['[role="option"]', '.select__option', '[class*="option"]']:
                     options = page.locator(opt_sel).all()
                     for opt in options:
                         try:
-                            opt_text = opt.inner_text(timeout=300)
-                            if answer.lower() in opt_text.lower():
-                                opt.click()
-                                option_found = True
-                                filled += 1
-                                time.sleep(0.3)
-                                break
+                            if opt.is_visible(timeout=300):
+                                opt_text = opt.inner_text(timeout=300)
+                                if answer.lower() in opt_text.lower():
+                                    opt.click()
+                                    option_clicked = True
+                                    filled += 1
+                                    time.sleep(0.3)
+                                    break
                         except Exception:
                             continue
-                    if option_found:
+                    if option_clicked:
                         break
                 
-                if not option_found:
+                # If no exact match, click first visible option
+                if not option_clicked:
+                    try:
+                        first_opt = page.locator('[role="option"]').first
+                        if first_opt.is_visible(timeout=500):
+                            first_opt.click()
+                            option_clicked = True
+                            filled += 1
+                            time.sleep(0.3)
+                    except Exception:
+                        pass
+                
+                if not option_clicked:
                     page.keyboard.press("Escape")
                     
             except Exception:
@@ -561,19 +596,46 @@ def fill_greenhouse_custom_fields(page, profile: dict) -> int:
                     pass
                 continue
         
-        # Fill "Preferred Name" if empty
+        # Also fill "Preferred Name" if empty (common Greenhouse required field)
         try:
-            pref_name = page.locator('input[name*="preferred"], input[placeholder*="Preferred"]').first
-            if pref_name.is_visible(timeout=500):
-                val = pref_name.input_value(timeout=500)
+            for sel in ['input[aria-label="Preferred Name"]', 'input[aria-label*="Preferred"]']:
+                pref = page.locator(sel).first
+                if pref.is_visible(timeout=500):
+                    val = pref.input_value(timeout=300)
+                    if not val:
+                        first_name = profile.get("first_name", "")
+                        if not first_name and profile.get("name"):
+                            first_name = profile["name"].split()[0]
+                        if first_name:
+                            pref.fill(first_name)
+                            filled += 1
+                    break
+        except Exception:
+            pass
+        
+        # Fill Country combobox (United States)
+        try:
+            country_combo = page.locator('#country').first
+            if country_combo.is_visible(timeout=500):
+                val = country_combo.input_value(timeout=300)
                 if not val:
-                    pref_name.fill(profile.get("first_name", profile.get("name", "").split()[0] if profile.get("name") else ""))
-                    filled += 1
+                    country_combo.click()
+                    time.sleep(0.3)
+                    country_combo.fill("United States")
+                    time.sleep(0.5)
+                    us_option = page.locator('[role="option"]:has-text("United States")').first
+                    if us_option.is_visible(timeout=500):
+                        us_option.click()
+                        filled += 1
+                        time.sleep(0.3)
         except Exception:
             pass
             
     except Exception:
         pass
+    
+    if filled:
+        print(f"      🔽 Filled {filled} Greenhouse custom dropdowns")
     
     return filled
 
