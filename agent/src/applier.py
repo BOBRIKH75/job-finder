@@ -428,8 +428,8 @@ def _fill_remaining_required(page, profile: dict) -> int:
     }
     
     try:
-        # 1. Find empty required TEXT inputs
-        all_inputs = page.locator('input[aria-required="true"]:not([type="hidden"]):not([type="file"]):not([type="checkbox"]):not([type="radio"])').all()
+        # 1. Find empty required TEXT inputs (both aria-required and HTML5 required)
+        all_inputs = page.locator('input[aria-required="true"]:not([type="hidden"]):not([type="file"]):not([type="checkbox"]):not([type="radio"]), input[required]:not([type="hidden"]):not([type="file"]):not([type="checkbox"]):not([type="radio"])').all()
         
         for inp in all_inputs:
             try:
@@ -589,6 +589,62 @@ def _fill_remaining_required(page, profile: dict) -> int:
                         continue
                     cb.check()
                     filled += 1
+            except Exception:
+                continue
+
+        # 4. Handle old-style <select required> that are still empty
+        old_selects = page.locator('select[required], select[aria-required="true"]').all()
+        for sel in old_selects:
+            try:
+                current_val = sel.input_value(timeout=500)
+                if current_val:
+                    continue  # already has a value selected
+                
+                # Get label
+                label = ""
+                sel_id = sel.get_attribute("id") or ""
+                if sel_id:
+                    try:
+                        label = page.locator(f'label[for="{sel_id}"]').first.inner_text(timeout=300)
+                    except Exception:
+                        pass
+                if not label:
+                    label = sel.get_attribute("aria-label") or sel.get_attribute("name") or ""
+                
+                label_lower = label.lower()
+                
+                # Try to find matching answer in options
+                answer = None
+                for key, ans in SMART_ANSWERS.items():
+                    if key in label_lower:
+                        answer = ans
+                        break
+                
+                if answer:
+                    # Try to select option containing the answer
+                    options = sel.locator('option').all()
+                    for opt in options:
+                        try:
+                            opt_text = opt.inner_text(timeout=200)
+                            if answer.lower() in opt_text.lower():
+                                sel.select_option(label=opt_text)
+                                filled += 1
+                                break
+                        except Exception:
+                            continue
+                else:
+                    # No matching answer — select first non-empty, non-placeholder option
+                    options = sel.locator('option').all()
+                    for opt in options[1:]:  # skip first (usually "Select..." or empty)
+                        try:
+                            val = opt.get_attribute("value")
+                            opt_text = opt.inner_text(timeout=200).strip()
+                            if val and opt_text and opt_text.lower() not in ("select", "select...", "choose", "-- select --", ""):
+                                sel.select_option(value=val)
+                                filled += 1
+                                break
+                        except Exception:
+                            continue
             except Exception:
                 continue
                 
@@ -929,19 +985,43 @@ def apply_to_job(page, profile, job, learned, dry_run=False, db=None) -> dict:
             else:
                 attempt_result["error"] = submit_result["reason"]
                 print(f"      ❌ Submit failed: {submit_result['reason']}")
-                # LEARN: save failure to DB
                 # DOCTOR: read error messages and try to fix
                 errors = read_errors(page)
                 if db:
                     from src.learning_engine import learn_from_failure
                     learn_from_failure(db, domain, url, [submit_result["reason"]] + errors, attempt)
+                
+                # DYNAMIC FIX: read errors, fix fields, fill remaining, retry submit
+                total_fixed = 0
                 if errors:
                     print(f"      🔧 Found {len(errors)} errors: {errors[:3]}")
                     fixed = fix_errors_and_retry(page, profile, errors)
-                    if fixed:
-                        print(f"      🔧 Fixed {fixed} fields — will retry submit")
-                        # Save what errors we saw for learning
-                        learned.setdefault("error_patterns", {}).setdefault(domain, []).extend(errors[:5])
+                    total_fixed += fixed
+                
+                # Also run dynamic fill again (page may have revealed new required fields after submit attempt)
+                dynamic_fixed = _fill_remaining_required(page, profile)
+                total_fixed += dynamic_fixed
+                
+                if total_fixed > 0:
+                    print(f"      🔄 Fixed {total_fixed} fields — retrying submit...")
+                    snap(page, f"retry_submit_{attempt}")
+                    # RETRY SUBMIT
+                    page_data = read_page(page)
+                    retry_result = submit_and_verify(page, page_data, url)
+                    if retry_result["submitted"]:
+                        result["status"] = "submitted"
+                        result["fields_filled"] = attempt_result["filled"] + total_fixed
+                        print(f"      ✅ SUBMITTED on retry via '{retry_result.get('method', '?')}'")
+                        if db:
+                            from src.learning_engine import learn_from_success, learn_selector
+                            learn_from_success(db, domain, url, [f[1] for f in fill_result["filled"]], attempt_result["filled"] + total_fixed)
+                        result["attempts"].append(attempt_result)
+                        save_learned(learned)
+                        return result
+                    else:
+                        print(f"      ❌ Retry also failed: {retry_result.get('reason', '?')}")
+
+                learned.setdefault("error_patterns", {}).setdefault(domain, []).extend(errors[:5])
                 learned.setdefault("fail_reasons", {}).setdefault(domain, []).append(
                     {"attempt": attempt, "reason": submit_result["reason"], "errors": errors[:3]}
                 )
