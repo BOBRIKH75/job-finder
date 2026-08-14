@@ -484,6 +484,7 @@ def fill_greenhouse_custom_fields(page, profile: dict) -> int:
     
     # Answers keyed by substring match in the label text
     GH_ANSWERS = {
+        "country": "United States",
         "require immigration sponsorship": "No",
         "require sponsorship": "No",
         "immigration sponsorship": "No",
@@ -509,9 +510,6 @@ def fill_greenhouse_custom_fields(page, profile: dict) -> int:
         for combo in comboboxes:
             try:
                 combo_id = combo.get_attribute("id") or ""
-                # Skip the "country" select (already handled by standard fill)
-                if combo_id == "country":
-                    continue
                     
                 # Check if already has a value selected
                 value_container = combo.locator("xpath=ancestor::div[contains(@class,'select__control')]//div[contains(@class,'single-value')]")
@@ -613,17 +611,19 @@ def fill_greenhouse_custom_fields(page, profile: dict) -> int:
         except Exception:
             pass
         
-        # Fill Country combobox (United States)
+        # Fill Country combobox if still empty (fallback)
         try:
             country_combo = page.locator('#country').first
             if country_combo.is_visible(timeout=500):
-                val = country_combo.input_value(timeout=300)
-                if not val:
+                # Check if parent container shows a selected value
+                parent_ctrl = country_combo.locator("xpath=ancestor::div[contains(@class,'select__control')]")
+                has_value = parent_ctrl.locator('.select__single-value, [class*="singleValue"]').count() > 0
+                if not has_value:
                     country_combo.click()
                     time.sleep(0.3)
                     country_combo.fill("United States")
                     time.sleep(0.5)
-                    us_option = page.locator('[role="option"]:has-text("United States")').first
+                    us_option = page.locator('[role="option"]').first
                     if us_option.is_visible(timeout=500):
                         us_option.click()
                         filled += 1
