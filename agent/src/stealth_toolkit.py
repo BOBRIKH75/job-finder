@@ -219,7 +219,6 @@ def fetch_sarperavci(url: str, **kw) -> StealthResult:
 
 TOOL_CHAIN = [
     ("curl_cffi", fetch_curl_cffi),
-    ("camoufox", fetch_camoufox),
     ("playwright_stealth", fetch_playwright_stealth),
     ("seleniumbase_uc", fetch_seleniumbase_uc),
     ("nodriver", fetch_nodriver),
