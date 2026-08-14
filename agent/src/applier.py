@@ -827,7 +827,7 @@ def run_applications(jobs: list[dict], dry_run: bool = True, max_apps: int = 10,
             # STEALTH PRE-CHECK: probe the URL with curl_cffi first
             try:
                 probe = fetch_curl_cffi(url)
-                if probe.success and "captcha" not in probe.html.lower() and "just a moment" not in probe.html.lower():
+                if probe and probe.success and "captcha" not in probe.html.lower() and "just a moment" not in probe.html.lower():
                     print(f"    🟢 Direct access OK ({probe.elapsed:.1f}s)")
                 else:
                     # Try cloudscraper
