@@ -119,7 +119,7 @@ def run_apply(db, jobs, dry_run=False):
     In cloud mode, only apply to CAPTCHA-free ATS platforms.
     Never crash — report results even if 0 applications succeed.
     """
-    CAPTCHA_FREE_ATS = {"lever", "greenhouse", "ashby", "workable"}
+    CAPTCHA_FREE_ATS = {"lever", "ashby", "workable", "bamboohr", "dice"}
 
     automatable = sorted(
         [j for j in jobs if j.get("can_automate", False)],
@@ -155,7 +155,7 @@ def run_apply(db, jobs, dry_run=False):
     for j in automatable:
         d = urlparse(j.get("url", "")).netloc
         seen_domains[d] = seen_domains.get(d, 0) + 1
-        if seen_domains[d] <= 5:
+        if seen_domains[d] <= 3:
             diverse.append(j)
     automatable = diverse
     email_only = [j for j in jobs if not j.get("can_automate", False)]
