@@ -650,6 +650,13 @@ def apply_to_job(page, profile, job, learned, dry_run=False, db=None) -> dict:
                 save_learned(learned)
                 return result
 
+            # Fill Greenhouse/custom React dropdowns BEFORE submit
+            from src.page_doctor import fill_greenhouse_custom_fields
+            gh_filled = fill_greenhouse_custom_fields(page, profile)
+            if gh_filled:
+                attempt_result["filled"] += gh_filled
+                print(f"      🔽 Filled {gh_filled} custom dropdowns (Greenhouse)")
+
             # SUBMIT
             submit_result = submit_and_verify(page, page_data, url)
             snap(page, f"submit_{attempt}")

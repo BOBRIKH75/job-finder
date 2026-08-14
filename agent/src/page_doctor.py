@@ -471,6 +471,113 @@ def solve_captcha(page, url: str) -> bool:
     return False
 
 
+def fill_greenhouse_custom_fields(page, profile: dict) -> int:
+    """Handle Greenhouse's custom React Select dropdowns and required fields.
+    
+    Greenhouse renders required dropdowns as custom components with 'Select.' text.
+    These appear as buttons/divs, NOT as <select> elements.
+    """
+    filled = 0
+    
+    GH_ANSWERS = {
+        "sponsorship": "No",
+        "immigration": "No",
+        "require visa": "No",
+        "authorized": "Yes",
+        "state": profile.get("state", "Colorado"),
+        "province": profile.get("state", "Colorado"),
+        "reside": profile.get("state", "Colorado"),
+        "hear about": "Job Board",
+        "learn about": "Job Board",
+        "how did you": "Job Board",
+        "first learn": "Job Board",
+        "previously been employed": "No",
+        "previously employed": "No",
+        "worked at": "No",
+        "pronoun": "He/Him",
+        "gender": "Decline",
+        "race": "Decline",
+        "ethnicity": "Decline",
+        "veteran": "not a protected veteran",
+        "disability": "do not wish",
+    }
+    
+    try:
+        select_triggers = page.locator('text="Select."').all()
+        
+        for trigger in select_triggers:
+            try:
+                parent = trigger.locator("xpath=ancestor::*[contains(@class,'field') or contains(@class,'question') or @data-qa]").first
+                label_text = ""
+                try:
+                    label_text = parent.inner_text(timeout=1000)
+                except Exception:
+                    try:
+                        label_text = trigger.locator("xpath=preceding::label[1]").inner_text(timeout=500)
+                    except Exception:
+                        pass
+                
+                if not label_text:
+                    continue
+                
+                answer = None
+                label_lower = label_text.lower()
+                for key, val in GH_ANSWERS.items():
+                    if key in label_lower:
+                        answer = val
+                        break
+                
+                if not answer:
+                    continue
+                
+                trigger.click()
+                time.sleep(0.5)
+                
+                option_found = False
+                for opt_sel in ['[role="option"]', '[class*="option"]', '[class*="select__option"]',
+                                'li[class*="option"]', '[data-qa*="option"]']:
+                    options = page.locator(opt_sel).all()
+                    for opt in options:
+                        try:
+                            opt_text = opt.inner_text(timeout=300)
+                            if answer.lower() in opt_text.lower():
+                                opt.click()
+                                option_found = True
+                                filled += 1
+                                time.sleep(0.3)
+                                break
+                        except Exception:
+                            continue
+                    if option_found:
+                        break
+                
+                if not option_found:
+                    page.keyboard.press("Escape")
+                    
+            except Exception:
+                try:
+                    page.keyboard.press("Escape")
+                except Exception:
+                    pass
+                continue
+        
+        # Fill "Preferred Name" if empty
+        try:
+            pref_name = page.locator('input[name*="preferred"], input[placeholder*="Preferred"]').first
+            if pref_name.is_visible(timeout=500):
+                val = pref_name.input_value(timeout=500)
+                if not val:
+                    pref_name.fill(profile.get("first_name", profile.get("name", "").split()[0] if profile.get("name") else ""))
+                    filled += 1
+        except Exception:
+            pass
+            
+    except Exception:
+        pass
+    
+    return filled
+
+
 def detect_multi_step(page) -> bool:
     """Check if this is a multi-step form (has progress indicator or Next button)."""
     signals = ['step', 'progress', 'wizard', 'stage', 'page 1', 'step 1']
