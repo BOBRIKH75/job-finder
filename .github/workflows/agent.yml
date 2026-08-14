@@ -122,15 +122,25 @@ jobs:
 
       - name: Save agent memory
         if: always()
+        continue-on-error: true
         uses: actions/cache/save@v4
         with:
           path: agent/data/agent_memory.db
           key: agent-memory-${{ github.run_number }}
 
+      - name: Cleanup old screenshots (keep last 20)
+        if: always()
+        run: |
+          cd screenshots/ 2>/dev/null || exit 0
+          ls -t *.png 2>/dev/null | tail -n +21 | xargs rm -f || true
+          echo "Screenshots kept: $(ls *.png 2>/dev/null | wc -l)"
+
       - name: Upload screenshots
         if: always()
+        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: screenshots-${{ github.run_number }}
           path: agent/screenshots/
-          retention-days: 3
+          retention-days: 1
+          if-no-files-found: ignore
