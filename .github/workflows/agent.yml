@@ -4,6 +4,8 @@ on:
   schedule:
     - cron: '0 16 * * *'    # 10:00 AM MT — main run (1x/day to stay in free tier)
   workflow_dispatch: {}
+  repository_dispatch:
+    types: [jobs-found]
 
 defaults:
   run:

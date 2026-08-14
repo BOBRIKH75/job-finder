@@ -101,3 +101,27 @@ jobs:
           git add found_jobs.json 2>/dev/null || true
           git diff --cached --quiet || git commit -m "Update found_jobs.json [skip ci]"
           git push || true
+
+      - name: Resolve LinkedIn URLs to company apply pages
+        if: success()
+        continue-on-error: true
+        run: |
+          python resolve_urls.py
+          git add found_jobs.json 2>/dev/null || true
+          git diff --cached --quiet || git commit -m "Resolve LinkedIn URLs to apply pages [skip ci]"
+          git push || true
+
+      - name: Trigger auto-apply agent
+        if: success()
+        run: |
+          JOBS_COUNT=$(python3 -c "import json,os; print(json.load(open('found_jobs.json')).get('count',0)) if os.path.exists('found_jobs.json') else print(0)")
+          if [ "$JOBS_COUNT" -gt 0 ]; then
+            curl -s -X POST \
+              -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+              -H "Accept: application/vnd.github.v3+json" \
+              https://api.github.com/repos/${{ github.repository }}/dispatches \
+              -d '{"event_type":"jobs-found"}'
+            echo "🚀 Triggered auto-apply agent ($JOBS_COUNT jobs found)"
+          else
+            echo "⏭️ No jobs found — skipping agent trigger"
+          fi
