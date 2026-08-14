@@ -21,7 +21,7 @@ RESUME_PATH = Path(__file__).parent.parent / "resume.pdf"
 SCREENSHOTS = Path(__file__).parent.parent / "screenshots"
 LEARNED_FILE = Path(__file__).parent.parent / "data" / "learned.json"
 INDEED_COOKIES_FILE = Path(__file__).parent.parent / "data" / "indeed_cookies.json"
-MAX_RETRIES = 2
+MAX_RETRIES = 1
 
 
 def load_indeed_cookies() -> list[dict]:
@@ -753,6 +753,9 @@ def run_applications(jobs: list[dict], dry_run: bool = True, max_apps: int = 10,
     learned = load_learned()
     results = []
 
+    # Track same-session failures per domain — skip after 2 failures on same domain
+    session_failures = {}  # domain -> failure count
+
     # Known CAPTCHA-free ATS domains — skip all stealth probing
     CAPTCHA_FREE_DOMAINS = {"jobs.lever.co", "lever.co", "boards.greenhouse.io",
                             "jobs.ashbyhq.com", "apply.workable.com"}
@@ -779,6 +782,13 @@ def run_applications(jobs: list[dict], dry_run: bool = True, max_apps: int = 10,
             break
         url = job.get("url", "")
         domain = re.sub(r'https?://(www\.)?', '', url).split('/')[0]
+
+        # Skip domains that failed 2+ times this session (same form = same error)
+        if session_failures.get(domain, 0) >= 2:
+            print(f"\n  ⏭️ Skipping {domain} — failed {session_failures[domain]}x this session")
+            results.append({"url": url, "title": job.get("title", ""),
+                            "company": job.get("company", ""), "status": "domain_skip"})
+            continue
 
         # Rate limit check — avoid getting restricted
         site_key = job.get("ats_type", "default")
@@ -843,6 +853,9 @@ def run_applications(jobs: list[dict], dry_run: bool = True, max_apps: int = 10,
             record_apply(site_key)
             human_delay(site_key)  # Random wait to look human
         else:
+            # Track domain failures to skip after 2
+            if r["status"] in ("failed_all_retries", "captcha_blocked"):
+                session_failures[domain] = session_failures.get(domain, 0) + 1
             wait(1, 2)
 
     context.close()
