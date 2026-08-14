@@ -219,12 +219,12 @@ def fetch_sarperavci(url: str, **kw) -> StealthResult:
 
 TOOL_CHAIN = [
     ("curl_cffi", fetch_curl_cffi),
-    ("sarperavci", fetch_sarperavci),
-    ("seleniumbase_uc", fetch_seleniumbase_uc),
-    ("playwright_stealth", fetch_playwright_stealth),
     ("camoufox", fetch_camoufox),
+    ("playwright_stealth", fetch_playwright_stealth),
+    ("seleniumbase_uc", fetch_seleniumbase_uc),
     ("nodriver", fetch_nodriver),
     ("flaresolverr", fetch_flaresolverr),
+    ("sarperavci", fetch_sarperavci),
     ("cf_bypass", fetch_cf_bypass),
 ]
 

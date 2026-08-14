@@ -21,7 +21,7 @@ RESUME_PATH = Path(__file__).parent.parent / "resume.pdf"
 SCREENSHOTS = Path(__file__).parent.parent / "screenshots"
 LEARNED_FILE = Path(__file__).parent.parent / "data" / "learned.json"
 INDEED_COOKIES_FILE = Path(__file__).parent.parent / "data" / "indeed_cookies.json"
-MAX_RETRIES = 1
+MAX_RETRIES = 2
 
 
 def load_indeed_cookies() -> list[dict]:
@@ -511,6 +511,26 @@ def apply_to_job(page, profile, job, learned, dry_run=False, db=None) -> dict:
             dismissed = dismiss_popups(page)
             if dismissed:
                 print(f"      Dismissed {dismissed} popups/banners")
+
+            # Wait longer for JS-heavy pages (Greenhouse, Workday)
+            if any(s in apply_url for s in ["greenhouse", "workday", "myworkday", "ashby"]):
+                page.wait_for_timeout(3000)
+
+            # Handle iframe-embedded forms (Greenhouse, Workday)
+            main_page = page
+            input_count = page.locator('input:not([type="hidden"])').count()
+            if input_count < 2:
+                for frame in page.frames:
+                    if frame == page.main_frame:
+                        continue
+                    try:
+                        frame_inputs = frame.locator('input:not([type="hidden"])').count()
+                        if frame_inputs >= 2:
+                            page = frame
+                            print(f"      📋 Switched to iframe ({frame_inputs} inputs)")
+                            break
+                    except Exception:
+                        continue
 
             # Hide invisible CAPTCHA overlays (hCaptcha, reCAPTCHA) that block clicks
             page.evaluate("""() => {

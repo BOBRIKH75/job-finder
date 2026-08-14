@@ -500,7 +500,7 @@ def fix_errors_and_retry(page, profile: dict, errors: list[str]) -> int:
                 pass
 
         # "Phone number is invalid"
-        if "phone" in lower and ("invalid" in lower or "format" in lower):
+        if "phone" in lower and ("invalid" in lower or "format" in lower or "required" in lower):
             phone = profile.get("phone", "")
             digits = re.sub(r'\D', '', phone)
             formatted = f"({digits[:3]}) {digits[3:6]}-{digits[6:]}" if len(digits) == 10 else phone
@@ -527,8 +527,8 @@ def fix_errors_and_retry(page, profile: dict, errors: list[str]) -> int:
             except Exception:
                 pass
 
-        # "Resume is required"
-        if ("resume" in lower or "cv" in lower) and "required" in lower:
+        # "Resume is required" / "Please upload"
+        if ("resume" in lower or "cv" in lower) and ("required" in lower or "upload" in lower):
             resume = Path(__file__).parent.parent / "resume.pdf"
             if resume.exists():
                 try:
@@ -536,5 +536,75 @@ def fix_errors_and_retry(page, profile: dict, errors: list[str]) -> int:
                     fixed += 1
                 except Exception:
                     pass
+
+        # "Location is required" / "City is required"
+        if ("location" in lower or "city" in lower) and "required" in lower:
+            try:
+                for sel in ['input[name*="location"]', 'input[name*="city"]', '#location', '#city',
+                            'input[placeholder*="city"]', 'input[placeholder*="location"]']:
+                    el = page.locator(sel).first
+                    if el.is_visible(timeout=500):
+                        el.fill(profile.get("location", profile.get("city", "Parker, CO")))
+                        fixed += 1
+                        break
+            except Exception:
+                pass
+
+        # "This field is required" / generic required — try filling all empty visible required inputs
+        if "required" in lower and not any(k in lower for k in ["email", "phone", "name", "resume", "location", "city"]):
+            try:
+                # Find all required inputs that are still empty
+                empty_required = page.locator('input[required]:not([type="hidden"]):not([type="file"])').all()
+                for inp in empty_required:
+                    try:
+                        val = inp.input_value(timeout=500)
+                        if not val or val.strip() == "":
+                            # Try to figure out what this field is
+                            name = inp.get_attribute("name") or ""
+                            placeholder = inp.get_attribute("placeholder") or ""
+                            label_text = name + " " + placeholder
+                            
+                            # Map common field names to profile values
+                            field_mapping = {
+                                "linkedin": profile.get("linkedin", ""),
+                                "github": profile.get("github", ""),
+                                "website": profile.get("linkedin", ""),
+                                "company": profile.get("company", ""),
+                                "address": profile.get("location", ""),
+                                "street": profile.get("location", ""),
+                                "country": "United States",
+                                "state": profile.get("state", "CO"),
+                                "zip": profile.get("zip", "80134"),
+                            }
+                            
+                            for key, value in field_mapping.items():
+                                if key in label_text.lower() and value:
+                                    inp.fill(value)
+                                    fixed += 1
+                                    break
+                    except Exception:
+                        continue
+            except Exception:
+                pass
+
+    # Also try filling empty required select dropdowns
+    try:
+        empty_selects = page.locator('select[required]').all()
+        for sel in empty_selects:
+            try:
+                current = sel.input_value(timeout=500)
+                if not current:
+                    # Select first non-empty option
+                    options = sel.locator('option').all()
+                    for opt in options[1:]:  # skip first (usually "Select...")
+                        val = opt.get_attribute("value")
+                        if val:
+                            sel.select_option(value=val)
+                            fixed += 1
+                            break
+            except Exception:
+                continue
+    except Exception:
+        pass
 
     return fixed
