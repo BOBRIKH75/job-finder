@@ -1,0 +1,41 @@
+name: "Vendor Portal Upload (Weekly)"
+
+on:
+  schedule:
+    - cron: "0 15 * * 1"   # Every Monday at 9:00 AM MT
+  workflow_dispatch: {}
+
+defaults:
+  run:
+    working-directory: agent
+
+jobs:
+  upload:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          pip install playwright requests
+          playwright install chromium --with-deps
+
+      - name: Run vendor portal uploads
+        run: python scripts/vendor_portal_upload.py
+
+      - name: Save upload history
+        if: always()
+        run: |
+          git config user.email "bot@github.actions"
+          git config user.name "Portal Upload Bot"
+          git add ../data/portal_upload_history.json || true
+          git diff --staged --quiet || git commit -m "chore: vendor portal upload history $(date +%Y-%m-%d)"
+          git push || true

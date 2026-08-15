@@ -2,8 +2,8 @@ name: "Vendor Outreach (Monthly)"
 
 on:
   schedule:
-    - cron: "0 16 1 * *"  # 1st of every month at 10:00 AM MT
-  workflow_dispatch:
+    - cron: "0 16 1 * *"   # 1st of every month at 10:00 AM MT
+  workflow_dispatch: {}
 
 permissions:
   contents: write
@@ -14,162 +14,166 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install requests
+      - name: Install dependencies
         run: pip install requests
 
-      - name: Send emails to new vendors (skip already contacted within 30 days)
+      - name: Send emails to new vendors via Resend API
         env:
           RESEND_KEY: ${{ secrets.RESEND_KEY }}
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
-          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
         run: |
           python3 << 'EOF'
-          import json, os, time, smtplib
-          from datetime import datetime, timedelta
-          from email.mime.text import MIMEText
-          from email.mime.multipart import MIMEMultipart
+          import json, os, time, requests
+          from datetime import datetime
           from pathlib import Path
 
-          # Load vendor list from dynamic file (auto-updated by daily scraper)
+          RESEND_KEY = os.environ.get("RESEND_KEY", "")
+          REPLY_TO   = os.environ.get("GMAIL_USER", "bobrikh75@gmail.com")
+
+          # Resend API — better deliverability than raw Gmail SMTP.
+          # From address: uses Resend's verified domain so emails land in inbox.
+          # Reply-To: set to Gmail so recruiter replies go there.
+          RESEND_FROM = "Bob Rikh <onboarding@resend.dev>"
+
+          # ── Load vendor list ──
           VENDOR_FILE = Path("data/vendor_list.json")
           if VENDOR_FILE.exists():
-              with open(VENDOR_FILE) as f:
-                  vendor_data = json.load(f)
-                  VENDORS = vendor_data.get("vendors", [])
+              vendor_data = json.loads(VENDOR_FILE.read_text())
+              VENDORS = vendor_data.get("vendors", [])
               print(f"Loaded {len(VENDORS)} vendors from vendor_list.json")
           else:
-              # Fallback hardcoded list
               VENDORS = [
-                  {"name": "INSPYR Solutions", "email": "info@inspyrsolutions.com"},
-                  {"name": "TalentBurst", "email": "info@talentburst.com"},
-                  {"name": "Stefanini", "email": "careers@stefanini.com"},
-                  {"name": "NNIT Soft Tech", "email": "info@nnitsoft.com"},
-                  {"name": "Dexian", "email": "info@dexian.com"},
-                  {"name": "Tier2Tek", "email": "careers@tier2tek.com"},
-                  {"name": "Motion Recruitment", "email": "recruiting@motionrecruitment.com"},
+                  {"name": "INSPYR Solutions",      "email": "info@inspyrsolutions.com"},
+                  {"name": "TalentBurst",           "email": "info@talentburst.com"},
+                  {"name": "Stefanini",             "email": "careers@stefanini.com"},
+                  {"name": "NNIT Soft Tech",        "email": "info@nnitsoft.com"},
+                  {"name": "Dexian",                "email": "info@dexian.com"},
+                  {"name": "Tier2Tek",              "email": "careers@tier2tek.com"},
+                  {"name": "Motion Recruitment",    "email": "recruiting@motionrecruitment.com"},
+                  {"name": "Collabera",             "email": "careers@collabera.com"},
+                  {"name": "Pyramid Consulting",    "email": "info@pyramidci.com"},
+                  {"name": "Mastech Digital",       "email": "careers@mastechdigital.com"},
+                  {"name": "Skiltrek",              "email": "info@skiltrek.com"},
+                  {"name": "RIT Solutions",         "email": "info@ritsolutions.com"},
+                  {"name": "ConsultAdd",            "email": "careers@consultadd.com"},
+                  {"name": "Kforce",                "email": "us_staffingsupport@kforce.com"},
+                  {"name": "Apex Systems",          "email": "apexsystems@apexsystems.com"},
+                  {"name": "Genesis10",             "email": "info@genesis10.com"},
+                  {"name": "Insight Global",        "email": "info@insightglobal.com"},
+                  {"name": "Modis (Adecco)",        "email": "modis@adeccousa.com"},
+                  {"name": "Diverse Lynx",          "email": "info@diverselynx.com"},
+                  {"name": "Vdart",                 "email": "info@vdart.com"},
               ]
               print(f"Using fallback list: {len(VENDORS)} vendors")
 
-          # Load contact history (tracks who was emailed and when)
+          # ── Load contact history ──
           HISTORY_FILE = Path("data/vendor_outreach_history.json")
           HISTORY_FILE.parent.mkdir(exist_ok=True)
-          
           history = {}
           if HISTORY_FILE.exists():
-              with open(HISTORY_FILE) as f:
-                  history = json.load(f)
+              history = json.loads(HISTORY_FILE.read_text())
 
-          # TTL: 30 days — don't re-email within 30 days
           TTL_DAYS = 30
           now = datetime.utcnow()
 
-          # Filter to only vendors not contacted within TTL
           to_contact = []
           for vendor in VENDORS:
               email = vendor["email"]
-              last_contacted = history.get(email, {}).get("last_contacted", "")
-              if last_contacted:
-                  last_date = datetime.fromisoformat(last_contacted)
-                  days_since = (now - last_date).days
-                  if days_since < TTL_DAYS:
-                      print(f"  SKIP {vendor['name']} — contacted {days_since} days ago")
+              last = history.get(email, {}).get("last_contacted", "")
+              if last:
+                  days_ago = (now - datetime.fromisoformat(last)).days
+                  if days_ago < TTL_DAYS:
+                      print(f"  SKIP {vendor['name']} — {days_ago}d ago")
                       continue
-                  else:
-                      print(f"  RERUN {vendor['name']} — last contact was {days_since} days ago (>30)")
               to_contact.append(vendor)
 
           if not to_contact:
               print("All vendors contacted within 30 days. Nothing to send.")
-              # Save history (no changes)
-              with open(HISTORY_FILE, "w") as f:
-                  json.dump(history, f, indent=2)
               exit(0)
 
-          print(f"\nSending to {len(to_contact)} vendors...")
+          print(f"\nSending to {len(to_contact)} vendors via Resend API...")
 
-          # Email content
-          subject = "Java Backend Developer Available for C2C Contract - 10+ Years Experience"
-          body = """Hi,
+          # ── Email template ──
+          # Keep it short — recruiters scan, not read.
+          # No attachments — CV link only (avoids spam filters).
+          # No "Dear Sir/Madam" — recruiters hate generic openers.
+          SUBJECT = "Senior Java/Spring Boot Dev — C2C Available, Green Card, Parker CO"
 
-          I am a Senior Java Back-End Developer with 10+ years of experience, available immediately for Corp-to-Corp (C2C) contract opportunities.
+          def make_body(vendor_name: str) -> str:
+              return f"""Hi {vendor_name} team,
 
-          Core Skills: Java 17, Spring Boot, Microservices, Apache Kafka, Kubernetes, Docker, AWS, MongoDB, Cassandra, PostgreSQL, Redis, GraphQL, REST APIs, JUnit 5, Maven, Git, CI/CD
+I'm a Senior Java Backend Developer with 10+ years of experience, looking for C2C contract roles.
 
-          Work Authorization: Green Card Holder — No Sponsorship Required
-          Location: Parker, CO (Open to 100% Remote)
-          Rate: $70-95/hr C2C
-          Availability: Immediate
+Quick summary:
+• Java 17, Spring Boot, Microservices, Kafka, Kubernetes, Docker, AWS
+• 10 years experience — worked at Charter Communications, enterprise scale
+• Green Card holder — zero sponsorship needed, no restrictions
+• Rate: $70-90/hr C2C | Available: Immediately | Location: Parker, CO (100% Remote)
 
-          LinkedIn: https://www.linkedin.com/in/bobrikh75/
-          Resume: https://drive.google.com/drive/folders/1sJRyHCTC2Xend6VWn6hM07VufWQdw_qV
+Resume: https://drive.google.com/drive/folders/1sJRyHCTC2Xend6VWn6hM07VufWQdw_qV
+LinkedIn: https://www.linkedin.com/in/bobrikh75/
 
-          Please add me to your candidate database for Java/Spring Boot contract roles.
+If you have Java or Spring Boot contract openings (remote preferred), I'd love to connect.
 
-          Best regards,
-          Bob Rikh
-          347-268-5917
-          bobrikh75@gmail.com
-          """
+Bob Rikh
+347-268-5917 | {REPLY_TO}
+"""
 
-          # Send via Gmail SMTP
-          gmail_user = os.environ.get("GMAIL_USER", "")
-          gmail_pass = os.environ.get("GMAIL_APP_PASSWORD", "")
-          
+          # ── Send via Resend API ──
           sent = 0
-          if gmail_user and gmail_pass:
+          if not RESEND_KEY:
+              print("⚠️  RESEND_KEY not set — logging only (no emails sent)")
+
+          for vendor in to_contact:
               try:
-                  server = smtplib.SMTP_SSL("smtp.gmail.com", 465)
-                  server.login(gmail_user, gmail_pass)
-                  
-                  for vendor in to_contact:
-                      try:
-                          msg = MIMEMultipart()
-                          msg["From"] = f"Bob Rikh <{gmail_user}>"
-                          msg["To"] = vendor["email"]
-                          msg["Subject"] = subject
-                          msg.attach(MIMEText(body, "plain"))
-                          
-                          server.send_message(msg)
-                          print(f"  ✅ SENT to {vendor['name']} ({vendor['email']})")
+                  if RESEND_KEY:
+                      resp = requests.post(
+                          "https://api.resend.com/emails",
+                          headers={
+                              "Authorization": f"Bearer {RESEND_KEY}",
+                              "Content-Type": "application/json",
+                          },
+                          json={
+                              "from": RESEND_FROM,
+                              "to": [vendor["email"]],
+                              "reply_to": REPLY_TO,
+                              "subject": SUBJECT,
+                              "text": make_body(vendor["name"]),
+                          },
+                          timeout=10,
+                      )
+                      if resp.status_code in (200, 201):
+                          print(f"  ✅ SENT → {vendor['name']} ({vendor['email']})")
                           sent += 1
-                          
-                          # Update history
-                          history[vendor["email"]] = {
-                              "name": vendor["name"],
-                              "last_contacted": now.isoformat(),
-                              "times_contacted": history.get(vendor["email"], {}).get("times_contacted", 0) + 1,
-                          }
-                          time.sleep(3)  # Rate limit
-                      except Exception as e:
-                          print(f"  ❌ FAILED {vendor['name']}: {e}")
-                  
-                  server.quit()
-              except Exception as e:
-                  print(f"Gmail connection failed: {e}")
-          else:
-              print("⚠️ GMAIL credentials not set — logging contacts only")
-              for vendor in to_contact:
+                      else:
+                          print(f"  ❌ FAILED → {vendor['name']}: HTTP {resp.status_code} {resp.text[:100]}")
+                  else:
+                      print(f"  📝 LOG-ONLY → {vendor['name']} ({vendor['email']})")
+
                   history[vendor["email"]] = {
                       "name": vendor["name"],
                       "last_contacted": now.isoformat(),
                       "times_contacted": history.get(vendor["email"], {}).get("times_contacted", 0) + 1,
                   }
+                  time.sleep(1)
 
-          # Save updated history
-          with open(HISTORY_FILE, "w") as f:
-              json.dump(history, f, indent=2)
+              except Exception as e:
+                  print(f"  ❌ ERROR → {vendor['name']}: {e}")
+
+          # ── Save history ──
+          HISTORY_FILE.write_text(json.dumps(history, indent=2))
 
           print(f"\n{'='*50}")
           print(f"DONE! Sent {sent}/{len(to_contact)} emails")
-          print(f"Total vendors in database: {len(history)}")
-          print(f"Next run: contacts older than 30 days will be re-emailed")
+          print(f"Total in database: {len(history)} vendors")
+          print(f"Next run: 30 days from now (or manual dispatch)")
           print(f"{'='*50}")
           EOF
 
       - name: Save outreach history
         run: |
-          git config user.email "bot@bobrikh.dev"
+          git config user.email "bot@github.actions"
           git config user.name "Outreach Bot"
           git add data/vendor_outreach_history.json || true
-          git diff --staged --quiet || git commit -m "chore: update vendor outreach history $(date +%Y-%m-%d)"
+          git diff --staged --quiet || git commit -m "chore: vendor outreach history $(date +%Y-%m-%d)"
           git push || true

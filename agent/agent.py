@@ -52,6 +52,47 @@ def run_discover(db, profile):
     return all_jobs
 
 
+# Known staffing/consulting firms that actively place C2C contractors
+STAFFING_FIRMS = {
+    "skiltrek", "pyramid", "collabera", "mastech", "infosys bpm", "teknoserv",
+    "tek systems", "teksystems", "randstad", "manpower", "robert half", "adp",
+    "cognizant", "wipro", "tata", "hcl", "infosys", "capgemini", "igate",
+    "softpath", "cybercoders", "motion recruitment", "talentburst", "dexian",
+    "stefanini", "inspyr", "tier2tek", "rit solutions", "consultadd", "nnit",
+    "allegis", "magnit", "modis", "apex systems", "genesis10", "kforce",
+    "insight global", "spar group", "vdart", "mindlance", "staffmark",
+    "panzer", "syntel", "hcl tech", "persistent", "globant", "lti",
+    "mphasis", "hexaware", "unison", "diverse lynx", "diverselynx",
+    "procal", "xorbit", "technocraft", "softchoice", "ilink",
+    "coforge", "niit tech", "birlasoft", "sonata", "cyient", "zensar",
+    "ltimindtree", "ltim", "netcracker", "incedo", "comtec",
+    "tek valley", "tekvalley", "nityo infotech", "nityo", "vsoft",
+    "data systems", "techgig", "dice", "hired.com", "toptal",
+}
+
+
+def is_staffing_firm(company: str, description: str) -> bool:
+    """Return True if the job is posted by a staffing/consulting firm (C2C-friendly)."""
+    company_lower = company.lower()
+    # Check known firm names
+    if any(firm in company_lower for firm in STAFFING_FIRMS):
+        return True
+    # Check generic staffing company patterns in name
+    staffing_words = ["staffing", "consulting", "solutions", "technologies", "tech inc",
+                      "it solutions", "it services", "infotech", "systems inc", "corp solutions"]
+    if any(w in company_lower for w in staffing_words):
+        return True
+    # Check description signals
+    desc_lower = description.lower()
+    if any(phrase in desc_lower for phrase in [
+        "our client", "on behalf of our client", "end client",
+        "c2c", "corp to corp", "corp-to-corp", "w2 or c2c",
+        "1099", "contract to hire", "contract only", "contract position",
+    ]):
+        return True
+    return False
+
+
 def run_filter(db, jobs):
     profile = load_profile()
     passed = []
@@ -103,13 +144,22 @@ def run_filter(db, jobs):
         job["match_score"] = match["score"]
         job["ghost_score"] = ghost_score
 
-        upsert_application(db, company=job.get("company", ""), job_title=job.get("title", ""),
+        # Classify: staffing firm vs direct employer
+        company = job.get("company", "")
+        description = job.get("description", "")
+        job["is_staffing_firm"] = is_staffing_firm(company, description)
+        if job["is_staffing_firm"]:
+            print(f"  ✅ PASS ({match['score']}% match) [STAFFING]: {job.get('title', '')} @ {company}")
+        else:
+            print(f"  ✅ PASS ({match['score']}% match) [DIRECT]: {job.get('title', '')} @ {company}")
+
+        upsert_application(db, company=company, job_title=job.get("title", ""),
                            job_url=url, ats_type=ats.ats_type,
                            match_score=match["score"], ghost_score=ghost_score)
         passed.append(job)
-        print(f"  ✅ PASS ({match['score']}% match): {job.get('title', '')} @ {job.get('company', '')}")
 
-    print(f"  Phase 2: {len(passed)}/{len(jobs)} passed filter")
+    staffing_count = sum(1 for j in passed if j.get("is_staffing_firm"))
+    print(f"  Phase 2: {len(passed)}/{len(jobs)} passed filter ({staffing_count} staffing firms, {len(passed)-staffing_count} direct)")
     return passed
 
 
@@ -135,9 +185,11 @@ def run_apply(db, jobs, dry_run=False):
                 j["can_automate"] = True  # override — it's a direct URL
                 automatable.append(j)
     
+    # Sort: staffing firms first (they do C2C), then CAPTCHA-free ATS, then by match score
     automatable = sorted(
         automatable,
         key=lambda j: (
+            0 if j.get("is_staffing_firm") else 1,
             0 if j.get("ats_type") in CAPTCHA_FREE_ATS else 1,
             -j.get("match_score", 0),
         ),
