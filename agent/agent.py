@@ -120,16 +120,30 @@ def run_apply(db, jobs, dry_run=False):
     Never crash — report results even if 0 applications succeed.
     """
     CAPTCHA_FREE_ATS = {"lever", "greenhouse", "ashby", "workable", "bamboohr", "dice"}
+    # Domains that host MANY different companies (don't limit per-domain)
+    MULTI_COMPANY_DOMAINS = {"job-boards.greenhouse.io", "boards.greenhouse.io", "jobs.lever.co", "jobs.ashbyhq.com"}
 
+    # Include jobs that are automatable OR have a non-LinkedIn/Indeed URL
+    automatable = []
+    for j in jobs:
+        if j.get("can_automate", False):
+            automatable.append(j)
+        else:
+            # Try to automate jobs that have direct company URLs (not LinkedIn/Indeed)
+            url = j.get("url", "").lower()
+            if url and "linkedin.com" not in url and "indeed.com" not in url:
+                j["can_automate"] = True  # override — it's a direct URL
+                automatable.append(j)
+    
     automatable = sorted(
-        [j for j in jobs if j.get("can_automate", False)],
+        automatable,
         key=lambda j: (
             0 if j.get("ats_type") in CAPTCHA_FREE_ATS else 1,
             -j.get("match_score", 0),
         ),
     )
 
-    # Apply to ALL automatable sites — CloakBrowser handles bot detection
+    # Remove known blocked domains
     from urllib.parse import urlparse
     from src.learning_engine import is_blocked_site
     filtered = []
@@ -149,13 +163,18 @@ def run_apply(db, jobs, dry_run=False):
             unique_roles.append(j)
     automatable = unique_roles
 
-    # Diversify: max 5 per domain
+    # Diversify: max 3 per COMPANY (not per domain!)
+    # greenhouse.io hosts 100+ companies — don't limit the whole domain
     from urllib.parse import urlparse
-    seen_domains, diverse = {}, []
+    seen_companies, diverse = {}, []
     for j in automatable:
-        d = urlparse(j.get("url", "")).netloc
-        seen_domains[d] = seen_domains.get(d, 0) + 1
-        if seen_domains[d] <= 3:
+        domain = urlparse(j.get("url", "")).netloc
+        if domain in MULTI_COMPANY_DOMAINS:
+            company_key = j.get("company", "unknown").lower()
+        else:
+            company_key = domain
+        seen_companies[company_key] = seen_companies.get(company_key, 0) + 1
+        if seen_companies[company_key] <= 3:
             diverse.append(j)
     automatable = diverse
     email_only = [j for j in jobs if not j.get("can_automate", False)]
