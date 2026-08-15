@@ -670,6 +670,67 @@ def fill_greenhouse_custom_fields(page, profile: dict) -> int:
     return filled
 
 
+def simulate_human_behavior(page) -> None:
+    """Simulate human behavior to boost reCAPTCHA Enterprise score."""
+    import random
+    try:
+        viewport = page.viewport_size or {"width": 1920, "height": 1080}
+        for _ in range(random.randint(3, 6)):
+            x = random.randint(100, viewport["width"] - 100)
+            y = random.randint(100, viewport["height"] - 100)
+            page.mouse.move(x, y, steps=random.randint(5, 15))
+            time.sleep(random.uniform(0.1, 0.3))
+        for _ in range(random.randint(2, 4)):
+            page.mouse.wheel(0, random.randint(100, 300))
+            time.sleep(random.uniform(0.3, 0.7))
+        page.mouse.wheel(0, -500)
+        time.sleep(random.uniform(0.5, 1.0))
+    except Exception:
+        pass
+
+
+def solve_recaptcha_enterprise(page, url: str) -> bool:
+    """Handle reCAPTCHA Enterprise (invisible/score-based).
+    
+    Strategy: execute grecaptcha.enterprise.execute() to get token + inject.
+    If that fails, rely on CloakBrowser + human simulation for a good score.
+    """
+    simulate_human_behavior(page)
+    try:
+        token = page.evaluate("""() => {
+            return new Promise((resolve) => {
+                if (typeof grecaptcha === 'undefined' || !grecaptcha.enterprise) { resolve(null); return; }
+                let sitekey = null;
+                document.querySelectorAll('script[src*="recaptcha"]').forEach(s => {
+                    const m = s.src.match(/render=([^&]+)/);
+                    if (m && m[1] !== 'explicit') sitekey = m[1];
+                });
+                if (!sitekey) { const el = document.querySelector('[data-sitekey]'); if (el) sitekey = el.dataset.sitekey; }
+                if (!sitekey) { resolve(null); return; }
+                try {
+                    grecaptcha.enterprise.ready(() => {
+                        grecaptcha.enterprise.execute(sitekey, {action: 'submit'})
+                            .then(token => resolve(token)).catch(() => resolve(null));
+                    });
+                } catch(e) { resolve(null); }
+                setTimeout(() => resolve(null), 10000);
+            });
+        }""")
+        if token and len(str(token)) > 20:
+            page.evaluate("""(token) => {
+                document.querySelectorAll('[name="g-recaptcha-response"], [name="recaptcha-token"], textarea[id*="recaptcha"]').forEach(el => { el.value = token; });
+                document.querySelectorAll('input[type="hidden"]').forEach(el => {
+                    if (el.name && (el.name.includes('captcha') || el.name.includes('recaptcha'))) el.value = token;
+                });
+            }""", token)
+            print(f"      🔓 reCAPTCHA Enterprise token obtained")
+            return True
+    except Exception:
+        pass
+    print(f"      🔓 reCAPTCHA Enterprise: relying on stealth browser score")
+    return True  # Don't block — CloakBrowser should pass score-based check
+
+
 def detect_multi_step(page) -> bool:
     """Check if this is a multi-step form (has progress indicator or Next button)."""
     signals = ['step', 'progress', 'wizard', 'stage', 'page 1', 'step 1']

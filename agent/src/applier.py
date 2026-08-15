@@ -867,6 +867,10 @@ def apply_to_job(page, profile, job, learned, dry_run=False, db=None) -> dict:
                     print(f"      ⚠️  CAPTCHA unsolvable — blocking domain")
                     break
 
+            # HUMAN BEHAVIOR: simulate mouse/scroll before interacting (boosts reCAPTCHA score)
+            from src.page_doctor import simulate_human_behavior
+            simulate_human_behavior(page)
+
             # READ the entire page
             page_data = read_page(page)
             snap(page, f"read_{attempt}")
@@ -976,6 +980,11 @@ def apply_to_job(page, profile, job, learned, dry_run=False, db=None) -> dict:
             if dynamic_filled:
                 attempt_result["filled"] += dynamic_filled
                 print(f"      🔄 Dynamic fill: {dynamic_filled} additional fields")
+
+            # Handle reCAPTCHA Enterprise (invisible) — boost score + get token
+            from src.page_doctor import solve_recaptcha_enterprise, simulate_human_behavior
+            if page.locator('script[src*="recaptcha"]').count() > 0:
+                solve_recaptcha_enterprise(page, apply_url)
 
             # SUBMIT
             submit_result = submit_and_verify(page, page_data, url)
