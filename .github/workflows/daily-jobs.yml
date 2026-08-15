@@ -2,8 +2,9 @@ name: Daily C2C Job Search
 
 on:
   schedule:
-    - cron: '30 15 * * *'  # 9:30 AM Colorado (MDT) — job search daily
-    - cron: '0 14 * * 1,4'  # 8:00 AM Colorado Mon & Thu — LinkedIn posts
+    - cron: '30 13 * * *'  # 7:30 AM MT — morning job search
+    - cron: '30 19 * * *'  # 1:30 PM MT — afternoon job search (fresh postings)
+    - cron: '0 14 * * 1,4'  # 8:00 AM MT Mon & Thu — LinkedIn posts
   workflow_dispatch:
 
 permissions:

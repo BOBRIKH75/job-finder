@@ -167,7 +167,7 @@ def run_apply(db, jobs, dry_run=False):
 
     try:
         from src.applier import run_applications
-        results = run_applications(automatable, dry_run=dry_run, max_apps=30, db=db)
+        results = run_applications(automatable, dry_run=dry_run, max_apps=50, db=db)
     except Exception as e:
         print(f"  ⚠️ Phase 3 crashed (non-fatal): {e}")
         results = []
