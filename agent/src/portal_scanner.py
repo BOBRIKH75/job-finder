@@ -343,6 +343,68 @@ def scan_ziprecruiter() -> list[dict]:
     return jobs
 
 
+def scan_remotive() -> list[dict]:
+    """Search Remotive via their free public JSON API (software-dev category)."""
+    jobs = []
+    try:
+        resp = httpx.get(
+            "https://remotive.com/api/remote-jobs?category=software-dev&limit=50",
+            headers={"User-Agent": "Mozilla/5.0"},
+            timeout=15,
+        )
+        if resp.status_code != 200:
+            return []
+        for item in resp.json().get("jobs", []):
+            title = item.get("title", "")
+            desc = item.get("description", "")
+            url = item.get("url", "")
+            if not url or not matches_skills(title, desc):
+                continue
+            jobs.append({
+                "title": title,
+                "company": item.get("company_name", ""),
+                "url": url,
+                "location": item.get("candidate_required_location", "Remote"),
+                "description": desc[:1000],
+                "source": "remotive",
+                "ats_type": "unknown",
+            })
+    except Exception as e:
+        print(f"    Remotive scan failed: {e}")
+    return jobs
+
+
+def scan_himalayas() -> list[dict]:
+    """Search Himalayas via their free public JSON API."""
+    jobs = []
+    try:
+        resp = httpx.get(
+            "https://himalayas.app/jobs/api?q=java&limit=50",
+            headers={"User-Agent": "Mozilla/5.0"},
+            timeout=15,
+        )
+        if resp.status_code != 200:
+            return []
+        for item in resp.json().get("jobs", []):
+            title = item.get("title", "")
+            desc = item.get("description", "")
+            url = item.get("applicationUrl", "") or item.get("url", "")
+            if not url or not matches_skills(title, desc):
+                continue
+            jobs.append({
+                "title": title,
+                "company": item.get("companyName", ""),
+                "url": url,
+                "location": item.get("location", "Remote"),
+                "description": desc[:1000],
+                "source": "himalayas",
+                "ats_type": "unknown",
+            })
+    except Exception as e:
+        print(f"    Himalayas scan failed: {e}")
+    return jobs
+
+
 SEED_ASHBY = ["anthropic", "notion", "ramp", "retool", "linear", "vercel", "supabase",
               "resend", "cal-com", "dbt-labs", "airbyte", "temporal", "neon"]
 SEED_WORKABLE = ["twilio", "elastic", "n8n", "zapier", "talkdesk", "genesys"]
@@ -415,6 +477,18 @@ def scan_all_companies(max_companies: int = 30) -> list[dict]:
     if zr_jobs:
         all_jobs.extend(zr_jobs)
         print(f"    ✅ ZipRecruiter: {len(zr_jobs)} jobs")
+
+    # Remotive — free public JSON API (software-dev category)
+    rem_jobs = scan_remotive()
+    if rem_jobs:
+        all_jobs.extend(rem_jobs)
+        print(f"    ✅ Remotive: {len(rem_jobs)} jobs")
+
+    # Himalayas — free public JSON API
+    him_jobs = scan_himalayas()
+    if him_jobs:
+        all_jobs.extend(him_jobs)
+        print(f"    ✅ Himalayas: {len(him_jobs)} jobs")
 
     save_companies(companies)
 
