@@ -280,9 +280,10 @@ Applications:
 
     try:
         import subprocess, tempfile
+        to_email = os.environ.get("GMAIL_USER", "bobrikh75@gmail.com")
         payload = json.dumps({
             "from": "Job Agent <onboarding@resend.dev>",
-            "to": ["bobrikh75@gmail.com"],
+            "to": [to_email],
             "subject": subject,
             "text": body,
         })
