@@ -19,16 +19,45 @@ MAX_EMAILS_PER_RUN = 50
 EMAIL = os.environ.get('GMAIL_USER', 'bobrikh75@gmail.com')
 GMAIL_APP_PASSWORD = os.environ.get('GMAIL_APP_PASSWORD', '')
 
+# Words that indicate a service/technical email — not a human recruiter
+_NON_PERSON_WORDS = {
+    "allow", "origin", "noreply", "no-reply", "donotreply", "admin",
+    "info", "support", "help", "hello", "contact", "team", "mail",
+    "jobs", "careers", "hr", "hiring", "talent", "recruit",
+    "dev", "test", "api", "system", "bot", "auto", "mailer",
+    "notification", "alert", "security", "privacy", "abuse",
+    "webmaster", "postmaster", "hostmaster", "billing", "sales",
+    "marketing", "press", "pr", "legal", "finance", "apply",
+}
+
+
+def _looks_like_person_email(local: str) -> bool:
+    """Return True only if the email local part looks like a human name."""
+    local_lower = local.lower()
+    # Check the full string first (catches "no-reply", "do-not-reply", etc.)
+    if local_lower in _NON_PERSON_WORDS or local_lower.replace('-', '') in _NON_PERSON_WORDS:
+        return False
+    parts = re.split(r'[._\-]', local_lower)
+    # Reject if any segment matches a known non-person word
+    if any(p in _NON_PERSON_WORDS for p in parts):
+        return False
+    # Reject if starts with a digit or is too short/long
+    if re.match(r'^\d', local) or len(local) < 3 or len(local) > 40:
+        return False
+    # Must contain at least one letter
+    return bool(re.search(r'[a-z]', local.lower()))
+
+
 # ── Extract emails from job posting text ──
 def extract_emails(text):
-    """Pull real email addresses from job description."""
+    """Pull real email addresses from job description — human names only."""
     if not text: return []
     emails = re.findall(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', str(text))
-    # Filter out junk
-    skip = ['noreply', 'no-reply', 'donotreply', 'support@', 'info@indeed',
-            'privacy@', 'abuse@', 'postmaster@', 'mailer-daemon', 'jobs@',
-            'careers@indeed', 'apply@']
-    return [e.lower() for e in emails if not any(s in e.lower() for s in skip)]
+    # Filter obvious junk domains first
+    skip_domains = ['indeed.com', 'linkedin.com', 'dice.com', 'greenhouse.io', 'lever.co']
+    filtered = [e.lower() for e in emails if not any(d in e.lower() for d in skip_domains)]
+    # Then keep only emails whose local part looks like a real person's name
+    return [e for e in filtered if _looks_like_person_email(e.split('@')[0])]
 
 # ── Extract recruiter name from posting ──
 def extract_recruiter_name(text):
@@ -142,24 +171,14 @@ def build_outreach_email(recruiter_name, job_title, company):
 
     return subject, html
 
-# ── Send email via Gmail SMTP ──
-def send_outreach(to_email, subject, html):
-    if not GMAIL_APP_PASSWORD:
-        print(f'  ⚠️  No GMAIL_APP_PASSWORD — skipping {to_email}')
-        return False
+RESEND_KEY = os.environ.get('RESEND_KEY', '')
 
-    msg = MIMEMultipart('alternative')
-    msg['From'] = f'Bob Rikh <{EMAIL}>'
-    msg['To'] = to_email
-    msg['Subject'] = subject
-    msg['Reply-To'] = EMAIL
-    msg['X-Mailer'] = 'Gmail'
-    # Plain text version (required — emails without it get flagged as spam)
-    plain = f"""Hello,
+PLAIN_TEMPLATE = f"""Hello,
 
 I came across a position at your company and wanted to reach out.
 
-I'm an experienced Java Backend Developer (Spring Boot, Kafka, Kubernetes, AWS, Microservices) currently contracting at Charter Communications.
+I'm an experienced Java Backend Developer (Spring Boot, Kafka, Kubernetes, AWS, Microservices)
+currently contracting at Charter Communications.
 
 Available for C2C / Corp-to-Corp. Green Card holder — no sponsorship needed.
 
@@ -172,9 +191,48 @@ Bob Rikh
 Parker, CO 80314
 347-268-5917
 bobrikh75@gmail.com"""
-    msg.attach(MIMEText(plain, 'plain'))
-    msg.attach(MIMEText(html, 'html'))
 
+
+def _send_via_resend(to_email, subject, html) -> bool:
+    """Send via Resend API — better deliverability than raw Gmail SMTP."""
+    import urllib.request as _req
+    payload = json.dumps({
+        "from": "Bob Rikh <onboarding@resend.dev>",
+        "to": [to_email],
+        "reply_to": EMAIL,
+        "subject": subject,
+        "html": html,
+        "text": PLAIN_TEMPLATE,
+    }).encode()
+    req = _req.Request(
+        "https://api.resend.com/emails",
+        data=payload,
+        headers={
+            "Authorization": f"Bearer {RESEND_KEY}",
+            "Content-Type": "application/json",
+        },
+        method="POST",
+    )
+    try:
+        with _req.urlopen(req, timeout=15) as r:
+            return r.status in (200, 201)
+    except Exception as e:
+        print(f'  ❌ Resend failed to {to_email}: {e}')
+        return False
+
+
+def _send_via_smtp(to_email, subject, html) -> bool:
+    """Fallback: send via Gmail SMTP."""
+    if not GMAIL_APP_PASSWORD:
+        print(f'  ⚠️  No GMAIL_APP_PASSWORD — skipping {to_email}')
+        return False
+    msg = MIMEMultipart('alternative')
+    msg['From'] = f'Bob Rikh <{EMAIL}>'
+    msg['To'] = to_email
+    msg['Subject'] = subject
+    msg['Reply-To'] = EMAIL
+    msg.attach(MIMEText(PLAIN_TEMPLATE, 'plain'))
+    msg.attach(MIMEText(html, 'html'))
     try:
         with smtplib.SMTP('smtp.gmail.com', 587) as s:
             s.starttls()
@@ -182,8 +240,15 @@ bobrikh75@gmail.com"""
             s.send_message(msg)
         return True
     except Exception as e:
-        print(f'  ❌ Send failed to {to_email}: {e}')
+        print(f'  ❌ SMTP failed to {to_email}: {e}')
         return False
+
+
+# ── Send email — Resend API preferred, Gmail SMTP fallback ──
+def send_outreach(to_email, subject, html):
+    if RESEND_KEY:
+        return _send_via_resend(to_email, subject, html)
+    return _send_via_smtp(to_email, subject, html)
 
 # ── Main: process jobs and send outreach ──
 def process_jobs(jobs_list):
