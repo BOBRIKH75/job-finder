@@ -55,16 +55,34 @@ FIELD_MAP = {
 }
 
 KNOWN_ANSWERS = {
+    # Work authorization
     "authorized": "Yes", "legally authorized": "Yes", "eligible to work": "Yes", "work in the u": "Yes",
-    "sponsorship": "No", "require sponsor": "No", "visa sponsor": "No",
+    "sponsorship": "No", "require sponsor": "No", "visa sponsor": "No", "need sponsorship": "No",
+    "currently sponsoring": "No", "will you now or in the future": "No",
+    # Location / relocation
     "relocate": "No", "willing to relocate": "No",
+    "country": "United States", "state": "Colorado",
+    # Availability / timing
     "start": "Immediately", "when can you": "Immediately", "available": "Immediately",
+    "notice period": "2 weeks",
+    # Compensation
     "salary": "150000", "compensation": "150000", "expected pay": "150000",
-    "hourly": "75", "rate": "75",
+    "hourly": "75", "rate": "75", "desired salary": "150000",
+    # Source
     "hear about": "Online Job Board", "how did you": "Online Job Board", "source": "Job Board",
-    "gender": "Decline", "race": "Decline", "ethnicity": "Decline", "demographic": "Decline",
-    "veteran": "not a protected veteran", "disability": "do not wish to answer",
+    "referred by": "Online Job Board", "how did you find": "Online Job Board",
+    # DEI / sensitive — decline to avoid any blocking
+    "gender": "Decline to state", "pronoun": "Prefer not to answer",
+    "race": "Decline to state", "ethnicity": "Decline to state", "demographic": "Decline to state",
+    "veteran": "I am not a protected veteran", "disability": "I do not wish to answer",
+    "sexual orientation": "Decline to state",
+    # Language
+    "language": "English", "primary language": "English", "english proficiency": "Professional",
+    # Misc
     "background check": "Yes", "consent": "Yes", "agree": "Yes",
+    "remote": "Yes", "work remotely": "Yes", "open to remote": "Yes",
+    "employment type": "Contract", "contract type": "Corp-to-Corp (C2C)",
+    "years of experience": "10+",
 }
 
 
@@ -783,9 +801,16 @@ def _fill_remaining_required(page, profile: dict) -> int:
 
 def submit_and_verify(page, page_data, original_url) -> dict:
     """Find submit button, click it, verify success."""
-    # Find submit button
     submit_texts = ["submit application", "submit", "apply now", "apply", "send application", "send", "complete"]
     skip_texts = ["linkedin", "google", "facebook", "twitter", "sign in", "log in", "dismiss"]
+
+    # Intercept POST/PUT responses — a 2xx with no DOM errors is ground-truth success
+    post_responses: list[dict] = []
+    def _on_response(response):
+        if response.request.method in ("POST", "PUT") and 200 <= response.status < 400:
+            post_responses.append({"url": response.url, "status": response.status})
+    page.on("response", _on_response)
+
     for btn in page_data["buttons"]:
         btn_lower = btn["text"].lower()
         if any(s in btn_lower for s in skip_texts):
@@ -793,6 +818,7 @@ def submit_and_verify(page, page_data, original_url) -> dict:
         for st in submit_texts:
             if st in btn_lower:
                 try:
+                    post_responses.clear()
                     if btn["selector"]:
                         page.locator(btn["selector"]).click()
                     else:
@@ -806,25 +832,36 @@ def submit_and_verify(page, page_data, original_url) -> dict:
                     except Exception:
                         text = ""
 
+                    # 1. URL or page text success signal
                     success_signals = ["thank", "success", "received", "submitted", "confirmation", "applied", "complete"]
                     if any(s in url for s in success_signals) or any(s in text for s in success_signals):
                         return {"submitted": True, "method": btn["text"]}
 
-                    error_signals = ["this field is required", "please fill", "is invalid", "cannot be blank", "must be completed", "is required"]
+                    # 2. Specific error phrases only — never match "a required field" or "indicates required"
+                    error_signals = ["this field is required", "please fill", "is invalid",
+                                     "cannot be blank", "must be completed"]
                     errors = [s for s in error_signals if s in text]
-                    # Also check for visible error elements (more reliable than page text)
+                    # Visible error ELEMENTS — but exclude generic banners/labels (only field-level errors)
                     try:
-                        error_els = page.locator('[class*="error"]:visible, [role="alert"]:visible, .field-error:visible').count()
-                        if error_els > 0:
-                            errors.append("visible_error_elements")
+                        field_errors = page.locator(
+                            '[class*="field-error"]:visible, [class*="FieldError"]:visible, '
+                            '[aria-invalid="true"]:visible, [class*="validation-error"]:visible, '
+                            'span.error:visible, p.error:visible'
+                        ).count()
+                        if field_errors > 0:
+                            errors.append(f"{field_errors}_field_errors")
                     except Exception:
                         pass
                     if errors:
                         return {"submitted": False, "reason": f"Form errors: {errors}"}
 
-                    # URL changed = probably success
+                    # 3. URL changed = success (Greenhouse redirects on submit)
                     if url != original_url.lower().rstrip("/"):
                         return {"submitted": True, "method": "url_changed"}
+
+                    # 4. Intercepted a successful POST and no DOM errors visible
+                    if post_responses:
+                        return {"submitted": True, "method": "post_intercepted"}
 
                     return {"submitted": False, "reason": "No success signal after submit"}
                 except Exception as e:
