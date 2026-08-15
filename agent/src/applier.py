@@ -1116,7 +1116,21 @@ def run_applications(jobs: list[dict], dry_run: bool = True, max_apps: int = 10,
     available = [t["name"] for t in tools if t["available"]]
     print(f"  🛡️ Stealth tools available: {', '.join(available)}")
 
-    context = cloakbrowser.launch_context(headless=True)
+    context = None
+    # Try CloakBrowser first (stealth), fall back to regular Playwright
+    try:
+        context = cloakbrowser.launch_context(headless=True)
+        print(f"  CloakBrowser — stealth Chromium for automation")
+    except Exception as cloak_err:
+        print(f"  ⚠️ CloakBrowser failed: {str(cloak_err)[:60]} — using Playwright fallback")
+        from playwright.sync_api import sync_playwright
+        pw = sync_playwright().start()
+        browser = pw.chromium.launch(headless=True)
+        context = browser.new_context(
+            user_agent="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+            viewport={"width": 1920, "height": 1080},
+        )
+
     # Inject Indeed cookies for authenticated apply
     indeed_cookies = load_indeed_cookies()
     if indeed_cookies:
