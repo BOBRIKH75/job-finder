@@ -1407,6 +1407,27 @@ def run_applications(jobs: list[dict], dry_run: bool = True, max_apps: int = 10,
                                 "company": job.get("company", ""), "status": "stealth_crashed"})
                 continue
 
+        # For Greenhouse jobs: try direct multipart POST first (no browser / no CAPTCHA risk)
+        if "greenhouse.io" in url:
+            from src.greenhouse_api import submit_greenhouse_api
+            _resume = profile.get("resume_path",
+                                  "~/Downloads/CV/Bob_Rikh_Java_Backend_Developer_C2C.pdf")
+            _api = submit_greenhouse_api(url, profile, _resume, dry_run=dry_run)
+            if _api.get("submitted"):
+                print(f"    ✅ Greenhouse direct API: {_api.get('method', 'ok')}")
+                r = {
+                    "url": url, "title": job.get("title", ""),
+                    "company": job.get("company", ""),
+                    "status": "dry_run" if dry_run else "submitted",
+                    "method": "direct_api", "fields_filled": 5,
+                }
+                results.append(r)
+                applied += 1
+                record_apply(site_key)
+                human_delay(site_key)
+                continue
+            print(f"    ⚠️ GH API failed ({_api.get('error','?')[:80]}) — browser fallback")
+
         r = apply_to_job(page, profile, job, learned, dry_run, db=db)
         results.append(r)
         if r["status"] in ("submitted", "dry_run"):
