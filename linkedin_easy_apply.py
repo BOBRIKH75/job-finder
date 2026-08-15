@@ -1,24 +1,25 @@
-"""LinkedIn Easy Apply Bot — SAFE MODE.
+"""LinkedIn Easy Apply Bot — SAFE MODE (cookie-based auth).
 
-Applies to LinkedIn Easy Apply jobs with STRICT anti-ban limits:
-- Max 10 applications per run (way under 50/day limit)
-- Random delays 30-90 seconds between applications (human-like)
-- Only weekdays 9 AM (when real humans apply)
-- Skips already-applied jobs
-- Stops immediately if any warning/restriction detected
+Uses LinkedIn session cookies instead of email/password login.
+This is safer because:
+- No login event from a new IP (GitHub Actions IPs change every run)
+- Avoids Google OAuth popup (account uses Google SSO)
+- Cookies last ~1 year; password login triggers "new device" alerts
+
+Setup (one-time, run locally):
+  1. Log in to LinkedIn in Chrome
+  2. DevTools → Application → Cookies → www.linkedin.com
+  3. Copy values for: li_at, JSESSIONID, liap
+  4. Run: python extract_li_cookies.py  (or encode manually — see README)
+  5. Set GitHub Secret: LINKEDIN_COOKIES = base64(JSON array of cookie dicts)
 
 SAFETY RULES:
-1. NEVER exceed 10 apps per session
-2. NEVER run more than once per day
-3. ALWAYS random delays (30-90s between apps)
-4. ALWAYS check for restriction warnings
-5. NEVER apply to the same job twice
-
-To use: set these GitHub Secrets:
-  LINKEDIN_EMAIL: your LinkedIn email
-  LINKEDIN_PASSWORD: your LinkedIn password
+1. NEVER exceed 15 apps per session (30/day max — LinkedIn limit is 50)
+2. ALWAYS random delays 30-90s between applications
+3. ALWAYS check for restriction warnings before each apply
+4. NEVER apply to the same job twice
 """
-import json, os, random, sys, time
+import base64, json, os, random, time
 from pathlib import Path
 from datetime import datetime
 
@@ -75,27 +76,88 @@ def check_for_restrictions(driver) -> bool:
     return False
 
 
-def main():
-    email = os.environ.get("LINKEDIN_EMAIL", "")
-    password = os.environ.get("LINKEDIN_PASSWORD", "")
+def load_linkedin_cookies() -> list[dict]:
+    """Load LinkedIn session cookies from LINKEDIN_COOKIES env var (base64 JSON)."""
+    encoded = os.environ.get("LINKEDIN_COOKIES", "")
+    if not encoded:
+        return []
+    try:
+        return json.loads(base64.b64decode(encoded).decode())
+    except Exception as e:
+        print(f"  ⚠️  Could not decode LINKEDIN_COOKIES: {e}")
+        return []
 
-    if not email or not password:
-        print("❌ LINKEDIN_EMAIL and LINKEDIN_PASSWORD secrets not set")
-        print("   Set them: gh secret set LINKEDIN_EMAIL --body 'your@email.com'")
-        print("             gh secret set LINKEDIN_PASSWORD --body 'your-password'")
+
+def alert_cookie_expired():
+    """Send an email alert when LinkedIn cookies need refreshing."""
+    resend_key = os.environ.get("RESEND_KEY", "")
+    gmail_user = os.environ.get("GMAIL_USER", "bobrikh75@gmail.com")
+    if not resend_key:
+        print("  ⚠️  LINKEDIN_COOKIES expired — update the LINKEDIN_COOKIES secret")
+        return
+    import urllib.request
+    payload = json.dumps({
+        "from": "Job Agent <onboarding@resend.dev>",
+        "to": [gmail_user],
+        "subject": "ACTION REQUIRED: LinkedIn cookies expired",
+        "text": (
+            "Your LinkedIn session cookies have expired.\n\n"
+            "To fix:\n"
+            "1. Log in to LinkedIn in Chrome\n"
+            "2. DevTools → Application → Cookies → www.linkedin.com\n"
+            "3. Copy li_at, JSESSIONID, liap values\n"
+            "4. Run extract_li_cookies.py locally\n"
+            "5. Update GitHub Secret: LINKEDIN_COOKIES\n\n"
+            "The LinkedIn Easy Apply bot will resume automatically on the next run."
+        ),
+    }).encode()
+    req = urllib.request.Request(
+        "https://api.resend.com/emails",
+        data=payload,
+        headers={"Authorization": f"Bearer {resend_key}", "Content-Type": "application/json"},
+        method="POST",
+    )
+    try:
+        urllib.request.urlopen(req, timeout=10)
+        print("  📧 Alert email sent — check your inbox to refresh LinkedIn cookies")
+    except Exception:
+        print("  ⚠️  LinkedIn cookies expired — update LINKEDIN_COOKIES secret")
+
+
+def inject_cookies(driver, cookies: list[dict]):
+    """Inject LinkedIn cookies into the browser session."""
+    # Must be on the domain before setting cookies
+    driver.get("https://www.linkedin.com")
+    time.sleep(2)
+    for cookie in cookies:
+        try:
+            # Selenium requires domain without leading dot for some cookies
+            c = {k: v for k, v in cookie.items() if k in ("name", "value", "domain", "path", "secure", "httpOnly")}
+            driver.add_cookie(c)
+        except Exception as e:
+            print(f"    ⚠️  Could not inject cookie {cookie.get('name')}: {e}")
+
+
+def main():
+    cookies = load_linkedin_cookies()
+
+    if not cookies:
+        print("❌ LINKEDIN_COOKIES secret not set")
+        print("   This bot uses cookie auth (no password needed — works with Google SSO)")
+        print("   See the docstring at the top of this file for setup instructions")
         return
 
     applied_data = load_applied()
 
-    # Safety: check last run time — don't run more than twice per day
+    # Safety: don't run more than twice per day
     if applied_data.get("last_run"):
-        from datetime import datetime, timedelta
+        from datetime import timedelta
         last = datetime.fromisoformat(applied_data["last_run"])
         if datetime.now() - last < timedelta(hours=5):
-            print(f"⏸️ Last run was {last.isoformat()} — too recent, skipping (safety)")
+            print(f"⏸️ Last run was {last.isoformat()} — too recent, skipping")
             return
 
-    print(f"🔗 LinkedIn Easy Apply Bot — SAFE MODE")
+    print(f"🔗 LinkedIn Easy Apply Bot — SAFE MODE (cookie auth)")
     print(f"   Max applications: {MAX_APPLICATIONS_PER_RUN}")
     print(f"   Delay between: {MIN_DELAY_SECONDS}-{MAX_DELAY_SECONDS}s")
     print(f"   Previously applied: {applied_data['total']}")
@@ -107,6 +169,7 @@ def main():
         options.add_argument("--headless=new")
         options.add_argument("--no-sandbox")
         options.add_argument("--disable-dev-shm-usage")
+        options.add_argument("--disable-blink-features=AutomationControlled")
         driver = uc.Chrome(options=options)
     except Exception as e:
         print(f"❌ Browser launch failed: {e}")
@@ -115,31 +178,28 @@ def main():
     applied_count = 0
 
     try:
-        # Login to LinkedIn
-        print("  📧 Logging in to LinkedIn...")
-        driver.get("https://www.linkedin.com/login")
-        time.sleep(3)
+        # Inject cookies instead of logging in
+        print("  🍪 Injecting LinkedIn session cookies...")
+        inject_cookies(driver, cookies)
 
-        if check_for_restrictions(driver):
+        # Navigate to feed to verify session is valid
+        driver.get("https://www.linkedin.com/feed/")
+        time.sleep(4)
+
+        current = driver.current_url
+        if "login" in current or "authwall" in current or "checkpoint" in current:
+            print("  🚨 LinkedIn cookies expired or invalid — session not authenticated")
+            alert_cookie_expired()
+            driver.quit()
             return
 
-        driver.find_element("id", "username").send_keys(email)
-        driver.find_element("id", "password").send_keys(password)
-        driver.find_element("css selector", "button[type='submit']").click()
-        time.sleep(5)
+        print(f"  ✅ Session valid — at {current[:60]}")
 
         if check_for_restrictions(driver):
+            driver.quit()
             return
 
-        # Check if login succeeded
-        if "feed" not in driver.current_url and "checkpoint" not in driver.current_url:
-            if "challenge" in driver.current_url:
-                print("  🚨 LinkedIn wants verification — cannot proceed automatically")
-                print("  💡 Please log in manually once to clear the verification")
-                return
-
-        print("  ✅ Logged in successfully")
-        human_delay()
+        time.sleep(random.uniform(3, 6))  # brief pause before searching
 
         # Search for jobs
         for keyword in SEARCH_KEYWORDS:
