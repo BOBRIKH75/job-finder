@@ -2,7 +2,8 @@ name: LinkedIn Easy Apply (Safe Mode)
 
 on:
   schedule:
-    - cron: '0 15 * * 1-5'  # 9:00 AM MT, weekdays only (human-like)
+    - cron: '0 15 * * 1-5'  # 9:00 AM MT, weekdays only (morning session)
+    - cron: '0 21 * * 1-5'  # 3:00 PM MT, weekdays only (afternoon session)
   workflow_dispatch: {}
 
 concurrency:

@@ -23,7 +23,7 @@ from pathlib import Path
 from datetime import datetime
 
 # STRICT SAFETY LIMITS — DO NOT INCREASE
-MAX_APPLICATIONS_PER_RUN = 10  # LinkedIn allows 50/day, we stay at 10 for safety
+MAX_APPLICATIONS_PER_RUN = 15  # 2 runs/day × 15 = 30/day (LinkedIn limit is 50)
 MIN_DELAY_SECONDS = 30  # minimum wait between applications
 MAX_DELAY_SECONDS = 90  # maximum wait between applications
 SEARCH_KEYWORDS = [
@@ -87,11 +87,11 @@ def main():
 
     applied_data = load_applied()
 
-    # Safety: check last run time — don't run more than once per 20 hours
+    # Safety: check last run time — don't run more than twice per day
     if applied_data.get("last_run"):
         from datetime import datetime, timedelta
         last = datetime.fromisoformat(applied_data["last_run"])
-        if datetime.now() - last < timedelta(hours=20):
+        if datetime.now() - last < timedelta(hours=5):
             print(f"⏸️ Last run was {last.isoformat()} — too recent, skipping (safety)")
             return
 
