@@ -222,14 +222,26 @@ def fill_form(page, page_data, profile, learned, domain) -> dict:
                 filled.append(("resume", fi["selector"]))
                 wait(1, 2)
             except Exception:
-                # Try file chooser
+                # Try clicking the Attach/Upload button to trigger file chooser
                 try:
-                    with page.expect_file_chooser(timeout=3000) as fc:
-                        page.click('text=/attach|upload|resume|cv/i')
+                    with page.expect_file_chooser(timeout=5000) as fc:
+                        # Greenhouse uses "Attach" button next to hidden file input
+                        attach_btn = page.locator(f'button:near(#{fi.get("id", "resume")}):has-text("Attach"), button:has-text("Attach"), button:has-text("Upload"), label[for="{fi.get("id", "")}"]').first
+                        if attach_btn.is_visible(timeout=1000):
+                            attach_btn.click()
+                        else:
+                            page.click('text=/attach|upload|resume|cv/i')
                     fc.value.set_files(str(RESUME_PATH))
                     filled.append(("resume", "file_chooser"))
+                    wait(1, 2)
                 except Exception:
-                    unfilled.append(("resume", "all methods failed"))
+                    # Last resort: force set via JavaScript
+                    try:
+                        sel = fi["selector"] or 'input[type="file"]'
+                        page.locator(sel).set_input_files(str(RESUME_PATH), timeout=3000)
+                        filled.append(("resume", "force_set"))
+                    except Exception:
+                        unfilled.append(("resume", "all methods failed"))
 
     # 2. Fill text inputs
     for inp in page_data["inputs"]:
@@ -798,8 +810,15 @@ def submit_and_verify(page, page_data, original_url) -> dict:
                     if any(s in url for s in success_signals) or any(s in text for s in success_signals):
                         return {"submitted": True, "method": btn["text"]}
 
-                    error_signals = ["error", "required", "invalid", "please fill", "missing"]
+                    error_signals = ["this field is required", "please fill", "is invalid", "cannot be blank", "must be completed", "is required"]
                     errors = [s for s in error_signals if s in text]
+                    # Also check for visible error elements (more reliable than page text)
+                    try:
+                        error_els = page.locator('[class*="error"]:visible, [role="alert"]:visible, .field-error:visible').count()
+                        if error_els > 0:
+                            errors.append("visible_error_elements")
+                    except Exception:
+                        pass
                     if errors:
                         return {"submitted": False, "reason": f"Form errors: {errors}"}
 
