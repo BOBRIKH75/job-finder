@@ -22,26 +22,28 @@ VENDOR_FILE  = Path(__file__).parent.parent.parent / "data" / "vendor_list.json"
 HISTORY_FILE = Path(__file__).parent.parent.parent / "data" / "vendor_outreach_history.json"
 
 FALLBACK_VENDORS = [
-    {"name": "INSPYR Solutions",    "email": "info@inspyrsolutions.com"},
-    {"name": "TalentBurst",         "email": "info@talentburst.com"},
-    {"name": "Stefanini",           "email": "careers@stefanini.com"},
-    {"name": "NNIT Soft Tech",      "email": "info@nnitsoft.com"},
+    # Tier 1 — FAANG placement track (TEKsystems/Apex = Allegis Group, Amazon/Google/Microsoft)
+    {"name": "TEKsystems",          "email": "careers@teksystems.com"},
+    {"name": "Apex Systems",        "email": "apexsystems@apexsystems.com"},
+    {"name": "Insight Global",      "email": "info@insightglobal.com"},
+    {"name": "Kforce",              "email": "us_staffingsupport@kforce.com"},
+    {"name": "Genesis10",           "email": "info@genesis10.com"},
     {"name": "Dexian",              "email": "info@dexian.com"},
-    {"name": "Tier2Tek",            "email": "careers@tier2tek.com"},
+    {"name": "Randstad Technologies","email": "info@randstadusa.com"},
+    # Tier 2 — high C2C volume staffing firms
+    {"name": "INSPYR Solutions",    "email": "info@inspyrsolutions.com"},
     {"name": "Motion Recruitment",  "email": "recruiting@motionrecruitment.com"},
     {"name": "Collabera",           "email": "careers@collabera.com"},
-    {"name": "Pyramid Consulting",  "email": "info@pyramidci.com"},
     {"name": "Mastech Digital",     "email": "careers@mastechdigital.com"},
-    {"name": "Skiltrek",            "email": "info@skiltrek.com"},
+    {"name": "Pyramid Consulting",  "email": "info@pyramidci.com"},
     {"name": "RIT Solutions",       "email": "info@ritsolutions.com"},
     {"name": "ConsultAdd",          "email": "careers@consultadd.com"},
-    {"name": "Kforce",              "email": "us_staffingsupport@kforce.com"},
-    {"name": "Apex Systems",        "email": "apexsystems@apexsystems.com"},
-    {"name": "Genesis10",           "email": "info@genesis10.com"},
-    {"name": "Insight Global",      "email": "info@insightglobal.com"},
-    {"name": "Modis (Adecco)",      "email": "modis@adeccousa.com"},
+    {"name": "Tier2Tek",            "email": "careers@tier2tek.com"},
+    {"name": "TalentBurst",         "email": "info@talentburst.com"},
     {"name": "Diverse Lynx",        "email": "info@diverselynx.com"},
     {"name": "Vdart",               "email": "info@vdart.com"},
+    {"name": "Skiltrek",            "email": "info@skiltrek.com"},
+    {"name": "Modis (Adecco)",      "email": "modis@adeccousa.com"},
 ]
 
 SUBJECT = "Senior Java/Spring Boot Dev — C2C Available, Green Card, Parker CO"

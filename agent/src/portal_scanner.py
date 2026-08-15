@@ -230,24 +230,116 @@ def scan_wellfound() -> list[dict]:
     return jobs
 
 
-def scan_remotefront() -> list[dict]:
-    """Search RemoteFront for Java remote jobs."""
+def scan_remoteok() -> list[dict]:
+    """Search RemoteOK via their public JSON API (free, no auth)."""
     jobs = []
     try:
-        resp = httpx.get("https://remotefront.com/api/jobs?q=java&remote=true", timeout=10,
-                         headers={"User-Agent": "Mozilla/5.0"})
-        if resp.status_code == 200:
-            for posting in resp.json()[:20]:
-                title = posting.get("title", "")
-                if matches_skills(title, posting.get("description", "")):
-                    jobs.append({
-                        "title": title, "company": posting.get("company", ""),
-                        "url": posting.get("url", ""),
-                        "location": "Remote", "description": posting.get("description", "")[:1000],
-                        "source": "remotefront", "ats_type": "unknown",
-                    })
-    except Exception:
-        pass
+        resp = httpx.get(
+            "https://remoteok.com/api?tag=java",
+            headers={"User-Agent": "Mozilla/5.0 (compatible; job-agent/1.0)"},
+            timeout=15,
+        )
+        if resp.status_code != 200:
+            return []
+        data = resp.json()
+        for item in data[1:]:  # first item is API metadata
+            if not isinstance(item, dict):
+                continue
+            title = item.get("position", "")
+            desc = item.get("description", "")
+            if not matches_skills(title, desc):
+                continue
+            job_id = item.get("id", "")
+            url = item.get("url", "") or (f"https://remoteok.com/remote-jobs/{job_id}" if job_id else "")
+            if not url:
+                continue
+            jobs.append({
+                "title": title,
+                "company": item.get("company", ""),
+                "url": url,
+                "location": "Remote",
+                "description": desc[:1000],
+                "source": "remoteok",
+                "ats_type": "unknown",
+            })
+    except Exception as e:
+        print(f"    RemoteOK scan failed: {e}")
+    return jobs
+
+
+def scan_weworkremotely() -> list[dict]:
+    """Search We Work Remotely via their public RSS feed (backend jobs category)."""
+    import xml.etree.ElementTree as ET
+    jobs = []
+    try:
+        resp = httpx.get(
+            "https://weworkremotely.com/categories/remote-back-end-programming-jobs.rss",
+            headers={"User-Agent": "Mozilla/5.0"},
+            timeout=15,
+        )
+        if resp.status_code != 200:
+            return []
+        root = ET.fromstring(resp.content)
+        channel = root.find("channel")
+        if not channel:
+            return []
+        for item in channel.findall("item"):
+            title = item.findtext("title", "")
+            desc = item.findtext("description", "") or ""
+            link = item.findtext("link", "")
+            if not link or not matches_skills(title, desc):
+                continue
+            # WWR puts "Company: Title" in the title field
+            company = ""
+            if ": " in title:
+                parts = title.split(": ", 1)
+                company, title = parts[0].strip(), parts[1].strip()
+            jobs.append({
+                "title": title,
+                "company": company,
+                "url": link,
+                "location": "Remote",
+                "description": desc[:1000],
+                "source": "weworkremotely",
+                "ats_type": "unknown",
+            })
+    except Exception as e:
+        print(f"    WeWorkRemotely scan failed: {e}")
+    return jobs
+
+
+def scan_ziprecruiter() -> list[dict]:
+    """Search ZipRecruiter for Java contract jobs via python-jobspy."""
+    jobs = []
+    try:
+        from jobspy import scrape_jobs
+        df = scrape_jobs(
+            site_name=["zip_recruiter"],
+            search_term="java backend developer",
+            location="Remote",
+            results_wanted=30,
+            job_type="contract",
+            hours_old=48,
+        )
+        for _, row in df.iterrows():
+            title = str(row.get("title", ""))
+            desc = str(row.get("description", ""))
+            if not matches_skills(title, desc):
+                continue
+            url = str(row.get("job_url", ""))
+            if not url or url == "nan":
+                continue
+            jobs.append({
+                "title": title,
+                "company": str(row.get("company", "")),
+                "url": url,
+                "location": str(row.get("location", "")),
+                "description": desc[:1000],
+                "source": "ziprecruiter",
+                "ats_type": "unknown",
+            })
+    except Exception as e:
+        print(f"    ZipRecruiter scan failed: {e}")
     return jobs
 
 
@@ -300,15 +392,29 @@ def scan_all_companies(max_companies: int = 30) -> list[dict]:
         scanned += 1
         time.sleep(0.3)
 
-    # Scan Wellfound + RemoteFront
+    # Scan Wellfound
     wf_jobs = scan_wellfound()
     if wf_jobs:
         all_jobs.extend(wf_jobs)
         print(f"    ✅ Wellfound: {len(wf_jobs)} jobs")
-    rf_jobs = scan_remotefront()
-    if rf_jobs:
-        all_jobs.extend(rf_jobs)
-        print(f"    ✅ RemoteFront: {len(rf_jobs)} jobs")
+
+    # RemoteOK — free public JSON API
+    rok_jobs = scan_remoteok()
+    if rok_jobs:
+        all_jobs.extend(rok_jobs)
+        print(f"    ✅ RemoteOK: {len(rok_jobs)} jobs")
+
+    # We Work Remotely — RSS feed (backend category)
+    wwr_jobs = scan_weworkremotely()
+    if wwr_jobs:
+        all_jobs.extend(wwr_jobs)
+        print(f"    ✅ WeWorkRemotely: {len(wwr_jobs)} jobs")
+
+    # ZipRecruiter — python-jobspy (contract filter)
+    zr_jobs = scan_ziprecruiter()
+    if zr_jobs:
+        all_jobs.extend(zr_jobs)
+        print(f"    ✅ ZipRecruiter: {len(zr_jobs)} jobs")
 
     save_companies(companies)
 

@@ -65,6 +65,34 @@ PORTALS = [
         "url": "https://www.apexsystems.com/job-seekers/submit-your-resume/",
         "method": "form_fill",
     },
+    {
+        "id": "teksystems",
+        "name": "TEKsystems",
+        "url": "https://www.teksystems.com/en/apply",
+        "method": "form_fill",
+        "note": "Allegis group — places Java devs at Amazon, Google, Microsoft",
+    },
+    {
+        "id": "insightglobal",
+        "name": "Insight Global",
+        "url": "https://insightglobal.com/talent/",
+        "method": "form_fill",
+        "note": "Places at Amazon, Microsoft, Netflix — strong C2C",
+    },
+    {
+        "id": "randstad",
+        "name": "Randstad Technologies",
+        "url": "https://www.randstadusa.com/jobs/technology/",
+        "method": "form_fill",
+        "note": "Places at Google, Meta — check C2C availability",
+    },
+    {
+        "id": "dexian",
+        "name": "Dexian (ex-DISYS)",
+        "url": "https://dexian.com/find-work/",
+        "method": "form_fill",
+        "note": "Microsoft, Amazon staffing — supports C2C",
+    },
 ]
 
 PROFILE_ANSWERS = {

@@ -15,6 +15,7 @@ import time
 import random
 from pathlib import Path
 from typing import Optional
+from urllib.parse import urlparse, parse_qs
 
 import requests
 
@@ -174,6 +175,10 @@ def submit_greenhouse_api(
 
     company, job_id = m.group(1), m.group(2)
 
+    # Extract ?token= from URL — some jobs require it in the POST body
+    _qs = parse_qs(urlparse(job_url).query)
+    url_token = _qs.get("token", [None])[0]
+
     route_data = _get_job_data(company, job_id)
     if not route_data:
         return {"submitted": False, "error": "Cannot fetch job page / parse remixContext"}
@@ -196,6 +201,8 @@ def submit_greenhouse_api(
         "job_application[email]": profile["email"],
         "job_application[phone]": profile.get("phone", ""),
     }
+    if url_token:
+        form_data["job_application[token]"] = url_token
 
     for q in questions:
         for field in q.get("fields", []):
