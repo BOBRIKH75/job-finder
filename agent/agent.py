@@ -186,9 +186,12 @@ def run_apply(db, jobs, dry_run=False):
                 automatable.append(j)
     
     # Sort: staffing firms first (they do C2C), then CAPTCHA-free ATS, then by match score
+    # Sort: Lever first (proven 100%), then other ATS, then protected sites
+    PROVEN_ATS = {"lever"}  # These actually work
     automatable = sorted(
         automatable,
         key=lambda j: (
+            0 if j.get("ats_type") in PROVEN_ATS else 1,
             0 if j.get("is_staffing_firm") else 1,
             0 if j.get("ats_type") in CAPTCHA_FREE_ATS else 1,
             -j.get("match_score", 0),
