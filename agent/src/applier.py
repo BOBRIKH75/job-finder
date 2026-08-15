@@ -368,55 +368,104 @@ def fill_form(page, page_data, profile, learned, domain) -> dict:
 # ─── STEP 4: Submit and verify ───
 
 def _try_auto_captcha_solve(page) -> bool:
-    """Try to solve any CAPTCHA on the page using auto-captcha (NopeCHA API).
+    """Solve any CAPTCHA using a chain of free solvers. Tries each until one succeeds.
     
-    NopeCHA provides 100 free solves/day. Handles:
-    - reCAPTCHA v2/v3 (including Enterprise invisible)
-    - hCaptcha
-    - Cloudflare Turnstile
+    Chain (in order of reliability for job applications):
+    1. NopeCHA — 100 free/day, best for reCAPTCHA + hCaptcha
+    2. playwright-recaptcha — FREE unlimited, audio challenge (reCAPTCHA v2 only)
+    3. OhMyCaptcha (self-hosted) — uses Gemini AI, unlimited if key is set
+    4. Browser score fallback — rely on CloakBrowser stealth + human simulation
     
-    Returns True if solved or no CAPTCHA present, False if failed.
+    Each run uses ~25 CAPTCHAs (50 jobs, ~50% have CAPTCHA).
+    4 runs/day = ~100 CAPTCHAs = exactly NopeCHA free tier.
+    If NopeCHA runs out → playwright-recaptcha handles the rest (unlimited).
     """
     import os
-    nopecha_key = os.environ.get("NOPECHA_API_KEY", "")
-    if not nopecha_key:
-        return True  # no key, skip (rely on browser score)
     
+    # First: check if there's even a CAPTCHA on this page
+    has_captcha = False
     try:
-        from auto_captcha_solver import CaptchaSolver
-        solver = CaptchaSolver(api_key=nopecha_key)
-        
-        # Detect captchas on the page
-        captchas = solver.detect(page)
-        if not captchas:
-            return True  # no captcha found
-        
-        print(f"      🔓 CAPTCHA detected: {captchas[0].get('type', '?')} — solving via NopeCHA...")
-        
-        # Solve the first captcha found
-        captcha = captchas[0]
-        result = solver.solve(
-            captcha_type=captcha["type"],
-            sitekey=captcha.get("sitekey", ""),
-            url=page.url,
-        )
-        
-        if result.success:
-            solver.inject(page, captcha["type"], result.token)
-            print(f"      ✅ CAPTCHA solved! ({captcha['type']})")
-            return True
-        else:
-            print(f"      ⚠️ CAPTCHA solve failed: {result.error if hasattr(result, 'error') else 'unknown'}")
-            return False
-            
-    except ImportError:
-        # auto-captcha not installed, fall back to existing solve_captcha
-        from src.page_doctor import solve_recaptcha_enterprise
-        solve_recaptcha_enterprise(page, page.url)
-        return True
+        has_captcha = page.evaluate("""() => {
+            return !!(
+                document.querySelector('.g-recaptcha, .h-captcha, .cf-turnstile, [data-captcha]') ||
+                document.querySelector('script[src*="recaptcha"], script[src*="hcaptcha"], script[src*="turnstile"]') ||
+                document.querySelector('iframe[src*="recaptcha"], iframe[src*="hcaptcha"]')
+            );
+        }""")
+    except Exception:
+        pass
+    
+    if not has_captcha:
+        return True  # no CAPTCHA, proceed to submit
+    
+    print(f"      🔓 CAPTCHA detected — trying solver chain...")
+    
+    # === SOLVER 1: NopeCHA (auto-captcha library) ===
+    nopecha_key = os.environ.get("NOPECHA_API_KEY", "")
+    if nopecha_key:
+        try:
+            from auto_captcha_solver import CaptchaSolver
+            solver = CaptchaSolver(api_key=nopecha_key)
+            captchas = solver.detect(page)
+            if captchas:
+                result = solver.solve(
+                    captcha_type=captchas[0]["type"],
+                    sitekey=captchas[0].get("sitekey", ""),
+                    url=page.url,
+                )
+                if result.success:
+                    solver.inject(page, captchas[0]["type"], result.token)
+                    print(f"      ✅ Solved via NopeCHA ({captchas[0]['type']})")
+                    return True
+                else:
+                    print(f"      ⚠️ NopeCHA failed — trying next solver...")
+        except ImportError:
+            pass
+        except Exception as e:
+            if "limit" in str(e).lower() or "quota" in str(e).lower() or "429" in str(e):
+                print(f"      ⚠️ NopeCHA daily limit reached — trying next solver...")
+            else:
+                print(f"      ⚠️ NopeCHA error: {str(e)[:50]} — trying next...")
+    
+    # === SOLVER 2: playwright-recaptcha (FREE, unlimited, audio-based) ===
+    try:
+        from playwright_recaptcha import recaptchav2
+        with recaptchav2.SyncSolver(page) as solver:
+            token = solver.solve_recaptcha(wait=True)
+            if token and len(token) > 20:
+                print(f"      ✅ Solved via playwright-recaptcha (audio)")
+                return True
     except Exception as e:
-        print(f"      ⚠️ auto-captcha error: {str(e)[:60]}")
-        return True  # don't block, try submitting anyway
+        err = str(e).lower()
+        if "rate limit" in err:
+            print(f"      ⚠️ Audio solver rate-limited — trying next...")
+        else:
+            pass  # not a visible reCAPTCHA v2, try next
+    
+    # === SOLVER 3: OhMyCaptcha (self-hosted, needs Gemini key) ===
+    omc_url = os.environ.get("OHMYCAPTCHA_URL", "")
+    if omc_url:
+        try:
+            from src.page_doctor import detect_captcha_type, solve_via_ohmycaptcha
+            captcha_info = detect_captcha_type(page)
+            if captcha_info:
+                if solve_via_ohmycaptcha(page, captcha_info):
+                    print(f"      ✅ Solved via OhMyCaptcha")
+                    return True
+        except Exception:
+            pass
+    
+    # === SOLVER 4: reCAPTCHA Enterprise — execute token directly ===
+    try:
+        from src.page_doctor import solve_recaptcha_enterprise
+        if solve_recaptcha_enterprise(page, page.url):
+            return True
+    except Exception:
+        pass
+    
+    # === FALLBACK: rely on stealth browser score ===
+    print(f"      🔓 All solvers tried — relying on browser stealth score")
+    return True  # don't block submission, let it try
 
 
 def _fill_remaining_required(page, profile: dict) -> int:
