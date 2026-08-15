@@ -367,6 +367,58 @@ def fill_form(page, page_data, profile, learned, domain) -> dict:
 
 # ─── STEP 4: Submit and verify ───
 
+def _try_auto_captcha_solve(page) -> bool:
+    """Try to solve any CAPTCHA on the page using auto-captcha (NopeCHA API).
+    
+    NopeCHA provides 100 free solves/day. Handles:
+    - reCAPTCHA v2/v3 (including Enterprise invisible)
+    - hCaptcha
+    - Cloudflare Turnstile
+    
+    Returns True if solved or no CAPTCHA present, False if failed.
+    """
+    import os
+    nopecha_key = os.environ.get("NOPECHA_API_KEY", "")
+    if not nopecha_key:
+        return True  # no key, skip (rely on browser score)
+    
+    try:
+        from auto_captcha_solver import CaptchaSolver
+        solver = CaptchaSolver(api_key=nopecha_key)
+        
+        # Detect captchas on the page
+        captchas = solver.detect(page)
+        if not captchas:
+            return True  # no captcha found
+        
+        print(f"      🔓 CAPTCHA detected: {captchas[0].get('type', '?')} — solving via NopeCHA...")
+        
+        # Solve the first captcha found
+        captcha = captchas[0]
+        result = solver.solve(
+            captcha_type=captcha["type"],
+            sitekey=captcha.get("sitekey", ""),
+            url=page.url,
+        )
+        
+        if result.success:
+            solver.inject(page, captcha["type"], result.token)
+            print(f"      ✅ CAPTCHA solved! ({captcha['type']})")
+            return True
+        else:
+            print(f"      ⚠️ CAPTCHA solve failed: {result.error if hasattr(result, 'error') else 'unknown'}")
+            return False
+            
+    except ImportError:
+        # auto-captcha not installed, fall back to existing solve_captcha
+        from src.page_doctor import solve_recaptcha_enterprise
+        solve_recaptcha_enterprise(page, page.url)
+        return True
+    except Exception as e:
+        print(f"      ⚠️ auto-captcha error: {str(e)[:60]}")
+        return True  # don't block, try submitting anyway
+
+
 def _fill_remaining_required(page, profile: dict) -> int:
     """Dynamic adaptation — find and fill ANY remaining empty required fields.
     
@@ -981,10 +1033,10 @@ def apply_to_job(page, profile, job, learned, dry_run=False, db=None) -> dict:
                 attempt_result["filled"] += dynamic_filled
                 print(f"      🔄 Dynamic fill: {dynamic_filled} additional fields")
 
-            # Handle reCAPTCHA Enterprise (invisible) — boost score + get token
-            from src.page_doctor import solve_recaptcha_enterprise, simulate_human_behavior
-            if page.locator('script[src*="recaptcha"]').count() > 0:
-                solve_recaptcha_enterprise(page, apply_url)
+            # Handle reCAPTCHA / CAPTCHA — use auto-captcha solver (NopeCHA, 100 free/day)
+            from src.page_doctor import simulate_human_behavior
+            simulate_human_behavior(page)
+            _try_auto_captcha_solve(page)
 
             # SUBMIT
             submit_result = submit_and_verify(page, page_data, url)

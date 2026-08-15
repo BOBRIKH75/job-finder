@@ -33,7 +33,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip install --upgrade pip setuptools wheel
-          pip install playwright playwright-recaptcha seleniumbase curl_cffi camoufox httpx resend pydantic beautifulsoup4 python-jobspy pandas pytest requests cloudscraper cloakbrowser dnspython
+          pip install playwright playwright-recaptcha seleniumbase curl_cffi camoufox httpx resend pydantic beautifulsoup4 python-jobspy pandas pytest requests cloudscraper cloakbrowser dnspython auto-captcha
           sudo apt-get install -y ffmpeg
           playwright install chromium --with-deps
           python -c "import cloakbrowser; cloakbrowser.download()" || true
@@ -126,6 +126,7 @@ jobs:
         env:
           RESEND_KEY: ${{ secrets.RESEND_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          NOPECHA_API_KEY: ${{ secrets.NOPECHA_API_KEY }}
           OHMYCAPTCHA_URL: "http://localhost:8000"
           OHMYCAPTCHA_KEY: "job-agent"
           INDEED_COOKIES: ${{ secrets.INDEED_COOKIES }}
