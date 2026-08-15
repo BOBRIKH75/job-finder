@@ -917,8 +917,16 @@ def apply_to_job(page, profile, job, learned, dry_run=False, db=None) -> dict:
                     print(f"      📎 Redirected to Greenhouse: {apply_url}")
 
             page.goto(apply_url, wait_until="domcontentloaded", timeout=30000)
-            page.wait_for_timeout(3000)  # let JS render forms
-            wait(1, 2)
+            # Wait for visible form inputs — React apps render after JS executes.
+            # Try up to 10 seconds. Fall back to fixed wait if selector never appears.
+            try:
+                page.wait_for_selector(
+                    'input:not([type="hidden"]):not([type="file"]), textarea, select',
+                    timeout=10000, state="visible"
+                )
+            except Exception:
+                page.wait_for_timeout(5000)  # fallback: just wait 5s
+            wait(0.5, 1.0)
 
             # --- Multi-step navigation: dismiss cookie/consent, find apply forms ---
             # Dismiss cookie consent / popups before anything else
@@ -950,7 +958,14 @@ def apply_to_job(page, profile, job, learned, dry_run=False, db=None) -> dict:
                         btn = page.locator(f'a:has-text("{btn_text}"), button:has-text("{btn_text}")').first
                         if btn.is_visible(timeout=1000):
                             btn.click()
-                            page.wait_for_timeout(2000)
+                            # Wait for form inputs to appear after navigation/modal open
+                            try:
+                                page.wait_for_selector(
+                                    'input:not([type="hidden"]):not([type="file"]), textarea',
+                                    timeout=8000, state="visible"
+                                )
+                            except Exception:
+                                page.wait_for_timeout(3000)
                             apply_clicked = True
                             break
                     except Exception:
@@ -982,9 +997,15 @@ def apply_to_job(page, profile, job, learned, dry_run=False, db=None) -> dict:
             if dismissed:
                 print(f"      Dismissed {dismissed} popups/banners")
 
-            # Wait longer for JS-heavy pages (Greenhouse, Workday)
+            # For JS-heavy ATS (Greenhouse, Workday, Ashby): wait for form to render
             if any(s in apply_url for s in ["greenhouse", "workday", "myworkday", "ashby"]):
-                page.wait_for_timeout(3000)
+                try:
+                    page.wait_for_selector(
+                        'input:not([type="hidden"]):not([type="file"]), textarea',
+                        timeout=10000, state="visible"
+                    )
+                except Exception:
+                    page.wait_for_timeout(5000)
 
             # Handle iframe-embedded forms (Greenhouse, Workday)
             main_page = page
@@ -1270,12 +1291,17 @@ def run_applications(jobs: list[dict], dry_run: bool = True, max_apps: int = 10,
     learned = load_learned()
     results = []
 
-    # Track same-session failures per domain — skip after 2 failures on same domain
-    session_failures = {}  # domain -> failure count
+    # Track same-session failures — key is "domain|company" for multi-tenant ATS,
+    # plain domain for single-company sites.
+    # Multi-tenant domains (greenhouse, lever, ashby) host 100s of companies —
+    # one bad company must NOT block all others on that domain.
+    MULTI_TENANT_DOMAINS = {"job-boards.greenhouse.io", "boards.greenhouse.io",
+                            "jobs.lever.co", "jobs.ashbyhq.com"}
+    session_failures = {}  # "domain|company" or "domain" -> failure count
 
     # Known CAPTCHA-free ATS domains — skip all stealth probing
     CAPTCHA_FREE_DOMAINS = {"jobs.lever.co", "lever.co", "boards.greenhouse.io",
-                            "jobs.ashbyhq.com", "apply.workable.com"}
+                            "job-boards.greenhouse.io", "jobs.ashbyhq.com", "apply.workable.com"}
 
     # Log available stealth tools
     tools = list_available_tools()
@@ -1314,9 +1340,13 @@ def run_applications(jobs: list[dict], dry_run: bool = True, max_apps: int = 10,
         url = job.get("url", "")
         domain = re.sub(r'https?://(www\.)?', '', url).split('/')[0]
 
-        # Skip domains that failed 2+ times this session (same form = same error)
-        if session_failures.get(domain, 0) >= 2:
-            print(f"\n  ⏭️ Skipping {domain} — failed {session_failures[domain]}x this session")
+        # Build failure-tracking key — multi-tenant ATS: per company, not per domain
+        company_slug = re.sub(r'[^a-z0-9]', '', job.get("company", "unknown").lower())
+        fail_key = f"{domain}|{company_slug}" if domain in MULTI_TENANT_DOMAINS else domain
+
+        # Skip if this specific company/domain failed 2+ times this session
+        if session_failures.get(fail_key, 0) >= 2:
+            print(f"\n  ⏭️ Skipping {fail_key} — failed {session_failures[fail_key]}x this session")
             results.append({"url": url, "title": job.get("title", ""),
                             "company": job.get("company", ""), "status": "domain_skip"})
             continue
@@ -1384,9 +1414,9 @@ def run_applications(jobs: list[dict], dry_run: bool = True, max_apps: int = 10,
             record_apply(site_key)
             human_delay(site_key)  # Random wait to look human
         else:
-            # Track domain failures to skip after 2
+            # Track per-company failures for multi-tenant ATS, per-domain for others
             if r["status"] in ("failed_all_retries", "captcha_blocked"):
-                session_failures[domain] = session_failures.get(domain, 0) + 1
+                session_failures[fail_key] = session_failures.get(fail_key, 0) + 1
             wait(1, 2)
 
     context.close()
