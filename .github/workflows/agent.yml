@@ -10,6 +10,10 @@ on:
   repository_dispatch:
     types: [jobs-found]
 
+concurrency:
+  group: job-agent
+  cancel-in-progress: false
+
 defaults:
   run:
     working-directory: agent
