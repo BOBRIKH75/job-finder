@@ -501,6 +501,16 @@ def fill_greenhouse_custom_fields(page, profile: dict) -> int:
         "gender": "prefer not to say",
         "race": "prefer not to say",
         "ethnicity": "prefer not to say",
+        "language": "English",
+        "languages you speak": "English",
+        "fluent": "English",
+        "willing to travel": "No",
+        "travel": "No",
+        "work arrangement": "Remote",
+        "work model": "Remote",
+        "employment type": "Contract",
+        "relocate": "No",
+        "years of experience": "10",
     }
     
     try:
@@ -545,6 +555,26 @@ def fill_greenhouse_custom_fields(page, profile: dict) -> int:
                         break
                 
                 if not answer:
+                    # No known answer — but if required, try selecting first option
+                    is_required = combo.get_attribute("aria-required") == "true"
+                    if not is_required:
+                        continue
+                    # Click to open, select first non-empty option
+                    try:
+                        combo.click()
+                        time.sleep(0.5)
+                        first_opt = page.locator('[role="option"]').first
+                        if first_opt.is_visible(timeout=500):
+                            first_opt.click()
+                            filled += 1
+                            time.sleep(0.3)
+                        else:
+                            page.keyboard.press("Escape")
+                    except Exception:
+                        try:
+                            page.keyboard.press("Escape")
+                        except Exception:
+                            pass
                     continue
                 
                 # Fill the combobox: click → type → select option

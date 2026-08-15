@@ -425,6 +425,20 @@ def _fill_remaining_required(page, profile: dict) -> int:
         "province": profile.get("state", "CO"),
         # Pronoun
         "pronoun": "He/Him",
+        # Languages (DataDog, international companies)
+        "language": "English", "languages you speak": "English", "fluent": "English",
+        "primary language": "English",
+        # Work type
+        "employment type": "Contract", "work type": "Contract", "contract": "Yes",
+        "corp to corp": "Yes", "c2c": "Yes", "w2": "No",
+        # Travel
+        "travel": "No", "willing to travel": "No", "business travel": "No",
+        # Drug test
+        "drug test": "Yes", "drug screen": "Yes",
+        # Age
+        "18 years": "Yes", "over 18": "Yes", "at least 18": "Yes",
+        # Shift
+        "shift": "Day", "work schedule": "Regular",
     }
     
     try:
