@@ -90,6 +90,11 @@ def learn_blocked_site(db, domain: str, reason: str):
 
 def is_blocked_site(db, domain: str) -> str | None:
     """Check if a site is blocked. Returns reason or None."""
+    # NEVER block multi-tenant ATS domains (they host many companies)
+    NEVER_BLOCK = {"jobs.lever.co", "job-boards.greenhouse.io", "boards.greenhouse.io",
+                   "jobs.ashbyhq.com", "apply.workable.com", "boards.eu.greenhouse.io"}
+    if domain in NEVER_BLOCK:
+        return None
     row = db.execute(
         "SELECT version_hash FROM ats_patterns WHERE ats_type = 'blocked' AND domain = ?", (domain,)
     ).fetchone()
