@@ -1,0 +1,38 @@
+name: "Gmail Reply Tracker (Daily)"
+
+on:
+  schedule:
+    - cron: "0 18 * * *"   # 12:00 PM MT daily
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+defaults:
+  run:
+    working-directory: agent
+
+jobs:
+  track:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Check for recruiter replies
+        env:
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+        run: python scripts/gmail_reply_tracker.py
+
+      - name: Save reply history
+        if: always()
+        run: |
+          git config user.email "bot@github.actions"
+          git config user.name "Reply Tracker Bot"
+          git add ../contacted.json ../data/reply_tracker_history.json || true
+          git diff --staged --quiet || git commit -m "chore: reply tracker update $(date +%Y-%m-%d)"
+          git push || true
