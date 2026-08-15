@@ -1,0 +1,100 @@
+name: Dice Easy Apply
+
+on:
+  schedule:
+    - cron: '30 16 * * 1-5'  # 10:30 AM MT, weekdays
+  workflow_dispatch: {}
+
+concurrency:
+  group: dice-apply
+  cancel-in-progress: false
+
+jobs:
+  dice-apply:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install dice-apply selenium undetected-chromedriver
+
+      - name: Run Dice Easy Apply
+        env:
+          DICE_EMAIL: ${{ secrets.DICE_EMAIL }}
+          DICE_PASSWORD: ${{ secrets.DICE_PASSWORD }}
+        run: |
+          if [ -z "$DICE_EMAIL" ]; then
+            echo "⏭️ DICE_EMAIL not set — skipping"
+            exit 0
+          fi
+          python -c "
+          import os, time, random
+          from selenium import webdriver
+          from selenium.webdriver.common.by import By
+          from selenium.webdriver.chrome.options import Options
+
+          email = os.environ['DICE_EMAIL']
+          password = os.environ['DICE_PASSWORD']
+          MAX_APPS = 30  # Dice has no strict daily limit
+
+          options = Options()
+          options.add_argument('--headless=new')
+          options.add_argument('--no-sandbox')
+          driver = webdriver.Chrome(options=options)
+          applied = 0
+
+          try:
+              # Login
+              driver.get('https://www.dice.com/dashboard/login')
+              time.sleep(3)
+              driver.find_element(By.ID, 'email').send_keys(email)
+              driver.find_element(By.ID, 'password').send_keys(password)
+              driver.find_element(By.CSS_SELECTOR, 'button[type=submit]').click()
+              time.sleep(5)
+              print('✅ Logged in to Dice')
+
+              # Search for Java contract jobs
+              searches = ['Java Developer contract remote', 'Java Spring Boot C2C', 'Senior Java Backend remote']
+              for query in searches:
+                  if applied >= MAX_APPS: break
+                  driver.get(f'https://www.dice.com/jobs?q={query.replace(\" \", \"+\")}&filters.easyApply=true&filters.postedDate=THREE')
+                  time.sleep(4)
+
+                  cards = driver.find_elements(By.CSS_SELECTOR, 'a[data-cy=\"card-title-link\"]')
+                  print(f'  🔍 \"{query}\" → {len(cards)} Easy Apply jobs')
+
+                  for card in cards[:10]:
+                      if applied >= MAX_APPS: break
+                      try:
+                          card.click()
+                          time.sleep(3)
+                          # Click Easy Apply
+                          btn = driver.find_element(By.CSS_SELECTOR, 'button[data-cy=\"apply-btn-wm\"], .btn-easy-apply, button.apply-button')
+                          if 'easy' in btn.text.lower() or 'apply' in btn.text.lower():
+                              btn.click()
+                              time.sleep(2)
+                              # Confirm apply
+                              try:
+                                  submit = driver.find_element(By.CSS_SELECTOR, 'button[data-cy=\"submit-btn\"], button.submit-application')
+                                  submit.click()
+                                  applied += 1
+                                  print(f'    ✅ Applied ({applied}/{MAX_APPS})')
+                              except: pass
+                          time.sleep(random.uniform(5, 15))
+                          driver.back()
+                          time.sleep(2)
+                      except Exception as e:
+                          driver.back()
+                          time.sleep(2)
+                          continue
+
+              print(f'📊 Dice: {applied} applications submitted')
+          finally:
+              driver.quit()
+          "
