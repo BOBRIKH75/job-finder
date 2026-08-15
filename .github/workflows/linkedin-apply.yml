@@ -1,0 +1,33 @@
+name: LinkedIn Easy Apply (Safe Mode)
+
+on:
+  schedule:
+    - cron: '0 15 * * 1-5'  # 9:00 AM MT, weekdays only (human-like)
+  workflow_dispatch: {}
+
+concurrency:
+  group: linkedin-apply
+  cancel-in-progress: false
+
+jobs:
+  linkedin-apply:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          pip install selenium undetected-chromedriver webdriver-manager python-jobspy pandas
+
+      - name: Run LinkedIn Easy Apply (SAFE limits)
+        env:
+          LINKEDIN_EMAIL: ${{ secrets.LINKEDIN_EMAIL }}
+          LINKEDIN_PASSWORD: ${{ secrets.LINKEDIN_PASSWORD }}
+        run: |
+          python linkedin_easy_apply.py
