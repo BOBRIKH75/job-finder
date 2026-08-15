@@ -18,10 +18,17 @@ def export_jobs_for_agent(scored_df, output_path: str = JOBS_FILE):
     """Called by find_jobs.py — exports scored jobs for ai-job-agent to consume."""
     jobs = []
     for _, row in scored_df.iterrows():
+        # Prefer company career page URL over LinkedIn (agent can apply to company pages)
+        url = str(row.get("job_url", ""))
+        company_url = str(row.get("company_url", ""))
+        if company_url and company_url != "nan" and company_url.startswith("http") and "linkedin.com" not in company_url:
+            url = company_url  # Direct company apply page (Lever, Greenhouse, etc)
+        
         jobs.append({
             "title": str(row.get("title", "")),
             "company": str(row.get("company", "")),
-            "url": str(row.get("job_url", "")),
+            "url": url,
+            "linkedin_url": str(row.get("job_url", "")) if "linkedin" in str(row.get("job_url", "")) else "",
             "location": str(row.get("location", "")),
             "description": str(row.get("description", ""))[:2000],
             "score": int(row.get("score", 0)),
