@@ -35,18 +35,18 @@ jobs:
           fi
           python -c "
           import os, time, random
-          from selenium import webdriver
+          import undetected_chromedriver as uc
           from selenium.webdriver.common.by import By
-          from selenium.webdriver.chrome.options import Options
 
           email = os.environ['DICE_EMAIL']
           password = os.environ['DICE_PASSWORD']
-          MAX_APPS = 30  # Dice has no strict daily limit
+          MAX_APPS = 75  # matches cookie_agent.py dice limit
 
-          options = Options()
+          options = uc.ChromeOptions()
           options.add_argument('--headless=new')
           options.add_argument('--no-sandbox')
-          driver = webdriver.Chrome(options=options)
+          options.add_argument('--disable-dev-shm-usage')
+          driver = uc.Chrome(options=options)
           applied = 0
 
           try:

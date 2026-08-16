@@ -2,8 +2,7 @@ name: LinkedIn Easy Apply (Safe Mode)
 
 on:
   schedule:
-    - cron: '0 15 * * 1-5'  # 9:00 AM MT, weekdays only (morning session)
-    - cron: '0 21 * * 1-5'  # 3:00 PM MT, weekdays only (afternoon session)
+    - cron: '0 15 * * 1-5'  # 9:00 AM MT, weekdays only (one session — 20h cooldown enforced in script)
   workflow_dispatch: {}
 
 concurrency:
@@ -28,7 +27,8 @@ jobs:
 
       - name: Run LinkedIn Easy Apply (SAFE limits)
         env:
-          LINKEDIN_EMAIL: ${{ secrets.LINKEDIN_EMAIL }}
-          LINKEDIN_PASSWORD: ${{ secrets.LINKEDIN_PASSWORD }}
+          LINKEDIN_COOKIES: ${{ secrets.LINKEDIN_COOKIES }}
+          RESEND_KEY: ${{ secrets.RESEND_KEY }}
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
         run: |
           python linkedin_easy_apply.py

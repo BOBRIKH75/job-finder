@@ -23,6 +23,7 @@ RATE_FILE = DATA_DIR / "rate_limits.json"
 LIMITS = {
     "indeed": {"max_applies_per_day": 15, "min_delay_seconds": 20, "max_delay_seconds": 60},
     "greenhouse": {"max_applies_per_day": 200, "min_delay_seconds": 5, "max_delay_seconds": 15},
+    "lever": {"max_applies_per_day": 120, "min_delay_seconds": 5, "max_delay_seconds": 15},
     "dice": {"max_applies_per_day": 75, "min_delay_seconds": 8, "max_delay_seconds": 20},
     "default": {"max_applies_per_day": 15, "min_delay_seconds": 10, "max_delay_seconds": 30},
 }

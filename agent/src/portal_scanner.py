@@ -9,7 +9,7 @@ Flow:
 
 No browser needed — pure API calls, no CAPTCHA.
 """
-import json, re, time
+import json, random, re, time
 from pathlib import Path
 import httpx
 
@@ -465,24 +465,28 @@ def scan_all_companies(max_companies: int = 30) -> list[dict]:
     if rok_jobs:
         all_jobs.extend(rok_jobs)
         print(f"    ✅ RemoteOK: {len(rok_jobs)} jobs")
+    time.sleep(random.uniform(1.0, 2.0))
 
     # We Work Remotely — RSS feed (backend category)
     wwr_jobs = scan_weworkremotely()
     if wwr_jobs:
         all_jobs.extend(wwr_jobs)
         print(f"    ✅ WeWorkRemotely: {len(wwr_jobs)} jobs")
+    time.sleep(random.uniform(1.0, 2.0))
 
     # ZipRecruiter — python-jobspy (contract filter)
     zr_jobs = scan_ziprecruiter()
     if zr_jobs:
         all_jobs.extend(zr_jobs)
         print(f"    ✅ ZipRecruiter: {len(zr_jobs)} jobs")
+    time.sleep(random.uniform(1.0, 2.0))
 
     # Remotive — free public JSON API (software-dev category)
     rem_jobs = scan_remotive()
     if rem_jobs:
         all_jobs.extend(rem_jobs)
         print(f"    ✅ Remotive: {len(rem_jobs)} jobs")
+    time.sleep(random.uniform(1.0, 2.0))
 
     # Himalayas — free public JSON API
     him_jobs = scan_himalayas()

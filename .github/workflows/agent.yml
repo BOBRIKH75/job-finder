@@ -61,6 +61,14 @@ jobs:
           key: agent-memory
           restore-keys: agent-memory
 
+      - name: Restore rate limits
+        continue-on-error: true
+        uses: actions/cache/restore@v4
+        with:
+          path: agent/data/rate_limits.json
+          key: rate-limits
+          restore-keys: rate-limits
+
       - name: Initialize database
         run: python -c "from src.memory import get_db, init_db; db = get_db(); init_db(db)"
 
@@ -138,6 +146,14 @@ jobs:
         with:
           path: agent/data/agent_memory.db
           key: agent-memory-${{ github.run_number }}
+
+      - name: Save rate limits
+        if: always()
+        continue-on-error: true
+        uses: actions/cache/save@v4
+        with:
+          path: agent/data/rate_limits.json
+          key: rate-limits-${{ github.run_number }}
 
       - name: Cleanup old screenshots (keep last 20)
         if: always()
