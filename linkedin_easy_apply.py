@@ -23,15 +23,23 @@ import base64, json, os, random, time
 from pathlib import Path
 from datetime import datetime
 
-# STRICT SAFETY LIMITS — DO NOT INCREASE
-MAX_APPLICATIONS_PER_RUN = 15  # 2 runs/day × 15 = 30/day (LinkedIn limit is 50)
-MIN_DELAY_SECONDS = 30  # minimum wait between applications
-MAX_DELAY_SECONDS = 90  # maximum wait between applications
+# SAFETY LIMITS — calibrated for datacenter IP (GitHub Actions)
+MAX_APPLICATIONS_PER_RUN = 10   # 1 session/day × 10 = 10/day (conservative for datacenter IP)
+MIN_DELAY_SECONDS = 45           # increased from 30 — datacenter IPs need slower pace
+MAX_DELAY_SECONDS = 120
+MAX_APPLICANTS_TO_SKIP = 200     # skip jobs with 200+ applicants (buried anyway)
+MAX_JOB_AGE_HOURS = 48           # only apply to jobs posted in last 48 hours
+
 SEARCH_KEYWORDS = [
     "Java Developer contract remote",
     "Java Spring Boot developer C2C",
     "Senior Java Backend Engineer contract",
 ]
+
+# Only run during US business hours MT (avoid 3 AM bot signature)
+RUN_HOUR_START_MT = 8   # 8 AM MT = 14:00 UTC
+RUN_HOUR_END_MT = 17    # 5 PM MT = 23:00 UTC
+RUN_WEEKDAYS_ONLY = True  # no weekend runs
 
 APPLIED_FILE = "linkedin_applied.json"
 
@@ -54,26 +62,93 @@ def human_delay():
     time.sleep(delay)
 
 
+def is_safe_run_time() -> tuple[bool, str]:
+    """Return (ok, reason) — only allow runs during US business hours on weekdays."""
+    now_utc = datetime.utcnow()
+    # MT is UTC-6 (MDT) / UTC-7 (MST) — use UTC-6 (summer)
+    hour_mt = (now_utc.hour - 6) % 24
+    weekday = now_utc.weekday()  # 0=Mon, 6=Sun
+
+    if RUN_WEEKDAYS_ONLY and weekday >= 5:
+        return False, f"Weekend (day {weekday}) — skipping to avoid bot signature"
+    if not (RUN_HOUR_START_MT <= hour_mt < RUN_HOUR_END_MT):
+        return False, f"Outside business hours ({hour_mt}:xx MT) — skipping"
+    return True, "OK"
+
+
+def send_restriction_alert(signal: str):
+    """Email alert when LinkedIn restriction is detected — needs immediate human action."""
+    resend_key = os.environ.get("RESEND_KEY", "")
+    gmail_user = os.environ.get("GMAIL_USER", "bobrikh75@gmail.com")
+    if not resend_key:
+        return
+    import urllib.request
+    payload = json.dumps({
+        "from": "Job Agent <onboarding@resend.dev>",
+        "to": [gmail_user],
+        "subject": "🚨 LinkedIn RESTRICTION DETECTED — bot paused",
+        "text": (
+            f"LinkedIn restriction signal detected: '{signal}'\n\n"
+            "The bot has stopped automatically.\n\n"
+            "DO NOT restart the bot for at least 7 days.\n\n"
+            "Recovery steps:\n"
+            "1. Log in to LinkedIn MANUALLY in Chrome\n"
+            "2. Complete any verification if asked\n"
+            "3. Browse feed normally for 10-15 minutes\n"
+            "4. Wait 7 days before re-enabling the bot\n"
+            "5. After 7 days, reduce MAX_APPLICATIONS_PER_RUN to 5\n\n"
+            "Your job search continues via the other 490/day channels."
+        ),
+    }).encode()
+    req = urllib.request.Request(
+        "https://api.resend.com/emails",
+        data=payload,
+        headers={"Authorization": f"Bearer {resend_key}", "Content-Type": "application/json"},
+        method="POST",
+    )
+    try:
+        urllib.request.urlopen(req, timeout=10)
+    except Exception:
+        pass
+
+
 def check_for_restrictions(driver) -> bool:
-    """Check if LinkedIn is showing any warning/restriction."""
+    """Check if LinkedIn is showing any warning/restriction — emails alert if found."""
     try:
         page_text = driver.page_source.lower()
         danger_signals = [
             "unusual activity",
-            "restricted",
             "verify your identity",
             "security verification",
             "we've limited",
             "temporarily restricted",
             "complete a captcha",
+            "account has been restricted",
         ]
         for signal in danger_signals:
             if signal in page_text:
-                print(f"    🚨 RESTRICTION DETECTED: '{signal}' — STOPPING IMMEDIATELY")
+                print(f"    🚨 RESTRICTION DETECTED: '{signal}' — STOPPING + alerting")
+                send_restriction_alert(signal)
                 return True
     except Exception:
         pass
     return False
+
+
+def warmup_session(driver):
+    """Browse feed briefly before applying — raises session trust score."""
+    print("  🔥 Warming up session (browsing feed)...")
+    try:
+        driver.get("https://www.linkedin.com/feed/")
+        time.sleep(random.uniform(10, 20))
+        # Scroll down twice to simulate reading
+        driver.execute_script("window.scrollBy(0, 600)")
+        time.sleep(random.uniform(3, 6))
+        driver.execute_script("window.scrollBy(0, 600)")
+        time.sleep(random.uniform(2, 4))
+        print("  ✅ Session warmed up")
+    except Exception as e:
+        print(f"  ⚠️  Warmup failed (non-fatal): {e}")
 
 
 def load_linkedin_cookies() -> list[dict]:
@@ -139,6 +214,12 @@ def inject_cookies(driver, cookies: list[dict]):
 
 
 def main():
+    # Time-of-day safety check first — before any browser launch
+    ok, reason = is_safe_run_time()
+    if not ok:
+        print(f"⏸️ {reason}")
+        return
+
     cookies = load_linkedin_cookies()
 
     if not cookies:
@@ -149,17 +230,18 @@ def main():
 
     applied_data = load_applied()
 
-    # Safety: don't run more than twice per day
+    # Safety: only once per day (not twice — datacenter IPs need conservative rate)
     if applied_data.get("last_run"):
         from datetime import timedelta
         last = datetime.fromisoformat(applied_data["last_run"])
-        if datetime.now() - last < timedelta(hours=5):
-            print(f"⏸️ Last run was {last.isoformat()} — too recent, skipping")
+        if datetime.now() - last < timedelta(hours=20):
+            print(f"⏸️ Last run was {last.isoformat()} — waiting 20h between runs")
             return
 
     print(f"🔗 LinkedIn Easy Apply Bot — SAFE MODE (cookie auth)")
     print(f"   Max applications: {MAX_APPLICATIONS_PER_RUN}")
     print(f"   Delay between: {MIN_DELAY_SECONDS}-{MAX_DELAY_SECONDS}s")
+    print(f"   Skip if: {MAX_APPLICANTS_TO_SKIP}+ applicants OR posted >{MAX_JOB_AGE_HOURS}h ago")
     print(f"   Previously applied: {applied_data['total']}")
     print()
 
@@ -199,15 +281,25 @@ def main():
             driver.quit()
             return
 
-        time.sleep(random.uniform(3, 6))  # brief pause before searching
+        # Warm up session before any job searching (raises LinkedIn trust score)
+        warmup_session(driver)
 
-        # Search for jobs
+        if check_for_restrictions(driver):
+            driver.quit()
+            return
+
+        # Search for jobs — include f_TPR=r86400 to filter last 24h, sort by date
         for keyword in SEARCH_KEYWORDS:
             if applied_count >= MAX_APPLICATIONS_PER_RUN:
                 break
 
             print(f"\n  🔍 Searching: '{keyword}'")
-            search_url = f"https://www.linkedin.com/jobs/search/?keywords={keyword.replace(' ', '%20')}&f_AL=true&f_WT=2"
+            # f_AL=true = Easy Apply only, f_WT=2 = remote, f_TPR=r172800 = last 48h, sortBy=DD = newest first
+            search_url = (
+                f"https://www.linkedin.com/jobs/search/"
+                f"?keywords={keyword.replace(' ', '%20')}"
+                f"&f_AL=true&f_WT=2&f_TPR=r172800&sortBy=DD"
+            )
             driver.get(search_url)
             time.sleep(5)
 
@@ -217,22 +309,34 @@ def main():
             # Find job cards
             try:
                 job_cards = driver.find_elements("css selector", ".job-card-container")
-                print(f"    Found {len(job_cards)} jobs")
+                print(f"    Found {len(job_cards)} jobs (last 48h, Easy Apply, Remote)")
 
-                for card in job_cards[:5]:  # max 5 per search keyword
+                for card in job_cards[:8]:  # check up to 8, apply to max 5 per keyword
                     if applied_count >= MAX_APPLICATIONS_PER_RUN:
                         break
 
                     try:
-                        # Click the job to open details
+                        # Click the job to open details — view it first (human behavior)
                         card.click()
-                        time.sleep(3)
+                        time.sleep(random.uniform(3, 6))  # dwell time on job post
 
                         # Get job ID to check if already applied
                         job_id = card.get_attribute("data-job-id") or card.get_attribute("data-occludable-job-id") or ""
                         if job_id in applied_data["applied_ids"]:
                             print(f"    ⏭️ Already applied to {job_id}")
                             continue
+
+                        # Skip jobs with too many applicants (buried)
+                        try:
+                            applicant_text = driver.find_element(
+                                "css selector", ".jobs-unified-top-card__applicant-count, .tvm__text"
+                            ).text
+                            digits = "".join(c for c in applicant_text if c.isdigit())
+                            if digits and int(digits) >= MAX_APPLICANTS_TO_SKIP:
+                                print(f"    ⏭️ Skipping: {applicant_text} (buried)")
+                                continue
+                        except Exception:
+                            pass  # no applicant count visible — proceed
 
                         # Check for Easy Apply button
                         try:
