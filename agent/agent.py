@@ -148,10 +148,30 @@ def run_filter(db, jobs):
         company = job.get("company", "")
         description = job.get("description", "")
         job["is_staffing_firm"] = is_staffing_firm(company, description)
-        if job["is_staffing_firm"]:
-            print(f"  ✅ PASS ({match['score']}% match) [STAFFING]: {job.get('title', '')} @ {company}")
+
+        # For direct employers (not staffing firms), require explicit C2C/contract signals.
+        # Direct employers like Netflix/Stripe/Affirm hire FTE or W2 only — C2C applications
+        # are auto-rejected before a human sees them, wasting quota and tanking callback rate.
+        if not job["is_staffing_firm"]:
+            desc_lower = description.lower()
+            title_lower = job.get("title", "").lower()
+            c2c_signals = [
+                "c2c", "corp to corp", "corp-to-corp", "1099",
+                "contract only", "contract position", "contract role",
+                "w2 or c2c", "w2/c2c", "independent contractor",
+                "contract-to-hire", "contract to hire",
+            ]
+            # Also accept if explicitly says "contract" AND is in the title
+            has_contract_title = "contract" in title_lower
+            has_c2c_desc = any(sig in desc_lower for sig in c2c_signals)
+
+            if not has_c2c_desc and not has_contract_title:
+                print(f"  🚫 SKIP (no C2C signals) [DIRECT FTE]: {job.get('title', '')} @ {company}")
+                continue
+
+            print(f"  ✅ PASS ({match['score']}% match) [DIRECT+C2C]: {job.get('title', '')} @ {company}")
         else:
-            print(f"  ✅ PASS ({match['score']}% match) [DIRECT]: {job.get('title', '')} @ {company}")
+            print(f"  ✅ PASS ({match['score']}% match) [STAFFING]: {job.get('title', '')} @ {company}")
 
         upsert_application(db, company=company, job_title=job.get("title", ""),
                            job_url=url, ats_type=ats.ats_type,

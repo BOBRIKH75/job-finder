@@ -195,11 +195,18 @@ def submit_greenhouse_api(
         return {"submitted": True, "method": "direct_api_dry_run"}
 
     # Build form data
+    c2c_note = (
+        "Available immediately for C2C / Corp-to-Corp contract. "
+        "Green Card holder — no sponsorship needed. "
+        f"Rate: ${profile.get('rate_min', 55)}-${profile.get('rate_max', 90)}/hr. "
+        "100% remote preferred. Parker, CO."
+    )
     form_data = {
         "job_application[first_name]": profile["first_name"],
         "job_application[last_name]": profile["last_name"],
         "job_application[email]": profile["email"],
         "job_application[phone]": profile.get("phone", ""),
+        "job_application[cover_letter_text]": c2c_note,
     }
     if url_token:
         form_data["job_application[token]"] = url_token
