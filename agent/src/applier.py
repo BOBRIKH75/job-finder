@@ -1010,11 +1010,12 @@ def apply_to_job(page, profile, job, learned, dry_run=False, db=None) -> dict:
             try:
                 main_inputs = page.locator('input:not([type="hidden"]):not([type="checkbox"])').count()
                 if main_inputs < 2:
-                    # Try clicking Apply/Apply now button to reveal form
-                    apply_btns = page.locator('a:has-text("Apply"), button:has-text("Apply")')
+                    # Try clicking "Apply to this job" link (bottom of page, reveals form)
+                    # This is the .view-more-cta link — NOT the "Apply now" header button
+                    apply_btns = page.locator('a:has-text("Apply to this job"), .view-more-cta a')
                     if apply_btns.count() > 0:
                         apply_btns.first.click()
-                        page.wait_for_timeout(2000)
+                        page.wait_for_timeout(5000)
                     # Reveal hidden Greenhouse iframe (parent often display:none)
                     page.evaluate("""() => {
                         var iframe = document.getElementById('grnhse_iframe');
