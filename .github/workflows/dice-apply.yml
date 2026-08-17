@@ -22,7 +22,7 @@ jobs:
           python-version: '3.12'
 
       - name: Install dependencies
-        run: pip install dice-apply selenium undetected-chromedriver
+        run: pip install setuptools dice-apply selenium undetected-chromedriver
 
       - name: Run Dice Easy Apply
         env:

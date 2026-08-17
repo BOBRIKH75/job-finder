@@ -76,9 +76,9 @@ class TestGuessDomain:
 
 class TestOutreachExtractEmails:
     def test_basic(self):
-        text = "Send resume to hiring@company.com"
+        text = "Send resume to john.smith@company.com"
         result = outreach.extract_emails(text)
-        assert "hiring@company.com" in result
+        assert "john.smith@company.com" in result
 
     def test_filters_junk(self):
         text = "noreply@x.com and real@y.com"
