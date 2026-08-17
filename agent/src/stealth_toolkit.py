@@ -55,26 +55,43 @@ window.navigator.permissions.query = (p) =>
 """
 
 def fetch_playwright_stealth(url: str, headless: bool = False, **kw) -> StealthResult:
+    """Playwright + stealth JS injection.
+    
+    Runs in a daemon thread to avoid 'Playwright Sync API inside asyncio loop' error.
+    """
+    import threading
+
     start = time.time()
-    try:
-        from playwright.sync_api import sync_playwright
-        with sync_playwright() as p:
-            browser = p.chromium.launch(headless=headless)
-            ctx = browser.new_context(
-                user_agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
-                viewport={"width": 1920, "height": 1080}, locale="en-US",
-            )
-            ctx.add_init_script(STEALTH_JS)
-            page = ctx.new_page()
-            resp = page.goto(url, wait_until="domcontentloaded", timeout=30000)
-            page.wait_for_timeout(random.randint(2000, 4000))
-            html = page.content()
-            cookies = [dict(c) for c in ctx.cookies()]
-            status = resp.status if resp else 0
-            browser.close()
-            return StealthResult(status < 400, "playwright_stealth", html, cookies, status, elapsed=time.time() - start)
-    except Exception as e:
-        return StealthResult(False, "playwright_stealth", error=str(e), elapsed=time.time() - start)
+    _result: list[StealthResult] = []
+
+    def _run():
+        try:
+            from playwright.sync_api import sync_playwright
+            with sync_playwright() as p:
+                browser = p.chromium.launch(headless=headless)
+                ctx = browser.new_context(
+                    user_agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
+                    viewport={"width": 1920, "height": 1080}, locale="en-US",
+                )
+                ctx.add_init_script(STEALTH_JS)
+                page = ctx.new_page()
+                resp = page.goto(url, wait_until="domcontentloaded", timeout=30000)
+                page.wait_for_timeout(random.randint(2000, 4000))
+                html = page.content()
+                cookies = [dict(c) for c in ctx.cookies()]
+                status = resp.status if resp else 0
+                browser.close()
+                _result.append(StealthResult(status < 400, "playwright_stealth", html, cookies, status, elapsed=time.time() - start))
+        except Exception as e:
+            _result.append(StealthResult(False, "playwright_stealth", error=str(e), elapsed=time.time() - start))
+
+    t = threading.Thread(target=_run, daemon=True)
+    t.start()
+    t.join(timeout=45)
+
+    if _result:
+        return _result[0]
+    return StealthResult(False, "playwright_stealth", error="Timed out (45s)", elapsed=time.time() - start)
 
 
 # ─── 3. Camoufox ────────────────────────────────────────────────────
