@@ -80,19 +80,54 @@ def fetch_playwright_stealth(url: str, headless: bool = False, **kw) -> StealthR
 # ─── 3. Camoufox ────────────────────────────────────────────────────
 
 def fetch_camoufox(url: str, headless: bool = True, **kw) -> StealthResult:
+    """Firefox-based stealth fetch.
+
+    The sync Camoufox API breaks when called from inside an asyncio event loop
+    ("Playwright Sync API inside asyncio loop").  Fix: run the async API in a
+    fresh daemon thread that owns its own event loop — completely isolated from
+    whatever loop the caller is running.
+    """
+    import asyncio
+    import threading
+
     start = time.time()
-    try:
-        from camoufox.sync_api import Camoufox
-        with Camoufox(headless=headless) as browser:
-            page = browser.new_page()
-            resp = page.goto(url, timeout=30000)
-            time.sleep(random.uniform(2, 4))
-            html = page.content()
-            cookies = [dict(c) for c in (browser.contexts[0].cookies() if browser.contexts else [])]
-            status = resp.status if resp else 0
-            return StealthResult(status < 400, "camoufox", html, cookies, status, elapsed=time.time() - start)
-    except Exception as e:
-        return StealthResult(False, "camoufox", error=str(e), elapsed=time.time() - start)
+    _result: list[StealthResult] = []
+
+    async def _run() -> None:
+        try:
+            from camoufox.async_api import AsyncCamoufox
+            async with AsyncCamoufox(headless=headless) as browser:
+                page = await browser.new_page()
+                resp = await page.goto(url, timeout=30000)
+                await asyncio.sleep(random.uniform(2, 4))
+                html = await page.content()
+                ctx_cookies = await browser.contexts[0].cookies() if browser.contexts else []
+                cookies = [dict(c) for c in ctx_cookies]
+                status = resp.status if resp else 0
+                _result.append(StealthResult(
+                    status < 400, "camoufox", html, cookies, status,
+                    elapsed=time.time() - start,
+                ))
+        except Exception as exc:
+            _result.append(StealthResult(False, "camoufox", error=str(exc),
+                                         elapsed=time.time() - start))
+
+    def _thread_main() -> None:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            loop.run_until_complete(_run())
+        finally:
+            loop.close()
+
+    t = threading.Thread(target=_thread_main, daemon=True)
+    t.start()
+    t.join(timeout=45)
+
+    if _result:
+        return _result[0]
+    return StealthResult(False, "camoufox", error="timeout after 45s",
+                         elapsed=time.time() - start)
 
 
 # ─── 4. Nodriver ─────────────────────────────────────────────────────
