@@ -35,6 +35,7 @@ jobs:
             contacted.json
             posted_topics.json
             found_jobs.json
+            found_recruiters.json
             apply_report.json
           key: job-data
 
@@ -50,6 +51,8 @@ jobs:
         run: |
           python find_jobs.py
           python linkedin_deep_search.py
+          python recruiter_search.py
+          python -c "import outreach; outreach.send_followups(); outreach.send_reengagements()"
 
       - name: Generate LinkedIn posts (Mon & Thu only)
         continue-on-error: true
@@ -91,6 +94,7 @@ jobs:
             contacted.json
             posted_topics.json
             found_jobs.json
+            found_recruiters.json
             apply_report.json
           key: job-data-${{ github.run_number }}
 

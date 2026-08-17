@@ -338,31 +338,85 @@ def build_followup_email(recruiter_name, job_title, company):
     subject = f'Re: {job_title} — C2C Available — Bob Rikh'
     return subject, html
 
-def send_followups():
-    """Check contacted.json for people contacted 3+ days ago with no follow-up sent."""
-    if not GMAIL_APP_PASSWORD:
-        print('  ⚠️  No GMAIL_APP_PASSWORD — skipping follow-ups')
-        return 0
 
+def build_followup2_email(recruiter_name, job_title, company):
+    name = recruiter_name or ''
+    first = name.split()[0] if name else ''
+    greeting = f'Hi {first},' if first else 'Hello,'
+
+    html = f"""<div style="font-family:Arial,sans-serif;font-size:14px;color:#333">
+<p>{greeting}</p>
+
+<p>Circling back one more time on the <strong>{job_title}</strong> opportunity at <strong>{company}</strong>.</p>
+
+<p>I realize I may have reached the wrong person — if so, could you point me to the right contact on your team?</p>
+
+<p>If you are the right contact, I'd love a quick 10-minute chat. Available immediately for <strong>C2C / Corp-to-Corp</strong>, no sponsorship needed.</p>
+
+<br>
+{SIGNATURE_HTML}
+</div>"""
+
+    subject = f'Re: {job_title} — quick question / Bob Rikh'
+    return subject, html
+
+
+def build_breakup_email(recruiter_name, job_title, company):
+    name = recruiter_name or ''
+    first = name.split()[0] if name else ''
+    greeting = f'Hi {first},' if first else 'Hello,'
+
+    html = f"""<div style="font-family:Arial,sans-serif;font-size:14px;color:#333">
+<p>{greeting}</p>
+
+<p>I've sent a couple of notes about <strong>{job_title}</strong> at <strong>{company}</strong> but haven't heard back — totally understandable, I know inboxes are busy.</p>
+
+<p>Should I close this out on my end, or is the timing just not right?</p>
+
+<p>Either way, best of luck with the search.</p>
+
+<br>
+{SIGNATURE_HTML}
+</div>"""
+
+    subject = f'Should I close this out? — {job_title} / Bob Rikh'
+    return subject, html
+
+
+def build_reengage_email(recruiter_name, job_title, company):
+    name = recruiter_name or ''
+    first = name.split()[0] if name else ''
+    greeting = f'Hi {first},' if first else 'Hello,'
+
+    html = f"""<div style="font-family:Arial,sans-serif;font-size:14px;color:#333">
+<p>{greeting}</p>
+
+<p>I noticed <strong>{company}</strong> has a new <strong>{job_title}</strong> posting and wanted to reconnect.</p>
+
+<p>I'm still available for <strong>C2C / Corp-to-Corp</strong> and my background remains a strong fit — Java 17, Spring Boot, Kafka, Kubernetes, AWS, 8+ years experience.</p>
+
+<p>Would it be worth a quick conversation?</p>
+
+<br>
+{SIGNATURE_HTML}
+</div>"""
+
+    subject = f'{job_title} at {company} — Bob Rikh (Java C2C)'
+    return subject, html
+
+
+def send_followups():
+    """Multi-touch follow-up sequence: day 3 (touch 1), day 7 (touch 2), day 14 (break-up)."""
     contacted = load_contacted()
     now = datetime.now()
     sent = 0
-    MAX_FOLLOWUPS = 5  # max follow-ups per run
+    MAX_FOLLOWUPS = 10
 
     for key, info in contacted.items():
         if sent >= MAX_FOLLOWUPS:
             break
-        # Skip if already followed up
-        if info.get('followed_up'):
-            continue
-        # Check if 3+ days since first contact
-        try:
-            contact_date = datetime.fromisoformat(info['date'])
-            days_since = (now - contact_date).days
-        except:
-            continue
 
-        if days_since < 3 or days_since > 10:  # 3-10 day window only
+        if info.get('replied') or info.get('bounced'):
             continue
 
         email = info.get('email', '')
@@ -373,15 +427,113 @@ def send_followups():
         if not email or not job:
             continue
 
-        subject, html = build_followup_email(recruiter, job, company)
-        print(f'  📧 Follow-up to {email} ({days_since} days) for "{job}" @ {company}...')
+        try:
+            contact_date = datetime.fromisoformat(info['date'])
+            days_since = (now - contact_date).days
+        except Exception:
+            continue
+
+        touch1 = info.get('followed_up', False)
+        touch2 = info.get('touch2_sent', False)
+        touch3 = info.get('touch3_sent', False)
+
+        if not touch1 and 3 <= days_since <= 6:
+            subject, html = build_followup_email(recruiter, job, company)
+            tag = 'Touch 2 (follow-up)'
+        elif touch1 and not touch2 and 7 <= days_since <= 13:
+            subject, html = build_followup2_email(recruiter, job, company)
+            tag = 'Touch 3 (different angle)'
+        elif touch2 and not touch3 and 14 <= days_since <= 30:
+            subject, html = build_breakup_email(recruiter, job, company)
+            tag = 'Touch 4 (break-up)'
+        else:
+            continue
+
+        print(f'  📧 {tag} → {email} ({days_since}d) "{job}" @ {company}...')
 
         if send_outreach(email, subject, html):
-            contacted[key]['followed_up'] = True
-            contacted[key]['followup_date'] = now.isoformat()
+            info['last_contact'] = now.isoformat()
+            if not touch1:
+                info['followed_up'] = True
+                info['followup_date'] = now.isoformat()
+            elif not touch2:
+                info['touch2_sent'] = True
+            else:
+                info['touch3_sent'] = True
+            contacted[key] = info
             sent += 1
-            print(f'  ✅ Follow-up sent! ({sent}/{MAX_FOLLOWUPS})')
+            print(f'  ✅ Sent! ({sent}/{MAX_FOLLOWUPS})')
 
     save_contacted(contacted)
     print(f'📬 Follow-ups: {sent} sent')
+    return sent
+
+
+def send_reengagements():
+    """Re-engage contacts 90+ days after last touch (max 3 re-engagements, stop if replied)."""
+    contacted = load_contacted()
+    now = datetime.now()
+    sent = 0
+    MAX_REENGAGEMENTS = 5
+
+    # Load today's jobs so we can reference a new opening per company
+    current_jobs: dict[str, str] = {}
+    if os.path.exists('found_jobs.json'):
+        try:
+            with open('found_jobs.json') as f:
+                data = json.load(f)
+            jobs = data if isinstance(data, list) else data.get('jobs', [])
+            for j in jobs:
+                company_key = j.get('company', '').lower().strip()
+                if company_key:
+                    current_jobs[company_key] = j.get('title', 'Java Developer')
+        except Exception:
+            pass
+
+    for key, info in contacted.items():
+        if sent >= MAX_REENGAGEMENTS:
+            break
+
+        if info.get('replied') or info.get('bounced'):
+            continue
+        if info.get('re_engage_count', 0) >= 3:
+            continue
+
+        last_contact_str = info.get('last_contact') or info.get('date', '')
+        if not last_contact_str:
+            continue
+
+        try:
+            last_contact = datetime.fromisoformat(last_contact_str)
+            days_since = (now - last_contact).days
+        except Exception:
+            continue
+
+        if days_since < 90:
+            continue
+
+        email = info.get('email', '')
+        company = info.get('company', '')
+        recruiter = info.get('recruiter', '')
+
+        if not email or not company:
+            continue
+
+        # Only re-engage if there is a current job at this company to reference
+        job_title = current_jobs.get(company.lower().strip(), '')
+        if not job_title:
+            continue
+
+        subject, html = build_reengage_email(recruiter, job_title, company)
+        print(f'  📧 Re-engage ({days_since}d) → {email} @ {company} re: "{job_title}"...')
+
+        if send_outreach(email, subject, html):
+            info['last_contact'] = now.isoformat()
+            info['re_engage_count'] = info.get('re_engage_count', 0) + 1
+            contacted[key] = info
+            sent += 1
+            print(f'  ✅ Re-engage sent! ({sent}/{MAX_REENGAGEMENTS})')
+
+    save_contacted(contacted)
+    print(f'🔄 Re-engagements: {sent} sent')
     return sent
