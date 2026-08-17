@@ -155,3 +155,112 @@ def get_learning_stats(db) -> dict:
     row = db.execute("SELECT COUNT(*) as c FROM audit_log WHERE action = 'LEARN_FAILURE'").fetchone()
     stats["total_failures"] = row["c"]
     return stats
+
+
+# ─── Stealth Tool Memory ────────────────────────────────────────────
+# Remembers which stealth tool worked for which domain.
+# Next run → tries the proven tool first → skips broken ones → faster + fewer failures.
+
+STEALTH_MEMORY_SCHEMA = """
+CREATE TABLE IF NOT EXISTS stealth_memory (
+    domain TEXT NOT NULL,
+    tool TEXT NOT NULL,
+    success_count INTEGER DEFAULT 0,
+    failure_count INTEGER DEFAULT 0,
+    last_success TEXT,
+    last_failure TEXT,
+    avg_time_ms REAL DEFAULT 0,
+    UNIQUE(domain, tool)
+);
+"""
+
+
+def ensure_stealth_memory_table(db):
+    """Create stealth_memory table if it doesn't exist."""
+    db.executescript(STEALTH_MEMORY_SCHEMA)
+
+
+def learn_stealth_success(db, domain: str, tool: str, elapsed_ms: float):
+    """Record that a stealth tool worked for a domain."""
+    ensure_stealth_memory_table(db)
+    db.execute("""
+        INSERT INTO stealth_memory (domain, tool, success_count, last_success, avg_time_ms)
+        VALUES (?, ?, 1, datetime('now'), ?)
+        ON CONFLICT(domain, tool) DO UPDATE SET
+            success_count = success_count + 1,
+            last_success = datetime('now'),
+            avg_time_ms = (avg_time_ms * success_count + ?) / (success_count + 1)
+    """, (domain, tool, elapsed_ms, elapsed_ms))
+    db.commit()
+
+
+def learn_stealth_failure(db, domain: str, tool: str, error: str = ""):
+    """Record that a stealth tool failed for a domain."""
+    ensure_stealth_memory_table(db)
+    db.execute("""
+        INSERT INTO stealth_memory (domain, tool, failure_count, last_failure)
+        VALUES (?, ?, 1, datetime('now'))
+        ON CONFLICT(domain, tool) DO UPDATE SET
+            failure_count = failure_count + 1,
+            last_failure = datetime('now')
+    """, (domain, tool))
+    db.commit()
+
+
+def get_best_tool_for_domain(db, domain: str) -> str | None:
+    """Get the best stealth tool for a domain based on past success.
+    
+    Returns the tool name with highest success rate, or None if no data.
+    Ignores tools that failed >3 times with 0 successes (proven broken).
+    """
+    ensure_stealth_memory_table(db)
+    row = db.execute("""
+        SELECT tool, success_count, failure_count,
+               CAST(success_count AS REAL) / MAX(success_count + failure_count, 1) AS success_rate
+        FROM stealth_memory
+        WHERE domain = ?
+          AND success_count > 0
+        ORDER BY success_rate DESC, success_count DESC, avg_time_ms ASC
+        LIMIT 1
+    """, (domain,)).fetchone()
+    if row:
+        return row["tool"]
+    return None
+
+
+def get_tools_to_skip(db, domain: str, min_failures: int = 3) -> list[str]:
+    """Get tools that consistently fail for a domain (skip them).
+    
+    A tool is skipped if it failed >=min_failures times with 0 successes.
+    """
+    ensure_stealth_memory_table(db)
+    rows = db.execute("""
+        SELECT tool FROM stealth_memory
+        WHERE domain = ?
+          AND failure_count >= ?
+          AND success_count = 0
+    """, (domain, min_failures)).fetchall()
+    return [r["tool"] for r in rows]
+
+
+def get_smart_tool_order(db, domain: str, default_chain: list[str]) -> list[str]:
+    """Reorder the tool chain based on memory — smart first, skip broken.
+    
+    1. Best tool for this domain goes FIRST
+    2. Tools that always fail for this domain are REMOVED
+    3. Rest stays in default order
+    
+    Returns optimized tool name list.
+    """
+    best = get_best_tool_for_domain(db, domain)
+    skip = get_tools_to_skip(db, domain)
+    
+    # Remove broken tools
+    chain = [t for t in default_chain if t not in skip]
+    
+    # Move best to front
+    if best and best in chain:
+        chain.remove(best)
+        chain.insert(0, best)
+    
+    return chain

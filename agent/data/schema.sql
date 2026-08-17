@@ -142,3 +142,14 @@ Would love to schedule a quick call at your convenience.
 
 Best,
 Bob Rikh');
+
+CREATE TABLE IF NOT EXISTS stealth_memory (
+    domain TEXT NOT NULL,
+    tool TEXT NOT NULL,
+    success_count INTEGER DEFAULT 0,
+    failure_count INTEGER DEFAULT 0,
+    last_success TEXT,
+    last_failure TEXT,
+    avg_time_ms REAL DEFAULT 0,
+    UNIQUE(domain, tool)
+);

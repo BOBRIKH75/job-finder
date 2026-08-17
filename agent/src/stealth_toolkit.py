@@ -272,9 +272,36 @@ TOOL_CHAIN = [
 ]
 
 
-def stealth_fetch(url: str, tools: list[str] = None, headless: bool = True) -> StealthResult:
-    """Fetch URL with auto-fallback through stealth tools."""
-    chain = TOOL_CHAIN if not tools else [(n, f) for n, f in TOOL_CHAIN if n in tools]
+def stealth_fetch(url: str, tools: list[str] = None, headless: bool = True, db=None) -> StealthResult:
+    """Fetch URL with auto-fallback through stealth tools.
+    
+    Smart mode (when db provided):
+    - Checks memory for best tool for this domain
+    - Tries proven tool FIRST (skips known-broken ones)
+    - Learns from success/failure for next run
+    """
+    from urllib.parse import urlparse
+    domain = urlparse(url).netloc.replace("www.", "")
+    
+    # Smart tool ordering if memory available
+    if db:
+        try:
+            from .learning_engine import get_smart_tool_order, learn_stealth_success, learn_stealth_failure
+            default_names = [n for n, _ in TOOL_CHAIN]
+            if tools:
+                default_names = [n for n in default_names if n in tools]
+            smart_order = get_smart_tool_order(db, domain, default_names)
+            chain = [(n, f) for n, f in TOOL_CHAIN if n in smart_order]
+            # Sort chain by smart_order position
+            chain.sort(key=lambda x: smart_order.index(x[0]) if x[0] in smart_order else 999)
+            if smart_order != default_names:
+                log.info(f"🧠 Smart order for {domain}: {smart_order[:4]}")
+        except Exception as e:
+            log.debug(f"Memory lookup failed ({e}), using default chain")
+            chain = TOOL_CHAIN if not tools else [(n, f) for n, f in TOOL_CHAIN if n in tools]
+    else:
+        chain = TOOL_CHAIN if not tools else [(n, f) for n, f in TOOL_CHAIN if n in tools]
+    
     last = None
     for name, func in chain:
         log.info(f"Trying {name} for {url}")
@@ -282,8 +309,20 @@ def stealth_fetch(url: str, tools: list[str] = None, headless: bool = True) -> S
         last = result
         if result.success:
             log.info(f"✅ {name} succeeded in {result.elapsed:.1f}s")
+            # Learn: this tool works for this domain
+            if db:
+                try:
+                    learn_stealth_success(db, domain, name, result.elapsed * 1000)
+                except Exception:
+                    pass
             return result
         log.warning(f"❌ {name} failed: {result.error}")
+        # Learn: this tool failed for this domain
+        if db:
+            try:
+                learn_stealth_failure(db, domain, name, result.error)
+            except Exception:
+                pass
     return last or StealthResult(False, "none", error="All tools failed")
 
 

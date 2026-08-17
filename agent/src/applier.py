@@ -1380,7 +1380,7 @@ def run_applications(jobs: list[dict], dry_run: bool = True, max_apps: int = 10,
                     else:
                         # All stealth tools — but graceful failure
                         print(f"    🔴 Site protected — trying stealth tools...")
-                        stealth_result = stealth_fetch(url, tools=["curl_cffi", "camoufox", "playwright_stealth", "cf_bypass"], headless=True)
+                        stealth_result = stealth_fetch(url, tools=["curl_cffi", "camoufox", "playwright_stealth", "cf_bypass"], headless=True, db=db)
                         if stealth_result.success and stealth_result.cookies:
                             pw_cookies = []
                             for c in stealth_result.cookies:
