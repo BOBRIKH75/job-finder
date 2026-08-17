@@ -995,6 +995,35 @@ def apply_to_job(page, profile, job, learned, dry_run=False, db=None) -> dict:
             if dismissed:
                 print(f"      Dismissed {dismissed} popups/banners")
 
+            # NEW: Click "Apply" button if form is hidden behind it (Greenhouse embed pattern)
+            # This is optional — only triggers when no inputs visible on main page
+            try:
+                main_inputs = page.locator('input:not([type="hidden"]):not([type="checkbox"])').count()
+                if main_inputs < 2:
+                    # Try clicking Apply/Apply now button to reveal form
+                    apply_btns = page.locator('a:has-text("Apply"), button:has-text("Apply")')
+                    if apply_btns.count() > 0:
+                        apply_btns.first.click()
+                        page.wait_for_timeout(2000)
+                    # Reveal hidden Greenhouse iframe (parent often display:none)
+                    page.evaluate("""() => {
+                        var iframe = document.getElementById('grnhse_iframe');
+                        if (iframe) {
+                            var el = iframe;
+                            while (el && el !== document.body) {
+                                el.style.display = 'block';
+                                el.style.visibility = 'visible';
+                                el.style.height = 'auto';
+                                el = el.parentElement;
+                            }
+                            iframe.style.height = '900px';
+                            iframe.style.width = '100%';
+                        }
+                    }""")
+                    page.wait_for_timeout(3000)
+            except Exception:
+                pass  # Non-fatal — old path continues below
+
             # For JS-heavy ATS (Greenhouse, Workday, Ashby): wait for form to render
             if any(s in apply_url for s in ["greenhouse", "workday", "myworkday", "ashby"]):
                 try:
