@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
 Recruiter search pipeline.
-Reads companies from found_jobs.json → Hunter.io → Apollo.io → Snov.io → outreach.
+Reads companies from found_jobs.json → Hunter.io → Apollo.io → Snov.io → Tomba.io → outreach.
+Cascade: Hunter (domain) → Apollo (company + Tomba LinkedIn enrichment) → Snov → Tomba domain.
 """
 import json, os, re, urllib.request, urllib.parse
 from typing import Optional
@@ -10,6 +11,8 @@ HUNTER_KEY = os.environ.get('HUNTER_API_KEY', '')
 APOLLO_KEY = os.environ.get('APOLLO_API_KEY', '')
 SNOV_USER_ID = os.environ.get('SNOV_USER_ID', '')
 SNOV_SECRET = os.environ.get('SNOV_API_SECRET', '')
+TOMBA_KEY = os.environ.get('TOMBA_KEY', '')
+TOMBA_SECRET = os.environ.get('TOMBA_SECRET', '')
 
 _RECRUITER_KEYWORDS = {
     'recruiter', 'talent', 'staffing', 'sourcer', 'headhunter',
@@ -51,8 +54,11 @@ def _company_to_domain(company: str) -> Optional[str]:
     return f'{clean}.com' if clean else None
 
 
-def _get_json(url: str) -> dict:
-    req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+def _get_json(url: str, extra_headers: dict = None) -> dict:
+    headers = {'User-Agent': 'Mozilla/5.0'}
+    if extra_headers:
+        headers.update(extra_headers)
+    req = urllib.request.Request(url, headers=headers)
     try:
         with urllib.request.urlopen(req, timeout=15) as r:
             return json.loads(r.read())
@@ -114,13 +120,21 @@ def apollo_search(company: str) -> list[dict]:
     results = []
     for p in data.get('people', []):
         email = p.get('email', '')
-        if not email or 'placeholder' in email:
+        linkedin_url = p.get('linkedin_url', '')
+        source = 'apollo'
+        # Apollo sometimes redacts email — enrich via Tomba LinkedIn lookup
+        if (not email or 'placeholder' in email) and linkedin_url:
+            email = tomba_linkedin_lookup(linkedin_url) or ''
+            if email:
+                source = 'apollo+tomba'
+        if not email:
             continue
         results.append({
             'email': email,
             'name': p.get('name', ''),
             'title': p.get('title', ''),
-            'source': 'apollo',
+            'linkedin_url': linkedin_url,
+            'source': source,
             'confidence': 85,
         })
     return results
@@ -174,8 +188,43 @@ def snov_search(domain: str) -> list[dict]:
     return results
 
 
+def tomba_domain_search(domain: str) -> list[dict]:
+    """Tomba.io domain search — 50 free/month, alternative to Hunter."""
+    if not TOMBA_KEY:
+        return []
+    headers = {'X-Tomba-Key': TOMBA_KEY, 'X-Tomba-Secret': TOMBA_SECRET}
+    data = _get_json(
+        f'https://api.tomba.io/v1/domain-search/{urllib.parse.quote(domain)}',
+        extra_headers=headers,
+    )
+    results = []
+    for p in data.get('data', {}).get('emails', []):
+        title = p.get('position', '')
+        email = p.get('email', '')
+        if not email or not _is_recruiter(title):
+            continue
+        results.append({
+            'email': email,
+            'name': f"{p.get('first_name', '')} {p.get('last_name', '')}".strip(),
+            'title': title,
+            'source': 'tomba',
+            'confidence': p.get('score', 0),
+        })
+    return results
+
+
+def tomba_linkedin_lookup(linkedin_url: str) -> Optional[str]:
+    """Tomba.io LinkedIn profile → verified email. Used to enrich Apollo results."""
+    if not TOMBA_KEY or not linkedin_url:
+        return None
+    headers = {'X-Tomba-Key': TOMBA_KEY, 'X-Tomba-Secret': TOMBA_SECRET}
+    url = f'https://api.tomba.io/v1/linkedin?url={urllib.parse.quote(linkedin_url)}'
+    data = _get_json(url, extra_headers=headers)
+    return data.get('data', {}).get('email') or None
+
+
 def find_recruiters_for_company(company: str) -> list[dict]:
-    """Hunter → Apollo → Snov. Returns deduplicated list with company/domain fields added."""
+    """Hunter → Apollo (Tomba enriches missing emails) → Snov → Tomba domain."""
     domain = _company_to_domain(company)
     seen: set[str] = set()
     all_results: list[dict] = []
@@ -191,9 +240,11 @@ def find_recruiters_for_company(company: str) -> list[dict]:
     if domain:
         _add(hunter_search(domain))
     if not all_results:
-        _add(apollo_search(company))
+        _add(apollo_search(company))  # calls tomba_linkedin_lookup internally
     if not all_results and domain:
         _add(snov_search(domain))
+    if not all_results and domain:
+        _add(tomba_domain_search(domain))
 
     return all_results
 

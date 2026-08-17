@@ -48,6 +48,8 @@ jobs:
           APOLLO_API_KEY: ${{ secrets.APOLLO_API_KEY }}
           SNOV_USER_ID: ${{ secrets.SNOV_USER_ID }}
           SNOV_API_SECRET: ${{ secrets.SNOV_API_SECRET }}
+          TOMBA_KEY: ${{ secrets.TOMBA_KEY }}
+          TOMBA_SECRET: ${{ secrets.TOMBA_SECRET }}
         run: |
           python find_jobs.py
           python linkedin_deep_search.py
