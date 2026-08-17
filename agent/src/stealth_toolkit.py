@@ -157,27 +157,35 @@ def fetch_cf_bypass(url: str, headless: bool = True, proxy: str = None, **kw) ->
         sb_args = dict(uc=True, headless=headless, test=True)
         if proxy:
             sb_args["proxy"] = proxy
+        # Use variables outside the with block — SB context manager swallows exceptions
+        # silently (it's a pytest plugin), so the function would return None without this.
+        _html: str | None = None
+        _cookies: list = []
         with SB(**sb_args) as sb:
-            sb.uc_open_with_reconnect(url, reconnect_time=10)
-            for _ in range(3):
-                time.sleep(3)
-                src = sb.get_page_source()
-                if "Just a moment" not in src and "Checking your browser" not in src:
-                    break
-                try:
-                    sb.uc_gui_click_captcha()
-                except Exception:
-                    pass
-            html = sb.get_page_source()
-            cookies = sb.get_cookies()
-            # Export Netscape cookie file for curl/wget
+            try:
+                sb.uc_open_with_reconnect(url, reconnect_time=10)
+                for _ in range(3):
+                    time.sleep(3)
+                    src = sb.get_page_source()
+                    if "Just a moment" not in src and "Checking your browser" not in src:
+                        break
+                    try:
+                        sb.uc_gui_click_captcha()
+                    except Exception:
+                        pass
+                _html = sb.get_page_source()
+                _cookies = sb.get_cookies()
+            except Exception:
+                pass  # SB logs the exception itself; we fall through to the None check below
+        if _html is not None:
             cfile = Path(tempfile.gettempdir()) / "cf_cookies.txt"
             lines = ["# Netscape HTTP Cookie File"]
-            for c in cookies:
+            for c in _cookies:
                 d = c.get("domain", "")
                 lines.append(f"{d}\tTRUE\t{c.get('path','/')}\t{'TRUE' if c.get('secure') else 'FALSE'}\t0\t{c['name']}\t{c['value']}")
             cfile.write_text("\n".join(lines))
-            return StealthResult("Just a moment" not in html, "cf_bypass", html, cookies, 200, elapsed=time.time() - start)
+            return StealthResult("Just a moment" not in _html, "cf_bypass", _html, _cookies, 200, elapsed=time.time() - start)
+        return StealthResult(False, "cf_bypass", error="SB failed to fetch page", elapsed=time.time() - start)
     except Exception as e:
         return StealthResult(False, "cf_bypass", error=str(e), elapsed=time.time() - start)
 
@@ -219,6 +227,7 @@ def fetch_sarperavci(url: str, **kw) -> StealthResult:
 
 TOOL_CHAIN = [
     ("curl_cffi", fetch_curl_cffi),
+    ("camoufox", fetch_camoufox),           # Firefox-based stealth — was defined but never wired
     ("playwright_stealth", fetch_playwright_stealth),
     ("seleniumbase_uc", fetch_seleniumbase_uc),
     ("nodriver", fetch_nodriver),

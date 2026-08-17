@@ -42,9 +42,12 @@ jobs:
       - name: Start OhMyCaptcha solver (background)
         run: |
           git clone --depth 1 https://github.com/shenhao-stu/ohmycaptcha.git /tmp/ohmycaptcha
-          pip install -r /tmp/ohmycaptcha/requirements.txt -q
-          cd /tmp/ohmycaptcha && python main.py &
-          sleep 3
+          # Isolated venv so ohmycaptcha's pinned Playwright version doesn't overwrite ours
+          python -m venv /tmp/ohmycaptcha_venv
+          /tmp/ohmycaptcha_venv/bin/pip install -r /tmp/ohmycaptcha/requirements.txt -q
+          /tmp/ohmycaptcha_venv/bin/playwright install chromium --with-deps
+          cd /tmp/ohmycaptcha && /tmp/ohmycaptcha_venv/bin/python main.py &
+          sleep 5
           curl -s http://localhost:8000/api/v1/health || echo "OhMyCaptcha not ready (non-blocking)"
         env:
           CLOUD_BASE_URL: "https://generativelanguage.googleapis.com/v1beta/openai"
