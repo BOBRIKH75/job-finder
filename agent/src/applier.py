@@ -900,6 +900,16 @@ def apply_to_job(page, profile, job, learned, dry_run=False, db=None) -> dict:
                 apply_url += "/apply"
             if "boards.greenhouse.io" in apply_url and "job-boards" not in apply_url and "#app" not in apply_url:
                 apply_url += "#app"
+            # For job-boards.greenhouse.io/company/jobs/ID — use embed URL (avoids redirect + iframe)
+            # Embed URL gives direct form access with all fields visible immediately
+            import re as _re
+            _gh_embed_match = _re.search(r'job-boards\.greenhouse\.io/([^/]+)/jobs/(\d+)', apply_url)
+            if _gh_embed_match and "/embed/" not in apply_url:
+                _gh_embed_company = _gh_embed_match.group(1)
+                _gh_embed_id = _gh_embed_match.group(2)
+                embed_url = f"https://job-boards.greenhouse.io/embed/job_app?for={_gh_embed_company}&token={_gh_embed_id}"
+                print(f"      📋 Using Greenhouse embed URL (direct form)")
+                apply_url = embed_url
             if "ashbyhq.com" in apply_url and not apply_url.endswith("/application"):
                 apply_url += "/application"
             
