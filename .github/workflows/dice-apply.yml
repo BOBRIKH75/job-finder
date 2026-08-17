@@ -57,12 +57,30 @@ jobs:
           applied = 0
 
           try:
-              # Login
+              # Login — Step 1: Enter email
               driver.get('https://www.dice.com/dashboard/login')
+              time.sleep(4)
+              from selenium.webdriver.support.ui import WebDriverWait
+              from selenium.webdriver.support import expected_conditions as EC
+              wait = WebDriverWait(driver, 10)
+              email_input = wait.until(EC.presence_of_element_located((By.NAME, 'email')))
+              email_input.send_keys(email)
+              time.sleep(1)
+              # Click 'Continue with email'
+              for btn in driver.find_elements(By.TAG_NAME, 'button'):
+                  if 'continue with email' in btn.text.lower():
+                      btn.click()
+                      break
               time.sleep(3)
-              driver.find_element(By.ID, 'email').send_keys(email)
-              driver.find_element(By.ID, 'password').send_keys(password)
-              driver.find_element(By.CSS_SELECTOR, 'button[type=submit]').click()
+              # Login — Step 2: Enter password
+              pwd_input = wait.until(EC.presence_of_element_located((By.NAME, 'password')))
+              pwd_input.send_keys(password)
+              time.sleep(1)
+              # Click 'Sign In'
+              for btn in driver.find_elements(By.TAG_NAME, 'button'):
+                  if 'sign in' in btn.text.lower():
+                      btn.click()
+                      break
               time.sleep(5)
               print('✅ Logged in to Dice')
 
