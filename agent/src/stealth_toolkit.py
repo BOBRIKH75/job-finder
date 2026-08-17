@@ -308,9 +308,10 @@ def stealth_fetch(url: str, tools: list[str] = None, headless: bool = True, db=N
             if tools:
                 default_names = [n for n in default_names if n in tools]
             smart_order = get_smart_tool_order(db, domain, default_names)
-            chain = [(n, f) for n, f in TOOL_CHAIN if n in smart_order]
-            # Sort chain by smart_order position
-            chain.sort(key=lambda x: smart_order.index(x[0]) if x[0] in smart_order else 999)
+            # Reorder by history but never drop tools not yet seen — append unknowns at end
+            ordered_names = smart_order + [n for n in default_names if n not in smart_order]
+            chain = [(n, f) for n, f in TOOL_CHAIN if n in ordered_names]
+            chain.sort(key=lambda x: ordered_names.index(x[0]) if x[0] in ordered_names else 999)
             if smart_order != default_names:
                 log.info(f"🧠 Smart order for {domain}: {smart_order[:4]}")
         except Exception as e:

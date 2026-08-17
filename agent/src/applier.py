@@ -898,9 +898,7 @@ def apply_to_job(page, profile, job, learned, dry_run=False, db=None) -> dict:
             apply_url = url.rstrip("/")
             if "lever.co" in apply_url and not apply_url.endswith("/apply"):
                 apply_url += "/apply"
-            if "greenhouse.io" in apply_url and "#app" not in apply_url:
-                apply_url += "#app"
-            if "job-boards.greenhouse.io" in apply_url and "#app" not in apply_url:
+            if "boards.greenhouse.io" in apply_url and "job-boards" not in apply_url and "#app" not in apply_url:
                 apply_url += "#app"
             if "ashbyhq.com" in apply_url and not apply_url.endswith("/application"):
                 apply_url += "/application"
@@ -958,11 +956,11 @@ def apply_to_job(page, profile, job, learned, dry_run=False, db=None) -> dict:
                         btn = page.locator(f'a:has-text("{btn_text}"), button:has-text("{btn_text}")').first
                         if btn.is_visible(timeout=1000):
                             btn.click()
-                            # Wait for form inputs to appear after navigation/modal open
+                            # Wait for form inputs — React SPAs (Greenhouse) need up to 20s to hydrate
                             try:
                                 page.wait_for_selector(
                                     'input:not([type="hidden"]):not([type="file"]), textarea',
-                                    timeout=8000, state="visible"
+                                    timeout=20000, state="visible"
                                 )
                             except Exception:
                                 page.wait_for_timeout(3000)
@@ -1359,6 +1357,17 @@ def run_applications(jobs: list[dict], dry_run: bool = True, max_apps: int = 10,
 
         print(f"\n  {'='*50}")
         print(f"  {job.get('title','?')} @ {job.get('company','?')}")
+
+        # Resolve company-hosted Greenhouse URLs (e.g., thoughtworks.com?gh_jid=123)
+        # BEFORE the stealth precheck so CAPTCHA_FREE_DOMAINS check uses the real target URL.
+        if "gh_jid=" in url and "greenhouse.io" not in url:
+            _m = re.search(r'gh_jid=(\d+)', url)
+            if _m:
+                _co = job.get("company", "").lower().replace(" ", "")
+                url = f"https://job-boards.greenhouse.io/{_co}/jobs/{_m.group(1)}"
+                job["url"] = url
+                domain = re.sub(r'https?://(www\.)?', '', url).split('/')[0]
+                fail_key = f"{domain}|{company_slug}" if domain in MULTI_TENANT_DOMAINS else domain
 
         # SKIP STEALTH for known CAPTCHA-free ATS platforms
         is_captcha_free = any(d in url for d in CAPTCHA_FREE_DOMAINS)
