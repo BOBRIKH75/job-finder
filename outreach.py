@@ -244,11 +244,24 @@ def _send_via_smtp(to_email, subject, html) -> bool:
         return False
 
 
-# ── Send email — Resend API preferred, Gmail SMTP fallback ──
+# ── Send email — Gmail SMTP for recruiter outreach, Resend for self-reports only ──
 def send_outreach(to_email, subject, html):
+    """Send outreach email. Uses Gmail SMTP (sends from your real address).
+    Resend only works for sending to yourself (onboarding@resend.dev limitation).
+    """
+    # Verify email is deliverable before wasting a send
+    verification = verify_email_smtp(to_email)
+    if verification is False:
+        print(f'  ⚠️  Email undeliverable (MX rejected): {to_email}')
+        return False
+    # Send via Gmail SMTP (from your real email — recruiters can reply)
+    if GMAIL_APP_PASSWORD:
+        return _send_via_smtp(to_email, subject, html)
+    # Fallback: Resend (only works for sending to yourself)
     if RESEND_KEY:
         return _send_via_resend(to_email, subject, html)
-    return _send_via_smtp(to_email, subject, html)
+    print(f'  ⚠️  No email credentials configured — cannot send')
+    return False
 
 # ── Main: process jobs and send outreach ──
 def process_jobs(jobs_list):
