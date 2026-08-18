@@ -57,17 +57,16 @@ jobs:
           applied = 0
 
           try:
-              # Login — try new 2-step flow first, fallback to old
+              # Login — try multiple selectors with explicit waits
               driver.get('https://www.dice.com/dashboard/login')
-              time.sleep(4)
               from selenium.webdriver.support.ui import WebDriverWait
               from selenium.webdriver.support import expected_conditions as EC
-              wait = WebDriverWait(driver, 10)
+              wait = WebDriverWait(driver, 20)
               logged_in = False
 
               # Try NEW flow: name='email' → Continue → name='password' → Sign In
               try:
-                  email_input = driver.find_element(By.NAME, 'email')
+                  email_input = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, '[name=\"email\"], #email, input[type=\"email\"]')))
                   email_input.send_keys(email)
                   time.sleep(1)
                   for btn in driver.find_elements(By.TAG_NAME, 'button'):
@@ -75,11 +74,11 @@ jobs:
                           btn.click()
                           break
                   time.sleep(3)
-                  pwd_input = wait.until(EC.presence_of_element_located((By.NAME, 'password')))
+                  pwd_input = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, '[name=\"password\"], #password, input[type=\"password\"]')))
                   pwd_input.send_keys(password)
                   time.sleep(1)
                   for btn in driver.find_elements(By.TAG_NAME, 'button'):
-                      if 'sign in' in btn.text.lower():
+                      if 'sign in' in btn.text.lower() or 'submit' in btn.get_attribute('type').lower():
                           btn.click()
                           break
                   logged_in = True
@@ -87,13 +86,14 @@ jobs:
               except Exception:
                   pass
 
-              # Fallback: OLD flow — id='email' + id='password' + submit
+              # Fallback: reload and try old flow
               if not logged_in:
                   try:
                       driver.get('https://www.dice.com/dashboard/login')
-                      time.sleep(3)
-                      driver.find_element(By.ID, 'email').send_keys(email)
-                      driver.find_element(By.ID, 'password').send_keys(password)
+                      email_input = wait.until(EC.presence_of_element_located((By.ID, 'email')))
+                      email_input.send_keys(email)
+                      pwd_input = wait.until(EC.presence_of_element_located((By.ID, 'password')))
+                      pwd_input.send_keys(password)
                       driver.find_element(By.CSS_SELECTOR, 'button[type=submit]').click()
                       logged_in = True
                       print('✅ Logged in to Dice (old flow)')
