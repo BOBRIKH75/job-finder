@@ -926,6 +926,12 @@ def apply_to_job(page, profile, job, learned, dry_run=False, db=None) -> dict:
                     print(f"      📎 Redirected to Greenhouse: {apply_url}")
 
             page.goto(apply_url, wait_until="domcontentloaded", timeout=30000)
+            # Handle Cloudflare "Verify you are human" challenge (if present)
+            try:
+                from src.page_doctor import solve_cf_checkbox
+                solve_cf_checkbox(page)
+            except Exception:
+                pass
             # Wait for visible form inputs — React apps render after JS executes.
             # Try up to 10 seconds. Fall back to fixed wait if selector never appears.
             try:

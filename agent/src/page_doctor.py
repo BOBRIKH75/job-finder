@@ -197,6 +197,47 @@ def detect_turnstile(page) -> str | None:
         return None
 
 
+def solve_cf_checkbox(page, max_attempts: int = 2) -> bool:
+    """Try to solve Cloudflare 'Verify you are human' by clicking the challenges iframe.
+    
+    Tested manually 2026-08-17: works on Indeed.com.
+    Flow: find challenges.cloudflare.com iframe → click inside → wait 5s → check if passed.
+    """
+    import time
+    for attempt in range(max_attempts):
+        try:
+            title = page.title().lower()
+            body_text = page.evaluate("() => document.body.innerText.substring(0, 300)").lower()
+            if "just a moment" not in title and "verify you are human" not in body_text and "additional verification" not in body_text:
+                return True  # Already passed
+            
+            # Find the Cloudflare challenges iframe
+            for frame in page.frames:
+                if "challenges" in frame.url or "turnstile" in frame.url:
+                    time.sleep(2)  # Wait before clicking (like a human)
+                    frame.click("body", timeout=5000)
+                    print(f"      ✅ Clicked CF checkbox (attempt {attempt + 1})")
+                    time.sleep(5)  # Wait for verification
+                    break
+            else:
+                # No iframe found, try clicking any checkbox on page
+                try:
+                    page.click("input[type=checkbox]", timeout=3000)
+                    time.sleep(5)
+                except Exception:
+                    pass
+            
+            # Check if passed
+            title = page.title().lower()
+            if "just a moment" not in title and "additional verification" not in title:
+                print("      ✅ CF bypass successful!")
+                return True
+        except Exception:
+            pass
+    
+    return False
+
+
 def solve_turnstile_via_docker(page, url: str) -> bool:
     """Try to solve a Turnstile CAPTCHA using the Theyka/Turnstile-Solver Docker service.
 
