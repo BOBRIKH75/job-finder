@@ -102,15 +102,28 @@ jobs:
                       raise
 
               time.sleep(5)
+              print(f'  📍 After login — URL: {driver.current_url}')
+              print(f'  📍 Page title: {driver.title}')
 
               # Search for Java contract jobs
               searches = ['Java Developer contract remote', 'Java Spring Boot C2C', 'Senior Java Backend remote']
-              for query in searches:
+              for i, query in enumerate(searches):
                   if applied >= MAX_APPS: break
                   driver.get(f'https://www.dice.com/jobs?q={query.replace(\" \", \"+\")}&filters.easyApply=true&filters.postedDate=THREE')
-                  time.sleep(4)
+                  time.sleep(6)
 
+                  # Debug: print current URL and try multiple selectors
+                  print(f'  📍 Search URL: {driver.current_url}')
                   cards = driver.find_elements(By.CSS_SELECTOR, 'a[data-cy=\"card-title-link\"]')
+                  if not cards:
+                      cards = driver.find_elements(By.CSS_SELECTOR, 'a[data-testid*=\"card-title\"], .card-title-link, a.job-card-title')
+                  if not cards:
+                      # Last resort: any link that looks like a job link
+                      cards = driver.find_elements(By.CSS_SELECTOR, 'a[href*=\"/job-detail/\"]')
+                  if i == 0 and not cards:
+                      # Dump page snippet for debugging
+                      body = driver.find_element(By.TAG_NAME, 'body').text[:2000]
+                      print(f'  ⚠️ Page text (first 2000 chars): {body}')
                   print(f'  🔍 \"{query}\" → {len(cards)} Easy Apply jobs')
 
                   for card in cards[:10]:
