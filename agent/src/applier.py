@@ -541,6 +541,7 @@ def _fill_remaining_required(page, profile: dict) -> int:
         "disability": "I do not wish to answer",
         # Employment
         "previously employed": "No", "worked here before": "No", "former employee": "No",
+        "worked for": "No", "ever worked": "No", "recording": "Yes", "interview recording": "Yes",
         # Experience
         "years of experience": "10", "experience": "10",
         # Education
