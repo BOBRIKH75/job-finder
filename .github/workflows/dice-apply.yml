@@ -102,8 +102,6 @@ jobs:
                       raise
 
               time.sleep(5)
-              print(f'  📍 After login — URL: {driver.current_url}')
-              print(f'  📍 Page title: {driver.title}')
 
               # Search for Java contract jobs
               searches = ['Java Developer contract remote', 'Java Spring Boot C2C', 'Senior Java Backend remote']
@@ -112,18 +110,12 @@ jobs:
                   driver.get(f'https://www.dice.com/jobs?q={query.replace(\" \", \"+\")}&filters.easyApply=true&filters.postedDate=THREE')
                   time.sleep(6)
 
-                  # Debug: print current URL and try multiple selectors
-                  print(f'  📍 Search URL: {driver.current_url}')
+                  # Try multiple selectors for job cards
                   cards = driver.find_elements(By.CSS_SELECTOR, 'a[data-cy=\"card-title-link\"]')
                   if not cards:
                       cards = driver.find_elements(By.CSS_SELECTOR, 'a[data-testid*=\"card-title\"], .card-title-link, a.job-card-title')
                   if not cards:
-                      # Last resort: any link that looks like a job link
                       cards = driver.find_elements(By.CSS_SELECTOR, 'a[href*=\"/job-detail/\"]')
-                  if i == 0 and not cards:
-                      # Dump page snippet for debugging
-                      body = driver.find_element(By.TAG_NAME, 'body').text[:2000]
-                      print(f'  ⚠️ Page text (first 2000 chars): {body}')
                   print(f'  🔍 \"{query}\" → {len(cards)} Easy Apply jobs')
 
                   for card in cards[:10]:
@@ -131,26 +123,18 @@ jobs:
                       try:
                           card.click()
                           time.sleep(3)
-                          # Debug: show current URL
-                          print(f'    📍 Job page: {driver.current_url[:80]}')
                           # Try multiple apply button selectors
                           apply_selectors = 'button[data-cy=\"apply-btn-wm\"], .btn-easy-apply, button.apply-button, button[data-testid*=\"apply\"], a[data-cy=\"apply-btn-wm\"]'
                           btns = driver.find_elements(By.CSS_SELECTOR, apply_selectors)
                           if not btns:
-                              # Try any button with 'apply' text
                               all_btns = driver.find_elements(By.TAG_NAME, 'button')
                               btns = [b for b in all_btns if 'apply' in b.text.lower()]
                           if not btns:
-                              print(f'    ⚠️ No apply button found')
                               driver.back()
                               time.sleep(2)
                               continue
-                          btn = btns[0]
-                          print(f'    📍 Found button: text=\"{btn.text}\", tag={btn.tag_name}')
-                          btn.click()
+                          btns[0].click()
                           time.sleep(3)
-                          # Check if modal/confirm opened
-                          print(f'    📍 After click URL: {driver.current_url[:80]}')
                           # Try to confirm
                           confirm_selectors = 'button[data-cy=\"submit-btn\"], button.submit-application, button[data-testid*=\"submit\"], button[type=\"submit\"]'
                           confirms = driver.find_elements(By.CSS_SELECTOR, confirm_selectors)
@@ -161,13 +145,10 @@ jobs:
                               confirms[0].click()
                               applied += 1
                               print(f'    ✅ Applied ({applied}/{MAX_APPS})')
-                          else:
-                              print(f'    ⚠️ No confirm/submit button found')
                           time.sleep(random.uniform(5, 15))
                           driver.back()
                           time.sleep(2)
                       except Exception as e:
-                          print(f'    ❌ Error: {str(e)[:100]}')
                           driver.back()
                           time.sleep(2)
                           continue
