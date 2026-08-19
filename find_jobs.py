@@ -57,6 +57,14 @@ GOOGLE_GROUPS = [
     'hotlistreqs', 'javamug-jobs',
     'vendor-list-benchsales', 'corp2c-requriments',
     'pdusrecruiter', 'c2c-with-nexera-solutions',
+    # Added 2026-08-19 — verified active with Java/Spring Boot C2C postings
+    'c2crequirements4bench', 'c2c-requirements-on-daily-basis',
+    'RajeshC2Crequirements', 'c2ctrinity', 'mahesh-c2c-Hotlists',
+    'urgent-corp-to-corp-requirements', 'dcro',
+    'us-it-staffing-c2c-requirements', 'c2c-daily-requirements-Imp',
+    'whythiskolaverydi', 'sureshotjobs', 'SoftwareIT',
+    'corp-to-corp-requirements22', 'therecruitmenthub',
+    'android-app-develpoment',  # Has Java fullstack despite name
 ]
 
 # ── Fake job signals ──
