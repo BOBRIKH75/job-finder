@@ -1048,6 +1048,77 @@ def solve_recaptcha_enterprise(page, url: str, override_sitekey: str = "") -> bo
             except Exception as e:
                 print(f"      ⚠️ CapSolver retry error: {str(e)[:60]}")
     
+    # === METHOD 1.5: FREE token generation via anchor/reload (no API key needed) ===
+    if sitekey:
+        try:
+            from urllib.request import urlopen, Request
+            from urllib.parse import urlencode, urlparse
+            import json as _json
+            
+            # Build the anchor URL (same as what browser requests from Google)
+            parsed = urlparse(url)
+            co_param = __import__('base64').b64encode(f"{parsed.scheme}://{parsed.netloc}:443".encode()).decode().rstrip('=')
+            
+            # Try Enterprise endpoint first, then standard
+            for endpoint_base in ["enterprise", "api2"]:
+                anchor_url = (
+                    f"https://www.google.com/recaptcha/{endpoint_base}/anchor?"
+                    f"ar=1&k={sitekey}&co={co_param}&hl=en&v=hfUOICODIRRlXBFLGaBAlq4A&size=invisible&cb=1"
+                )
+                try:
+                    req = Request(anchor_url, headers={"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36"})
+                    with urlopen(req, timeout=10) as resp:
+                        anchor_html = resp.read().decode()
+                    
+                    # Extract recaptcha-token from anchor response
+                    token_match = _re.search(r'id="recaptcha-token"\s*value="(.*?)"', anchor_html)
+                    if not token_match:
+                        continue
+                    
+                    recap_token = token_match.group(1)
+                    
+                    # POST to reload endpoint to get solved token
+                    reload_data = urlencode({
+                        "v": "hfUOICODIRRlXBFLGaBAlq4A",
+                        "reason": "q",
+                        "k": sitekey,
+                        "c": recap_token,
+                        "co": co_param,
+                        "hl": "en",
+                        "size": "invisible",
+                        "chr": "",
+                        "vh": "",
+                        "bg": "",
+                    }).encode()
+                    
+                    reload_url = f"https://www.google.com/recaptcha/{endpoint_base}/reload?k={sitekey}"
+                    req2 = Request(reload_url, data=reload_data, headers={
+                        "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36",
+                        "Content-Type": "application/x-www-form-urlencoded",
+                    })
+                    with urlopen(req2, timeout=10) as resp2:
+                        reload_response = resp2.read().decode()
+                    
+                    # Parse the token from reload response (format: )]}\n["rresp","TOKEN",...])
+                    reload_json = _json.loads(reload_response.split('\n', 1)[-1] if '\n' in reload_response else reload_response[5:])
+                    free_token = reload_json[1] if len(reload_json) > 1 else ""
+                    
+                    if free_token and len(free_token) > 20:
+                        page.evaluate("""(token) => {
+                            document.querySelectorAll('[name="g-recaptcha-response"], [name="recaptcha-token"], textarea[id*="recaptcha"]').forEach(el => { el.value = token; });
+                            document.querySelectorAll('input[type="hidden"]').forEach(el => {
+                                if (el.name && (el.name.includes('captcha') || el.name.includes('recaptcha'))) el.value = token;
+                            });
+                        }""", free_token)
+                        print(f"      ✅ reCAPTCHA Enterprise solved FREE via {endpoint_base}/reload!")
+                        return True
+                except Exception:
+                    continue
+            
+            print(f"      ⚠️ Free anchor/reload method failed — trying local execute")
+        except Exception as e:
+            print(f"      ⚠️ Free solver error: {str(e)[:80]}")
+    
     # === METHOD 2: Local grecaptcha.enterprise.execute() (only works with high browser trust) ===
     try:
         token = page.evaluate("""() => {
