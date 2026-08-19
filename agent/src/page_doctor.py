@@ -741,63 +741,106 @@ def solve_recaptcha_enterprise(page, url: str) -> bool:
     import os, time
     simulate_human_behavior(page)
     
-    # Extract sitekey from page (try multiple methods)
+    # Extract sitekey using comprehensive universal detector
+    # Greenhouse loads reCAPTCHA Enterprise dynamically — need multiple approaches
     sitekey = page.evaluate("""() => {
-        let sitekey = null;
-        // Method 1: from script src render= parameter
-        document.querySelectorAll('script[src*="recaptcha"]').forEach(s => {
-            const m = s.src.match(/render=([^&]+)/);
-            if (m && m[1] !== 'explicit') sitekey = m[1];
+        const results = [];
+        
+        // 1. data-sitekey attributes
+        document.querySelectorAll('[data-sitekey]').forEach(el => {
+            const key = el.getAttribute('data-sitekey');
+            if (key && key !== 'explicit') results.push(key);
         });
-        // Method 2: from data-sitekey attribute
-        if (!sitekey) { const el = document.querySelector('[data-sitekey]'); if (el) sitekey = el.dataset.sitekey; }
-        // Method 3: from grecaptcha.enterprise config (Greenhouse uses this)
-        if (!sitekey && typeof grecaptcha !== 'undefined' && grecaptcha.enterprise) {
+        if (results.length) return results[0];
+        
+        // 2. Script src render= parameter
+        document.querySelectorAll('script[src*="recaptcha"]').forEach(s => {
             try {
-                const clients = Object.keys(window.___grecaptcha_cfg?.clients || {});
-                for (const c of clients) {
-                    const client = window.___grecaptcha_cfg.clients[c];
-                    for (const key of Object.keys(client)) {
-                        const val = client[key];
-                        if (val && typeof val === 'object') {
-                            for (const k2 of Object.keys(val)) {
-                                if (typeof val[k2] === 'string' && val[k2].length > 20 && val[k2].length < 50) {
-                                    sitekey = val[k2]; break;
-                                }
-                            }
-                        }
-                        if (sitekey) break;
-                    }
-                    if (sitekey) break;
-                }
+                const url = new URL(s.src);
+                const render = url.searchParams.get('render');
+                if (render && render !== 'explicit') results.push(render);
             } catch(e) {}
-        }
-        // Method 4: from iframe src
-        if (!sitekey) {
-            document.querySelectorAll('iframe[src*="recaptcha"]').forEach(f => {
-                const m = f.src.match(/[?&]k=([^&]+)/);
-                if (m) sitekey = m[1];
-            });
-        }
-        // Method 5: from performance entries (network requests)
-        if (!sitekey) {
+        });
+        if (results.length) return results[0];
+        
+        // 3. iframe k= parameter
+        document.querySelectorAll('iframe[src*="recaptcha"]').forEach(f => {
             try {
-                const entries = performance.getEntriesByType('resource');
-                for (const e of entries) {
-                    if (e.name && e.name.includes('recaptcha') && e.name.includes('render=')) {
-                        const m = e.name.match(/render=([^&]+)/);
-                        if (m && m[1] !== 'explicit') { sitekey = m[1]; break; }
-                    }
-                }
+                const url = new URL(f.src);
+                const k = url.searchParams.get('k');
+                if (k) results.push(k);
             } catch(e) {}
-        }
-        // Method 6: from window.__RECAPTCHA_SITE_KEY or similar globals
-        if (!sitekey) {
-            for (const key of ['__RECAPTCHA_SITE_KEY', '__recaptcha_site_key', 'RECAPTCHA_SITE_KEY', 'recaptchaSiteKey']) {
-                if (window[key]) { sitekey = window[key]; break; }
+        });
+        if (results.length) return results[0];
+        
+        // 4. Search page source for grecaptcha.execute calls and render= URLs
+        const html = document.documentElement.innerHTML;
+        const patterns = [
+            /grecaptcha(?:\.enterprise)?\.execute\s*\(\s*['"]([^'"]+)['"]/g,
+            /(?:sitekey|siteKey|recaptchaSiteKey|recaptchaKey|googlekey)\s*[:=]\s*['"]([^'"]+)['"]/g,
+            /recaptcha\/(?:api|enterprise)\.js\?[^"'<>]*render=([^&"'<>\s]+)/g,
+        ];
+        for (const pattern of patterns) {
+            for (const match of html.matchAll(pattern)) {
+                const key = decodeURIComponent(match[1]);
+                if (key && key !== 'explicit' && key.length > 10 && key.length < 60) {
+                    results.push(key);
+                }
             }
         }
-        return sitekey;
+        if (results.length) return results[0];
+        
+        // 5. Performance resource entries (catches dynamically loaded scripts)
+        try {
+            const entries = performance.getEntriesByType('resource');
+            for (const e of entries) {
+                if (e.name && e.name.includes('recaptcha')) {
+                    const m = e.name.match(/render=([^&]+)/);
+                    if (m && m[1] !== 'explicit') { results.push(m[1]); break; }
+                    const k = e.name.match(/[?&]k=([^&]+)/);
+                    if (k) { results.push(k[1]); break; }
+                }
+            }
+        } catch(e) {}
+        if (results.length) return results[0];
+        
+        // 6. grecaptcha internal config
+        try {
+            if (typeof grecaptcha !== 'undefined') {
+                const cfg = window.___grecaptcha_cfg;
+                if (cfg && cfg.clients) {
+                    for (const clientId of Object.keys(cfg.clients)) {
+                        const client = cfg.clients[clientId];
+                        // Walk the client object tree looking for sitekey-shaped strings
+                        const walk = (obj, depth) => {
+                            if (depth > 4 || !obj) return null;
+                            if (typeof obj === 'string' && obj.length > 20 && obj.length < 50 && /^[A-Za-z0-9_-]+$/.test(obj)) {
+                                return obj;
+                            }
+                            if (typeof obj === 'object') {
+                                for (const key of Object.keys(obj)) {
+                                    const found = walk(obj[key], depth + 1);
+                                    if (found) return found;
+                                }
+                            }
+                            return null;
+                        };
+                        const found = walk(client, 0);
+                        if (found) { results.push(found); break; }
+                    }
+                }
+            }
+        } catch(e) {}
+        if (results.length) return results[0];
+        
+        // 7. Global window variables
+        const globals = ['__RECAPTCHA_SITE_KEY', '__recaptcha_site_key', 'RECAPTCHA_SITE_KEY', 
+                        'recaptchaSiteKey', 'recaptchaKey', 'googleRecaptchaKey', 'publicKey'];
+        for (const g of globals) {
+            if (window[g] && typeof window[g] === 'string') return window[g];
+        }
+        
+        return null;
     }""")
     
     # === METHOD 1: CapSolver API (works from any IP, paid) ===
@@ -841,39 +884,75 @@ def solve_recaptcha_enterprise(page, url: str) -> bool:
             print(f"      ⚠️ CapSolver error: {str(e)[:60]}")
     elif capsolver_key and not sitekey:
         # Sitekey not found immediately — wait for reCAPTCHA to load and retry
-        print(f"      🔍 Sitekey not found — waiting 3s for reCAPTCHA to load...")
+        print(f"      🔍 Sitekey not found — triggering reCAPTCHA load (scroll + wait 5s)...")
+        # Trigger reCAPTCHA to load: scroll to bottom, hover submit button
+        try:
+            page.evaluate("() => window.scrollTo(0, document.body.scrollHeight)")
+            page.wait_for_timeout(2000)
+            # Try hovering/focusing submit to trigger lazy reCAPTCHA
+            try:
+                submit_btn = page.locator('button[type="submit"], button:has-text("Submit"), input[type="submit"]').first
+                if submit_btn.is_visible(timeout=1000):
+                    submit_btn.hover()
+            except Exception:
+                pass
+        except Exception:
+            pass
         time.sleep(3)
         sitekey = page.evaluate("""() => {
+            // Full re-scan after triggering load
+            // Check script tags
             let sitekey = null;
             document.querySelectorAll('script[src*="recaptcha"]').forEach(s => {
-                const m = s.src.match(/render=([^&]+)/);
-                if (m && m[1] !== 'explicit') sitekey = m[1];
-            });
-            if (!sitekey) { const el = document.querySelector('[data-sitekey]'); if (el) sitekey = el.dataset.sitekey; }
-            if (!sitekey) {
-                document.querySelectorAll('iframe[src*="recaptcha"]').forEach(f => {
-                    const m = f.src.match(/[?&]k=([^&]+)/);
-                    if (m) sitekey = m[1];
-                });
-            }
-            if (!sitekey) {
                 try {
-                    const entries = performance.getEntriesByType('resource');
-                    for (const e of entries) {
-                        if (e.name && e.name.includes('recaptcha') && e.name.includes('render=')) {
-                            const m = e.name.match(/render=([^&]+)/);
-                            if (m && m[1] !== 'explicit') { sitekey = m[1]; break; }
-                        }
-                    }
+                    const url = new URL(s.src);
+                    const render = url.searchParams.get('render');
+                    if (render && render !== 'explicit') sitekey = render;
                 } catch(e) {}
-            }
-            // Check all script tags in page source (some inject dynamically)
-            if (!sitekey) {
-                const html = document.documentElement.outerHTML;
-                const m = html.match(/recaptcha[^"']*render=([A-Za-z0-9_-]+)/);
-                if (m) sitekey = m[1];
-            }
-            return sitekey;
+            });
+            if (sitekey) return sitekey;
+            // Check iframes
+            document.querySelectorAll('iframe[src*="recaptcha"]').forEach(f => {
+                try {
+                    const url = new URL(f.src);
+                    const k = url.searchParams.get('k');
+                    if (k) sitekey = k;
+                } catch(e) {}
+            });
+            if (sitekey) return sitekey;
+            // Check performance entries
+            try {
+                const entries = performance.getEntriesByType('resource');
+                for (const e of entries) {
+                    if (e.name && e.name.includes('recaptcha')) {
+                        const m = e.name.match(/render=([^&]+)/);
+                        if (m && m[1] !== 'explicit') return m[1];
+                        const k = e.name.match(/[?&]k=([^&]+)/);
+                        if (k) return k[1];
+                    }
+                }
+            } catch(e) {}
+            // Check full HTML source
+            const html = document.documentElement.outerHTML;
+            const m = html.match(/recaptcha[^"']*?render=([A-Za-z0-9_-]{20,})/);
+            if (m) return m[1];
+            // Check grecaptcha config
+            try {
+                if (window.___grecaptcha_cfg && window.___grecaptcha_cfg.clients) {
+                    for (const cid of Object.keys(window.___grecaptcha_cfg.clients)) {
+                        const c = window.___grecaptcha_cfg.clients[cid];
+                        const walk = (obj, d) => {
+                            if (d > 3 || !obj) return null;
+                            if (typeof obj === 'string' && obj.length > 20 && obj.length < 50 && /^[A-Za-z0-9_-]+$/.test(obj)) return obj;
+                            if (typeof obj === 'object') { for (const k of Object.keys(obj)) { const f = walk(obj[k], d+1); if (f) return f; } }
+                            return null;
+                        };
+                        const f = walk(c, 0);
+                        if (f) return f;
+                    }
+                }
+            } catch(e) {}
+            return null;
         }""")
         if sitekey:
             try:
