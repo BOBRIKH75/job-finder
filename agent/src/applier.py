@@ -13,7 +13,10 @@ Strategy:
 import json, os, re, time, random
 from pathlib import Path
 from playwright.sync_api import sync_playwright, TimeoutError as PwTimeout
-import cloakbrowser
+try:
+    import cloakbrowser
+except ImportError:
+    cloakbrowser = None
 from src.stealth_toolkit import stealth_fetch, fetch_curl_cffi, list_available_tools, StealthResult
 
 PROFILE_PATH = Path(__file__).parent.parent / "config" / "profile.json"
@@ -1411,10 +1414,13 @@ def run_applications(jobs: list[dict], dry_run: bool = True, max_apps: int = 10,
     context = None
     # Try CloakBrowser first (stealth), fall back to regular Playwright
     try:
-        context = cloakbrowser.launch_context(headless=True)
-        print(f"  CloakBrowser — stealth Chromium for automation")
+        if cloakbrowser:
+            context = cloakbrowser.launch_context(headless=True)
+            print(f"  CloakBrowser — stealth Chromium for automation")
+        else:
+            raise ImportError("cloakbrowser not installed")
     except Exception as cloak_err:
-        print(f"  ⚠️ CloakBrowser failed: {str(cloak_err)[:60]} — using Playwright fallback")
+        print(f"  Using Playwright (cloakbrowser not available)")
         from playwright.sync_api import sync_playwright
         pw = sync_playwright().start()
         browser = pw.chromium.launch(headless=True)
