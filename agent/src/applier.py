@@ -490,12 +490,16 @@ def _try_auto_captcha_solve(page) -> bool:
         from src.page_doctor import solve_recaptcha_enterprise
         if solve_recaptcha_enterprise(page, page.url):
             return True
+        else:
+            # reCAPTCHA Enterprise explicitly failed — don't proceed blindly
+            print(f"      ⚠️ reCAPTCHA Enterprise unsolvable — submission will likely fail")
+            return False
     except Exception:
         pass
     
-    # === FALLBACK: rely on stealth browser score ===
-    print(f"      🔓 All solvers tried — relying on browser stealth score")
-    return True  # don't block submission, let it try
+    # === FALLBACK: no known CAPTCHA detected, proceed with submission ===
+    print(f"      🔓 No blocking CAPTCHA detected — proceeding")
+    return True
 
 
 def _fill_remaining_required(page, profile: dict) -> int:
@@ -873,7 +877,7 @@ def submit_and_verify(page, page_data, original_url) -> dict:
 
 # ─── MAIN: The self-learning retry loop ───
 
-def apply_to_job(page, profile, job, learned, dry_run=False, db=None) -> dict:
+def apply_to_job(page, profile, job, learned, dry_run=False, db=None, site_needs_cf_solve=False) -> dict:
     """Apply to one job. Retries up to 3 times, learning from each failure."""
     url = job.get("url", "")
     domain = re.sub(r'https?://(www\.)?', '', url).split('/')[0]
@@ -929,9 +933,22 @@ def apply_to_job(page, profile, job, learned, dry_run=False, db=None) -> dict:
             # Handle Cloudflare "Verify you are human" challenge (if present)
             try:
                 from src.page_doctor import solve_cf_checkbox
-                solve_cf_checkbox(page)
+                # If pre-check told us site is CF-protected, try harder (more attempts)
+                cf_max = 3 if site_needs_cf_solve else 2
+                cf_passed = solve_cf_checkbox(page, max_attempts=cf_max)
+                if not cf_passed and site_needs_cf_solve:
+                    # CF challenge couldn't be solved — skip gracefully
+                    print(f"      ⏭️ CF challenge unsolvable — skipping")
+                    results.append({"url": url, "title": job.get("title", ""),
+                                    "company": job.get("company", ""), "status": "cf_blocked"})
+                    snap(page, f"cf_blocked_{attempt}")
+                    break
             except Exception:
-                pass
+                if site_needs_cf_solve:
+                    print(f"      ⏭️ CF solve crashed — skipping")
+                    results.append({"url": url, "title": job.get("title", ""),
+                                    "company": job.get("company", ""), "status": "cf_crashed"})
+                    break
             # Wait for visible form inputs — React apps render after JS executes.
             # Try up to 10 seconds. Fall back to fixed wait if selector never appears.
             try:
@@ -1207,7 +1224,18 @@ def apply_to_job(page, profile, job, learned, dry_run=False, db=None) -> dict:
             # Handle reCAPTCHA / CAPTCHA — use auto-captcha solver (NopeCHA, 100 free/day)
             from src.page_doctor import simulate_human_behavior
             simulate_human_behavior(page)
-            _try_auto_captcha_solve(page)
+            captcha_solved = _try_auto_captcha_solve(page)
+
+            if not captcha_solved:
+                # CAPTCHA unsolvable — don't waste time submitting (will timeout)
+                # Mark as captcha_blocked and route to email outreach
+                result["status"] = "captcha_blocked"
+                result["fields_filled"] = attempt_result["filled"]
+                snap(page, f"captcha_blocked_{attempt}")
+                print(f"      ⏭️ CAPTCHA unsolvable — marking for email outreach")
+                result["attempts"].append(attempt_result)
+                save_learned(learned)
+                return result
 
             # SUBMIT
             submit_result = submit_and_verify(page, page_data, url)
@@ -1418,50 +1446,31 @@ def run_applications(jobs: list[dict], dry_run: bool = True, max_apps: int = 10,
 
         # SKIP STEALTH for known CAPTCHA-free ATS platforms
         is_captcha_free = any(d in url for d in CAPTCHA_FREE_DOMAINS)
+        site_needs_cf_solve = False
 
         if is_captcha_free:
             print(f"    🟢 CAPTCHA-free ATS — direct access (no stealth needed)")
         else:
-            # STEALTH PRE-CHECK: probe the URL with curl_cffi first
+            # STEALTH PRE-CHECK: quick probe with curl_cffi to see if site is accessible
+            # If it fails, DON'T skip — try Playwright + solve_cf_checkbox instead
             try:
                 probe = fetch_curl_cffi(url)
                 if probe and probe.success and "captcha" not in probe.html.lower() and "just a moment" not in probe.html.lower():
                     print(f"    🟢 Direct access OK ({probe.elapsed:.1f}s)")
                 else:
-                    # Try cloudscraper
+                    # Try cloudscraper for cookies
                     cf_cookies = _try_cloudscraper(url)
                     if cf_cookies:
                         context.add_cookies(cf_cookies)
                         print(f"    🟢 cloudscraper bypassed CF — injected {len(cf_cookies)} cookies")
                     else:
-                        # All stealth tools — but graceful failure
-                        print(f"    🔴 Site protected — trying stealth tools...")
-                        stealth_result = stealth_fetch(url, tools=["curl_cffi", "camoufox", "playwright_stealth", "cf_bypass"], headless=True, db=db)
-                        if stealth_result.success and stealth_result.cookies:
-                            pw_cookies = []
-                            for c in stealth_result.cookies:
-                                if isinstance(c, dict) and c.get("name") and c.get("value"):
-                                    pw_cookies.append({
-                                        "name": c["name"], "value": c["value"],
-                                        "domain": c.get("domain", domain),
-                                        "path": c.get("path", "/"),
-                                    })
-                            if pw_cookies:
-                                context.add_cookies(pw_cookies)
-                                print(f"    🍪 Injected {len(pw_cookies)} cookies from {stealth_result.tool}")
-                        elif stealth_result.success:
-                            print(f"    🟡 {stealth_result.tool} got page but no cookies to inject")
-                        else:
-                            # GRACEFUL SKIP — don't crash CI
-                            print(f"    ⏭️ All stealth tools failed — skipping: {stealth_result.error[:80]}")
-                            results.append({"url": url, "title": job.get("title", ""),
-                                            "company": job.get("company", ""), "status": "stealth_failed"})
-                            continue
+                        # Mark for CF solve AFTER page.goto — don't skip!
+                        site_needs_cf_solve = True
+                        print(f"    🟡 Site protected — will try Playwright + CF checkbox solve")
             except Exception as e:
-                print(f"    ⏭️ Stealth probe crashed — skipping: {str(e)[:80]}")
-                results.append({"url": url, "title": job.get("title", ""),
-                                "company": job.get("company", ""), "status": "stealth_crashed"})
-                continue
+                # Don't skip — try Playwright anyway
+                site_needs_cf_solve = True
+                print(f"    🟡 Stealth probe failed ({str(e)[:60]}) — will try Playwright directly")
 
         # For Greenhouse jobs: try direct multipart POST first (no browser / no CAPTCHA risk)
         if "greenhouse.io" in url:
@@ -1484,7 +1493,7 @@ def run_applications(jobs: list[dict], dry_run: bool = True, max_apps: int = 10,
                 continue
             print(f"    ⚠️ GH API failed ({_api.get('error','?')[:80]}) — browser fallback")
 
-        r = apply_to_job(page, profile, job, learned, dry_run, db=db)
+        r = apply_to_job(page, profile, job, learned, dry_run, db=db, site_needs_cf_solve=site_needs_cf_solve)
         results.append(r)
         if r["status"] in ("submitted", "dry_run"):
             applied += 1

@@ -733,10 +733,66 @@ def simulate_human_behavior(page) -> None:
 def solve_recaptcha_enterprise(page, url: str) -> bool:
     """Handle reCAPTCHA Enterprise (invisible/score-based).
     
-    Strategy: execute grecaptcha.enterprise.execute() to get token + inject.
-    If that fails, rely on CloakBrowser + human simulation for a good score.
+    Strategy:
+    1. Try CapSolver API (paid, $0.80/1000 — but WORKS from CI datacenter IPs)
+    2. Fallback: try grecaptcha.enterprise.execute() locally (only works with good browser score)
+    3. If both fail: return False so caller can route to email outreach
     """
+    import os, time
     simulate_human_behavior(page)
+    
+    # Extract sitekey from page
+    sitekey = page.evaluate("""() => {
+        let sitekey = null;
+        document.querySelectorAll('script[src*="recaptcha"]').forEach(s => {
+            const m = s.src.match(/render=([^&]+)/);
+            if (m && m[1] !== 'explicit') sitekey = m[1];
+        });
+        if (!sitekey) { const el = document.querySelector('[data-sitekey]'); if (el) sitekey = el.dataset.sitekey; }
+        return sitekey;
+    }""")
+    
+    # === METHOD 1: CapSolver API (works from any IP, paid) ===
+    capsolver_key = os.environ.get("CAPSOLVER_KEY", "")
+    if capsolver_key and sitekey:
+        try:
+            import requests as _req
+            print(f"      🔑 Solving reCAPTCHA Enterprise via CapSolver...")
+            task_resp = _req.post("https://api.capsolver.com/createTask", json={
+                "clientKey": capsolver_key,
+                "task": {
+                    "type": "ReCaptchaV3EnterpriseTaskProxyLess",
+                    "websiteURL": url,
+                    "websiteKey": sitekey,
+                    "pageAction": "submit",
+                }
+            }, timeout=15).json()
+            task_id = task_resp.get("taskId")
+            if task_id:
+                for _ in range(30):
+                    time.sleep(2)
+                    result = _req.post("https://api.capsolver.com/getTaskResult", json={
+                        "clientKey": capsolver_key, "taskId": task_id
+                    }, timeout=10).json()
+                    if result.get("status") == "ready":
+                        token = result["solution"].get("gRecaptchaResponse", "")
+                        if token and len(token) > 20:
+                            page.evaluate("""(token) => {
+                                document.querySelectorAll('[name="g-recaptcha-response"], [name="recaptcha-token"], textarea[id*="recaptcha"]').forEach(el => { el.value = token; });
+                                document.querySelectorAll('input[type="hidden"]').forEach(el => {
+                                    if (el.name && (el.name.includes('captcha') || el.name.includes('recaptcha'))) el.value = token;
+                                });
+                            }""", token)
+                            print(f"      ✅ reCAPTCHA Enterprise solved via CapSolver!")
+                            return True
+                        break
+                    elif result.get("status") == "failed":
+                        break
+                print(f"      ⚠️ CapSolver failed — trying local execute")
+        except Exception as e:
+            print(f"      ⚠️ CapSolver error: {str(e)[:60]}")
+    
+    # === METHOD 2: Local grecaptcha.enterprise.execute() (only works with high browser trust) ===
     try:
         token = page.evaluate("""() => {
             return new Promise((resolve) => {
@@ -764,12 +820,14 @@ def solve_recaptcha_enterprise(page, url: str) -> bool:
                     if (el.name && (el.name.includes('captcha') || el.name.includes('recaptcha'))) el.value = token;
                 });
             }""", token)
-            print(f"      🔓 reCAPTCHA Enterprise token obtained")
+            print(f"      🔓 reCAPTCHA Enterprise token obtained (local — may have low score)")
             return True
     except Exception:
         pass
-    print(f"      🔓 reCAPTCHA Enterprise: relying on stealth browser score")
-    return True  # Don't block — CloakBrowser should pass score-based check
+    
+    # Both methods failed — return False so caller knows to skip/route to email
+    print(f"      ❌ reCAPTCHA Enterprise: cannot solve (no CapSolver key or low browser score)")
+    return False
 
 
 def detect_multi_step(page) -> bool:
