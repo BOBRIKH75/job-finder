@@ -103,7 +103,7 @@ jobs:
             'Java Full Stack Developer contract remote',
             ]:
               try:
-                  jobs = scrape_jobs(site_name=['google','indeed','linkedin','glassdoor','zip_recruiter'], google_search_term=q+' jobs apply', search_term=q, location='USA', results_wanted=15, hours_old=336)
+                  jobs = scrape_jobs(site_name=['google','indeed','linkedin','glassdoor','zip_recruiter'], google_search_term=q+' jobs apply', search_term=q, location='USA', results_wanted=15, hours_old=72)
                   for _, r in jobs.iterrows():
                       url = str(r.get('job_url',''))
                       if not url:

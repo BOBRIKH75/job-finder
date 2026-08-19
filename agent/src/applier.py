@@ -1033,9 +1033,10 @@ def apply_to_job(page, profile, job, learned, dry_run=False, db=None, site_needs
                 if not apply_clicked:
                     break  # Nothing more to try
 
-            # Check if page exists
-            if page.locator("text=/not found|404|expired|closed|no longer/i").count() > 0:
+            # Check if page exists / job is still active
+            if page.locator("text=/not found|404|expired|closed|no longer|no longer active|deactivated|removed|unavailable|position.*filled/i").count() > 0:
                 result["status"] = "job_closed"
+                print(f"      ⏭️ Job expired/closed — skipping")
                 snap(page, f"closed_{attempt}")
                 break
 
@@ -1251,6 +1252,14 @@ def apply_to_job(page, profile, job, learned, dry_run=False, db=None, site_needs
                 result["fields_filled"] = attempt_result["filled"]
                 snap(page, f"captcha_blocked_{attempt}")
                 print(f"      ⏭️ CAPTCHA unsolvable — marking for email outreach")
+                result["attempts"].append(attempt_result)
+                save_learned(learned)
+                return result
+
+            # PRE-SUBMIT: verify page is still active (Greenhouse can deactivate mid-session)
+            if page.locator("text=/no longer active|deactivated|position.*filled|board.*not.*active/i").count() > 0:
+                result["status"] = "job_closed"
+                print(f"      ⏭️ Job board deactivated during session — skipping")
                 result["attempts"].append(attempt_result)
                 save_learned(learned)
                 return result
