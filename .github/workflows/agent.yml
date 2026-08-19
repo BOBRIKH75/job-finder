@@ -33,12 +33,8 @@ jobs:
       - name: Install dependencies
         run: |
           pip install --upgrade pip setuptools wheel
-          pip install playwright playwright-recaptcha seleniumbase curl_cffi camoufox httpx resend pydantic beautifulsoup4 python-jobspy pandas pytest requests cloudscraper cloakbrowser dnspython auto-captcha
-          sudo apt-get install -y ffmpeg
+          pip install playwright curl_cffi httpx resend pydantic beautifulsoup4 python-jobspy pandas pytest requests cloudscraper cloakbrowser dnspython
           playwright install chromium --with-deps
-          python -c "import cloakbrowser; cloakbrowser.download()" || true
-          python -m camoufox fetch || true
-          python -c "from camoufox.sync_api import Camoufox; print('camoufox OK')" || true
 
       - name: Start OhMyCaptcha solver (background)
         run: |
