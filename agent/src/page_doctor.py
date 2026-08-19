@@ -779,6 +779,24 @@ def solve_recaptcha_enterprise(page, url: str) -> bool:
                 if (m) sitekey = m[1];
             });
         }
+        // Method 5: from performance entries (network requests)
+        if (!sitekey) {
+            try {
+                const entries = performance.getEntriesByType('resource');
+                for (const e of entries) {
+                    if (e.name && e.name.includes('recaptcha') && e.name.includes('render=')) {
+                        const m = e.name.match(/render=([^&]+)/);
+                        if (m && m[1] !== 'explicit') { sitekey = m[1]; break; }
+                    }
+                }
+            } catch(e) {}
+        }
+        // Method 6: from window.__RECAPTCHA_SITE_KEY or similar globals
+        if (!sitekey) {
+            for (const key of ['__RECAPTCHA_SITE_KEY', '__recaptcha_site_key', 'RECAPTCHA_SITE_KEY', 'recaptchaSiteKey']) {
+                if (window[key]) { sitekey = window[key]; break; }
+            }
+        }
         return sitekey;
     }""")
     
@@ -837,6 +855,23 @@ def solve_recaptcha_enterprise(page, url: str) -> bool:
                     const m = f.src.match(/[?&]k=([^&]+)/);
                     if (m) sitekey = m[1];
                 });
+            }
+            if (!sitekey) {
+                try {
+                    const entries = performance.getEntriesByType('resource');
+                    for (const e of entries) {
+                        if (e.name && e.name.includes('recaptcha') && e.name.includes('render=')) {
+                            const m = e.name.match(/render=([^&]+)/);
+                            if (m && m[1] !== 'explicit') { sitekey = m[1]; break; }
+                        }
+                    }
+                } catch(e) {}
+            }
+            // Check all script tags in page source (some inject dynamically)
+            if (!sitekey) {
+                const html = document.documentElement.outerHTML;
+                const m = html.match(/recaptcha[^"']*render=([A-Za-z0-9_-]+)/);
+                if (m) sitekey = m[1];
             }
             return sitekey;
         }""")
