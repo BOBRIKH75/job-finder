@@ -31,11 +31,13 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+          cache: 'pip'
+          cache-dependency-path: agent/requirements.txt
 
       - name: Install dependencies
         run: |
           pip install --upgrade pip setuptools wheel
-          pip install playwright curl_cffi httpx resend pydantic beautifulsoup4 python-jobspy pandas pytest requests cloudscraper cloakbrowser dnspython
+          pip install -r agent/requirements.txt
           playwright install chromium --with-deps
 
       - name: Start OhMyCaptcha solver (background)
