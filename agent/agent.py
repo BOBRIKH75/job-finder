@@ -68,6 +68,15 @@ STAFFING_FIRMS = {
     "ltimindtree", "ltim", "netcracker", "incedo", "comtec",
     "tek valley", "tekvalley", "nityo infotech", "nityo", "vsoft",
     "data systems", "techgig", "dice", "hired.com", "toptal",
+    # Added 2026-08-19 — were being wrongly rejected as "direct FTE"
+    "yoh", "pinnacle group", "digitalxnode", "hire feed", "system one",
+    "matlen silver", "covetus", "akkodis", "adecco", "digital links",
+    "it engagements", "prominent", "inflow federal", "bhuvi",
+    "hirekeyz", "talentburst", "smoothstack", "revature", "jobot",
+    "brooksource", "harnham", "celsius", "aquent", "aston carter",
+    "judge group", "beacon hill", "mitchell martin", "mondo",
+    "eliassen", "horizontal", "actalent", "procom", "teksystems",
+    "calculated hire", "cella", "aquent", "kelly", "ettain group",
 }
 
 
@@ -79,7 +88,11 @@ def is_staffing_firm(company: str, description: str) -> bool:
         return True
     # Check generic staffing company patterns in name
     staffing_words = ["staffing", "consulting", "solutions", "technologies", "tech inc",
-                      "it solutions", "it services", "infotech", "systems inc", "corp solutions"]
+                      "it solutions", "it services", "infotech", "systems inc", "corp solutions",
+                      "recruitment", "recruiting", "talent", "placement", "workforce",
+                      "contractor", "contracting", "resourcing", "hire", "hiring",
+                      "digital inc", "group inc", "corp inc", "services inc",
+                      "engagements", "outsourcing", "augmentation"]
     if any(w in company_lower for w in staffing_words):
         return True
     # Check description signals
