@@ -42,20 +42,8 @@ jobs:
 
       - name: Start OhMyCaptcha solver (background)
         run: |
-          git clone --depth 1 https://github.com/shenhao-stu/ohmycaptcha.git /tmp/ohmycaptcha
-          # Isolated venv so ohmycaptcha's pinned Playwright version doesn't overwrite ours
-          python -m venv /tmp/ohmycaptcha_venv
-          /tmp/ohmycaptcha_venv/bin/pip install -r /tmp/ohmycaptcha/requirements.txt -q
-          /tmp/ohmycaptcha_venv/bin/playwright install chromium --with-deps
-          cd /tmp/ohmycaptcha && /tmp/ohmycaptcha_venv/bin/python main.py &
-          sleep 5
-          curl -s http://localhost:8000/api/v1/health || echo "OhMyCaptcha not ready (non-blocking)"
-        env:
-          CLOUD_BASE_URL: "https://generativelanguage.googleapis.com/v1beta/openai"
-          CLOUD_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          CLOUD_MODEL: "gemini-2.0-flash"
-          CLIENT_KEY: "job-agent"
-          BROWSER_HEADLESS: "true"
+          echo "⏭️ OhMyCaptcha disabled — using free anchor/reload solver instead"
+          echo "This saves 5+ minutes of Chromium install time"
 
       - name: Restore agent memory
         continue-on-error: true
