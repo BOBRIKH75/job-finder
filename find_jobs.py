@@ -350,7 +350,7 @@ def search_all(learned):
     for s in searches:
         try:
             jobs = scrape_jobs(
-                site_name=['indeed', 'linkedin', 'google'],
+                site_name=['indeed', 'linkedin', 'google', 'zip_recruiter', 'glassdoor'],
                 search_term=s['term'], google_search_term=s['term'] + ' jobs',
                 location=s['location'], results_wanted=15,
                 hours_old=336, country_indeed='USA', verbose=0,
