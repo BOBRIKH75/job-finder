@@ -741,14 +741,44 @@ def solve_recaptcha_enterprise(page, url: str) -> bool:
     import os, time
     simulate_human_behavior(page)
     
-    # Extract sitekey from page
+    # Extract sitekey from page (try multiple methods)
     sitekey = page.evaluate("""() => {
         let sitekey = null;
+        // Method 1: from script src render= parameter
         document.querySelectorAll('script[src*="recaptcha"]').forEach(s => {
             const m = s.src.match(/render=([^&]+)/);
             if (m && m[1] !== 'explicit') sitekey = m[1];
         });
+        // Method 2: from data-sitekey attribute
         if (!sitekey) { const el = document.querySelector('[data-sitekey]'); if (el) sitekey = el.dataset.sitekey; }
+        // Method 3: from grecaptcha.enterprise config (Greenhouse uses this)
+        if (!sitekey && typeof grecaptcha !== 'undefined' && grecaptcha.enterprise) {
+            try {
+                const clients = Object.keys(window.___grecaptcha_cfg?.clients || {});
+                for (const c of clients) {
+                    const client = window.___grecaptcha_cfg.clients[c];
+                    for (const key of Object.keys(client)) {
+                        const val = client[key];
+                        if (val && typeof val === 'object') {
+                            for (const k2 of Object.keys(val)) {
+                                if (typeof val[k2] === 'string' && val[k2].length > 20 && val[k2].length < 50) {
+                                    sitekey = val[k2]; break;
+                                }
+                            }
+                        }
+                        if (sitekey) break;
+                    }
+                    if (sitekey) break;
+                }
+            } catch(e) {}
+        }
+        // Method 4: from iframe src
+        if (!sitekey) {
+            document.querySelectorAll('iframe[src*="recaptcha"]').forEach(f => {
+                const m = f.src.match(/[?&]k=([^&]+)/);
+                if (m) sitekey = m[1];
+            });
+        }
         return sitekey;
     }""")
     
@@ -757,7 +787,7 @@ def solve_recaptcha_enterprise(page, url: str) -> bool:
     if capsolver_key and sitekey:
         try:
             import requests as _req
-            print(f"      🔑 Solving reCAPTCHA Enterprise via CapSolver...")
+            print(f"      🔑 Solving reCAPTCHA Enterprise via CapSolver (sitekey={sitekey[:12]}...)...")
             task_resp = _req.post("https://api.capsolver.com/createTask", json={
                 "clientKey": capsolver_key,
                 "task": {
@@ -791,6 +821,61 @@ def solve_recaptcha_enterprise(page, url: str) -> bool:
                 print(f"      ⚠️ CapSolver failed — trying local execute")
         except Exception as e:
             print(f"      ⚠️ CapSolver error: {str(e)[:60]}")
+    elif capsolver_key and not sitekey:
+        # Sitekey not found immediately — wait for reCAPTCHA to load and retry
+        print(f"      🔍 Sitekey not found — waiting 3s for reCAPTCHA to load...")
+        time.sleep(3)
+        sitekey = page.evaluate("""() => {
+            let sitekey = null;
+            document.querySelectorAll('script[src*="recaptcha"]').forEach(s => {
+                const m = s.src.match(/render=([^&]+)/);
+                if (m && m[1] !== 'explicit') sitekey = m[1];
+            });
+            if (!sitekey) { const el = document.querySelector('[data-sitekey]'); if (el) sitekey = el.dataset.sitekey; }
+            if (!sitekey) {
+                document.querySelectorAll('iframe[src*="recaptcha"]').forEach(f => {
+                    const m = f.src.match(/[?&]k=([^&]+)/);
+                    if (m) sitekey = m[1];
+                });
+            }
+            return sitekey;
+        }""")
+        if sitekey:
+            try:
+                import requests as _req
+                print(f"      🔑 Solving reCAPTCHA Enterprise via CapSolver (sitekey={sitekey[:12]}...)...")
+                task_resp = _req.post("https://api.capsolver.com/createTask", json={
+                    "clientKey": capsolver_key,
+                    "task": {
+                        "type": "ReCaptchaV3EnterpriseTaskProxyLess",
+                        "websiteURL": url,
+                        "websiteKey": sitekey,
+                        "pageAction": "submit",
+                    }
+                }, timeout=15).json()
+                task_id = task_resp.get("taskId")
+                if task_id:
+                    for _ in range(30):
+                        time.sleep(2)
+                        result = _req.post("https://api.capsolver.com/getTaskResult", json={
+                            "clientKey": capsolver_key, "taskId": task_id
+                        }, timeout=10).json()
+                        if result.get("status") == "ready":
+                            token = result["solution"].get("gRecaptchaResponse", "")
+                            if token and len(token) > 20:
+                                page.evaluate("""(token) => {
+                                    document.querySelectorAll('[name="g-recaptcha-response"], [name="recaptcha-token"], textarea[id*="recaptcha"]').forEach(el => { el.value = token; });
+                                    document.querySelectorAll('input[type="hidden"]').forEach(el => {
+                                        if (el.name && (el.name.includes('captcha') || el.name.includes('recaptcha'))) el.value = token;
+                                    });
+                                }""", token)
+                                print(f"      ✅ reCAPTCHA Enterprise solved via CapSolver (retry)!")
+                                return True
+                            break
+                        elif result.get("status") == "failed":
+                            break
+            except Exception as e:
+                print(f"      ⚠️ CapSolver retry error: {str(e)[:60]}")
     
     # === METHOD 2: Local grecaptcha.enterprise.execute() (only works with high browser trust) ===
     try:
@@ -826,7 +911,12 @@ def solve_recaptcha_enterprise(page, url: str) -> bool:
         pass
     
     # Both methods failed — return False so caller knows to skip/route to email
-    print(f"      ❌ reCAPTCHA Enterprise: cannot solve (no CapSolver key or low browser score)")
+    if not capsolver_key:
+        print(f"      ❌ reCAPTCHA Enterprise: CAPSOLVER_KEY not set (add secret to repo)")
+    elif not sitekey:
+        print(f"      ❌ reCAPTCHA Enterprise: could not extract sitekey from page")
+    else:
+        print(f"      ❌ reCAPTCHA Enterprise: CapSolver + local execute both failed")
     return False
 
 
