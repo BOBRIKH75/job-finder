@@ -897,6 +897,25 @@ def solve_recaptcha_enterprise(page, url: str, override_sitekey: str = "") -> bo
                 }
             }, timeout=15).json()
             task_id = task_resp.get("taskId")
+            if not task_id:
+                error_code = task_resp.get("errorCode", "unknown")
+                error_desc = task_resp.get("errorDescription", str(task_resp)[:150])
+                print(f"      ⚠️ CapSolver rejected: {error_code} — {error_desc}")
+                # Try alternative task type if first one fails
+                if "type" in str(error_desc).lower() or "not support" in str(error_desc).lower():
+                    print(f"      🔄 Retrying with ReCaptchaV3TaskProxyLess...")
+                    task_resp = _req.post("https://api.capsolver.com/createTask", json={
+                        "clientKey": capsolver_key,
+                        "task": {
+                            "type": "ReCaptchaV3TaskProxyLess",
+                            "websiteURL": url,
+                            "websiteKey": sitekey,
+                            "pageAction": "submit",
+                        }
+                    }, timeout=15).json()
+                    task_id = task_resp.get("taskId")
+                    if not task_id:
+                        print(f"      ⚠️ CapSolver retry also rejected: {task_resp.get('errorCode', '')} — {task_resp.get('errorDescription', '')[:100]}")
             if task_id:
                 for _ in range(30):
                     time.sleep(2)
