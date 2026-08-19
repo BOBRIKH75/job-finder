@@ -730,7 +730,7 @@ def simulate_human_behavior(page) -> None:
         pass
 
 
-def solve_recaptcha_enterprise(page, url: str) -> bool:
+def solve_recaptcha_enterprise(page, url: str, override_sitekey: str = "") -> bool:
     """Handle reCAPTCHA Enterprise (invisible/score-based).
     
     Strategy:
@@ -738,7 +738,7 @@ def solve_recaptcha_enterprise(page, url: str) -> bool:
     2. Fallback: try grecaptcha.enterprise.execute() locally (only works with good browser score)
     3. If both fail: return False so caller can route to email outreach
     """
-    import os, time
+    import os, time, re as _re
     simulate_human_behavior(page)
     
     # Extract sitekey using comprehensive universal detector
@@ -842,6 +842,44 @@ def solve_recaptcha_enterprise(page, url: str) -> bool:
         
         return null;
     }""")
+    
+    # FALLBACK: If JS extraction failed, check Playwright's page URL history
+    # The recaptcha script URL is: google.com/recaptcha/enterprise.js?render=SITEKEY
+    if not sitekey:
+        try:
+            # Check all frames for recaptcha URLs
+            for frame in page.frames:
+                frame_url = frame.url
+                if 'recaptcha' in frame_url:
+                    m = _re.search(r'[?&]k=([^&]+)', frame_url)
+                    if m:
+                        sitekey = m.group(1)
+                        print(f"      🔑 Found sitekey from frame URL: {sitekey[:12]}...")
+                        break
+        except Exception:
+            pass
+    
+    # FALLBACK 2: Get ALL page script URLs from DOM including dynamically added
+    if not sitekey:
+        try:
+            all_scripts = page.evaluate("""() => {
+                return Array.from(document.querySelectorAll('script')).map(s => s.src).filter(Boolean);
+            }""")
+            for src in (all_scripts or []):
+                if 'recaptcha' in src and 'render=' in src:
+                    m = _re.search(r'render=([^&]+)', src)
+                    if m and m.group(1) != 'explicit':
+                        sitekey = m.group(1)
+                        print(f"      🔑 Found sitekey from script list: {sitekey[:12]}...")
+                        break
+        except Exception:
+            pass
+    
+    if sitekey:
+        print(f"      🔑 reCAPTCHA Enterprise sitekey found: {sitekey[:15]}...")
+    elif override_sitekey:
+        sitekey = override_sitekey
+        print(f"      🔑 reCAPTCHA Enterprise sitekey from network intercept: {sitekey[:15]}...")
     
     # === METHOD 1: CapSolver API (works from any IP, paid) ===
     capsolver_key = os.environ.get("CAPSOLVER_KEY", "")

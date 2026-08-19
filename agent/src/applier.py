@@ -397,7 +397,7 @@ def fill_form(page, page_data, profile, learned, domain) -> dict:
 
 # ─── STEP 4: Submit and verify ───
 
-def _try_auto_captcha_solve(page) -> bool:
+def _try_auto_captcha_solve(page, captured_sitekey: str = "") -> bool:
     """Solve any CAPTCHA using a chain of free solvers. Tries each until one succeeds.
     
     Chain (in order of reliability for job applications):
@@ -488,7 +488,7 @@ def _try_auto_captcha_solve(page) -> bool:
     # === SOLVER 4: reCAPTCHA Enterprise — execute token directly ===
     try:
         from src.page_doctor import solve_recaptcha_enterprise
-        if solve_recaptcha_enterprise(page, page.url):
+        if solve_recaptcha_enterprise(page, page.url, override_sitekey=captured_sitekey):
             return True
         else:
             # reCAPTCHA Enterprise explicitly failed — don't proceed blindly
@@ -929,6 +929,22 @@ def apply_to_job(page, profile, job, learned, dry_run=False, db=None, site_needs
                     apply_url = f"https://job-boards.greenhouse.io/{gh_company}/jobs/{gh_match.group(1)}"
                     print(f"      📎 Redirected to Greenhouse: {apply_url}")
 
+            # Set up network listener to capture reCAPTCHA sitekey from request URLs
+            _captured_recaptcha_sitekey = []
+            def _capture_recaptcha_url(request):
+                if 'recaptcha' in request.url:
+                    import re as _re2
+                    m = _re2.search(r'render=([^&]+)', request.url)
+                    if m and m.group(1) != 'explicit':
+                        _captured_recaptcha_sitekey.append(m.group(1))
+                    m2 = _re2.search(r'[?&]k=([^&]+)', request.url)
+                    if m2:
+                        _captured_recaptcha_sitekey.append(m2.group(1))
+            try:
+                page.on("request", _capture_recaptcha_url)
+            except Exception:
+                pass
+
             page.goto(apply_url, wait_until="domcontentloaded", timeout=30000)
             # Handle Cloudflare "Verify you are human" challenge (if present)
             try:
@@ -1224,7 +1240,9 @@ def apply_to_job(page, profile, job, learned, dry_run=False, db=None, site_needs
             # Handle reCAPTCHA / CAPTCHA — use auto-captcha solver (NopeCHA, 100 free/day)
             from src.page_doctor import simulate_human_behavior
             simulate_human_behavior(page)
-            captcha_solved = _try_auto_captcha_solve(page)
+            # Pass any sitekey captured from network requests
+            _net_sitekey = _captured_recaptcha_sitekey[0] if _captured_recaptcha_sitekey else ""
+            captcha_solved = _try_auto_captcha_solve(page, captured_sitekey=_net_sitekey)
 
             if not captcha_solved:
                 # CAPTCHA unsolvable — don't waste time submitting (will timeout)
