@@ -147,9 +147,20 @@ def run_filter(db, jobs):
         if ghost_score > 60:
             print(f"  ⛔ GHOST ({ghost_score}): {job.get('title', '?')}")
             continue
+        # For portal scanner jobs (Lever/Greenhouse) with no description,
+        # match on title alone — don't reject just because description is empty
         if match["score"] < 30:
-            print(f"  ⚠️  WEAK ({match['score']}%): {job.get('title', '?')}")
-            continue
+            # Check if title itself has strong Java/Spring keywords
+            title_lower = job.get("title", "").lower()
+            title_keywords = ["java", "spring", "backend", "back-end", "microservice",
+                             "kafka", "kubernetes", "fullstack", "full stack", "software engineer",
+                             "software developer", "sre", "platform engineer"]
+            has_strong_title = any(kw in title_lower for kw in title_keywords)
+            if not has_strong_title:
+                print(f"  ⚠️  WEAK ({match['score']}%): {job.get('title', '?')}")
+                continue
+            # Title is strong enough — let it through even with low description match
+            match["score"] = 50  # Assign reasonable score based on title match
 
         ats = detect_ats(url)
         job["ats_type"] = ats.ats_type
@@ -163,8 +174,9 @@ def run_filter(db, jobs):
         job["is_staffing_firm"] = is_staffing_firm(company, description)
 
         # For direct employers (not staffing firms), require explicit C2C/contract signals.
-        # Direct employers like Netflix/Stripe/Affirm hire FTE or W2 only — C2C applications
-        # are auto-rejected before a human sees them, wasting quota and tanking callback rate.
+        # EXCEPTION: If job is on a CAPTCHA-free ATS (Lever/Greenhouse/Ashby), allow it through
+        # because auto-apply is FREE (no risk, no cost). Even FTE roles may accept contractors.
+        CAPTCHA_FREE_ATS_TYPES = {"lever", "greenhouse", "ashby", "workable"}
         if not job["is_staffing_firm"]:
             desc_lower = description.lower()
             title_lower = job.get("title", "").lower()
@@ -177,12 +189,16 @@ def run_filter(db, jobs):
             # Also accept if explicitly says "contract" AND is in the title
             has_contract_title = "contract" in title_lower
             has_c2c_desc = any(sig in desc_lower for sig in c2c_signals)
+            is_captcha_free_ats = ats.ats_type in CAPTCHA_FREE_ATS_TYPES
 
-            if not has_c2c_desc and not has_contract_title:
+            if not has_c2c_desc and not has_contract_title and not is_captcha_free_ats:
                 print(f"  🚫 SKIP (no C2C signals) [DIRECT FTE]: {job.get('title', '')} @ {company}")
                 continue
 
-            print(f"  ✅ PASS ({match['score']}% match) [DIRECT+C2C]: {job.get('title', '')} @ {company}")
+            if is_captcha_free_ats and not has_c2c_desc and not has_contract_title:
+                print(f"  ✅ PASS ({match['score']}% match) [DIRECT+AUTO-ATS]: {job.get('title', '')} @ {company}")
+            elif has_c2c_desc or has_contract_title:
+                print(f"  ✅ PASS ({match['score']}% match) [DIRECT+C2C]: {job.get('title', '')} @ {company}")
         else:
             print(f"  ✅ PASS ({match['score']}% match) [STAFFING]: {job.get('title', '')} @ {company}")
 
