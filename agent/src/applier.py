@@ -488,6 +488,27 @@ def _try_auto_captcha_solve(page, captured_sitekey: str = "") -> bool:
         except Exception:
             pass
     
+    # === SOLVER 3.5: hCaptcha via Gemini Vision AI (FREE) ===
+    # Detects hCaptcha image grid challenges and uses Gemini to identify correct tiles
+    try:
+        hcaptcha_detected = page.evaluate("""() => {
+            return !!(
+                document.querySelector('.h-captcha, [data-hcaptcha-sitekey]') ||
+                document.querySelector('script[src*="hcaptcha.com"], iframe[src*="hcaptcha.com"]')
+            );
+        }""")
+        if hcaptcha_detected:
+            from src.hcaptcha_solver import solve_hcaptcha
+            if solve_hcaptcha(page):
+                print(f"      ✅ Solved hCaptcha via Gemini Vision AI")
+                return True
+            else:
+                print(f"      ⚠️ hCaptcha Gemini solver failed — trying next...")
+    except ImportError:
+        pass
+    except Exception as e:
+        print(f"      ⚠️ hCaptcha solver error: {str(e)[:50]} — trying next...")
+
     # === SOLVER 4: reCAPTCHA Enterprise — execute token directly ===
     try:
         from src.page_doctor import solve_recaptcha_enterprise
