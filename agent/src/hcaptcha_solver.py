@@ -1,419 +1,338 @@
 #!/usr/bin/env python3
 """
-hCaptcha Solver using Gemini Vision AI — FREE, no paid API.
+hCaptcha Solver — Token-based approach via solving service API.
 
-Solves hCaptcha image grid challenges by:
-1. Detecting the hCaptcha iframe and challenge
-2. Reading the instruction (e.g., "Select all images with a bus")
-3. Screenshotting the full grid as ONE image
-4. Sending to Gemini Vision: "Which squares (1-9) contain {object}?"
-5. Clicking the identified tiles
-6. Submitting the challenge
+How it works (proven approach used by thousands of automation tools):
+1. Extract hCaptcha sitekey from the page DOM
+2. Send sitekey + page URL to a solving service (2captcha or CapSolver)
+3. Service solves the challenge using real humans or AI (takes 10-30s)
+4. We get back a token string
+5. Inject token into the page's h-captcha-response field
+6. Call the hCaptcha callback function to notify the page
 
-Uses Gemini 2.0 Flash (free tier, fast, good at image recognition).
-Requires: GEMINI_API_KEY environment variable.
+This avoids ALL problems with:
+- Cross-origin iframe access (we never touch the iframe)
+- Screenshot failures (no screenshots needed)
+- Headless browser detection (solving happens server-side)
+- CSS selector guessing (we only read data-sitekey attribute)
 
-This is an OPTIONAL solver — added on top of existing chain.
-If it fails, the existing fallback flow (email outreach) handles it.
+Supported services (configured via environment variables):
+- CAPSOLVER_API_KEY → CapSolver (cheapest, ~$0.8/1000 solves)
+- TWOCAPTCHA_API_KEY → 2Captcha (~$2.99/1000 solves)
+
+If neither key is set, returns False (solver disabled).
 """
 
 import os
-import re
 import time
-import base64
-from pathlib import Path
+import json
+import logging
 from typing import Optional
 
+import requests
 
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
-GEMINI_MODEL = "gemini-2.0-flash"
+logger = logging.getLogger(__name__)
+
+# Service API keys (set as GitHub secrets)
+CAPSOLVER_API_KEY = os.environ.get("CAPSOLVER_API_KEY", "")
+TWOCAPTCHA_API_KEY = os.environ.get("TWOCAPTCHA_API_KEY", "")
+
+# Timeouts
+MAX_WAIT_SECONDS = 120  # max time to wait for solution
+POLL_INTERVAL = 5       # seconds between polls
 
 
-def solve_hcaptcha(page, max_attempts: int = 3) -> bool:
-    """Main entry point: detect and solve hCaptcha on the current page.
+def solve_hcaptcha(page) -> bool:
+    """Solve hCaptcha on the current page using token injection.
     
     Args:
-        page: Playwright page object
-        max_attempts: How many times to retry the challenge
+        page: Playwright page object (sync API)
         
     Returns:
-        True if hCaptcha was solved, False otherwise
+        True if solved successfully, False otherwise
     """
-    if not GEMINI_API_KEY:
-        print("      ⚠️ hCaptcha solver: GEMINI_API_KEY not set — skipping")
+    if not CAPSOLVER_API_KEY and not TWOCAPTCHA_API_KEY:
+        logger.info("      ⚠️ hCaptcha solver: no API key (CAPSOLVER_API_KEY or TWOCAPTCHA_API_KEY)")
         return False
     
-    # Step 1: Find the hCaptcha challenge iframe
-    hcaptcha_frame = _find_hcaptcha_challenge_frame(page)
-    if not hcaptcha_frame:
-        # Maybe we need to click the hCaptcha checkbox first
-        if not _click_hcaptcha_checkbox(page):
-            print("      ⚠️ hCaptcha: no challenge found")
-            return False
-        time.sleep(3)
-        hcaptcha_frame = _find_hcaptcha_challenge_frame(page)
-        if not hcaptcha_frame:
-            # Check if clicking checkbox was enough (no challenge appeared)
-            if _is_hcaptcha_solved(page):
-                print("      ✅ hCaptcha solved (checkbox only)")
-                return True
-            print("      ⚠️ hCaptcha: challenge didn't appear after checkbox click")
-            return False
+    # Step 1: Extract sitekey from the page
+    sitekey = _extract_sitekey(page)
+    if not sitekey:
+        logger.info("      ⚠️ hCaptcha solver: could not find sitekey on page")
+        return False
     
-    for attempt in range(max_attempts):
-        print(f"      🧩 hCaptcha attempt {attempt + 1}/{max_attempts}")
-        
-        # Step 2: Read the challenge instruction
-        instruction = _read_instruction(hcaptcha_frame)
-        if not instruction:
-            print("      ⚠️ hCaptcha: couldn't read instruction")
-            return False
-        
-        target_object = _extract_target_object(instruction)
-        print(f"      📋 Challenge: '{instruction}' → target: '{target_object}'")
-        
-        # Step 3: Screenshot the image grid
-        grid_screenshot = _screenshot_grid(hcaptcha_frame)
-        if not grid_screenshot:
-            print("      ⚠️ hCaptcha: couldn't screenshot grid")
-            return False
-        
-        # Step 4: Ask Gemini which tiles contain the target object
-        tiles_to_click = _ask_gemini_which_tiles(grid_screenshot, target_object, instruction)
-        if not tiles_to_click:
-            print("      ⚠️ hCaptcha: Gemini returned no tiles")
-            # Try clicking "skip" if available
-            if _click_skip(hcaptcha_frame):
-                time.sleep(2)
-                if _is_hcaptcha_solved(page):
-                    return True
-                continue
-            return False
-        
-        print(f"      🎯 Clicking tiles: {tiles_to_click}")
-        
-        # Step 5: Click the identified tiles
-        _click_tiles(hcaptcha_frame, tiles_to_click)
-        time.sleep(1)
-        
-        # Step 6: Submit/verify
-        _click_verify(hcaptcha_frame)
-        time.sleep(3)
-        
-        # Check if solved
-        if _is_hcaptcha_solved(page):
-            print(f"      ✅ hCaptcha SOLVED (attempt {attempt + 1})")
-            return True
-        
-        # Check if a new challenge appeared (need to solve again)
-        hcaptcha_frame = _find_hcaptcha_challenge_frame(page)
-        if not hcaptcha_frame:
-            # No challenge frame = might be solved or might have failed
-            time.sleep(2)
-            if _is_hcaptcha_solved(page):
-                print(f"      ✅ hCaptcha SOLVED (attempt {attempt + 1})")
-                return True
-            print("      ⚠️ hCaptcha: challenge disappeared but not solved")
-            return False
+    page_url = page.url
+    logger.info(f"      🧩 hCaptcha: sitekey={sitekey[:12]}... url={page_url[:50]}")
     
-    print(f"      ❌ hCaptcha: failed after {max_attempts} attempts")
-    return False
+    # Step 2: Get token from solving service
+    token = None
+    if CAPSOLVER_API_KEY:
+        token = _solve_via_capsolver(sitekey, page_url)
+    if not token and TWOCAPTCHA_API_KEY:
+        token = _solve_via_2captcha(sitekey, page_url)
+    
+    if not token:
+        logger.info("      ❌ hCaptcha: solving service failed to return token")
+        return False
+    
+    logger.info(f"      🔑 hCaptcha: got token ({len(token)} chars)")
+    
+    # Step 3: Inject token into the page
+    injected = _inject_token(page, token)
+    if not injected:
+        logger.info("      ❌ hCaptcha: token injection failed")
+        return False
+    
+    logger.info("      ✅ hCaptcha: token injected successfully")
+    return True
 
 
-def _find_hcaptcha_challenge_frame(page):
-    """Find the hCaptcha challenge iframe (the grid with images)."""
+def _extract_sitekey(page) -> Optional[str]:
+    """Extract the hCaptcha sitekey from the page DOM.
+    
+    The sitekey is always in the page HTML as a data attribute — no need to
+    access cross-origin iframes.
+    """
     try:
-        # hCaptcha challenge appears in an iframe with src containing hcaptcha.com
-        for frame in page.frames:
-            if "hcaptcha.com" in (frame.url or "") and "challenge" in (frame.url or ""):
-                return frame
-        # Also try by name pattern
-        for frame in page.frames:
-            url = frame.url or ""
-            if "newassets.hcaptcha.com" in url or "imgs.hcaptcha.com" in url:
-                return frame
-    except Exception:
-        pass
+        sitekey = page.evaluate("""() => {
+            // Method 1: data-sitekey on .h-captcha div
+            const hc = document.querySelector('.h-captcha[data-sitekey], [data-hcaptcha-sitekey]');
+            if (hc) return hc.dataset.sitekey || hc.dataset.hcaptchaSitekey || '';
+            
+            // Method 2: data-sitekey on any element
+            const el = document.querySelector('[data-sitekey]');
+            if (el) return el.dataset.sitekey || '';
+            
+            // Method 3: from hCaptcha script URL parameter
+            const scripts = document.querySelectorAll('script[src*="hcaptcha.com"]');
+            for (const s of scripts) {
+                const m = s.src.match(/sitekey=([^&]+)/);
+                if (m) return m[1];
+            }
+            
+            // Method 4: from iframe src
+            const iframes = document.querySelectorAll('iframe[src*="hcaptcha.com"]');
+            for (const f of iframes) {
+                const m = f.src.match(/sitekey=([^&]+)/);
+                if (m) return m[1];
+            }
+            
+            return '';
+        }""")
+        
+        if sitekey and len(sitekey) > 10:
+            return sitekey
+    except Exception as e:
+        logger.warning(f"      ⚠️ sitekey extraction error: {str(e)[:60]}")
+    
     return None
 
 
-def _click_hcaptcha_checkbox(page) -> bool:
-    """Click the hCaptcha checkbox to trigger the challenge."""
+def _solve_via_capsolver(sitekey: str, page_url: str) -> Optional[str]:
+    """Solve hCaptcha using CapSolver API.
+    
+    Docs: https://docs.capsolver.com/guide/captcha/hcaptcha.html
+    Cost: ~$0.8 per 1000 solves
+    """
+    logger.info("      🔄 Trying CapSolver...")
+    
     try:
-        # The checkbox is in a separate iframe
-        for frame in page.frames:
-            if "hcaptcha.com" in (frame.url or "") and "challenge" not in (frame.url or ""):
-                try:
-                    checkbox = frame.locator('#checkbox, .check')
-                    if checkbox.count() > 0:
-                        checkbox.first.click()
-                        time.sleep(2)
-                        return True
-                except Exception:
-                    pass
+        # Step 1: Create task
+        create_resp = requests.post(
+            "https://api.capsolver.com/createTask",
+            json={
+                "clientKey": CAPSOLVER_API_KEY,
+                "task": {
+                    "type": "HCaptchaTaskProxyless",
+                    "websiteURL": page_url,
+                    "websiteKey": sitekey,
+                }
+            },
+            timeout=15
+        )
+        create_data = create_resp.json()
         
-        # Fallback: click on the hCaptcha container div
-        hc_div = page.locator('.h-captcha iframe, [data-hcaptcha-widget-id]')
-        if hc_div.count() > 0:
-            hc_div.first.click()
-            time.sleep(2)
-            return True
-    except Exception:
-        pass
-    return False
+        if create_data.get("errorId", 1) != 0:
+            error_msg = create_data.get("errorDescription", "unknown")
+            logger.warning(f"      ⚠️ CapSolver createTask error: {error_msg}")
+            return None
+        
+        task_id = create_data.get("taskId", "")
+        if not task_id:
+            return None
+        
+        # Step 2: Poll for result
+        for _ in range(MAX_WAIT_SECONDS // POLL_INTERVAL):
+            time.sleep(POLL_INTERVAL)
+            
+            result_resp = requests.post(
+                "https://api.capsolver.com/getTaskResult",
+                json={
+                    "clientKey": CAPSOLVER_API_KEY,
+                    "taskId": task_id,
+                },
+                timeout=10
+            )
+            result_data = result_resp.json()
+            
+            status = result_data.get("status", "")
+            if status == "ready":
+                solution = result_data.get("solution", {})
+                token = solution.get("gRecaptchaResponse", "")
+                if token and len(token) > 20:
+                    return token
+                return None
+            elif status == "failed":
+                logger.warning(f"      ⚠️ CapSolver task failed")
+                return None
+            # else: still processing, continue polling
+        
+        logger.warning("      ⚠️ CapSolver timeout")
+        return None
+        
+    except requests.exceptions.RequestException as e:
+        logger.warning(f"      ⚠️ CapSolver network error: {str(e)[:60]}")
+        return None
+    except Exception as e:
+        logger.warning(f"      ⚠️ CapSolver error: {str(e)[:60]}")
+        return None
 
 
-def _is_hcaptcha_solved(page) -> bool:
-    """Check if hCaptcha has been solved (response token exists)."""
+def _solve_via_2captcha(sitekey: str, page_url: str) -> Optional[str]:
+    """Solve hCaptcha using 2Captcha API.
+    
+    Docs: https://2captcha.com/2captcha-api#solving_hcaptcha
+    Cost: ~$2.99 per 1000 solves
+    """
+    logger.info("      🔄 Trying 2Captcha...")
+    
     try:
-        result = page.evaluate("""() => {
-            const ta = document.querySelector('[name="h-captcha-response"], textarea[name*="hcaptcha"]');
-            if (ta && ta.value && ta.value.length > 20) return true;
+        # Step 1: Submit task
+        submit_resp = requests.post(
+            "https://2captcha.com/in.php",
+            data={
+                "key": TWOCAPTCHA_API_KEY,
+                "method": "hcaptcha",
+                "sitekey": sitekey,
+                "pageurl": page_url,
+                "json": "1",
+            },
+            timeout=15
+        )
+        submit_data = submit_resp.json()
+        
+        if submit_data.get("status") != 1:
+            error_msg = submit_data.get("request", "unknown")
+            logger.warning(f"      ⚠️ 2Captcha submit error: {error_msg}")
+            return None
+        
+        captcha_id = submit_data.get("request", "")
+        if not captcha_id:
+            return None
+        
+        # Step 2: Poll for result (wait initial 15s — solving takes time)
+        time.sleep(15)
+        
+        for _ in range(MAX_WAIT_SECONDS // POLL_INTERVAL):
+            result_resp = requests.get(
+                "https://2captcha.com/res.php",
+                params={
+                    "key": TWOCAPTCHA_API_KEY,
+                    "action": "get",
+                    "id": captcha_id,
+                    "json": "1",
+                },
+                timeout=10
+            )
+            result_data = result_resp.json()
+            
+            if result_data.get("status") == 1:
+                token = result_data.get("request", "")
+                if token and len(token) > 20:
+                    return token
+                return None
+            elif result_data.get("request") == "CAPCHA_NOT_READY":
+                time.sleep(POLL_INTERVAL)
+                continue
+            else:
+                error_msg = result_data.get("request", "unknown")
+                logger.warning(f"      ⚠️ 2Captcha result error: {error_msg}")
+                return None
+        
+        logger.warning("      ⚠️ 2Captcha timeout")
+        return None
+        
+    except requests.exceptions.RequestException as e:
+        logger.warning(f"      ⚠️ 2Captcha network error: {str(e)[:60]}")
+        return None
+    except Exception as e:
+        logger.warning(f"      ⚠️ 2Captcha error: {str(e)[:60]}")
+        return None
+
+
+def _inject_token(page, token: str) -> bool:
+    """Inject the solved token into the page's hCaptcha response fields.
+    
+    This is the standard token injection approach:
+    1. Set the h-captcha-response textarea value
+    2. Set iframe data-hcaptcha-response attribute
+    3. Call the hCaptcha callback function (if registered)
+    """
+    try:
+        result = page.evaluate("""(token) => {
+            let injected = false;
+            
+            // Method 1: Set textarea value (standard hCaptcha response field)
+            const textareas = document.querySelectorAll(
+                '[name="h-captcha-response"], textarea[name*="hcaptcha"], [name="g-recaptcha-response"]'
+            );
+            for (const ta of textareas) {
+                ta.value = token;
+                ta.style.display = 'block';  // some sites check visibility
+                injected = true;
+            }
+            
+            // Method 2: Set iframe data attribute
             const iframes = document.querySelectorAll('iframe[data-hcaptcha-response]');
             for (const f of iframes) {
-                if (f.getAttribute('data-hcaptcha-response') && f.getAttribute('data-hcaptcha-response').length > 20) return true;
+                f.setAttribute('data-hcaptcha-response', token);
+                injected = true;
             }
-            return false;
-        }""")
+            
+            // Method 3: Call registered callback (this submits the form in most cases)
+            // hCaptcha stores callbacks that fire when solved
+            try {
+                // Standard hCaptcha callback via widget
+                if (window.hcaptcha) {
+                    // Try to find the widget ID and set response
+                    const widgetIds = Object.keys(window.hcaptcha._widgets || {});
+                    if (widgetIds.length > 0) {
+                        // Internal: set response on first widget
+                        const widget = window.hcaptcha._widgets[widgetIds[0]];
+                        if (widget && widget.response) {
+                            widget.response = token;
+                        }
+                    }
+                }
+            } catch(e) {}
+            
+            // Method 4: Trigger onVerify callback if registered on .h-captcha element
+            try {
+                const hcDiv = document.querySelector('.h-captcha[data-callback]');
+                if (hcDiv) {
+                    const callbackName = hcDiv.dataset.callback;
+                    if (callbackName && typeof window[callbackName] === 'function') {
+                        window[callbackName](token);
+                        injected = true;
+                    }
+                }
+            } catch(e) {}
+            
+            return injected;
+        }""", token)
+        
         return result
-    except Exception:
+        
+    except Exception as e:
+        logger.warning(f"      ⚠️ Token injection error: {str(e)[:60]}")
         return False
-
-
-def _read_instruction(frame) -> str:
-    """Read the challenge instruction text from the hCaptcha frame."""
-    try:
-        # hCaptcha puts the instruction in .prompt-text or similar
-        selectors = [
-            '.prompt-text',
-            '.challenge-header .prompt-text',
-            'h2.prompt-text',
-            '.task-grid .prompt-text',
-            '[class*="prompt"]',
-        ]
-        for sel in selectors:
-            try:
-                el = frame.locator(sel)
-                if el.count() > 0:
-                    text = el.first.inner_text()
-                    if text and len(text) > 3:
-                        return text.strip()
-            except Exception:
-                continue
-        
-        # Fallback: get any header text in the challenge
-        try:
-            body_text = frame.locator('body').inner_text()[:500]
-            # Look for "Please click each image containing" or "Select all images with"
-            match = re.search(r'(?:click|select|choose).*?(?:containing|with|showing)\s+(?:a\s+)?(.+?)(?:\.|$)', body_text, re.IGNORECASE)
-            if match:
-                return match.group(0).strip()
-        except Exception:
-            pass
-    except Exception:
-        pass
-    return ""
-
-
-def _extract_target_object(instruction: str) -> str:
-    """Extract the target object name from the instruction text.
-    
-    E.g., "Please click each image containing a motorbus" → "motorbus"
-    E.g., "Select all images with a bicycle" → "bicycle"  
-    """
-    instruction = instruction.lower().strip()
-    
-    # Common patterns
-    patterns = [
-        r'(?:containing|with|showing|of)\s+(?:a\s+|an\s+)?(.+?)(?:\.|$)',
-        r'(?:select|click|choose).*?(?:images?|squares?|tiles?)\s+(?:containing|with|of|showing)\s+(?:a\s+|an\s+)?(.+?)(?:\.|$)',
-    ]
-    
-    for pattern in patterns:
-        match = re.search(pattern, instruction)
-        if match:
-            obj = match.group(1).strip().rstrip('.')
-            if obj:
-                return obj
-    
-    # If no pattern matched, use the last noun-like phrase
-    words = instruction.split()
-    if len(words) >= 2:
-        return " ".join(words[-2:]).rstrip('.')
-    
-    return instruction
-
-
-def _screenshot_grid(frame) -> Optional[bytes]:
-    """Take a screenshot of the hCaptcha image grid."""
-    try:
-        # Try to screenshot just the grid area
-        grid_selectors = [
-            '.task-image',
-            '.challenge-container',
-            '.task-grid', 
-            '.image-wrapper',
-            'body',  # fallback: entire frame
-        ]
-        
-        for sel in grid_selectors:
-            try:
-                el = frame.locator(sel)
-                if el.count() > 0:
-                    screenshot = el.first.screenshot()
-                    if screenshot and len(screenshot) > 1000:  # valid image
-                        return screenshot
-            except Exception:
-                continue
-        
-        # Ultimate fallback: screenshot the entire page at the frame area
-        # (frame.screenshot() not available in Playwright, use page)
-        return None
-    except Exception:
-        return None
-
-
-def _ask_gemini_which_tiles(grid_screenshot: bytes, target_object: str, full_instruction: str) -> list[int]:
-    """Send the grid screenshot to Gemini Vision and ask which tiles to click.
-    
-    Returns a list of tile numbers (1-indexed) that contain the target object.
-    hCaptcha typically shows 3x3=9 or 4x4=16 tiles.
-    """
-    try:
-        from google import genai
-        from google.genai import types
-        
-        client = genai.Client(api_key=GEMINI_API_KEY)
-        
-        prompt = f"""You are solving an image CAPTCHA challenge. The challenge instruction says: "{full_instruction}"
-
-You need to identify which image tiles in this grid contain "{target_object}".
-
-The grid is typically 3x3 (9 tiles) or 4x4 (16 tiles), numbered left-to-right, top-to-bottom:
-- 3x3 grid: tiles numbered 1-9
-  Row 1: [1][2][3]
-  Row 2: [4][5][6]
-  Row 3: [7][8][9]
-  
-- 4x4 grid: tiles numbered 1-16
-  Row 1: [1][2][3][4]
-  Row 2: [5][6][7][8]
-  Row 3: [9][10][11][12]
-  Row 4: [13][14][15][16]
-
-Look at the image grid and determine which tiles clearly contain "{target_object}" or a recognizable part of "{target_object}".
-
-IMPORTANT RULES:
-- Only select tiles where you are CONFIDENT the target object is present
-- If unsure about a tile, do NOT select it
-- First determine if it's a 3x3 or 4x4 grid
-- Return ONLY the tile numbers as a comma-separated list
-- If no tiles contain the target, return "none"
-- Example response: "1,4,7" or "2,5,6,8" or "none"
-
-Your response (ONLY numbers, comma-separated):"""
-
-        image_part = types.Part.from_bytes(data=grid_screenshot, mime_type='image/png')
-        
-        response = client.models.generate_content(
-            model=GEMINI_MODEL,
-            contents=[image_part, prompt],
-        )
-        
-        result_text = response.text.strip()
-        print(f"      🤖 Gemini response: '{result_text}'")
-        
-        # Parse the response into tile numbers
-        if "none" in result_text.lower():
-            return []
-        
-        # Extract all numbers from the response
-        numbers = re.findall(r'\d+', result_text)
-        tiles = [int(n) for n in numbers if 1 <= int(n) <= 16]
-        
-        return tiles
-        
-    except Exception as e:
-        print(f"      ⚠️ Gemini Vision error: {str(e)[:80]}")
-        return []
-
-
-def _click_tiles(frame, tile_numbers: list[int]):
-    """Click the specified tiles in the hCaptcha grid.
-    
-    Tiles are numbered 1-indexed, left-to-right, top-to-bottom.
-    """
-    try:
-        # hCaptcha grid cells are typically in .task-image elements or similar
-        cell_selectors = [
-            '.task-image .image',
-            '.task-image',
-            '.image-wrapper .image',
-            '.challenge-answer .cell',
-            '[class*="cell"]',
-            '[class*="task"] [class*="image"]',
-        ]
-        
-        cells = None
-        for sel in cell_selectors:
-            cells_loc = frame.locator(sel)
-            count = cells_loc.count()
-            if count >= 9:  # at least a 3x3 grid
-                cells = cells_loc
-                break
-        
-        if not cells:
-            # Fallback: try to find clickable divs/imgs in the grid
-            cells = frame.locator('.task-grid div.cell, .task div[role="button"], .challenge div.border')
-            if cells.count() < 9:
-                print(f"      ⚠️ Could only find {cells.count()} cells (expected 9+)")
-                return
-        
-        total_cells = cells.count()
-        print(f"      📊 Grid has {total_cells} cells")
-        
-        for tile_num in tile_numbers:
-            idx = tile_num - 1  # convert to 0-indexed
-            if 0 <= idx < total_cells:
-                try:
-                    cells.nth(idx).click()
-                    time.sleep(0.3)  # small delay between clicks (human-like)
-                except Exception:
-                    pass
-    except Exception as e:
-        print(f"      ⚠️ Click error: {str(e)[:60]}")
-
-
-def _click_verify(frame):
-    """Click the Verify/Submit button in the hCaptcha frame."""
-    try:
-        verify_selectors = [
-            'button.button-submit',
-            '.verify-button',
-            'button:has-text("Verify")',
-            'button:has-text("Submit")',
-            'button:has-text("Check")',
-            '.submit-button',
-        ]
-        for sel in verify_selectors:
-            try:
-                btn = frame.locator(sel)
-                if btn.count() > 0 and btn.first.is_visible():
-                    btn.first.click()
-                    return
-            except Exception:
-                continue
-    except Exception:
-        pass
-
-
-def _click_skip(frame) -> bool:
-    """Click the Skip button if available (some challenges allow skipping)."""
-    try:
-        skip = frame.locator('button:has-text("Skip"), .button-skip, a:has-text("Skip")')
-        if skip.count() > 0:
-            skip.first.click()
-            return True
-    except Exception:
-        pass
-    return False

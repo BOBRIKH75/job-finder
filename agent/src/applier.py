@@ -488,22 +488,29 @@ def _try_auto_captcha_solve(page, captured_sitekey: str = "") -> bool:
         except Exception:
             pass
     
-    # === SOLVER 3.5: hCaptcha via Gemini Vision AI (FREE) ===
-    # Detects hCaptcha image grid challenges and uses Gemini to identify correct tiles
+    # === SOLVER 3.5: hCaptcha via token-based solving service (CapSolver/2Captcha) ===
+    # Only triggers when hCaptcha is ACTIVELY BLOCKING (challenge visible, not just script loaded)
     try:
-        hcaptcha_detected = page.evaluate("""() => {
-            return !!(
-                document.querySelector('.h-captcha, [data-hcaptcha-sitekey]') ||
-                document.querySelector('script[src*="hcaptcha.com"], iframe[src*="hcaptcha.com"]')
-            );
+        hcaptcha_blocking = page.evaluate("""() => {
+            // Check if hCaptcha challenge iframe is actually visible/loaded (not just script present)
+            const challengeIframe = document.querySelector('iframe[src*="hcaptcha.com/challenge"]');
+            if (challengeIframe) return true;
+            
+            // Check if hCaptcha widget shows "not verified" state
+            const hcDiv = document.querySelector('.h-captcha[data-sitekey]');
+            if (!hcDiv) return false;
+            
+            // If textarea is empty AND widget exists, captcha is blocking
+            const ta = document.querySelector('[name="h-captcha-response"]');
+            return !!(ta && (!ta.value || ta.value.length < 20));
         }""")
-        if hcaptcha_detected:
+        if hcaptcha_blocking:
             from src.hcaptcha_solver import solve_hcaptcha
             if solve_hcaptcha(page):
-                print(f"      ✅ Solved hCaptcha via Gemini Vision AI")
+                print(f"      ✅ Solved hCaptcha via token service")
                 return True
             else:
-                print(f"      ⚠️ hCaptcha Gemini solver failed — trying next...")
+                print(f"      ⚠️ hCaptcha token solver failed — trying next...")
     except ImportError:
         pass
     except Exception as e:
