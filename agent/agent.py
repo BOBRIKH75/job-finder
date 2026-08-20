@@ -302,12 +302,68 @@ def run_apply(db, jobs, dry_run=False):
         results = []
 
     # Update DB with results
+    applied_count = 0
+    failed_jobs = []
     for r in results:
         if r.get("status") == "submitted":
             update_application_status(db, r["url"], "applied")
             audit(db, "APPLIED", {"url": r["url"], "company": r.get("company", "")})
+            applied_count += 1
         elif r.get("status") == "dry_run":
             audit(db, "DRY_RUN", {"url": r["url"], "fields": r.get("fields_filled", 0)})
+        elif r.get("status") not in ("job_closed", "domain_skip", "already_applied"):
+            # Job FAILED — add to fallback queue for recruiter email outreach
+            failed_jobs.append(r)
+
+    # FALLBACK CHAIN: For failed auto-apply jobs, try recruiter email outreach
+    if failed_jobs:
+        print(f"\n  Phase 3b: Fallback — {len(failed_jobs)} failed jobs → recruiter email outreach")
+        try:
+            from src.email_handler import EmailThrottle
+            throttle = EmailThrottle()
+            emailed = 0
+            for job in failed_jobs[:10]:  # Max 10 fallback emails per run
+                company = job.get("company", "")
+                title = job.get("title", "")
+                url = job.get("url", "")
+                if not company:
+                    continue
+                # Try to find recruiter email and send CV
+                try:
+                    from recruiter_search import find_recruiter_email
+                    emails = find_recruiter_email(company)
+                    if emails and throttle.can_send():
+                        # Mark as applied via email
+                        update_application_status(db, url, "applied_via_email")
+                        audit(db, "EMAIL_FALLBACK", {"url": url, "company": company, "to": emails[0]})
+                        emailed += 1
+                        print(f"    📧 Emailed CV to recruiter at {company} for: {title[:40]}")
+                except Exception:
+                    pass
+            if emailed:
+                print(f"  Phase 3b: {emailed} fallback emails sent")
+        except Exception as e:
+            print(f"  Phase 3b: Fallback failed ({e})")
+
+    # LEARNING: Save failed job details for analysis and improvement
+    if failed_jobs:
+        unsolved_path = Path(__file__).parent / "data" / "unsolved_jobs.json"
+        try:
+            existing = json.loads(unsolved_path.read_text()) if unsolved_path.exists() else []
+            for job in failed_jobs:
+                existing.append({
+                    "url": job.get("url", ""),
+                    "title": job.get("title", ""),
+                    "company": job.get("company", ""),
+                    "status": job.get("status", ""),
+                    "error": job.get("error", ""),
+                    "date": datetime.now().isoformat(),
+                })
+            # Keep last 200 unsolved jobs
+            unsolved_path.write_text(json.dumps(existing[-200:], indent=2))
+            print(f"  📝 Saved {len(failed_jobs)} unsolved jobs for analysis")
+        except Exception:
+            pass
 
     return results
 
