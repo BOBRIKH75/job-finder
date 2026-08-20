@@ -32,3 +32,12 @@ jobs:
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
         run: |
           python linkedin_easy_apply.py
+
+      - name: Persist applied job state (prevent re-applying)
+        if: always()
+        run: |
+          git config user.email "bot@bobrikh.dev"
+          git config user.name "LinkedIn Bot"
+          git add linkedin_applied.json 2>/dev/null || true
+          git diff --staged --quiet || git commit -m "chore: update LinkedIn applied IDs [skip ci]"
+          git push || true
