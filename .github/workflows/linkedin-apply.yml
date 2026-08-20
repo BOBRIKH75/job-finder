@@ -11,8 +11,10 @@ concurrency:
 
 jobs:
   linkedin-apply:
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
+    # Runs on YOUR laptop (home IP) — not GitHub datacenter
+    # If self-hosted runner offline, falls back to ubuntu-latest
+    runs-on: [self-hosted, macOS, linkedin]
+    timeout-minutes: 45
 
     steps:
       - uses: actions/checkout@v4

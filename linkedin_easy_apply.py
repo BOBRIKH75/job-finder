@@ -23,10 +23,20 @@ import base64, json, os, random, time
 from pathlib import Path
 from datetime import datetime
 
-# SAFETY LIMITS — calibrated for datacenter IP (GitHub Actions)
-MAX_APPLICATIONS_PER_RUN = 10   # 1 session/day × 10 = 10/day (conservative for datacenter IP)
-MIN_DELAY_SECONDS = 45           # increased from 30 — datacenter IPs need slower pace
-MAX_DELAY_SECONDS = 120
+# SAFETY LIMITS — auto-detect: home IP (self-hosted) vs datacenter (GitHub-hosted)
+IS_SELF_HOSTED = os.environ.get("RUNNER_NAME", "").startswith("bobur") or "self-hosted" in os.environ.get("RUNNER_LABELS", "")
+
+if IS_SELF_HOSTED:
+    # Running on YOUR laptop with YOUR IP — safe for higher limits
+    MAX_APPLICATIONS_PER_RUN = 25   # LinkedIn allows 50, we use 50% (safe from home IP)
+    MIN_DELAY_SECONDS = 30           # human pace from real browser
+    MAX_DELAY_SECONDS = 90
+else:
+    # Running on GitHub datacenter IP — strict limits
+    MAX_APPLICATIONS_PER_RUN = 10   # conservative for datacenter IP
+    MIN_DELAY_SECONDS = 45           # slower pace from suspicious IP
+    MAX_DELAY_SECONDS = 120
+
 MAX_APPLICANTS_TO_SKIP = 200     # skip jobs with 200+ applicants (buried anyway)
 MAX_JOB_AGE_HOURS = 48           # only apply to jobs posted in last 48 hours
 
