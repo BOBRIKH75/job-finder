@@ -246,6 +246,24 @@ def find_recruiters_for_company(company: str) -> list[dict]:
     if not all_results and domain:
         _add(tomba_domain_search(domain))
 
+    # FALLBACK: If all APIs exhausted/blocked, generate common recruiting email patterns
+    # Most staffing firms use standard patterns: recruiting@, careers@, hr@, jobs@
+    if not all_results and domain:
+        generic_emails = [
+            f"recruiting@{domain}",
+            f"careers@{domain}",
+            f"jobs@{domain}",
+            f"hr@{domain}",
+            f"info@{domain}",
+            f"staffing@{domain}",
+            f"resumes@{domain}",
+        ]
+        # Use first 2 most common patterns (don't spam all 7)
+        for email in generic_emails[:2]:
+            _add([{"email": email, "name": "Recruiting Team", "title": "Recruiter", "source": "pattern"}])
+        if all_results:
+            print(f"    📧 Pattern fallback: {all_results[0]['email']}")
+
     return all_results
 
 
