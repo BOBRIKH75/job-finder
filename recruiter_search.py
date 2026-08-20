@@ -246,23 +246,29 @@ def find_recruiters_for_company(company: str) -> list[dict]:
     if not all_results and domain:
         _add(tomba_domain_search(domain))
 
-    # FALLBACK: If all APIs exhausted/blocked, generate common recruiting email patterns
-    # Most staffing firms use standard patterns: recruiting@, careers@, hr@, jobs@
+    # FALLBACK: If all APIs exhausted/blocked, find VERIFIED recruiting emails
+    # Uses SMTP handshake to confirm mailbox exists (free, no API)
     if not all_results and domain:
-        generic_emails = [
-            f"recruiting@{domain}",
-            f"careers@{domain}",
-            f"jobs@{domain}",
-            f"hr@{domain}",
-            f"info@{domain}",
-            f"staffing@{domain}",
-            f"resumes@{domain}",
-        ]
-        # Use first 2 most common patterns (don't spam all 7)
-        for email in generic_emails[:2]:
-            _add([{"email": email, "name": "Recruiting Team", "title": "Recruiter", "source": "pattern"}])
-        if all_results:
-            print(f"    📧 Pattern fallback: {all_results[0]['email']}")
+        try:
+            from verify_email import find_valid_email
+            verified_email = find_valid_email(domain)
+            if verified_email:
+                _add([{"email": verified_email, "name": "Recruiting Team", "title": "Recruiter", "source": "smtp_verified"}])
+                print(f"    ✅ SMTP verified: {verified_email}")
+            else:
+                print(f"    ❌ No verified email found for {domain}")
+        except ImportError:
+            # dnspython not installed — use unverified pattern as last resort
+            generic_emails = [
+                f"recruiting@{domain}",
+                f"careers@{domain}",
+            ]
+            for email in generic_emails[:2]:
+                _add([{"email": email, "name": "Recruiting Team", "title": "Recruiter", "source": "pattern_unverified"}])
+            if all_results:
+                print(f"    ⚠️ Unverified pattern: {all_results[0]['email']} (install dnspython for verification)")
+        except Exception as e:
+            print(f"    ⚠️ Email verification error: {str(e)[:60]}")
 
     return all_results
 

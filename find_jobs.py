@@ -187,10 +187,20 @@ def search_google_groups():
             links = re.findall(r'https://groups\.google\.com/g/[^"&\s]+', html)
             threads = [l for l in set(links) if '/c/' in l]
             for link in threads:
+                # Try to extract recruiter email from the Google search snippet
+                # Google shows part of the post text — often contains the email
+                snippet_emails = re.findall(r'[\w.+-]+@[\w-]+\.[\w.]+', html)
+                recruiter_email = ''
+                for e in snippet_emails:
+                    # Skip googlegroups and common non-recruiter emails
+                    if 'googlegroups' not in e and 'google.com' not in e and 'example' not in e:
+                        recruiter_email = e
+                        break
                 results.append({
                     'title': f'C2C Posting — {group}', 'company': group,
                     'location': 'Remote / Various', 'job_url': link,
                     'site': 'google_groups', 'description': 'C2C Java posting',
+                    'recruiter_email': recruiter_email,
                 })
             if threads:
                 print(f'  ✅ Group "{group}" → {len(threads)} threads')
