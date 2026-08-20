@@ -365,6 +365,51 @@ def run_apply(db, jobs, dry_run=False):
         except Exception:
             pass
 
+    # PHASE 3c: For email-only jobs (LinkedIn/Indeed URLs can't auto-apply),
+    # find the recruiter email and send CV directly. This ensures EVERY job
+    # gets an application attempt — either via form or via email.
+    if email_only:
+        print(f"\n  Phase 3c: Recruiter outreach for {len(email_only)} email-only jobs")
+        try:
+            import sys
+            sys.path.insert(0, str(Path(__file__).parent.parent))
+            from recruiter_search import find_recruiter_email
+            from outreach import send_cv_email
+            
+            emailed_count = 0
+            max_outreach = 15  # Max emails per run (don't spam)
+            
+            for job in email_only[:max_outreach]:
+                company = job.get("company", "")
+                url = job.get("url", "")
+                title = job.get("title", "")
+                
+                if not company or application_exists(db, url):
+                    continue
+                
+                # Find recruiter email for this company
+                emails = find_recruiter_email(company)
+                if emails:
+                    # Send CV — the outreach.py handles the actual sending
+                    try:
+                        send_cv_email(emails[0], company, title)
+                        update_application_status(db, url, "applied_via_email")
+                        audit(db, "EMAIL_OUTREACH", {"url": url, "company": company, "to": emails[0]})
+                        emailed_count += 1
+                        print(f"    📧 CV sent to {emails[0]} for: {title[:40]} @ {company}")
+                    except Exception:
+                        pass
+                
+                if emailed_count >= max_outreach:
+                    break
+            
+            if emailed_count:
+                print(f"  Phase 3c: {emailed_count} CVs sent to recruiters (email-only jobs)")
+            else:
+                print(f"  Phase 3c: No recruiter emails found for email-only jobs")
+        except Exception as e:
+            print(f"  Phase 3c: Outreach error ({str(e)[:60]})")
+
     return results
 
 
