@@ -21,10 +21,10 @@ TIMEOUT = 10
 def resolve_linkedin_url(url: str) -> str:
     """Follow LinkedIn job URL redirects to find the actual apply page.
     
-    Strategy:
-    1. Use LinkedIn cookies (if available) to get authenticated page
-    2. Parse the page for external apply links (applyUrl, companyApplyUrl)
-    3. Follow HTTP redirects with a browser-like User-Agent
+    Strategy (in order):
+    1. Use LinkedIn's PUBLIC jobs-guest endpoint (no login needed, returns HTML)
+    2. Fall back to authenticated page with cookies
+    3. Follow HTTP redirects
     """
     if "linkedin.com" not in url:
         return url
@@ -40,14 +40,45 @@ def resolve_linkedin_url(url: str) -> str:
     
     job_id = match.group(1)
     
-    # Try the job view page with authentication
-    apply_url = f"https://www.linkedin.com/jobs/view/{job_id}/"
-    
     headers = {
         "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
         "Accept": "text/html,application/xhtml+xml",
         "Accept-Language": "en-US,en;q=0.9",
     }
+    
+    ctx = ssl.create_default_context()
+    ctx.check_hostname = False
+    ctx.verify_mode = ssl.CERT_NONE
+    
+    # === METHOD 1: Public jobs-guest endpoint (NO LOGIN, returns HTML with apply link) ===
+    # This is the same endpoint search engines use to index LinkedIn jobs
+    guest_url = f"https://www.linkedin.com/jobs-guest/jobs/api/jobPosting/{job_id}"
+    try:
+        req = urllib.request.Request(guest_url, headers=headers)
+        resp = urllib.request.urlopen(req, timeout=TIMEOUT, context=ctx)
+        html = resp.read().decode('utf-8', errors='ignore')
+        
+        # The guest endpoint returns HTML with apply links in known patterns
+        patterns = [
+            r'href="(https?://[^"]*(?:lever\.co|greenhouse\.io|myworkdayjobs\.com|ashbyhq\.com|bamboohr\.com|jobvite\.com|smartrecruiters\.com|icims\.com)[^"]*)"',
+            r'applyUrl["\s:]+["](https?://[^"]+)["]',
+            r'companyApplyUrl["\s:]+["](https?://[^"]+)["]',
+            r'data-apply-url="(https?://[^"]+)"',
+            r'class="apply-button[^"]*"[^>]*href="(https?://[^"]+)"',
+            r'href="(https?://[^"]*(?:/jobs/|/careers/|/apply|/position)[^"]*)"',
+        ]
+        
+        for pattern in patterns:
+            m = re.search(pattern, html)
+            if m:
+                found_url = m.group(1).replace("\\u0026", "&").replace("\\/", "/")
+                if "linkedin.com" not in found_url:
+                    return found_url
+    except Exception:
+        pass
+    
+    # === METHOD 2: Authenticated page with cookies (if guest endpoint didn't work) ===
+    apply_url = f"https://www.linkedin.com/jobs/view/{job_id}/"
     
     # Add LinkedIn cookies if available
     linkedin_cookies = os.environ.get("LINKEDIN_COOKIES", "")

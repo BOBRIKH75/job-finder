@@ -23,7 +23,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install selenium undetected-chromedriver webdriver-manager python-jobspy pandas
+          pip install setuptools selenium undetected-chromedriver webdriver-manager python-jobspy pandas
 
       - name: Run LinkedIn Easy Apply (SAFE limits)
         env:
