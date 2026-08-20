@@ -1,0 +1,39 @@
+name: "LinkedIn Session Keep-Alive (Daily)"
+
+on:
+  schedule:
+    - cron: "0 12 * * *"  # 6:00 AM MT — early morning, before job runs
+  workflow_dispatch: {}
+
+jobs:
+  keep-alive:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          pip install playwright
+          playwright install chromium --with-deps
+
+      - name: Run LinkedIn keep-alive
+        env:
+          LINKEDIN_COOKIES: ${{ secrets.LINKEDIN_COOKIES }}
+          LINKEDIN_EMAIL: ${{ secrets.LINKEDIN_EMAIL }}
+          LINKEDIN_PASSWORD: ${{ secrets.LINKEDIN_PASSWORD }}
+        run: python scripts/linkedin_keep_alive.py
+
+      - name: Save updated cookies
+        if: always()
+        run: |
+          git config user.email "bot@bobrikh.dev"
+          git config user.name "LinkedIn Bot"
+          git add data/linkedin_cookies_latest.json || true
+          git diff --staged --quiet || git commit -m "chore: LinkedIn cookies refreshed $(date +%Y-%m-%d)"
+          git push || true
