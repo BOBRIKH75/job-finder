@@ -34,7 +34,7 @@ import requests
 logger = logging.getLogger(__name__)
 
 # Service API keys (set as GitHub secrets)
-CAPSOLVER_API_KEY = os.environ.get("CAPSOLVER_API_KEY", "")
+CAPSOLVER_API_KEY = os.environ.get("CAPSOLVER_KEY", "")
 TWOCAPTCHA_API_KEY = os.environ.get("TWOCAPTCHA_API_KEY", "")
 
 # Timeouts
@@ -288,7 +288,9 @@ def _inject_token(page, token: str) -> bool:
             );
             for (const ta of textareas) {
                 ta.value = token;
-                ta.style.display = 'block';  // some sites check visibility
+                // Dispatch events for React/Vue/Angular listeners
+                ta.dispatchEvent(new Event('input', { bubbles: true }));
+                ta.dispatchEvent(new Event('change', { bubbles: true }));
                 injected = true;
             }
             

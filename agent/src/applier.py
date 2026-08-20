@@ -489,20 +489,23 @@ def _try_auto_captcha_solve(page, captured_sitekey: str = "") -> bool:
             pass
     
     # === SOLVER 3.5: hCaptcha via token-based solving service (CapSolver/2Captcha) ===
-    # Only triggers when hCaptcha is ACTIVELY BLOCKING (challenge visible, not just script loaded)
+    # Only triggers when hCaptcha is ACTIVELY BLOCKING (challenge iframe visible OR form requires token)
     try:
         hcaptcha_blocking = page.evaluate("""() => {
-            // Check if hCaptcha challenge iframe is actually visible/loaded (not just script present)
+            // Must have a sitekey element (confirms this IS hCaptcha, not something else)
+            const hcDiv = document.querySelector('.h-captcha[data-sitekey], [data-hcaptcha-sitekey]');
+            if (!hcDiv) return false;
+            
+            // Check if challenge iframe is loaded (means it triggered)
             const challengeIframe = document.querySelector('iframe[src*="hcaptcha.com/challenge"]');
             if (challengeIframe) return true;
             
-            // Check if hCaptcha widget shows "not verified" state
-            const hcDiv = document.querySelector('.h-captcha[data-sitekey]');
-            if (!hcDiv) return false;
-            
-            // If textarea is empty AND widget exists, captcha is blocking
+            // Check if response textarea is empty (captcha not yet solved)
             const ta = document.querySelector('[name="h-captcha-response"]');
-            return !!(ta && (!ta.value || ta.value.length < 20));
+            if (ta && ta.value && ta.value.length > 20) return false;  // already solved
+            
+            // hCaptcha widget exists and is unsolved — it WILL block submission
+            return true;
         }""")
         if hcaptcha_blocking:
             from src.hcaptcha_solver import solve_hcaptcha
