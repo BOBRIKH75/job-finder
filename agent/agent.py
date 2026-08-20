@@ -77,6 +77,12 @@ STAFFING_FIRMS = {
     "judge group", "beacon hill", "mitchell martin", "mondo",
     "eliassen", "horizontal", "actalent", "procom", "teksystems",
     "calculated hire", "cella", "aquent", "kelly", "ettain group",
+    # Added batch 2 — from 2026-08-19 run logs
+    "optomi", "artmac", "nextgenpros", "eitacies", "sga",
+    "software guidance", "global business ser", "digital technology international",
+    "it associates", "snowrelic", "herodevs", "ntt data",
+    "tek inspirations", "royal cyber", "evoke technologies", "compunnel",
+    "saicon", "technosoft", "synergistic", "iplace", "xebia",
 }
 
 
