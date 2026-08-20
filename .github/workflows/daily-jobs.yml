@@ -112,6 +112,8 @@ jobs:
       - name: Resolve LinkedIn URLs to company apply pages
         if: success()
         continue-on-error: true
+        env:
+          LINKEDIN_COOKIES: ${{ secrets.LINKEDIN_COOKIES }}
         run: |
           python resolve_urls.py
           git add found_jobs.json 2>/dev/null || true

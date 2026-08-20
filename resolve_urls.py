@@ -22,9 +22,9 @@ def resolve_linkedin_url(url: str) -> str:
     """Follow LinkedIn job URL redirects to find the actual apply page.
     
     Strategy:
-    1. Try LinkedIn's external apply redirect pattern
-    2. Follow HTTP redirects with a browser-like User-Agent
-    3. Parse the page for external apply links
+    1. Use LinkedIn cookies (if available) to get authenticated page
+    2. Parse the page for external apply links (applyUrl, companyApplyUrl)
+    3. Follow HTTP redirects with a browser-like User-Agent
     """
     if "linkedin.com" not in url:
         return url
@@ -32,11 +32,15 @@ def resolve_linkedin_url(url: str) -> str:
     # Extract job ID from LinkedIn URL
     match = re.search(r'/view/(\d+)', url)
     if not match:
+        match = re.search(r'currentJobId=(\d+)', url)
+    if not match:
+        match = re.search(r'/jobs/(\d+)', url)
+    if not match:
         return url
     
     job_id = match.group(1)
     
-    # Try the apply redirect endpoint
+    # Try the job view page with authentication
     apply_url = f"https://www.linkedin.com/jobs/view/{job_id}/"
     
     headers = {
@@ -45,23 +49,36 @@ def resolve_linkedin_url(url: str) -> str:
         "Accept-Language": "en-US,en;q=0.9",
     }
     
+    # Add LinkedIn cookies if available
+    linkedin_cookies = os.environ.get("LINKEDIN_COOKIES", "")
+    if linkedin_cookies:
+        try:
+            cookie_data = json.loads(linkedin_cookies)
+            if isinstance(cookie_data, list):
+                cookie_str = "; ".join(f"{c['name']}={c['value']}" for c in cookie_data if c.get('name'))
+                headers["Cookie"] = cookie_str
+            elif isinstance(cookie_data, str):
+                headers["Cookie"] = cookie_data
+        except (json.JSONDecodeError, TypeError):
+            if "=" in linkedin_cookies:
+                headers["Cookie"] = linkedin_cookies
+    
     ctx = ssl.create_default_context()
     ctx.check_hostname = False
     ctx.verify_mode = ssl.CERT_NONE
     
     try:
         req = urllib.request.Request(apply_url, headers=headers)
-        # Don't follow redirects — we want to see where it goes
-        opener = urllib.request.build_opener(NoRedirectHandler())
-        resp = opener.open(req, timeout=TIMEOUT)
+        resp = urllib.request.urlopen(req, timeout=TIMEOUT, context=ctx)
         html = resp.read().decode('utf-8', errors='ignore')
         
         # Look for external apply URL in the page
-        # LinkedIn puts it in: data-apply-url, applyUrl, or companyApplyUrl
         patterns = [
             r'"applyUrl":"(https?://[^"]+)"',
             r'"companyApplyUrl":"(https?://[^"]+)"',
+            r'"applyMethod":\{[^}]*"companyApplyUrl":"(https?://[^"]+)"',
             r'data-apply-url="(https?://[^"]+)"',
+            r'"externalApplyLink":"(https?://[^"]+)"',
             r'href="(https?://[^"]*(?:lever|greenhouse|workday|ashby|bamboo|careers|jobs|apply)[^"]*)"',
         ]
         
