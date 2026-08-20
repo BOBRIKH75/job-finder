@@ -234,26 +234,26 @@ def _fill_form_fields_with_ai(driver):
         "years of experience": "8",
         "how many years": "8",
         "java": "8",
-        "spring": "7",
-        "python": "4",
-        "experience with": "Yes",
+        "years of spring": "7",
+        "years of python": "4",
+        "years of aws": "5",
+        "years of kafka": "5",
         "authorized to work": "Yes",
         "work authorization": "Yes",
         "require sponsorship": "No",
         "visa sponsorship": "No",
-        "sponsorship": "No",
+        "need sponsorship": "No",
         "legally authorized": "Yes",
-        "salary": "85",
         "desired salary": "85",
-        "rate": "85",
+        "salary expectation": "85",
         "hourly rate": "85",
-        "compensation": "85",
+        "pay rate": "85",
+        "compensation expectation": "85",
         "willing to relocate": "Yes",
-        "remote": "Yes",
         "work remotely": "Yes",
-        "hybrid": "Yes",
-        "on-site": "Yes",
-        "travel": "Yes",
+        "open to remote": "Yes",
+        "open to hybrid": "Yes",
+        "willing to travel": "Yes",
         "background check": "Yes",
         "drug test": "Yes",
         "start date": "Immediately",
@@ -303,10 +303,12 @@ def _fill_form_fields_with_ai(driver):
             if not label or len(label) < 3:
                 continue
             
-            # Find the answer from known answers
+            # Find the answer from known answers (word-boundary aware)
             answer = ""
+            import re as _re
             for key, val in KNOWN_ANSWERS.items():
-                if key in label:
+                # Use word boundary to avoid 'java' matching 'javascript'
+                if _re.search(r'\b' + _re.escape(key) + r'\b', label):
                     answer = val
                     break
             
@@ -323,6 +325,17 @@ def _fill_form_fields_with_ai(driver):
                 if not text_input.get_attribute("value"):
                     text_input.clear()
                     text_input.send_keys(answer)
+                    # CRITICAL: Dispatch events for React controlled inputs
+                    driver.execute_script("""
+                        var el = arguments[0];
+                        var nativeInputValueSetter = Object.getOwnPropertyDescriptor(
+                            window.HTMLInputElement.prototype, 'value').set;
+                        nativeInputValueSetter.call(el, arguments[1]);
+                        el.dispatchEvent(new Event('input', { bubbles: true }));
+                        el.dispatchEvent(new Event('change', { bubbles: true }));
+                        el.dispatchEvent(new Event('blur', { bubbles: true }));
+                    """, text_input, answer)
+                    print(f"      📝 Filled: '{label[:30]}' → '{answer}'")
                     continue
             except Exception:
                 pass
