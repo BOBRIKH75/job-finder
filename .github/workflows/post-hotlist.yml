@@ -1,0 +1,33 @@
+name: "Post Hotlist to C2C Groups (Daily)"
+
+on:
+  schedule:
+    - cron: "0 14 * * 1-5"  # 8:00 AM MT, weekdays only
+  workflow_dispatch: {}
+
+jobs:
+  post-hotlist:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Post hotlist to today's groups
+        env:
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+        run: python post_hotlist.py
+
+      - name: Save post history
+        if: always()
+        run: |
+          git config user.email "bot@bobrikh.dev"
+          git config user.name "Hotlist Bot"
+          git add data/hotlist_post_history.json || true
+          git diff --staged --quiet || git commit -m "chore: hotlist posted $(date +%Y-%m-%d)"
+          git push || true
