@@ -32,6 +32,7 @@ jobs:
           LINKEDIN_COOKIES: ${{ secrets.LINKEDIN_COOKIES }}
           RESEND_KEY: ${{ secrets.RESEND_KEY }}
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
           python linkedin_easy_apply.py
 

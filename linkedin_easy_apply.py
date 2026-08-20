@@ -223,6 +223,192 @@ def inject_cookies(driver, cookies: list[dict]):
             print(f"    ⚠️  Could not inject cookie {cookie.get('name')}: {e}")
 
 
+def _fill_form_fields_with_ai(driver):
+    """Fill LinkedIn Easy Apply form fields using Gemini AI.
+    
+    Handles: text inputs, dropdowns, radio buttons, checkboxes.
+    Uses predefined answers for common questions + Gemini for custom ones.
+    """
+    # Predefined answers for common LinkedIn screening questions
+    KNOWN_ANSWERS = {
+        "years of experience": "8",
+        "how many years": "8",
+        "java": "8",
+        "spring": "7",
+        "python": "4",
+        "experience with": "Yes",
+        "authorized to work": "Yes",
+        "work authorization": "Yes",
+        "require sponsorship": "No",
+        "visa sponsorship": "No",
+        "sponsorship": "No",
+        "legally authorized": "Yes",
+        "salary": "85",
+        "desired salary": "85",
+        "rate": "85",
+        "hourly rate": "85",
+        "compensation": "85",
+        "willing to relocate": "Yes",
+        "remote": "Yes",
+        "work remotely": "Yes",
+        "hybrid": "Yes",
+        "on-site": "Yes",
+        "travel": "Yes",
+        "background check": "Yes",
+        "drug test": "Yes",
+        "start date": "Immediately",
+        "when can you start": "Immediately",
+        "notice period": "Immediately",
+        "currently employed": "Yes",
+        "highest education": "Bachelor",
+        "degree": "Bachelor",
+        "education level": "Bachelor",
+        "city": "Parker",
+        "location": "Parker, CO",
+        "phone": "347-268-5917",
+        "email": "bobrikh75@gmail.com",
+        "linkedin": "https://www.linkedin.com/in/bobrikh75/",
+        "website": "https://www.linkedin.com/in/bobrikh75/",
+        "gender": "Male",
+        "veteran": "No",
+        "disability": "No",
+        "race": "Prefer not to say",
+        "ethnicity": "Prefer not to say",
+        "first name": "Bob",
+        "last name": "Rikh",
+    }
+    
+    from selenium.webdriver.common.by import By
+    from selenium.webdriver.support.ui import Select
+    
+    # Find all visible form fields in the modal
+    form_groups = driver.find_elements(By.CSS_SELECTOR, 
+        ".jobs-easy-apply-form-section__grouping, "
+        ".fb-dash-form-element, "
+        "[data-test-form-element], "
+        ".artdeco-text-input--container, "
+        ".jobs-easy-apply-modal .form-component"
+    )
+    
+    for group in form_groups:
+        try:
+            # Get the label/question text
+            label = ""
+            try:
+                label_el = group.find_element(By.CSS_SELECTOR, "label, .fb-dash-form-element__label, span.t-14")
+                label = label_el.text.strip().lower()
+            except Exception:
+                continue
+            
+            if not label or len(label) < 3:
+                continue
+            
+            # Find the answer from known answers
+            answer = ""
+            for key, val in KNOWN_ANSWERS.items():
+                if key in label:
+                    answer = val
+                    break
+            
+            # If no known answer, use Gemini AI
+            if not answer:
+                answer = _ask_gemini_for_answer(label)
+            
+            if not answer:
+                continue
+            
+            # Try to fill text input
+            try:
+                text_input = group.find_element(By.CSS_SELECTOR, "input[type='text'], input[type='number'], input:not([type]), textarea")
+                if not text_input.get_attribute("value"):
+                    text_input.clear()
+                    text_input.send_keys(answer)
+                    continue
+            except Exception:
+                pass
+            
+            # Try to select dropdown
+            try:
+                select_el = group.find_element(By.CSS_SELECTOR, "select")
+                select = Select(select_el)
+                options = [o.text.lower() for o in select.options]
+                # Find best matching option
+                for i, opt in enumerate(options):
+                    if answer.lower() in opt or opt in answer.lower() or "yes" in opt:
+                        select.select_by_index(i)
+                        break
+                continue
+            except Exception:
+                pass
+            
+            # Try radio buttons
+            try:
+                radios = group.find_elements(By.CSS_SELECTOR, "input[type='radio']")
+                if radios:
+                    # Click "Yes" if available, otherwise first option
+                    for radio in radios:
+                        radio_label = radio.find_element(By.XPATH, "..").text.lower()
+                        if "yes" in radio_label or answer.lower() in radio_label:
+                            radio.click()
+                            break
+                    else:
+                        radios[0].click()  # default to first option
+                continue
+            except Exception:
+                pass
+            
+            # Try checkboxes (usually "I agree" type)
+            try:
+                checkbox = group.find_element(By.CSS_SELECTOR, "input[type='checkbox']")
+                if not checkbox.is_selected():
+                    checkbox.click()
+            except Exception:
+                pass
+                
+        except Exception:
+            continue
+
+
+def _ask_gemini_for_answer(question: str) -> str:
+    """Ask Gemini AI to answer a job application screening question."""
+    gemini_key = os.environ.get("GEMINI_API_KEY", "")
+    if not gemini_key:
+        return "Yes"  # safe default
+    
+    try:
+        import urllib.request
+        import json as _json
+        
+        prompt = f"""You are filling out a job application for a Senior Java Backend Developer (8 years experience, Spring Boot, Kafka, AWS, remote C2C contractor, US Green Card holder, located in Colorado).
+
+Question: "{question}"
+
+Answer with ONLY the answer (1-3 words max). No explanation.
+- For yes/no questions: answer "Yes" unless it asks about sponsorship (answer "No")
+- For years of experience: answer "8"
+- For salary/rate: answer "85" (hourly)
+- For location: answer "Parker, CO"
+- For dates: answer "Immediately"
+- For anything else: give the most common/safe answer"""
+
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={gemini_key}"
+        data = _json.dumps({
+            "contents": [{"parts": [{"text": prompt}]}]
+        }).encode()
+        
+        req = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json"})
+        resp = urllib.request.urlopen(req, timeout=10)
+        result = _json.loads(resp.read().decode())
+        
+        answer = result["candidates"][0]["content"]["parts"][0]["text"].strip()
+        # Clean up — only take first line, max 50 chars
+        answer = answer.split("\n")[0][:50].strip('"').strip("'")
+        return answer
+        
+    except Exception:
+        return "Yes"  # safe default
+
+
 def main():
     # Time-of-day safety check first — before any browser launch
     ok, reason = is_safe_run_time()
@@ -368,12 +554,20 @@ def main():
                             break
 
                         # Handle the application modal
-                        # Most Easy Apply is 1-click with pre-filled profile
+                        # Uses Gemini AI to answer screening questions
                         submitted = False
-                        for step in range(5):  # max 5 steps
+                        for step in range(7):  # max 7 steps (some jobs have many questions)
+                            time.sleep(2)
+                            
+                            # First: fill any visible form fields using AI
+                            try:
+                                _fill_form_fields_with_ai(driver)
+                            except Exception:
+                                pass
+                            
                             try:
                                 # Look for Submit button
-                                submit_btn = driver.find_element("css selector", "button[aria-label*='Submit'], button:has-text('Submit application')")
+                                submit_btn = driver.find_element("css selector", "button[aria-label*='Submit'], button[aria-label*='submit']")
                                 submit_btn.click()
                                 time.sleep(3)
                                 submitted = True
