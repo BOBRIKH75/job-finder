@@ -37,9 +37,55 @@ def export_jobs_for_agent(scored_df, output_path: str = JOBS_FILE):
 
 
 def import_jobs_from_finder(input_path: str = JOBS_FILE) -> list[dict]:
-    """Called by ai-job-agent — reads jobs exported by find_jobs.py."""
+    """Called by ai-job-agent — reads jobs exported by find_jobs.py.
+    
+    Filters out URLs that cannot be auto-applied:
+    - LinkedIn job views (require login + bot detection)
+    - Indeed company pages (not job applications)
+    - Generic aggregator redirects
+    """
     if not os.path.exists(input_path):
         return []
     with open(input_path) as f:
         data = json.load(f)
-    return data.get("jobs", [])
+    
+    jobs = data.get("jobs", [])
+    
+    # Filter out unapplicable URLs
+    BLOCKED_PATTERNS = [
+        "linkedin.com/jobs/",       # Requires login, heavy bot detection
+        "linkedin.com/comm/jobs/",  # Same but via comms redirect
+        "indeed.com/cmp/",          # Company profile, not a job application
+        "indeed.com/viewjob",       # Indeed job view (requires login to apply)
+        "indeed.com/jobs?",         # Indeed search results page
+        "glassdoor.com/job-listing",  # Requires login
+        "glassdoor.com/Job/",       # Same
+        "ziprecruiter.com/jobs/",   # Login wall for apply
+    ]
+    
+    filtered = []
+    skipped_count = 0
+    for job in jobs:
+        url = job.get("url", "")
+        if any(pattern in url for pattern in BLOCKED_PATTERNS):
+            skipped_count += 1
+            continue
+        if not url or url == "nan":
+            skipped_count += 1
+            continue
+        filtered.append(job)
+    
+    if skipped_count:
+        print(f"  🔗 Bridge: {len(filtered)} usable jobs ({skipped_count} filtered out — LinkedIn/Indeed/aggregator)")
+    
+    return filtered
+
+
+def extract_companies_from_jobs(jobs: list[dict]) -> list[str]:
+    """Extract unique company names from found jobs for dynamic portal discovery."""
+    companies = set()
+    for job in jobs:
+        company = job.get("company", "").strip()
+        if company and company != "nan" and len(company) > 2:
+            companies.add(company)
+    return sorted(companies)

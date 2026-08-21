@@ -235,13 +235,23 @@ def submit_greenhouse_api(
     try:
         time.sleep(random.uniform(2, 4))
 
+        # Use a session to maintain cookies from page load (helps bypass CSRF/reCAPTCHA)
+        session = requests.Session()
+        session.headers.update(post_headers)
+        
+        # Step 1: Load the job page to establish session cookies
+        embed_url = f"https://job-boards.greenhouse.io/embed/job_app?for={company}&token={job_id}"
+        try:
+            session.get(embed_url, timeout=15)
+        except Exception:
+            pass  # Non-fatal — try submitting anyway
+
         with open(resume_file, "rb") as fh:
             files = {"job_application[resume]": (resume_file.name, fh, "application/pdf")}
-            resp = requests.post(
+            resp = session.post(
                 submit_url,
                 data=form_data,
                 files=files,
-                headers=post_headers,
                 timeout=30,
                 allow_redirects=True,
             )

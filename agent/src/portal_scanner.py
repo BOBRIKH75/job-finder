@@ -31,6 +31,18 @@ SEED_LEVER = [
     "pagerduty", "opsgenie", "victorops", "miro", "loom", "calendly",
     "gusto", "rippling", "deel", "remote", "oysterhr", "lattice",
     "lever", "greenhouse", "ashbyhq", "workday",
+    # Staffing firms + IT consulting (contract/C2C friendly)
+    "kforce", "insightglobal", "harnham", "jobot", "motionrecruitment",
+    "randstad", "roberthalf", "toptal", "turing", "andela", "crossover",
+    "lensa", "hired", "vettery", "triplebyte", "gun-io", "arc",
+    "coderpad", "codility", "hackerrank",
+    # Enterprise tech (often hire Java contract)
+    "twilio", "sendgrid", "vonage", "okta", "auth0",
+    "snowflake", "fivetran", "census", "hightouch", "dbtlabs",
+    "vercel", "supabase", "planetscale", "neon", "turso",
+    # Financial services (high contract rate)
+    "bloomberg", "citadel", "twosigma", "jumptrading", "imc",
+    "capitalone", "goldmansachs", "jpmorgan", "morganstanley",
 ]
 
 SEED_GREENHOUSE = [
@@ -42,6 +54,17 @@ SEED_GREENHOUSE = [
     "okta", "auth0", "onelogin", "jumpcloud",
     "snowflake", "fivetran", "dbt", "census", "hightouch",
     "thoughtworks", "slalom", "capgemini",
+    # Staffing / consulting (contract-friendly, use Greenhouse)
+    "accenture", "cognizant", "wipro", "infosys", "persistent",
+    "epam", "luxoft", "globant", "endava", "softserve",
+    "netcracker", "amdocs", "cgi", "atos",
+    # More tech companies
+    "hubspot", "atlassian", "gitlab", "github", "docker",
+    "elastic", "mongodb", "redis", "cockroachlabs",
+    "confluent", "datastax", "couchbase", "marklogic",
+    "palantir", "databricks", "cloudera", "hortonworks",
+    "paloaltonetworks", "crowdstrike", "sentinelone", "zscaler",
+    "servicenow", "salesforce", "workday", "veeva",
 ]
 
 
@@ -410,11 +433,28 @@ SEED_ASHBY = ["anthropic", "notion", "ramp", "retool", "linear", "vercel", "supa
 SEED_WORKABLE = ["twilio", "elastic", "n8n", "zapier", "talkdesk", "genesys"]
 
 
-def scan_all_companies(max_companies: int = 30) -> list[dict]:
-    """Scan all known companies for Java jobs. Returns list of jobs."""
+def scan_all_companies(max_companies: int = 30, found_jobs: list = None) -> list[dict]:
+    """Scan all known companies for Java jobs. Returns list of jobs.
+    
+    If found_jobs is provided, dynamically discover new company ATS portals
+    from the company names in those jobs (turns LinkedIn/Indeed company names
+    into Lever/Greenhouse direct-apply URLs).
+    """
     companies = load_companies()
     all_jobs = []
     scanned = 0
+
+    # Dynamic discovery: extract company names from found_jobs and probe their ATS
+    if found_jobs:
+        from src.bridge import extract_companies_from_jobs
+        new_companies = extract_companies_from_jobs(found_jobs)
+        discovered_count = 0
+        for company_name in new_companies[:50]:  # cap at 50 to avoid rate limits
+            discover_company(company_name, companies)
+            discovered_count += 1
+        if discovered_count:
+            save_companies(companies)
+            print(f"  🔍 Dynamic discovery: probed {discovered_count} companies from found_jobs")
 
     print(f"  Scanning {len(companies['lever'])} Lever + {len(companies['greenhouse'])} Greenhouse companies...")
 

@@ -42,9 +42,17 @@ def run_discover(db, profile):
         all_jobs.extend(finder_jobs)
         print(f"  Phase 1a: {len(finder_jobs)} jobs from job-finder pipeline")
 
+    # Load ALL jobs (including filtered LinkedIn/Indeed) for company discovery
+    import json
+    _raw_jobs = []
+    if os.path.exists("found_jobs.json"):
+        with open("found_jobs.json") as _f:
+            _raw_jobs = json.load(_f).get("jobs", [])
+
     # Source 2: Direct company career page scanning (Lever + Greenhouse APIs)
+    # Pass raw jobs so scanner discovers ATS portals from LinkedIn/Indeed company names
     from src.portal_scanner import scan_all_companies, load_companies, discover_company, save_companies
-    portal_jobs = scan_all_companies(max_companies=110)
+    portal_jobs = scan_all_companies(max_companies=110, found_jobs=_raw_jobs)
     if portal_jobs:
         all_jobs.extend(portal_jobs)
         print(f"  Phase 1b: {len(portal_jobs)} jobs from company portal scanner")
@@ -255,7 +263,7 @@ def run_apply(db, jobs, dry_run=False):
     
     # Sort: staffing firms first (they do C2C), then CAPTCHA-free ATS, then by match score
     # Sort: Lever first (proven 100%), then other ATS, then protected sites
-    PROVEN_ATS = {"lever"}  # These actually work
+    PROVEN_ATS = {"lever", "greenhouse", "ashby", "workable"}  # Direct API or CAPTCHA-free
     automatable = sorted(
         automatable,
         key=lambda j: (
@@ -265,6 +273,21 @@ def run_apply(db, jobs, dry_run=False):
             -j.get("match_score", 0),
         ),
     )
+
+    # In CI mode: skip sites known to have unsolvable CAPTCHA (saves time for real apps)
+    CAPTCHA_BLOCKED_DOMAINS = {
+        "myworkdayjobs.com", "wd1.myworkdaysite.com", "wd5.myworkdaysite.com",
+        "icims.com", "ultipro.com", "paycomonline.net",
+        "smartrecruiters.com",  # Sometimes has invisible reCAPTCHA
+    }
+    if os.environ.get("CI") or os.environ.get("GITHUB_ACTIONS"):
+        before_count = len(automatable)
+        automatable = [j for j in automatable if not any(
+            d in j.get("url", "") for d in CAPTCHA_BLOCKED_DOMAINS
+        )]
+        skipped = before_count - len(automatable)
+        if skipped:
+            print(f"  ⏭️ CI mode: skipped {skipped} CAPTCHA-blocked jobs (Workday/iCIMS/etc)")
 
     # Remove known blocked domains
     from urllib.parse import urlparse

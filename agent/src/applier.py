@@ -24,7 +24,7 @@ RESUME_PATH = Path(__file__).parent.parent / "resume.pdf"
 SCREENSHOTS = Path(__file__).parent.parent / "screenshots"
 LEARNED_FILE = Path(__file__).parent.parent / "data" / "learned.json"
 INDEED_COOKIES_FILE = Path(__file__).parent.parent / "data" / "indeed_cookies.json"
-MAX_RETRIES = 1
+MAX_RETRIES = 2
 
 
 def load_indeed_cookies() -> list[dict]:
@@ -1542,6 +1542,27 @@ def run_applications(jobs: list[dict], dry_run: bool = True, max_apps: int = 10,
                 site_needs_cf_solve = True
                 print(f"    🟡 Stealth probe failed ({str(e)[:60]}) — will try Playwright directly")
 
+        # For Lever jobs: try direct API POST first (no browser / no CAPTCHA)
+        if "lever.co/" in url:
+            from src.lever_api import submit_lever_api
+            _resume = profile.get("resume_path",
+                                  "~/Downloads/CV/Bob_Rikh_Java_Backend_Developer_C2C.pdf")
+            _api = submit_lever_api(url, profile, _resume, dry_run=dry_run)
+            if _api.get("submitted"):
+                print(f"    ✅ Lever direct API: {_api.get('method', 'ok')}")
+                r = {
+                    "url": url, "title": job.get("title", ""),
+                    "company": job.get("company", ""),
+                    "status": "dry_run" if dry_run else "submitted",
+                    "method": "lever_api", "fields_filled": 5,
+                }
+                results.append(r)
+                applied += 1
+                record_apply(site_key)
+                human_delay(site_key)
+                continue
+            print(f"    ⚠️ Lever API failed ({_api.get('error','?')[:80]}) — browser fallback")
+
         # For Greenhouse jobs: try direct multipart POST first (no browser / no CAPTCHA risk)
         if "greenhouse.io" in url:
             from src.greenhouse_api import submit_greenhouse_api
@@ -1563,7 +1584,26 @@ def run_applications(jobs: list[dict], dry_run: bool = True, max_apps: int = 10,
                 continue
             print(f"    ⚠️ GH API failed ({_api.get('error','?')[:80]}) — browser fallback")
 
-        r = apply_to_job(page, profile, job, learned, dry_run, db=db, site_needs_cf_solve=site_needs_cf_solve)
+        # Per-job timeout: max 3 minutes per application attempt
+        PER_JOB_TIMEOUT = 180  # seconds
+        _job_start = time.monotonic()
+        try:
+            r = apply_to_job(page, profile, job, learned, dry_run, db=db, site_needs_cf_solve=site_needs_cf_solve)
+        except PwTimeout:
+            elapsed = int(time.monotonic() - _job_start)
+            print(f"    ⏰ Job timed out after {elapsed}s — skipping")
+            r = {"url": url, "title": job.get("title", ""), "company": job.get("company", ""),
+                 "status": "timeout", "reason": f"Exceeded {PER_JOB_TIMEOUT}s"}
+        except Exception as e:
+            print(f"    💥 Unexpected error: {str(e)[:80]}")
+            r = {"url": url, "title": job.get("title", ""), "company": job.get("company", ""),
+                 "status": "error", "reason": str(e)[:200]}
+
+        # If the job took too long (>3 min), note for next time
+        _job_elapsed = time.monotonic() - _job_start
+        if _job_elapsed > PER_JOB_TIMEOUT:
+            print(f"    ⚠️ Job took {int(_job_elapsed)}s (limit {PER_JOB_TIMEOUT}s)")
+
         results.append(r)
         if r["status"] in ("submitted", "dry_run"):
             applied += 1
