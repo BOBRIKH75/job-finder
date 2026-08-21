@@ -188,6 +188,16 @@
       "commit": "next",
       "permanent": true,
       "note": "Rule: NEVER count as applied without page text confirmation (application submitted / thank you / successfully applied)."
+    },
+    {
+      "date": "2026-08-21",
+      "workflow": "Indeed Easy Apply",
+      "error": "Cookies expire after 7 days, self-hosted runner unreliable (disconnects)",
+      "root_cause": "Indeed cookies are NOT refreshed unless used in a browser session. Self-hosted Mac sleeps/disconnects.",
+      "fix": "storage_state approach: load cookies \u2192 apply \u2192 save REFRESHED cookies back to GitHub Secret. Moved to ubuntu-latest (cloud). Cookies auto-renew on each run.",
+      "commit": "next",
+      "permanent": true,
+      "note": "Rule: Indeed cookies auto-refresh if USED daily. Save back to secret after every run. No laptop dependency."
     }
   ],
   "patterns": {
@@ -204,7 +214,9 @@
     "cookie_types": "Chrome SQLite stores booleans as int (0/1). ALWAYS convert to Python bool before Playwright/Selenium add_cookies().",
     "dice_runner": "Dice MUST run on ubuntu-latest. Self-hosted Mac headless Chrome gets silently rejected by Dice anti-bot.",
     "dice_dedup": "Dice does NOT prevent re-application at UI level \u2014 silently ignores. Script MUST check for Already Applied badge.",
-    "verify_apply": "ALL platforms: clicking Submit is NOT proof of success. MUST check page text for confirmation keywords before counting as applied."
+    "verify_apply": "ALL platforms: clicking Submit is NOT proof of success. MUST check page text for confirmation keywords before counting as applied.",
+    "cookie_refresh": "Indeed session cookies renew when used. Save context.storage_state() after each run and update GitHub Secret. Cookies stay valid indefinitely if bot runs daily.",
+    "cloud_over_selfhosted": "Prefer ubuntu-latest over self-hosted for ALL workflows. Self-hosted is unreliable (sleep, WiFi, process death). Only use self-hosted if Chrome profile access is REQUIRED."
   },
   "rules_for_new_workflows": [
     "Use venv (python3 -m venv) \u2014 never bare pip install",
