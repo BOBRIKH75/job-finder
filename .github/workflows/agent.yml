@@ -31,6 +31,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-python@v5
+        if: runner.environment == 'github-hosted'
         with:
           python-version: '3.12'
           cache: 'pip'
@@ -38,9 +39,9 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install --upgrade pip setuptools wheel
-          pip install -r requirements.txt
-          playwright install chromium --with-deps
+          python3 -m pip install --upgrade pip setuptools wheel
+          python3 -m pip install -r requirements.txt
+          python3 -m playwright install chromium --with-deps || true
 
       - name: Start OhMyCaptcha solver (background)
         run: |
@@ -64,7 +65,7 @@ jobs:
           restore-keys: rate-limits
 
       - name: Initialize database
-        run: python -c "from src.memory import get_db, init_db; db = get_db(); init_db(db)"
+        run: python3 -c "from src.memory import get_db, init_db; db = get_db(); init_db(db)"
 
       - name: Get found_jobs.json
         working-directory: .
@@ -74,7 +75,7 @@ jobs:
             echo "Copied from repo root"
           else
             echo "Searching ALL job boards..."
-            pip install python-jobspy 2>/dev/null
+            python3 -m pip install python-jobspy 2>/dev/null
             python3 << 'PYSCRIPT'
           import json
           from jobspy import scrape_jobs
@@ -113,16 +114,16 @@ jobs:
           echo "Jobs: $(python3 -c 'import json;print(json.load(open("agent/found_jobs.json")).get("count",0))')"
 
       - name: Run tests
-        run: python -m pytest tests/ -q --ignore=tests/test_applier.py --ignore=tests/test_bridge.py --ignore=tests/test_stealth_toolkit.py --ignore=tests/test_captcha_live.py
+        run: python3 -m pytest tests/ -q --ignore=tests/test_applier.py --ignore=tests/test_bridge.py --ignore=tests/test_stealth_toolkit.py --ignore=tests/test_captcha_live.py
 
       - name: Run scorer tests
         working-directory: .
-        run: python -m pytest test_career_ops_scorer.py -q
+        run: python3 -m pytest test_career_ops_scorer.py -q
 
       - name: Run agent (full pipeline)
         continue-on-error: true
         timeout-minutes: 40
-        run: python agent.py --cloud
+        run: python3 agent.py --cloud
         env:
           RESEND_KEY: ${{ secrets.RESEND_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
