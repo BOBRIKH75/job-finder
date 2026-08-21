@@ -189,23 +189,7 @@ def main():
             page_text = page.locator('body').inner_text(timeout=3000).lower()
             if 'sign in' in page_text or 'log in' in page_text:
                 print("❌ Indeed cookies expired — skipping. Run refresh-cookies workflow.")
-                # Save refreshed storage state (cookies auto-renewed by Indeed during session)
-        try:
-            refreshed_state = context.storage_state()
-            jjson.dump(refreshed_state, open(state_file, 'w'))
-            # Update GitHub secret with refreshed cookies for next run
-            refreshed_cookies = refreshed_state.get('cookies', [])
-            if refreshed_cookies:
-                encoded = base64.b64encode(jjson.dumps(refreshed_cookies).encode()).decode()
-                subprocess.run(
-                    ['gh', 'secret', 'set', 'INDEED_COOKIES', '--body', encoded, '--repo', 'BOBRIKH75/job-finder'],
-                    capture_output=True, timeout=30
-                )
-                print(f"🔄 Refreshed {len(refreshed_cookies)} cookies → GitHub secret (auto-renewed)")
-        except Exception as e:
-            print(f"⚠️ Cookie refresh failed (non-fatal): {str(e)[:60]}")
-
-        browser.close()
+                browser.close()
                 return
             print("✅ Indeed cookies valid")
         except Exception:
