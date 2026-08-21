@@ -148,6 +148,26 @@
       "commit": "N/A",
       "permanent": true,
       "note": "Rule: After pushing fixes, runner laptop MUST do: git pull && svc.sh stop && svc.sh start"
+    },
+    {
+      "date": "2026-08-21",
+      "workflow": "Indeed Easy Apply",
+      "error": "cookies[0].secure: expected boolean, got number",
+      "root_cause": "Chrome SQLite stores secure as int (0/1). Playwright needs bool (true/false).",
+      "fix": "Added bool() conversion before add_cookies()",
+      "commit": "058af32",
+      "permanent": true,
+      "note": "Rule: ALWAYS convert cookie fields to correct types before Playwright add_cookies()"
+    },
+    {
+      "date": "2026-08-21",
+      "workflow": "Dice Easy Apply",
+      "error": "Dice shows Applied in log but no confirmation emails received",
+      "root_cause": "Self-hosted Mac Chrome 151 headless detected by Dice \u2014 silently rejects applications",
+      "fix": "Moved Dice back to ubuntu-latest (GitHub cloud) where it was confirmed working",
+      "commit": "78999ff",
+      "permanent": true,
+      "note": "Rule: Dice MUST run on ubuntu-latest (cloud). Self-hosted Mac fails silently."
     }
   ],
   "patterns": {
@@ -160,7 +180,9 @@
     "chrome_selenium": "ANY workflow using Selenium/Chrome/undetected-chromedriver MUST include webdriver-manager + ChromeDriverManager().install()",
     "google_oauth": "Google OAuth (Sign in with Google) CANNOT be automated. Requires one-time human click. Use email+password accounts for full automation.",
     "runner_restart": "After git push with workflow/code fixes, runner laptop MUST: git pull && ./svc.sh stop && ./svc.sh start. Old code stays cached until restart.",
-    "indeed_cookies": "Indeed uses Google OAuth. Cannot auto-login. Must run scripts/indeed_auto_login.py ONCE per laptop."
+    "indeed_cookies": "Indeed uses Google OAuth. Cannot auto-login. Must run scripts/indeed_auto_login.py ONCE per laptop.",
+    "cookie_types": "Chrome SQLite stores booleans as int (0/1). ALWAYS convert to Python bool before Playwright/Selenium add_cookies().",
+    "dice_runner": "Dice MUST run on ubuntu-latest. Self-hosted Mac headless Chrome gets silently rejected by Dice anti-bot."
   },
   "rules_for_new_workflows": [
     "Use venv (python3 -m venv) \u2014 never bare pip install",
