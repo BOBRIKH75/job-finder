@@ -456,12 +456,24 @@ def main():
 
     try:
         import undetected_chromedriver as uc
+        import subprocess, re as _re, platform
+        # Detect Chrome version for macOS
+        _version_main = None
+        try:
+            if platform.system() == 'Darwin':
+                _out = subprocess.check_output(['/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', '--version']).decode()
+            else:
+                _out = subprocess.check_output(['google-chrome', '--version']).decode()
+            _version_main = int(_re.search(r'(\d+)\.', _out).group(1))
+            print(f"   Chrome version: {_version_main}")
+        except Exception:
+            pass
         options = uc.ChromeOptions()
         options.add_argument("--headless=new")
         options.add_argument("--no-sandbox")
         options.add_argument("--disable-dev-shm-usage")
         options.add_argument("--disable-blink-features=AutomationControlled")
-        driver = uc.Chrome(options=options)
+        driver = uc.Chrome(options=options, version_main=_version_main)
     except Exception as e:
         print(f"❌ Browser launch failed: {e}")
         return

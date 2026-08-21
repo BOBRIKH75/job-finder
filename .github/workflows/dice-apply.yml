@@ -46,11 +46,17 @@ jobs:
           from selenium.webdriver.common.by import By
 
           # Detect installed Chrome version to avoid mismatch
+          import subprocess, re, platform
           try:
-              out = subprocess.check_output(['google-chrome', '--version']).decode()
+              if platform.system() == 'Darwin':
+                  out = subprocess.check_output(['/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', '--version']).decode()
+              else:
+                  out = subprocess.check_output(['google-chrome', '--version']).decode()
               version_main = int(re.search(r'(\d+)\.', out).group(1))
+              print(f'Chrome version detected: {version_main}')
           except Exception:
               version_main = None
+              print('Could not detect Chrome version')
 
           email = os.environ['DICE_EMAIL']
           password = os.environ['DICE_PASSWORD']
