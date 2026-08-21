@@ -52,7 +52,7 @@ def run_discover(db, profile):
     # Source 2: Direct company career page scanning (Lever + Greenhouse APIs)
     # Pass raw jobs so scanner discovers ATS portals from LinkedIn/Indeed company names
     from src.portal_scanner import scan_all_companies, load_companies, discover_company, save_companies
-    portal_jobs = scan_all_companies(max_companies=110, found_jobs=_raw_jobs)
+    portal_jobs = scan_all_companies(max_companies=30, found_jobs=_raw_jobs)
     if portal_jobs:
         all_jobs.extend(portal_jobs)
         print(f"  Phase 1b: {len(portal_jobs)} jobs from company portal scanner")
