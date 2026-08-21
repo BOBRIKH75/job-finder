@@ -26,6 +26,9 @@ jobs:
 
       - name: Install dependencies
         run: |
+          python3 -m venv $GITHUB_WORKSPACE/.venv || true
+          echo "$GITHUB_WORKSPACE/.venv/bin" >> $GITHUB_PATH
+          source $GITHUB_WORKSPACE/.venv/bin/activate || true
           python3 -m pip install setuptools selenium undetected-chromedriver webdriver-manager python-jobspy pandas
 
       - name: Run LinkedIn Easy Apply (SAFE limits)

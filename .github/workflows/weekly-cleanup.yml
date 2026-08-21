@@ -1,0 +1,104 @@
+name: Weekly Cleanup
+
+on:
+  schedule:
+    - cron: '0 6 * * 0'   # Every Sunday 6:00 AM UTC (midnight MT)
+  workflow_dispatch:        # manual trigger anytime
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      actions: write        # needed to delete old caches
+      contents: write       # needed to commit cleaned-up files
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install deps
+        run: pip install httpx
+
+      # Restore latest DB snapshot to run cleanup on
+      - name: Restore agent memory
+        continue-on-error: true
+        uses: actions/cache/restore@v4
+        with:
+          path: agent/data/agent_memory.db
+          key: agent-memory
+          restore-keys: agent-memory
+
+      - name: Run weekly cleanup
+        working-directory: agent
+        run: python scripts/weekly_cleanup.py
+
+      # Delete ALL old agent-memory-XXXX caches — keep only the most recent
+      - name: Prune old GitHub Actions caches
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          echo "Listing all agent-memory caches..."
+          # Get list of cache IDs sorted by creation date (newest first)
+          CACHE_IDS=$(gh cache list --repo "$REPO" --key "agent-memory-" --json id,createdAt \
+            --jq 'sort_by(.createdAt) | reverse | .[1:] | .[].id' 2>/dev/null || echo "")
+
+          if [ -z "$CACHE_IDS" ]; then
+            echo "No old caches to delete"
+          else
+            COUNT=0
+            for ID in $CACHE_IDS; do
+              gh cache delete "$ID" --repo "$REPO" 2>/dev/null && COUNT=$((COUNT+1)) || true
+            done
+            echo "Deleted $COUNT old agent-memory caches"
+          fi
+
+          # Also prune old rate-limits caches
+          RATE_IDS=$(gh cache list --repo "$REPO" --key "rate-limits-" --json id,createdAt \
+            --jq 'sort_by(.createdAt) | reverse | .[1:] | .[].id' 2>/dev/null || echo "")
+
+          if [ -n "$RATE_IDS" ]; then
+            for ID in $RATE_IDS; do
+              gh cache delete "$ID" --repo "$REPO" 2>/dev/null || true
+            done
+            echo "Deleted old rate-limits caches"
+          fi
+
+      # Save the pruned DB as the new baseline cache
+      - name: Save pruned DB as new baseline
+        continue-on-error: true
+        uses: actions/cache/save@v4
+        with:
+          path: agent/data/agent_memory.db
+          key: agent-memory-cleanup-${{ github.run_number }}
+
+      # Commit any changes (contacted_archive.json, companies.json, contacted.json)
+      - name: Commit cleanup results
+        run: |
+          git config user.name  "cleanup-bot[bot]"
+          git config user.email "cleanup-bot@users.noreply.github.com"
+          git add contacted.json contacted_archive.json agent/data/companies.json agent/data/learned.json 2>/dev/null || true
+          if git diff --cached --quiet; then
+            echo "Nothing changed — no commit needed"
+          else
+            git commit -m "chore: weekly cleanup [$(date '+%Y-%m-%d')]"
+            git push
+            echo "✅ Cleanup committed and pushed"
+          fi
+
+      - name: Print cache usage summary
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          TOTAL=$(gh cache list --repo "$REPO" --json sizeInBytes \
+            --jq '[.[].sizeInBytes] | add // 0' 2>/dev/null || echo "0")
+          COUNT=$(gh cache list --repo "$REPO" --json id --jq 'length' 2>/dev/null || echo "?")
+          MB=$((TOTAL / 1024 / 1024))
+          echo "GitHub Actions cache after cleanup: ${COUNT} entries, ~${MB} MB used"

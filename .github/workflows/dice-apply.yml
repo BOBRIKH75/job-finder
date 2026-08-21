@@ -24,7 +24,11 @@ jobs:
           python-version: '3.12'
 
       - name: Install dependencies
-        run: python3 -m pip install setuptools dice-apply selenium undetected-chromedriver
+        run: |
+          python3 -m venv $GITHUB_WORKSPACE/.venv || true
+          echo "$GITHUB_WORKSPACE/.venv/bin" >> $GITHUB_PATH
+          source $GITHUB_WORKSPACE/.venv/bin/activate || true
+          python3 -m pip install setuptools dice-apply selenium undetected-chromedriver
 
       - name: Run Dice Easy Apply
         env:

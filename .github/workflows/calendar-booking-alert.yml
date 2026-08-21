@@ -1,0 +1,31 @@
+name: Calendar Booking Alert
+
+# Runs every 10 minutes during business hours (8am-6pm MT = 14:00-00:00 UTC)
+# Backup to the Google Apps Script — catches anything the script misses
+on:
+  schedule:
+    - cron: '*/10 14-23 * * 1-5'  # every 10 min, Mon-Fri, 8am-5pm MT
+  workflow_dispatch:               # manual trigger for testing
+
+jobs:
+  check-bookings:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Check Gmail for new bookings and alert
+        env:
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          RESEND_KEY: ${{ secrets.RESEND_KEY }}
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+          ALERT_EMAIL: 'bobrikh75@gmail.com'
+        run: python agent/scripts/calendar_booking_alert.py
