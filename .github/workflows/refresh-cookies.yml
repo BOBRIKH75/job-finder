@@ -11,20 +11,66 @@ defaults:
 
 jobs:
   refresh:
-    runs-on: ubuntu-latest
+    # MUST run on self-hosted — needs local Chrome with your logged-in session
+    runs-on: [self-hosted, macOS, linkedin]
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-
       - name: Install deps
-        run: pip install cloakbrowser playwright && playwright install chromium --with-deps
+        run: |
+          python3 -m venv $GITHUB_WORKSPACE/.venv || true
+          echo "$GITHUB_WORKSPACE/.venv/bin" >> $GITHUB_PATH
+          source $GITHUB_WORKSPACE/.venv/bin/activate || true
+          python3 -m pip install browser-cookie3 2>/dev/null || true
 
-      - name: Refresh cookies
+      - name: Extract Indeed cookies from local Chrome
         env:
-          INDEED_COOKIES: ${{ secrets.INDEED_COOKIES }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: python cookie_agent.py --refresh
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python3 << 'EOF'
+          import json, os, base64, subprocess
+
+          # Try to get Indeed cookies from local Chrome browser
+          cookies = []
+          try:
+              import browser_cookie3
+              cj = browser_cookie3.chrome(domain_name='.indeed.com')
+              for c in cj:
+                  cookies.append({
+                      "name": c.name,
+                      "value": c.value,
+                      "domain": c.domain,
+                      "path": c.path,
+                      "secure": c.secure,
+                  })
+              print(f"✅ Extracted {len(cookies)} Indeed cookies from Chrome")
+          except Exception as e:
+              print(f"⚠️ browser-cookie3 failed: {e}")
+              # Fallback: read from saved file
+              cookie_file = "data/indeed_cookies.json"
+              if os.path.exists(cookie_file):
+                  cookies = json.loads(open(cookie_file).read())
+                  print(f"✅ Loaded {len(cookies)} cookies from saved file")
+
+          if not cookies:
+              print("❌ No Indeed cookies found — log into Indeed in Chrome first")
+              exit(0)
+
+          # Save locally
+          os.makedirs("data", exist_ok=True)
+          with open("data/indeed_cookies.json", "w") as f:
+              json.dump(cookies, f)
+
+          # Update GitHub secret
+          encoded = base64.b64encode(json.dumps(cookies).encode()).decode()
+          result = subprocess.run(
+              ["gh", "secret", "set", "INDEED_COOKIES", "--body", encoded,
+               "--repo", "BOBRIKH75/job-finder"],
+              capture_output=True, text=True
+          )
+          if result.returncode == 0:
+              print(f"✅ INDEED_COOKIES secret updated ({len(cookies)} cookies)")
+          else:
+              print(f"⚠️ Failed to update secret: {result.stderr[:100]}")
+          EOF
