@@ -373,8 +373,7 @@ def run_apply(db, jobs, dry_run=False):
         try:
             import sys
             sys.path.insert(0, str(Path(__file__).parent.parent))
-            from recruiter_search import find_recruiter_email
-            from outreach import send_cv_email
+            from outreach import search_recruiter_email, build_outreach_email, send_outreach
             
             emailed_count = 0
             max_outreach = 15  # Max emails per run (don't spam)
@@ -388,11 +387,12 @@ def run_apply(db, jobs, dry_run=False):
                     continue
                 
                 # Find recruiter email for this company
-                emails = find_recruiter_email(company)
+                emails = search_recruiter_email(company)
                 if emails:
-                    # Send CV — the outreach.py handles the actual sending
+                    # Build and send outreach email with CV
                     try:
-                        send_cv_email(emails[0], company, title)
+                        subject, html = build_outreach_email("Recruiting Team", title, company)
+                        send_outreach(emails[0], subject, html)
                         update_application_status(db, url, "applied_via_email")
                         audit(db, "EMAIL_OUTREACH", {"url": url, "company": company, "to": emails[0]})
                         emailed_count += 1
