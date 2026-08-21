@@ -13,6 +13,15 @@ Handles:
 import re, time, random
 from pathlib import Path
 
+# Gemini Flash free CAPTCHA solver (fallback when CapSolver has no balance)
+try:
+    from src.gemini_captcha_solver import solve_captcha_with_gemini
+except ImportError:
+    try:
+        from gemini_captcha_solver import solve_captcha_with_gemini
+    except ImportError:
+        solve_captcha_with_gemini = None
+
 LEARNED_ISSUES_FILE = Path(__file__).parent.parent / "data" / "learned_issues.json"
 
 
@@ -507,7 +516,12 @@ def solve_captcha(page, url: str) -> bool:
     if ctype == "recaptchav3":
         return solve_recaptcha_v3_http(page, captcha_info)
     if ctype == "hcaptcha":
-        print(f"      ⚠️  hCaptcha — OhMyCaptcha failed, no other free solver")
+        # Try Gemini visual solver as free fallback
+        if solve_captcha_with_gemini:
+            print(f"      🤖 hCaptcha: trying Gemini Flash visual solver (free fallback)...")
+            if solve_captcha_with_gemini(page, "hcaptcha"):
+                return True
+        print(f"      ⚠️  hCaptcha — OhMyCaptcha + Gemini failed, no other free solver")
         return False
     return False
 
@@ -1161,12 +1175,19 @@ def solve_recaptcha_enterprise(page, url: str, override_sitekey: str = "") -> bo
         pass
     
     # Both methods failed — return False so caller knows to skip/route to email
+    # === METHOD 3: Gemini Flash visual CAPTCHA solver (FREE — 1000 solves/day) ===
+    if solve_captcha_with_gemini:
+        print(f"      🤖 Trying Gemini Flash visual solver (free fallback)...")
+        if solve_captcha_with_gemini(page, "recaptcha"):
+            return True
+        print(f"      ⚠️ Gemini visual solver also failed")
+
     if not capsolver_key:
         print(f"      ❌ reCAPTCHA Enterprise: CAPSOLVER_KEY not set (add secret to repo)")
     elif not sitekey:
         print(f"      ❌ reCAPTCHA Enterprise: could not extract sitekey from page")
     else:
-        print(f"      ❌ reCAPTCHA Enterprise: CapSolver + local execute both failed")
+        print(f"      ❌ reCAPTCHA Enterprise: CapSolver + local execute + Gemini all failed")
     return False
 
 

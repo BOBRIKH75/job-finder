@@ -31,6 +31,15 @@ from typing import Optional
 
 import requests
 
+# Gemini Flash free CAPTCHA solver (fallback when CapSolver has no balance)
+try:
+    from src.gemini_captcha_solver import solve_captcha_with_gemini
+except ImportError:
+    try:
+        from gemini_captcha_solver import solve_captcha_with_gemini
+    except ImportError:
+        solve_captcha_with_gemini = None
+
 logger = logging.getLogger(__name__)
 
 # Service API keys (set as GitHub secrets)
@@ -73,6 +82,12 @@ def solve_hcaptcha(page) -> bool:
     
     if not token:
         logger.info("      ❌ hCaptcha: solving service failed to return token")
+        # Fallback: try Gemini Flash visual solver (FREE)
+        if solve_captcha_with_gemini:
+            logger.info("      🤖 hCaptcha: trying Gemini Flash visual solver (free fallback)...")
+            if solve_captcha_with_gemini(page, "hcaptcha"):
+                return True
+            logger.info("      ⚠️ Gemini visual solver also failed")
         return False
     
     logger.info(f"      🔑 hCaptcha: got token ({len(token)} chars)")
