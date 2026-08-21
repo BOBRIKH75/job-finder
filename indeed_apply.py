@@ -172,6 +172,9 @@ def main():
                 'Chrome/126.0.0.0 Safari/537.36'
             )
         )
+        # Fix cookie format: Playwright needs boolean for 'secure', not int
+        for c in cookies:
+            c['secure'] = bool(c.get('secure', False))
         context.add_cookies(cookies)
         page = context.new_page()
 
