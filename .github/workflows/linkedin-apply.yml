@@ -30,6 +30,8 @@ jobs:
           echo "$GITHUB_WORKSPACE/.venv/bin" >> $GITHUB_PATH
           source $GITHUB_WORKSPACE/.venv/bin/activate || true
           python3 -m pip install setuptools selenium undetected-chromedriver webdriver-manager python-jobspy pandas
+          # Ensure chromedriver matches installed Chrome version
+          python3 -c "from webdriver_manager.chrome import ChromeDriverManager; ChromeDriverManager().install()" || true
 
       - name: Run LinkedIn Easy Apply (SAFE limits)
         env:
