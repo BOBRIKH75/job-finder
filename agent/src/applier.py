@@ -1302,6 +1302,29 @@ def apply_to_job(page, profile, job, learned, dry_run=False, db=None, site_needs
             submit_result = submit_and_verify(page, page_data, url)
             snap(page, f"submit_{attempt}")
 
+            # EMAIL VERIFICATION: If submit didn't show immediate success,
+            # check if the page is asking for an email verification code (Greenhouse pattern).
+            # If so, read the code from Gmail and enter it automatically.
+            if not submit_result["submitted"]:
+                try:
+                    from src.email_code_reader import handle_email_verification
+                    if handle_email_verification(page):
+                        print("      ✅ Email verification completed — rechecking submit status")
+                        snap(page, f"email_verified_{attempt}")
+                        # Re-check for success signals after verification
+                        try:
+                            post_verify_text = page.locator("body").inner_text(timeout=5000).lower()
+                        except Exception:
+                            post_verify_text = ""
+                        post_verify_url = page.url.lower()
+                        success_signals_ev = ["thank", "success", "received", "submitted", "confirmation", "applied", "complete"]
+                        if any(s in post_verify_url for s in success_signals_ev) or any(s in post_verify_text for s in success_signals_ev):
+                            submit_result = {"submitted": True, "method": "email_verification"}
+                        elif post_verify_url != url.lower().rstrip("/"):
+                            submit_result = {"submitted": True, "method": "email_verification_redirect"}
+                except Exception as ev_err:
+                    print(f"      ⚠️ Email verification check failed: {str(ev_err)[:60]}")
+
             if submit_result["submitted"]:
                 result["status"] = "submitted"
                 result["fields_filled"] = attempt_result["filled"]

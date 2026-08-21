@@ -282,8 +282,6 @@ def run_apply(db, jobs, dry_run=False):
         "icims.com", "ultipro.com", "paycomonline.net",
         "smartrecruiters.com",  # Sometimes has invisible reCAPTCHA
         "jobs.lever.co",  # hCaptcha on ALL applications (2026)
-        "job-boards.greenhouse.io",  # reCAPTCHA Enterprise on ALL (2026)
-        "boards.greenhouse.io",  # same
     }
     before_count = len(automatable)
     automatable = [j for j in automatable if not any(
