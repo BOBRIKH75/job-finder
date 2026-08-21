@@ -168,6 +168,16 @@
       "commit": "78999ff",
       "permanent": true,
       "note": "Rule: Dice MUST run on ubuntu-latest (cloud). Self-hosted Mac fails silently."
+    },
+    {
+      "date": "2026-08-21",
+      "workflow": "Dice Easy Apply",
+      "error": "27 Applied in log but 0 confirmation emails \u2014 re-applying to same jobs",
+      "root_cause": "No dedup check. postedDate=THREE returns same jobs. cards[:10] limits variety. Dice silently ignores re-applications.",
+      "fix": "postedDate=ONE (today only), cards[:25], check for Already Applied badge before clicking",
+      "commit": "next",
+      "permanent": true,
+      "note": "Rule: Dice MUST check for Already Applied text before clicking Apply. Use postedDate=ONE for fresh jobs only."
     }
   ],
   "patterns": {
@@ -182,7 +192,8 @@
     "runner_restart": "After git push with workflow/code fixes, runner laptop MUST: git pull && ./svc.sh stop && ./svc.sh start. Old code stays cached until restart.",
     "indeed_cookies": "Indeed uses Google OAuth. Cannot auto-login. Must run scripts/indeed_auto_login.py ONCE per laptop.",
     "cookie_types": "Chrome SQLite stores booleans as int (0/1). ALWAYS convert to Python bool before Playwright/Selenium add_cookies().",
-    "dice_runner": "Dice MUST run on ubuntu-latest. Self-hosted Mac headless Chrome gets silently rejected by Dice anti-bot."
+    "dice_runner": "Dice MUST run on ubuntu-latest. Self-hosted Mac headless Chrome gets silently rejected by Dice anti-bot.",
+    "dice_dedup": "Dice does NOT prevent re-application at UI level \u2014 silently ignores. Script MUST check for Already Applied badge."
   },
   "rules_for_new_workflows": [
     "Use venv (python3 -m venv) \u2014 never bare pip install",

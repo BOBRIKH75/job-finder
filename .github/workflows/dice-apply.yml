@@ -121,7 +121,7 @@ jobs:
               searches = ['Java Developer contract remote', 'Java Spring Boot C2C', 'Senior Java Backend remote']
               for i, query in enumerate(searches):
                   if applied >= MAX_APPS: break
-                  driver.get(f'https://www.dice.com/jobs?q={query.replace(\" \", \"+\")}&filters.easyApply=true&filters.postedDate=THREE')
+                  driver.get(f'https://www.dice.com/jobs?q={query.replace(\" \", \"+\")}&filters.easyApply=true&filters.postedDate=ONE')
                   time.sleep(6)
 
                   # Try multiple selectors for job cards
@@ -132,7 +132,7 @@ jobs:
                       cards = driver.find_elements(By.CSS_SELECTOR, 'a[href*=\"/job-detail/\"]')
                   print(f'  🔍 \"{query}\" → {len(cards)} Easy Apply jobs')
 
-                  for card in cards[:10]:
+                  for card in cards[:25]:
                       if applied >= MAX_APPS: break
                       try:
                           card.click()
@@ -144,6 +144,13 @@ jobs:
                               all_btns = driver.find_elements(By.TAG_NAME, 'button')
                               btns = [b for b in all_btns if 'apply' in b.text.lower()]
                           if not btns:
+                              driver.back()
+                              time.sleep(2)
+                              continue
+                          # Check if already applied (Dice shows badge)
+                          page_text = driver.page_source.lower()
+                          if 'already applied' in page_text or 'applied on' in page_text:
+                              print(f'    ⏭️ Already applied — skipping')
                               driver.back()
                               time.sleep(2)
                               continue
