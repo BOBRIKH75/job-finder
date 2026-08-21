@@ -39,10 +39,10 @@ def export_jobs_for_agent(scored_df, output_path: str = JOBS_FILE):
 def import_jobs_from_finder(input_path: str = JOBS_FILE) -> list[dict]:
     """Called by ai-job-agent — reads jobs exported by find_jobs.py.
     
-    Filters out URLs that cannot be auto-applied:
-    - LinkedIn job views (require login + bot detection)
-    - Indeed company pages (not job applications)
-    - Generic aggregator redirects
+    Smart URL routing:
+    - Indeed job apply links → KEEP (agent has Indeed cookies)
+    - LinkedIn job views → KEEP but mark for resolution (company ATS lookup)
+    - Company profile/search pages → SKIP (not job applications)
     """
     if not os.path.exists(input_path):
         return []
@@ -51,32 +51,38 @@ def import_jobs_from_finder(input_path: str = JOBS_FILE) -> list[dict]:
     
     jobs = data.get("jobs", [])
     
-    # Filter out unapplicable URLs
-    BLOCKED_PATTERNS = [
-        "linkedin.com/jobs/",       # Requires login, heavy bot detection
-        "linkedin.com/comm/jobs/",  # Same but via comms redirect
-        "indeed.com/cmp/",          # Company profile, not a job application
-        "indeed.com/viewjob",       # Indeed job view (requires login to apply)
-        "indeed.com/jobs?",         # Indeed search results page
-        "glassdoor.com/job-listing",  # Requires login
-        "glassdoor.com/Job/",       # Same
-        "ziprecruiter.com/jobs/",   # Login wall for apply
+    # Only filter truly broken URLs (company pages, search results — NOT job listings)
+    SKIP_PATTERNS = [
+        "indeed.com/cmp/",          # Company profile page (not a job)
+        "indeed.com/companies/",    # Company directory
+        "glassdoor.com/Overview/",  # Company overview (not a job)
+        "glassdoor.com/Reviews/",   # Reviews page
     ]
     
     filtered = []
     skipped_count = 0
     for job in jobs:
         url = job.get("url", "")
-        if any(pattern in url for pattern in BLOCKED_PATTERNS):
-            skipped_count += 1
-            continue
         if not url or url == "nan":
             skipped_count += 1
             continue
+        if any(pattern in url for pattern in SKIP_PATTERNS):
+            skipped_count += 1
+            continue
+        
+        # Tag LinkedIn jobs for potential ATS resolution
+        if "linkedin.com/jobs/" in url:
+            job["_needs_ats_resolve"] = True
+            job["_source_platform"] = "linkedin"
+        
+        # Tag Indeed jobs — agent has cookies, can apply directly
+        if "indeed.com" in url:
+            job["_source_platform"] = "indeed"
+        
         filtered.append(job)
     
     if skipped_count:
-        print(f"  🔗 Bridge: {len(filtered)} usable jobs ({skipped_count} filtered out — LinkedIn/Indeed/aggregator)")
+        print(f"  🔗 Bridge: {len(filtered)} jobs loaded ({skipped_count} company pages skipped)")
     
     return filtered
 
