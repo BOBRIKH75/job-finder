@@ -13,6 +13,10 @@ import os
 import sys
 import time
 
+# Force unbuffered output so CI shows progress in real-time
+os.environ['PYTHONUNBUFFERED'] = '1'
+sys.stdout.reconfigure(line_buffering=True) if hasattr(sys.stdout, 'reconfigure') else None
+
 sys.path.insert(0, 'agent')
 
 from src.portal_scanner import scan_greenhouse, load_companies
@@ -48,7 +52,7 @@ def main():
 
     # Scan top 30 Greenhouse companies for open Java jobs
     all_jobs = []
-    greenhouse_companies = companies.get('greenhouse', [])[:30]
+    greenhouse_companies = companies.get('greenhouse', [])[:15]
     print(f"🔍 Scanning {len(greenhouse_companies)} Greenhouse companies...")
 
     for company in greenhouse_companies:
