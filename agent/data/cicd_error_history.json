@@ -198,6 +198,26 @@
       "commit": "next",
       "permanent": true,
       "note": "Rule: Indeed cookies auto-refresh if USED daily. Save back to secret after every run. No laptop dependency."
+    },
+    {
+      "date": "2026-08-21",
+      "workflow": "Indeed Easy Apply",
+      "error": "Cookies expired immediately on cloud runner",
+      "root_cause": "Indeed invalidates cookies when used from a DIFFERENT IP than where they were created. Laptop IP \u2260 GitHub cloud IP = instant invalidation.",
+      "fix": "Indeed MUST run on self-hosted (same IP as cookie source) OR use email/password login in Playwright.",
+      "commit": "e8a1f12",
+      "permanent": true,
+      "note": "Rule: Indeed cookies are IP-bound. Cannot transfer from laptop to cloud. Must either: (1) run on self-hosted, or (2) implement email+password login in Playwright with stealth."
+    },
+    {
+      "date": "2026-08-21",
+      "workflow": "Dice Easy Apply",
+      "error": "Only 2 VERIFIED out of 25 clicks \u2014 Dice silently rejects most Easy Apply clicks",
+      "root_cause": "Dice anti-bot detects automated clicks. Clicks the Apply button but Dice does not show confirmation page text. Only 2 actually went through.",
+      "fix": "Verification logic now correctly identifies this. 23 jobs exported to dice_manual_jobs.json for user.",
+      "commit": "74c5a8b",
+      "permanent": true,
+      "note": "Rule: Dice Easy Apply has ~8% success rate from automation (2/25). Most jobs need manual apply. Export all unverified to manual list."
     }
   ],
   "patterns": {
@@ -216,7 +236,9 @@
     "dice_dedup": "Dice does NOT prevent re-application at UI level \u2014 silently ignores. Script MUST check for Already Applied badge.",
     "verify_apply": "ALL platforms: clicking Submit is NOT proof of success. MUST check page text for confirmation keywords before counting as applied.",
     "cookie_refresh": "Indeed session cookies renew when used. Save context.storage_state() after each run and update GitHub Secret. Cookies stay valid indefinitely if bot runs daily.",
-    "cloud_over_selfhosted": "Prefer ubuntu-latest over self-hosted for ALL workflows. Self-hosted is unreliable (sleep, WiFi, process death). Only use self-hosted if Chrome profile access is REQUIRED."
+    "cloud_over_selfhosted": "Prefer ubuntu-latest over self-hosted for ALL workflows. Self-hosted is unreliable (sleep, WiFi, process death). Only use self-hosted if Chrome profile access is REQUIRED.",
+    "indeed_ip_bound": "Indeed cookies are IP-BOUND. Extracting from laptop then using on cloud = instant expiration. Indeed MUST run on same network as cookie source OR use direct login.",
+    "dice_real_success_rate": "Dice automated Easy Apply has ~8% real success rate. Anti-bot silently rejects most clicks. Always verify page text. Export unverified for manual apply."
   },
   "rules_for_new_workflows": [
     "Use venv (python3 -m venv) \u2014 never bare pip install",
