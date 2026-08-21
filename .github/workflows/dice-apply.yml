@@ -11,8 +11,9 @@ concurrency:
 
 jobs:
   dice-apply:
-    # Self-hosted = your laptop IP (trusted by Dice). Falls back to ubuntu-latest.
-    runs-on: ${{ vars.PREFER_SELF_HOSTED == 'true' && 'self-hosted' || 'ubuntu-latest' }}
+    # Dice works BETTER on GitHub cloud (ubuntu) — confirmed getting email confirmations.
+    # Self-hosted Mac: Dice detects headless Chrome 151 and silently rejects.
+    runs-on: ubuntu-latest
     timeout-minutes: 20
 
     steps:
