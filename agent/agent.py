@@ -274,20 +274,24 @@ def run_apply(db, jobs, dry_run=False):
         ),
     )
 
-    # In CI mode: skip sites known to have unsolvable CAPTCHA (saves time for real apps)
+    # Skip sites that ALWAYS have CAPTCHA — no point wasting 2-3 min per attempt
+    # These ALL require paid CAPTCHA solving (CapSolver $6) to work.
+    # Without paid solver: 0% success rate. With: 90%+. Skip to save time.
     CAPTCHA_BLOCKED_DOMAINS = {
         "myworkdayjobs.com", "wd1.myworkdaysite.com", "wd5.myworkdaysite.com",
         "icims.com", "ultipro.com", "paycomonline.net",
         "smartrecruiters.com",  # Sometimes has invisible reCAPTCHA
+        "jobs.lever.co",  # hCaptcha on ALL applications (2026)
+        "job-boards.greenhouse.io",  # reCAPTCHA Enterprise on ALL (2026)
+        "boards.greenhouse.io",  # same
     }
-    if os.environ.get("CI") or os.environ.get("GITHUB_ACTIONS"):
-        before_count = len(automatable)
-        automatable = [j for j in automatable if not any(
-            d in j.get("url", "") for d in CAPTCHA_BLOCKED_DOMAINS
-        )]
-        skipped = before_count - len(automatable)
-        if skipped:
-            print(f"  ⏭️ CI mode: skipped {skipped} CAPTCHA-blocked jobs (Workday/iCIMS/etc)")
+    before_count = len(automatable)
+    automatable = [j for j in automatable if not any(
+        d in j.get("url", "") for d in CAPTCHA_BLOCKED_DOMAINS
+    )]
+    skipped = before_count - len(automatable)
+    if skipped:
+        print(f"  ⏭️ Skipped {skipped} CAPTCHA-blocked jobs (Lever/Greenhouse/Workday — need paid solver)")
 
     # Remove known blocked domains
     from urllib.parse import urlparse
