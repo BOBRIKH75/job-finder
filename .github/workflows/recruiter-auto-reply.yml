@@ -1,0 +1,49 @@
+name: Recruiter Auto-Reply (Every 2 Hours)
+
+on:
+  schedule:
+    - cron: '30 14 * * *'   # 8:30 AM MT
+    - cron: '30 16 * * *'   # 10:30 AM MT
+    - cron: '30 18 * * *'   # 12:30 PM MT
+    - cron: '30 20 * * *'   # 2:30 PM MT
+    - cron: '30 22 * * *'   # 4:30 PM MT
+  workflow_dispatch: {}
+
+concurrency:
+  group: recruiter-reply
+  cancel-in-progress: false
+
+jobs:
+  auto-reply:
+    runs-on: ${{ vars.PREFER_SELF_HOSTED == 'true' && 'self-hosted' || 'ubuntu-latest' }}
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        if: runner.environment == 'github-hosted'
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          python3 -m venv $GITHUB_WORKSPACE/.venv || true
+          echo "$GITHUB_WORKSPACE/.venv/bin" >> $GITHUB_PATH
+          source $GITHUB_WORKSPACE/.venv/bin/activate || true
+          python3 -m pip install requests
+
+      - name: Run recruiter auto-reply
+        env:
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: python3 agent/scripts/recruiter_auto_reply.py
+
+      - name: Save tracker
+        if: always()
+        run: |
+          git config user.email "bot@github.actions"
+          git config user.name "Reply Bot"
+          git add agent/data/auto_reply_tracker.json || true
+          git diff --staged --quiet || git commit -m "chore: auto-reply tracker update [skip ci]"
+          git push || true
