@@ -1,0 +1,226 @@
+#!/usr/bin/env python3
+"""Dedicated Indeed applicator — Easy Apply with cookies.
+
+Strategy:
+1. Load Indeed cookies from INDEED_COOKIES env (base64 JSON) or local file
+2. Search Indeed for Java C2C contract jobs using python-jobspy
+3. For each Easy Apply job: click Apply → fill → submit
+4. If cookie expired → log error, skip (refresh-cookies.yml handles refresh)
+5. Save failed jobs to data/failed_jobs.json for solve-unsolved retry
+"""
+import base64
+import json
+import os
+import random
+import sys
+import time
+
+sys.path.insert(0, 'agent')
+
+from src.memory import get_db, init_db, application_exists, upsert_application
+from src.form_filler import load_profile
+
+
+def load_indeed_cookies() -> list:
+    """Load Indeed cookies from env (CI) or local file."""
+    env_cookies = os.environ.get('INDEED_COOKIES', '')
+    if env_cookies:
+        try:
+            return json.loads(base64.b64decode(env_cookies))
+        except Exception as e:
+            print(f"⚠️ Failed to decode INDEED_COOKIES env: {e}")
+            return []
+    cookie_file = 'agent/data/indeed_cookies.json'
+    if os.path.exists(cookie_file):
+        try:
+            return json.loads(open(cookie_file).read())
+        except Exception:
+            pass
+    return []
+
+
+def load_failed_jobs(failed_file: str) -> list:
+    """Load existing failed jobs from file."""
+    if os.path.exists(failed_file):
+        try:
+            return json.loads(open(failed_file).read()).get('jobs', [])
+        except (json.JSONDecodeError, KeyError):
+            return []
+    return []
+
+
+def save_failed_jobs(failed_file: str, jobs: list) -> None:
+    """Save failed jobs, keeping only last 200."""
+    jobs = jobs[-200:]
+    os.makedirs(os.path.dirname(failed_file), exist_ok=True)
+    with open(failed_file, 'w') as f:
+        json.dump({'jobs': jobs, 'count': len(jobs)}, f, indent=2)
+
+
+def main():
+    db = get_db()
+    init_db(db)
+    profile = load_profile()
+    cookies = load_indeed_cookies()
+
+    if not cookies:
+        print("❌ No Indeed cookies — run refresh-cookies workflow or save_indeed_cookies.py")
+        return
+
+    # Search Indeed for Java contract jobs
+    try:
+        from jobspy import scrape_jobs
+        jobs = scrape_jobs(
+            site_name=['indeed'],
+            search_term='Java developer contract remote',
+            location='USA',
+            results_wanted=50,
+            hours_old=48,
+            job_type='contract',
+        )
+        print(f"🔍 Found {len(jobs)} Indeed contract jobs")
+    except Exception as e:
+        print(f"⚠️ JobSpy search failed: {e}")
+        return
+
+    applied = 0
+    failed = []
+    skipped = 0
+    MAX_APPS = 20
+
+    try:
+        from playwright.sync_api import sync_playwright
+    except ImportError:
+        print("❌ Playwright not installed — run: pip install playwright && playwright install chromium")
+        return
+
+    with sync_playwright() as pw:
+        browser = pw.chromium.launch(headless=True)
+        context = browser.new_context(
+            user_agent=(
+                'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) '
+                'AppleWebKit/537.36 (KHTML, like Gecko) '
+                'Chrome/126.0.0.0 Safari/537.36'
+            )
+        )
+        context.add_cookies(cookies)
+        page = context.new_page()
+
+        # Quick cookie validity check
+        try:
+            page.goto('https://www.indeed.com/account/view', wait_until='domcontentloaded', timeout=10000)
+            time.sleep(2)
+            page_text = page.locator('body').inner_text(timeout=3000).lower()
+            if 'sign in' in page_text or 'log in' in page_text:
+                print("❌ Indeed cookies expired — skipping. Run refresh-cookies workflow.")
+                browser.close()
+                return
+            print("✅ Indeed cookies valid")
+        except Exception:
+            print("⚠️ Cookie check inconclusive — proceeding anyway")
+
+        for _, row in jobs.iterrows():
+            if applied >= MAX_APPS:
+                break
+
+            url = str(row.get('job_url', ''))
+            if not url or url == 'nan':
+                continue
+
+            if application_exists(db, url):
+                skipped += 1
+                continue
+
+            title = str(row.get('title', ''))
+            company = str(row.get('company', ''))
+
+            try:
+                page.goto(url, wait_until='domcontentloaded', timeout=15000)
+                time.sleep(random.uniform(2, 4))
+
+                # Look for Indeed Easy Apply button
+                apply_btn = page.locator(
+                    'button:has-text("Apply now"), '
+                    'button:has-text("Easy Apply"), '
+                    '#indeedApplyButton'
+                )
+                if apply_btn.count() > 0 and apply_btn.first.is_visible(timeout=3000):
+                    apply_btn.first.click()
+                    time.sleep(random.uniform(2, 4))
+
+                    # Look for Continue/Submit in the apply modal
+                    submitted = False
+                    for btn_text in ['Continue', 'Submit your application', 'Apply', 'Submit']:
+                        btn = page.locator(f'button:has-text("{btn_text}")')
+                        if btn.count() > 0 and btn.first.is_visible(timeout=2000):
+                            btn.first.click()
+                            time.sleep(2)
+                            submitted = True
+
+                    # Check success
+                    page_text = page.locator('body').inner_text(timeout=3000).lower()
+                    if any(s in page_text for s in ['application submitted', 'applied', 'thank you']):
+                        applied += 1
+                        upsert_application(
+                            db,
+                            company=company,
+                            job_title=title,
+                            job_url=url,
+                            ats_type='indeed',
+                            match_score=70,
+                            status='applied',
+                        )
+                        print(f"  ✅ {title} @ {company}")
+                    else:
+                        failed.append({
+                            'url': url,
+                            'title': title,
+                            'company': company,
+                            'reason': 'No success signal after submit',
+                            'platform': 'indeed',
+                            'timestamp': time.strftime('%Y-%m-%dT%H:%M:%S'),
+                        })
+                else:
+                    failed.append({
+                        'url': url,
+                        'title': title,
+                        'company': company,
+                        'reason': 'No Easy Apply button found',
+                        'platform': 'indeed',
+                        'timestamp': time.strftime('%Y-%m-%dT%H:%M:%S'),
+                    })
+
+            except Exception as e:
+                error_msg = str(e)[:100]
+                # Detect cookie expiration during apply
+                if 'sign in' in error_msg.lower() or 'login' in error_msg.lower():
+                    print("⚠️ Indeed session expired mid-run — stopping")
+                    break
+                failed.append({
+                    'url': url,
+                    'title': title,
+                    'company': company,
+                    'reason': error_msg,
+                    'platform': 'indeed',
+                    'timestamp': time.strftime('%Y-%m-%dT%H:%M:%S'),
+                })
+
+            # Human-like delay between applications
+            time.sleep(random.uniform(3, 6))
+
+        browser.close()
+
+    # Save failed for solve-unsolved retry
+    failed_file = 'agent/data/failed_jobs.json'
+    existing = load_failed_jobs(failed_file)
+    existing.extend(failed)
+    save_failed_jobs(failed_file, existing)
+
+    print(f"\n📊 Indeed Results:")
+    print(f"  ✅ Applied: {applied}")
+    print(f"  ❌ Failed:  {len(failed)} (saved for retry)")
+    print(f"  ⏭️ Skipped: {skipped} (already applied)")
+
+
+if __name__ == '__main__':
+    main()

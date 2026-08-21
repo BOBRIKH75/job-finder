@@ -1,0 +1,85 @@
+name: Greenhouse Apply
+
+on:
+  schedule:
+    - cron: '0 13 * * *'    # 7:00 AM MT
+    - cron: '0 16 * * *'    # 10:00 AM MT
+    - cron: '0 19 * * *'    # 1:00 PM MT
+    - cron: '0 22 * * *'    # 4:00 PM MT
+    - cron: '0 1 * * *'     # 7:00 PM MT
+    - cron: '0 4 * * *'     # 10:00 PM MT
+    - cron: '0 7 * * *'     # 1:00 AM MT
+    - cron: '0 10 * * *'    # 4:00 AM MT
+  workflow_dispatch: {}
+
+concurrency:
+  group: greenhouse-apply
+  cancel-in-progress: false
+
+defaults:
+  run:
+    working-directory: agent
+
+jobs:
+  greenhouse-apply:
+    runs-on: ${{ vars.PREFER_SELF_HOSTED == 'true' && 'self-hosted' || 'ubuntu-latest' }}
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        if: runner.environment == 'github-hosted'
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+          cache-dependency-path: agent/requirements.txt
+
+      - name: Install dependencies
+        run: |
+          python3 -m venv $GITHUB_WORKSPACE/.venv || true
+          echo "$GITHUB_WORKSPACE/.venv/bin" >> $GITHUB_PATH
+          source $GITHUB_WORKSPACE/.venv/bin/activate || true
+          python3 -m pip install --upgrade pip setuptools wheel
+          python3 -m pip install -r requirements.txt
+          python3 -m playwright install chromium --with-deps || true
+
+      - name: Restore agent memory
+        continue-on-error: true
+        uses: actions/cache/restore@v4
+        with:
+          path: agent/data/agent_memory.db
+          key: agent-memory
+          restore-keys: agent-memory
+
+      - name: Initialize database
+        run: python3 -c "from src.memory import get_db, init_db; db = get_db(); init_db(db)"
+
+      - name: Run Greenhouse applicator
+        timeout-minutes: 25
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+        run: |
+          cd $GITHUB_WORKSPACE
+          python3 greenhouse_apply.py
+
+      - name: Save agent memory
+        if: always()
+        continue-on-error: true
+        uses: actions/cache/save@v4
+        with:
+          path: agent/data/agent_memory.db
+          key: agent-memory-greenhouse-${{ github.run_number }}
+
+      - name: Commit failed jobs for solve-unsolved
+        if: always()
+        continue-on-error: true
+        run: |
+          cd $GITHUB_WORKSPACE
+          git config user.email "bot@bobrikh.dev"
+          git config user.name "Greenhouse Bot"
+          git add agent/data/failed_jobs.json 2>/dev/null || true
+          git diff --staged --quiet || git commit -m "greenhouse: save failed jobs for retry [skip ci]"
+          git push || true
