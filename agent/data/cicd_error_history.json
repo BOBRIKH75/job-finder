@@ -1,0 +1,142 @@
+{
+  "errors": [
+    {
+      "date": "2026-08-21",
+      "workflow": "AI Job Agent",
+      "error": "mkdir: /Users/runner: Permission denied",
+      "root_cause": "actions/setup-python tries to write to /Users/runner on self-hosted Mac",
+      "fix": "Skip setup-python on self-hosted, use venv instead",
+      "commit": "706b9d3",
+      "permanent": true
+    },
+    {
+      "date": "2026-08-21",
+      "workflow": "AI Job Agent",
+      "error": "externally-managed-environment (PEP 668)",
+      "root_cause": "Homebrew Python 3.14 blocks system-wide pip install",
+      "fix": "python3 -m venv + add venv/bin to GITHUB_PATH",
+      "commit": "e725238",
+      "permanent": true
+    },
+    {
+      "date": "2026-08-21",
+      "workflow": "AI Job Agent",
+      "error": "Timed out after 40 minutes (only 3 min for applying)",
+      "root_cause": "Portal scanner max_companies=110 took 26 min. No time left for apply phase",
+      "fix": "Reduced max_companies to 30",
+      "commit": "7628bdd",
+      "permanent": true
+    },
+    {
+      "date": "2026-08-21",
+      "workflow": "AI Job Agent",
+      "error": "CapSolver ERROR_KEY_DENIED_ACCESS retried 40+ times",
+      "root_cause": "CapSolver has $0 balance, but code retried every CAPTCHA",
+      "fix": "Auto-disable after first failure (_capsolver_disabled flag)",
+      "commit": "342d370",
+      "permanent": true
+    },
+    {
+      "date": "2026-08-21",
+      "workflow": "LinkedIn Easy Apply",
+      "error": "session not created: cannot connect to chrome at 127.0.0.1",
+      "root_cause": "Chrome 151 on Mac, chromedriver version mismatch",
+      "fix": "Added webdriver-manager to auto-download matching chromedriver",
+      "commit": "98efacf",
+      "permanent": true
+    },
+    {
+      "date": "2026-08-21",
+      "workflow": "Dice Easy Apply",
+      "error": "session not created: Chrome version 151 mismatch",
+      "root_cause": "Same as LinkedIn — undetected-chromedriver needs matching version",
+      "fix": "Added webdriver-manager to dice-apply.yml",
+      "commit": "95219d8",
+      "permanent": true
+    },
+    {
+      "date": "2026-08-21",
+      "workflow": "Indeed Easy Apply",
+      "error": "No Indeed cookies — extracting from Chrome failed",
+      "root_cause": "INDEED_COOKIES secret doesn't exist. browser-cookie3 and SQLite both fail because user not logged into Indeed on runner laptop",
+      "fix": "Created indeed_auto_login.py for one-time setup. Google OAuth cannot be automated.",
+      "commit": "8052502",
+      "permanent": false,
+      "requires_human": "Log into Indeed once on runner laptop via scripts/indeed_auto_login.py"
+    },
+    {
+      "date": "2026-08-21",
+      "workflow": "Greenhouse Apply",
+      "error": "Timed out after 25 minutes (no output)",
+      "root_cause": "Step timeout too short + no PYTHONUNBUFFERED + too many companies (30)",
+      "fix": "timeout 35 min + unbuffered output + reduced to 15 companies",
+      "commit": "e3a0dff",
+      "permanent": true
+    },
+    {
+      "date": "2026-08-21",
+      "workflow": "Calendar Booking Alert",
+      "error": "No such file or directory: agent/scripts/calendar_booking_alert.py",
+      "root_cause": "Script existed locally but was never committed to git",
+      "fix": "git add + push all missing scripts",
+      "commit": "fdcaa73",
+      "permanent": true
+    },
+    {
+      "date": "2026-08-21",
+      "workflow": "Greenhouse Apply",
+      "error": "Email verification code not entered (no thank-you email received)",
+      "root_cause": "Wait time was 30s (too short), searched UNSEEN only (code sometimes pre-read)",
+      "fix": "Increased to 60s wait, search read+unread, added more page detection signals",
+      "commit": "bc7fb5e",
+      "permanent": true
+    },
+    {
+      "date": "2026-08-17",
+      "workflow": "Daily C2C Job Search",
+      "error": "test_deep_search.py::TestOutreachExtractEmails::test_basic failed",
+      "root_cause": "outreach.extract_emails() returned empty list",
+      "fix": "Fixed in code (already resolved before today)",
+      "commit": "unknown",
+      "permanent": true
+    },
+    {
+      "date": "2026-08-17",
+      "workflow": "Dice Easy Apply",
+      "error": "NoSuchElementException: Unable to locate element [id='email']",
+      "root_cause": "Dice changed their login page UI — email input field ID changed",
+      "fix": "Updated selector",
+      "commit": "unknown",
+      "permanent": true
+    },
+    {
+      "date": "2026-08-13",
+      "workflow": "ALL",
+      "error": "The job was not started because recent account payments have failed",
+      "root_cause": "GitHub Actions billing — payment failed or spending limit reached",
+      "fix": "Payment resolved by user",
+      "commit": "N/A",
+      "permanent": false,
+      "requires_human": "Monitor GitHub billing"
+    }
+  ],
+  "patterns": {
+    "self_hosted_mac": "Never use actions/setup-python on self-hosted Mac. Always use venv.",
+    "chromedriver": "Always install webdriver-manager alongside selenium/undetected-chromedriver.",
+    "timeouts": "Never set step timeout higher than job timeout. Always add unbuffered output.",
+    "cookies": "Google OAuth cannot be automated. Use email+password accounts for full automation.",
+    "captcha_services": "Always auto-disable paid services after first balance error. Never retry 40 times.",
+    "file_paths": "Always verify scripts referenced in workflows are actually committed to git."
+  },
+  "rules_for_new_workflows": [
+    "Use venv (python3 -m venv) — never bare pip install",
+    "Use python3 not python",
+    "Skip setup-python on self-hosted (if: runner.environment == 'github-hosted')",
+    "Add webdriver-manager for any Selenium/Chrome workflow",
+    "Set PYTHONUNBUFFERED=1 for real-time CI output",
+    "Add timeout-minutes to both job level AND long-running steps",
+    "Own concurrency group per workflow",
+    "Exit with code 1 on actual failure (not silent success)",
+    "Save failures to agent/data/failed_jobs.json for retry"
+  ]
+}
