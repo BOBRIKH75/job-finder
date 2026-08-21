@@ -2,19 +2,22 @@ name: AI Job Agent — Daily Run
 
 on:
   schedule:
-    - cron: '0 13 * * *'    # 7:00 AM MT — early morning
-    - cron: '0 15 * * *'    # 9:00 AM MT — morning
-    - cron: '0 17 * * *'    # 11:00 AM MT — midday
-    - cron: '0 19 * * *'    # 1:00 PM MT — afternoon
-    - cron: '0 21 * * *'    # 3:00 PM MT — late afternoon
-    - cron: '0 23 * * *'    # 5:00 PM MT — evening
+    - cron: '0 13 * * *'    # 7:00 AM MT
+    - cron: '30 14 * * *'   # 8:30 AM MT
+    - cron: '0 16 * * *'    # 10:00 AM MT
+    - cron: '30 17 * * *'   # 11:30 AM MT
+    - cron: '0 19 * * *'    # 1:00 PM MT
+    - cron: '30 20 * * *'   # 2:30 PM MT
+    - cron: '0 22 * * *'    # 4:00 PM MT
+    - cron: '30 23 * * *'   # 5:30 PM MT
+    - cron: '0 1 * * *'     # 7:00 PM MT
   workflow_dispatch: {}
   repository_dispatch:
     types: [jobs-found]
 
 concurrency:
   group: job-agent
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 defaults:
   run:
