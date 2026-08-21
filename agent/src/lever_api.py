@@ -87,21 +87,29 @@ def submit_lever_api(
 
     company, posting_id = parsed
 
-    # Step 1: GET the job page to extract API key (optional)
-    api_key = None
-    try:
-        page_resp = requests.get(
-            f"https://jobs.lever.co/{company}/{posting_id}",
-            headers=_HEADERS,
-            timeout=15,
-        )
-        if page_resp.status_code == 200:
-            api_key = _extract_posting_key(page_resp.text)
-            # Also check if job is still open
-            if "this position is no longer available" in page_resp.text.lower():
-                return {"submitted": False, "error": "Job closed"}
-    except Exception:
-        pass
+    # Extract API key from URL query params first (portal scanner embeds it)
+    from urllib.parse import urlparse, parse_qs
+    url_params = parse_qs(urlparse(job_url).query)
+    api_key = url_params.get("key", [None])[0]
+
+    # Step 1: GET the job page to extract API key (if not already in URL)
+    if not api_key:
+        try:
+            page_resp = requests.get(
+                f"https://jobs.lever.co/{company}/{posting_id}",
+                headers=_HEADERS,
+                timeout=15,
+            )
+            if page_resp.status_code == 200:
+                api_key = _extract_posting_key(page_resp.text)
+                # Also check if job is still open
+                if "this position is no longer available" in page_resp.text.lower():
+                    return {"submitted": False, "error": "Job closed"}
+        except Exception:
+            pass
+
+    if not api_key:
+        return {"submitted": False, "error": "No API key found (Lever requires key for submission)"}
 
     # Build apply URL
     apply_url = f"https://api.lever.co/v0/postings/{company}/{posting_id}"
