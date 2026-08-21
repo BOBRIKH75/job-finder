@@ -882,7 +882,10 @@ def solve_recaptcha_enterprise(page, url: str, override_sitekey: str = "") -> bo
         print(f"      🔑 reCAPTCHA Enterprise sitekey from network intercept: {sitekey[:15]}...")
     
     # === METHOD 1: CapSolver API (works from any IP, paid) ===
+    # Dynamic disable: if CapSolver already failed this session (no balance), skip it
     capsolver_key = os.environ.get("CAPSOLVER_KEY", "")
+    if hasattr(solve_recaptcha_enterprise, '_capsolver_disabled') and solve_recaptcha_enterprise._capsolver_disabled:
+        capsolver_key = ""  # Skip — already know it has no balance
     if capsolver_key and sitekey:
         try:
             import requests as _req
@@ -901,8 +904,13 @@ def solve_recaptcha_enterprise(page, url: str, override_sitekey: str = "") -> bo
                 error_code = task_resp.get("errorCode", "unknown")
                 error_desc = task_resp.get("errorDescription", str(task_resp)[:150])
                 print(f"      ⚠️ CapSolver rejected: {error_code} — {error_desc}")
+                # If balance/key issue — disable for entire session (don't retry 40 times)
+                if "DENIED" in error_code or "insufficient" in error_desc.lower() or "invalid" in error_desc.lower():
+                    solve_recaptcha_enterprise._capsolver_disabled = True
+                    print(f"      🚫 CapSolver DISABLED for this session (no balance/invalid key)")
+                    print(f"         → Top up at https://dashboard.capsolver.com")
                 # Try alternative task type if first one fails
-                if "type" in str(error_desc).lower() or "not support" in str(error_desc).lower():
+                elif "type" in str(error_desc).lower() or "not support" in str(error_desc).lower():
                     print(f"      🔄 Retrying with ReCaptchaV3TaskProxyLess...")
                     task_resp = _req.post("https://api.capsolver.com/createTask", json={
                         "clientKey": capsolver_key,

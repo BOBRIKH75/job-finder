@@ -134,6 +134,11 @@ def _solve_via_capsolver(sitekey: str, page_url: str) -> Optional[str]:
     Docs: https://docs.capsolver.com/guide/captcha/hcaptcha.html
     Cost: ~$0.8 per 1000 solves
     """
+    # Dynamic disable: if already failed this session (no balance), don't retry
+    if hasattr(_solve_via_capsolver, '_disabled') and _solve_via_capsolver._disabled:
+        logger.info("      ⏭️ CapSolver disabled this session (no balance)")
+        return None
+    
     logger.info("      🔄 Trying CapSolver...")
     
     try:
@@ -155,6 +160,10 @@ def _solve_via_capsolver(sitekey: str, page_url: str) -> Optional[str]:
         if create_data.get("errorId", 1) != 0:
             error_msg = create_data.get("errorDescription", "unknown")
             logger.warning(f"      ⚠️ CapSolver createTask error: {error_msg}")
+            # If balance/key issue — disable for entire session
+            if "insufficient" in error_msg.lower() or "invalid" in error_msg.lower() or "denied" in error_msg.lower():
+                _solve_via_capsolver._disabled = True
+                logger.warning(f"      🚫 CapSolver DISABLED this session (no balance/invalid key)")
             return None
         
         task_id = create_data.get("taskId", "")
