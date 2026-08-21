@@ -10,3 +10,11 @@ agent/tests/__pycache__/
 agent/data/indeed_cookies.json
 agent/data/linkedin_cookies.json
 __pycache__/
+
+# Credentials — NEVER commit these
+.env
+.env.local
+*.key
+*.pem
+agent/data/*_cookies.json
+agent/data/agent_memory.db

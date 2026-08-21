@@ -22,7 +22,9 @@ defaults:
 
 jobs:
   run-agent:
-    runs-on: ubuntu-latest
+    # Prefer self-hosted (your laptop = residential IP, better success rate)
+    # Falls back to ubuntu-latest if offline (GitHub auto-picks available runner)
+    runs-on: ${{ vars.PREFER_SELF_HOSTED == 'true' && 'self-hosted' || 'ubuntu-latest' }}
     timeout-minutes: 50
 
     steps:

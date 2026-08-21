@@ -11,7 +11,8 @@ concurrency:
 
 jobs:
   dice-apply:
-    runs-on: ubuntu-latest
+    # Self-hosted = your laptop IP (trusted by Dice). Falls back to ubuntu-latest.
+    runs-on: ${{ vars.PREFER_SELF_HOSTED == 'true' && 'self-hosted' || 'ubuntu-latest' }}
     timeout-minutes: 20
 
     steps:
