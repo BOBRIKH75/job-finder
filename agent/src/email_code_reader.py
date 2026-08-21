@@ -13,6 +13,7 @@ import email
 import os
 import re
 import time
+from datetime import datetime, timedelta
 from typing import Optional
 
 
@@ -49,9 +50,18 @@ def get_verification_code(
             mail.select("inbox")
             
             # Search for recent emails from the sender (last 1 minute)
-            # Use UNSEEN + FROM filter
-            search_criteria = f'(UNSEEN FROM "{sender_filter}")'
+            # Search recent emails (UNSEEN or within last 2 minutes)
+            since_date = (datetime.now() - timedelta(minutes=2)).strftime("%d-%b-%Y")
+            if sender_filter:
+                search_criteria = f'(UNSEEN FROM "{sender_filter}")'
+            else:
+                search_criteria = '(UNSEEN)'
             status, messages = mail.search(None, search_criteria)
+            
+            # If no UNSEEN, try ALL recent from this sender
+            if status == "OK" and not messages[0] and sender_filter:
+                search_criteria = f'(SINCE {since_date} FROM "{sender_filter}")'
+                status, messages = mail.search(None, search_criteria)
             
             if status == "OK" and messages[0]:
                 # Get the most recent matching email
@@ -194,6 +204,14 @@ def handle_email_verification(page) -> bool:
         "verify your email",
         "enter the code",
         "confirmation code",
+        "enter code",
+        "email a code",
+        "sent you a code",
+        "verify your identity",
+        "one-time code",
+        "one time code",
+        "6-digit code",
+        "digit code",
     ]
     
     if not any(signal in page_text for signal in verification_signals):
@@ -201,12 +219,15 @@ def handle_email_verification(page) -> bool:
     
     print("      📧 Email verification detected — reading code from Gmail...")
     
-    # Try Greenhouse-specific sender first, then generic
-    code = get_verification_code(sender_filter="greenhouse", max_wait_seconds=30)
+    # Try Greenhouse-specific sender first (wait longer — emails can take 30-60 sec)
+    code = get_verification_code(sender_filter="greenhouse", max_wait_seconds=60)
     if not code:
-        code = get_verification_code(sender_filter="no-reply", max_wait_seconds=15)
+        code = get_verification_code(sender_filter="no-reply", max_wait_seconds=20)
     if not code:
         code = get_verification_code(sender_filter="verify", max_wait_seconds=10)
+    if not code:
+        # Last resort: any recent email with a 6-digit code
+        code = get_verification_code(sender_filter="", max_wait_seconds=10)
     
     if code:
         return enter_verification_code(page, code)
