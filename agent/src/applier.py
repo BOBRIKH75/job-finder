@@ -1421,6 +1421,7 @@ def _try_cloudscraper(url: str) -> list[dict]:
 
 def run_applications(jobs: list[dict], dry_run: bool = True, max_apps: int = 10, db=None) -> list[dict]:
     """Apply to multiple jobs with self-learning and stealth anti-detection."""
+    run_applications._start_time = time.monotonic()
     profile = load_profile()
     learned = load_learned()
     results = []
@@ -1473,6 +1474,11 @@ def run_applications(jobs: list[dict], dry_run: bool = True, max_apps: int = 10,
 
     for job in jobs:
         if applied >= max_apps:
+            break
+        # Wall-clock safety: stop if agent has been running too long
+        _max_s = int(os.environ.get("AGENT_MAX_SECONDS", 35 * 60))
+        if hasattr(run_applications, '_start_time') and (time.monotonic() - run_applications._start_time) > _max_s:
+            print(f"\n  ⏰ Wall-clock limit reached — stopping applications gracefully")
             break
         url = job.get("url", "")
         domain = re.sub(r'https?://(www\.)?', '', url).split('/')[0]

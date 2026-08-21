@@ -14,7 +14,7 @@ on:
 
 concurrency:
   group: job-agent
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 defaults:
   run:
@@ -23,7 +23,7 @@ defaults:
 jobs:
   run-agent:
     runs-on: ubuntu-latest
-    timeout-minutes: 180
+    timeout-minutes: 50
 
     steps:
       - uses: actions/checkout@v4
@@ -122,6 +122,7 @@ jobs:
 
       - name: Run agent (full pipeline)
         continue-on-error: true
+        timeout-minutes: 40
         run: python agent.py --cloud
         env:
           RESEND_KEY: ${{ secrets.RESEND_KEY }}

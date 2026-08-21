@@ -6,9 +6,22 @@ Usage:
     python agent.py --dry-run    # filter only, no apply/email
     python agent.py --stats      # show dashboard
 """
-import argparse, json, os, sqlite3, sys
+import argparse, json, os, signal, sqlite3, sys, time
 from datetime import datetime
 from pathlib import Path
+
+# Wall-clock timeout: abort gracefully after 35 min (leaves 15 min for cleanup/upload)
+AGENT_MAX_SECONDS = int(os.environ.get("AGENT_MAX_SECONDS", 35 * 60))
+_AGENT_START_TIME = time.monotonic()
+
+
+def _check_wall_clock():
+    """Return True if agent should stop (time budget exceeded)."""
+    elapsed = time.monotonic() - _AGENT_START_TIME
+    if elapsed > AGENT_MAX_SECONDS:
+        print(f"\n⏰ Wall-clock limit reached ({int(elapsed)}s / {AGENT_MAX_SECONDS}s) — stopping gracefully")
+        return True
+    return False
 
 from src.memory import get_db, init_db, upsert_application, get_applications, get_stats, audit, application_exists, update_application_status
 from src.ghost_filter import calculate_ghost_score
@@ -504,7 +517,9 @@ def main():
 
     # Phase 3: Apply
     results = []
-    if passed and not args.dry_run:
+    if _check_wall_clock():
+        print("  ⏭️ Skipping apply phase — out of time")
+    elif passed and not args.dry_run:
         results = run_apply(db, passed, dry_run=False)
     elif passed and args.dry_run:
         results = run_apply(db, passed, dry_run=True)
