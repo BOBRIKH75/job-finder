@@ -178,6 +178,16 @@
       "commit": "next",
       "permanent": true,
       "note": "Rule: Dice MUST check for Already Applied text before clicking Apply. Use postedDate=ONE for fresh jobs only."
+    },
+    {
+      "date": "2026-08-21",
+      "workflow": "Dice Easy Apply",
+      "error": "Counts applied after clicking submit button without verifying success",
+      "root_cause": "applied += 1 runs on button click, not on page confirmation. Dice may show Already Applied or redirect without submitting.",
+      "fix": "Added page_source check for confirmation text. Export unconfirmed jobs to dice_manual_jobs.json.",
+      "commit": "next",
+      "permanent": true,
+      "note": "Rule: NEVER count as applied without page text confirmation (application submitted / thank you / successfully applied)."
     }
   ],
   "patterns": {
@@ -193,7 +203,8 @@
     "indeed_cookies": "Indeed uses Google OAuth. Cannot auto-login. Must run scripts/indeed_auto_login.py ONCE per laptop.",
     "cookie_types": "Chrome SQLite stores booleans as int (0/1). ALWAYS convert to Python bool before Playwright/Selenium add_cookies().",
     "dice_runner": "Dice MUST run on ubuntu-latest. Self-hosted Mac headless Chrome gets silently rejected by Dice anti-bot.",
-    "dice_dedup": "Dice does NOT prevent re-application at UI level \u2014 silently ignores. Script MUST check for Already Applied badge."
+    "dice_dedup": "Dice does NOT prevent re-application at UI level \u2014 silently ignores. Script MUST check for Already Applied badge.",
+    "verify_apply": "ALL platforms: clicking Submit is NOT proof of success. MUST check page text for confirmation keywords before counting as applied."
   },
   "rules_for_new_workflows": [
     "Use venv (python3 -m venv) \u2014 never bare pip install",

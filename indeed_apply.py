@@ -146,8 +146,12 @@ def main():
             results_wanted=50,
             hours_old=48,
             job_type='contract',
+            is_remote=True,
         )
         print(f"🔍 Found {len(jobs)} Indeed contract jobs")
+        # Separate Easy Apply vs External Apply
+        if 'is_remote' in jobs.columns:
+            pass  # just for structure
     except Exception as e:
         print(f"⚠️ JobSpy search failed: {e}")
         return

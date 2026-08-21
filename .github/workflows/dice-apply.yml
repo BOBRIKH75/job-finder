@@ -69,6 +69,7 @@ jobs:
           options.add_argument('--disable-dev-shm-usage')
           driver = uc.Chrome(options=options, version_main=version_main)
           applied = 0
+          manual_jobs = []
 
           try:
               # Login — try multiple selectors with explicit waits
@@ -164,8 +165,20 @@ jobs:
                               confirms = [b for b in all_btns2 if 'submit' in b.text.lower() or 'apply' in b.text.lower()]
                           if confirms:
                               confirms[0].click()
-                              applied += 1
-                              print(f'    ✅ Applied ({applied}/{MAX_APPS})')
+                              time.sleep(3)
+                              # VERIFY success - check page for confirmation
+                              page_text = driver.page_source.lower()
+                              if any(s in page_text for s in ['application submitted', 'thank you', 'successfully applied', 'your application has been']):
+                                  applied += 1
+                                  print(f'    ✅ Applied ({applied}/{MAX_APPS})')
+                              elif 'already applied' in page_text or 'you have already' in page_text:
+                                  print(f'    ⏭️ Already applied — skipping')
+                              else:
+                                  manual_jobs.append({'title': card.text.split('\n')[0][:60], 'url': driver.current_url})
+                                  print(f'    ⚠️ No confirmation — saved for manual')
+                          else:
+                              manual_jobs.append({'title': card.text.split('\n')[0][:60], 'url': driver.current_url})
+                              print(f'    ⚠️ No submit button — saved for manual')
                           time.sleep(random.uniform(5, 15))
                           driver.back()
                           time.sleep(2)
@@ -174,7 +187,23 @@ jobs:
                           time.sleep(2)
                           continue
 
-              print(f'📊 Dice: {applied} applications submitted')
+              # Save jobs that need manual apply
+              if manual_jobs:
+                  import json as jjson
+                  os.makedirs('agent/data', exist_ok=True)
+                  jjson.dump({'jobs': manual_jobs, 'date': time.strftime('%Y-%m-%d')}, open('agent/data/dice_manual_jobs.json', 'w'), indent=2)
+                  print(f'📋 {len(manual_jobs)} jobs saved to agent/data/dice_manual_jobs.json (apply manually)')
+              print(f'📊 Dice: {applied} VERIFIED applications submitted')
           finally:
               driver.quit()
           "
+
+      - name: Save manual jobs
+        if: always()
+        run: |
+          cd $GITHUB_WORKSPACE
+          git config user.name "job-finder-bot"
+          git config user.email "bot@noreply"
+          git add agent/data/dice_manual_jobs.json 2>/dev/null || true
+          git diff --staged --quiet || git commit -m "dice: save manual jobs [skip ci]"
+          git push || true
