@@ -49,7 +49,7 @@
       "date": "2026-08-21",
       "workflow": "Dice Easy Apply",
       "error": "session not created: Chrome version 151 mismatch",
-      "root_cause": "Same as LinkedIn — undetected-chromedriver needs matching version",
+      "root_cause": "Same as LinkedIn \u2014 undetected-chromedriver needs matching version",
       "fix": "Added webdriver-manager to dice-apply.yml",
       "commit": "95219d8",
       "permanent": true
@@ -57,7 +57,7 @@
     {
       "date": "2026-08-21",
       "workflow": "Indeed Easy Apply",
-      "error": "No Indeed cookies — extracting from Chrome failed",
+      "error": "No Indeed cookies \u2014 extracting from Chrome failed",
       "root_cause": "INDEED_COOKIES secret doesn't exist. browser-cookie3 and SQLite both fail because user not logged into Indeed on runner laptop",
       "fix": "Created indeed_auto_login.py for one-time setup. Google OAuth cannot be automated.",
       "commit": "8052502",
@@ -104,7 +104,7 @@
       "date": "2026-08-17",
       "workflow": "Dice Easy Apply",
       "error": "NoSuchElementException: Unable to locate element [id='email']",
-      "root_cause": "Dice changed their login page UI — email input field ID changed",
+      "root_cause": "Dice changed their login page UI \u2014 email input field ID changed",
       "fix": "Updated selector",
       "commit": "unknown",
       "permanent": true
@@ -113,11 +113,41 @@
       "date": "2026-08-13",
       "workflow": "ALL",
       "error": "The job was not started because recent account payments have failed",
-      "root_cause": "GitHub Actions billing — payment failed or spending limit reached",
+      "root_cause": "GitHub Actions billing \u2014 payment failed or spending limit reached",
       "fix": "Payment resolved by user",
       "commit": "N/A",
       "permanent": false,
       "requires_human": "Monitor GitHub billing"
+    },
+    {
+      "date": "2026-08-21",
+      "workflow": "Dice Easy Apply",
+      "error": "session not created: cannot connect to chrome at 127.0.0.1:55756 (Chrome 151)",
+      "root_cause": "undetected-chromedriver cannot find matching chromedriver for Chrome 151 on macOS self-hosted",
+      "fix": "Added webdriver-manager + ChromeDriverManager().install() to auto-download correct version",
+      "commit": "95219d8",
+      "permanent": true,
+      "note": "SAME issue as LinkedIn. Rule: ANY workflow using Selenium/Chrome MUST have webdriver-manager"
+    },
+    {
+      "date": "2026-08-21",
+      "workflow": "Indeed Easy Apply",
+      "error": "No Indeed cookies in Chrome SQLite DB",
+      "root_cause": "User never logged into Indeed on the self-hosted runner laptop. Google OAuth cannot be automated.",
+      "fix": "Created scripts/indeed_auto_login.py (opens browser, user clicks Google once, saves forever)",
+      "commit": "8052502",
+      "permanent": false,
+      "requires_human": "Run python3 scripts/indeed_auto_login.py ONCE on runner laptop. Google OAuth blocks full automation."
+    },
+    {
+      "date": "2026-08-21",
+      "workflow": "AI Job Agent",
+      "error": "Install dependencies failed (old code on runner)",
+      "root_cause": "Runner had old code cached. User did git pull but runner service was still using old checkout.",
+      "fix": "Always restart runner after git pull: cd ~/actions-runner && ./svc.sh stop && ./svc.sh start",
+      "commit": "N/A",
+      "permanent": true,
+      "note": "Rule: After pushing fixes, runner laptop MUST do: git pull && svc.sh stop && svc.sh start"
     }
   ],
   "patterns": {
@@ -126,10 +156,14 @@
     "timeouts": "Never set step timeout higher than job timeout. Always add unbuffered output.",
     "cookies": "Google OAuth cannot be automated. Use email+password accounts for full automation.",
     "captcha_services": "Always auto-disable paid services after first balance error. Never retry 40 times.",
-    "file_paths": "Always verify scripts referenced in workflows are actually committed to git."
+    "file_paths": "Always verify scripts referenced in workflows are actually committed to git.",
+    "chrome_selenium": "ANY workflow using Selenium/Chrome/undetected-chromedriver MUST include webdriver-manager + ChromeDriverManager().install()",
+    "google_oauth": "Google OAuth (Sign in with Google) CANNOT be automated. Requires one-time human click. Use email+password accounts for full automation.",
+    "runner_restart": "After git push with workflow/code fixes, runner laptop MUST: git pull && ./svc.sh stop && ./svc.sh start. Old code stays cached until restart.",
+    "indeed_cookies": "Indeed uses Google OAuth. Cannot auto-login. Must run scripts/indeed_auto_login.py ONCE per laptop."
   },
   "rules_for_new_workflows": [
-    "Use venv (python3 -m venv) — never bare pip install",
+    "Use venv (python3 -m venv) \u2014 never bare pip install",
     "Use python3 not python",
     "Skip setup-python on self-hosted (if: runner.environment == 'github-hosted')",
     "Add webdriver-manager for any Selenium/Chrome workflow",
@@ -138,5 +172,20 @@
     "Own concurrency group per workflow",
     "Exit with code 1 on actual failure (not silent success)",
     "Save failures to agent/data/failed_jobs.json for retry"
-  ]
+  ],
+  "successes": {
+    "2026-08-21": {
+      "total_submitted": 19,
+      "method": "reCAPTCHA Enterprise solved FREE via enterprise/reload (11 solves)",
+      "companies": [
+        "540 (2)",
+        "Affirm (3)",
+        "Asana (2)",
+        "Atoms (2)",
+        "plus 10 from earlier runs"
+      ],
+      "platforms": "All Greenhouse job boards",
+      "note": "enterprise/reload FREE method works on residential IP (self-hosted runner). No paid solver needed."
+    }
+  }
 }
