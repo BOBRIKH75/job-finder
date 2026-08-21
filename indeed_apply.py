@@ -22,20 +22,48 @@ from src.form_filler import load_profile
 
 
 def load_indeed_cookies() -> list:
-    """Load Indeed cookies from env (CI) or local file."""
+    """Load Indeed cookies from env (CI) or local file. Self-heals by extracting from Chrome."""
     env_cookies = os.environ.get('INDEED_COOKIES', '')
     if env_cookies:
         try:
             return json.loads(base64.b64decode(env_cookies))
         except Exception as e:
             print(f"⚠️ Failed to decode INDEED_COOKIES env: {e}")
-            return []
     cookie_file = 'agent/data/indeed_cookies.json'
     if os.path.exists(cookie_file):
         try:
-            return json.loads(open(cookie_file).read())
+            cookies = json.loads(open(cookie_file).read())
+            if cookies:
+                return cookies
         except Exception:
             pass
+    
+    # Self-healing: extract from local Chrome (works on self-hosted runner)
+    print("  🔄 No cookies — extracting from Chrome dynamically...")
+    try:
+        import browser_cookie3
+        cj = browser_cookie3.chrome(domain_name='.indeed.com')
+        cookies = [{"name": c.name, "value": c.value, "domain": c.domain,
+                    "path": c.path, "secure": c.secure} for c in cj]
+        if cookies:
+            print(f"  ✅ Got {len(cookies)} Indeed cookies from Chrome")
+            os.makedirs('agent/data', exist_ok=True)
+            with open(cookie_file, 'w') as f:
+                json.dump(cookies, f)
+            # Update GitHub secret for next runs
+            try:
+                import subprocess
+                encoded = base64.b64encode(json.dumps(cookies).encode()).decode()
+                subprocess.run(["gh", "secret", "set", "INDEED_COOKIES", "--body", encoded,
+                               "--repo", "BOBRIKH75/job-finder"], capture_output=True, timeout=15)
+                print("  ✅ INDEED_COOKIES secret updated")
+            except Exception:
+                pass
+            return cookies
+    except ImportError:
+        print("  ⚠️ browser-cookie3 not installed")
+    except Exception as e:
+        print(f"  ⚠️ Chrome extract failed: {str(e)[:60]}")
     return []
 
 
