@@ -28,7 +28,8 @@ jobs:
           python3 -m venv $GITHUB_WORKSPACE/.venv || true
           echo "$GITHUB_WORKSPACE/.venv/bin" >> $GITHUB_PATH
           source $GITHUB_WORKSPACE/.venv/bin/activate || true
-          python3 -m pip install setuptools dice-apply selenium undetected-chromedriver
+          python3 -m pip install setuptools dice-apply selenium undetected-chromedriver webdriver-manager
+          python3 -c "from webdriver_manager.chrome import ChromeDriverManager; ChromeDriverManager().install()" || true
 
       - name: Run Dice Easy Apply
         env:

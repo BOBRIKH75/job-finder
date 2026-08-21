@@ -64,6 +64,46 @@ def load_indeed_cookies() -> list:
         print("  ⚠️ browser-cookie3 not installed")
     except Exception as e:
         print(f"  ⚠️ Chrome extract failed: {str(e)[:60]}")
+    
+    # Fallback: try reading Chrome Cookies SQLite directly (macOS path)
+    try:
+        import sqlite3, shutil, tempfile
+        chrome_cookie_path = os.path.expanduser(
+            "~/Library/Application Support/Google/Chrome/Default/Cookies"
+        )
+        if os.path.exists(chrome_cookie_path):
+            # Copy to temp (Chrome locks the file while running)
+            tmp = tempfile.mktemp(suffix='.db')
+            shutil.copy2(chrome_cookie_path, tmp)
+            conn = sqlite3.connect(tmp)
+            rows = conn.execute(
+                "SELECT name, value, host_key, path, is_secure FROM cookies WHERE host_key LIKE '%indeed.com%'"
+            ).fetchall()
+            conn.close()
+            os.remove(tmp)
+            if rows:
+                cookies = [{"name": r[0], "value": r[1], "domain": r[2],
+                           "path": r[3], "secure": bool(r[4])} for r in rows if r[1]]
+                if cookies:
+                    print(f"  ✅ Got {len(cookies)} Indeed cookies from Chrome SQLite")
+                    os.makedirs('agent/data', exist_ok=True)
+                    with open(cookie_file, 'w') as f:
+                        json.dump(cookies, f)
+                    try:
+                        import subprocess
+                        encoded = base64.b64encode(json.dumps(cookies).encode()).decode()
+                        subprocess.run(["gh", "secret", "set", "INDEED_COOKIES", "--body", encoded,
+                                       "--repo", "BOBRIKH75/job-finder"], capture_output=True, timeout=15)
+                        print("  ✅ INDEED_COOKIES secret updated")
+                    except Exception:
+                        pass
+                    return cookies
+            print("  ⚠️ No Indeed cookies in Chrome SQLite DB")
+        else:
+            print(f"  ⚠️ Chrome Cookies file not found at expected path")
+    except Exception as e:
+        print(f"  ⚠️ SQLite fallback failed: {str(e)[:60]}")
+    
     return []
 
 
@@ -93,7 +133,8 @@ def main():
 
     if not cookies:
         print("❌ No Indeed cookies — run refresh-cookies workflow or save_indeed_cookies.py")
-        return
+        print("   → Log into Indeed in Chrome on your laptop, then cookies will auto-extract")
+        sys.exit(1)
 
     # Search Indeed for Java contract jobs
     try:
