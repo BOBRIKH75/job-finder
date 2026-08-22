@@ -9,6 +9,9 @@ concurrency:
   group: dice-apply
   cancel-in-progress: false
 
+permissions:
+  contents: write
+
 jobs:
   dice-apply:
     # Dice works BETTER on GitHub cloud (ubuntu) — confirmed getting email confirmations.
@@ -188,7 +191,10 @@ jobs:
                           continue
 
               # Save jobs that need manual apply
-              if manual_jobs:
+              if manual_permissions:
+  contents: write
+
+jobs:
                   import json as jjson
                   os.makedirs('agent/data', exist_ok=True)
                   jjson.dump({'jobs': manual_jobs, 'date': time.strftime('%Y-%m-%d')}, open('agent/data/dice_manual_jobs.json', 'w'), indent=2)

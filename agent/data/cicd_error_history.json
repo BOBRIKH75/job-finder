@@ -218,6 +218,16 @@
       "commit": "74c5a8b",
       "permanent": true,
       "note": "Rule: Dice Easy Apply has ~8% success rate from automation (2/25). Most jobs need manual apply. Export all unverified to manual list."
+    },
+    {
+      "date": "2026-08-21",
+      "workflow": "Indeed Easy Apply",
+      "error": "state_file not defined + jjson not defined + workflow cant git push",
+      "root_cause": "Variable scope: state_file defined inside browser context block but referenced in cookie refresh block. Workflow missing permissions: contents: write.",
+      "fix": "Moved state_file to top of function scope. Fixed jjson\u2192json. Added permissions: contents: write to both workflows.",
+      "commit": "next",
+      "permanent": true,
+      "note": "Rule: Define all file path variables at function top, not inside nested blocks. Workflows need explicit permissions for git push."
     }
   ],
   "patterns": {
@@ -264,6 +274,36 @@
       ],
       "platforms": "All Greenhouse job boards",
       "note": "enterprise/reload FREE method works on residential IP (self-hosted runner). No paid solver needed."
+    }
+  },
+  "status": {
+    "last_updated": "2026-08-21",
+    "dice": {
+      "runner": "ubuntu-latest (cloud)",
+      "schedule": "10:30 AM MT weekdays",
+      "real_success_rate": "8% (2/25 verified)",
+      "auth": "DICE_EMAIL + DICE_PASSWORD (login in script)",
+      "status": "working but low success rate \u2014 exports manual_jobs.json"
+    },
+    "indeed": {
+      "runner": "self-hosted (laptop)",
+      "schedule": "8:00 AM + 2:00 PM MT weekdays",
+      "real_success_rate": "0% Easy Apply (jobs are all external ATS)",
+      "auth": "cookies from GitHub Secret (IP-bound to self-hosted)",
+      "status": "cookies valid, but no Easy Apply jobs found \u2014 exports manual list"
+    },
+    "ai_agent": {
+      "runner": "self-hosted (laptop)",
+      "schedule": "9:30 AM MT daily (+ 12:30 PM, 3:00 PM weekdays)",
+      "real_success_rate": "~60% on Greenhouse forms",
+      "auth": "no login needed (direct company page)",
+      "status": "BEST performer \u2014 19 verified today"
+    },
+    "linkedin": {
+      "runner": "self-hosted",
+      "schedule": "11:00 AM MT weekdays",
+      "status": "broken \u2014 cookie format issue (str not dict)",
+      "fix_needed": "refresh LINKEDIN_COOKIES as proper JSON list"
     }
   }
 }
