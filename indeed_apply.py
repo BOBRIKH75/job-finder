@@ -149,6 +149,10 @@ def main():
             is_remote=True,
         )
         print(f"🔍 Found {len(jobs)} Indeed contract jobs")
+        # Filter to Easy Apply only (if jobspy provides the field)
+        if 'is_remote' in jobs.columns:
+            pass  # jobspy doesn't reliably filter easy apply
+        # We'll detect Easy Apply at runtime — if no Apply button found, save for manual
         # Separate Easy Apply vs External Apply
         if 'is_remote' in jobs.columns:
             pass  # just for structure
@@ -287,11 +291,11 @@ def main():
         # Save refreshed storage state (cookies auto-renewed by Indeed during session)
         try:
             refreshed_state = context.storage_state()
-            jjson.dump(refreshed_state, open(state_file, 'w'))
+            json.dump(refreshed_state, open(state_file, 'w'))
             # Update GitHub secret with refreshed cookies for next run
             refreshed_cookies = refreshed_state.get('cookies', [])
             if refreshed_cookies:
-                encoded = base64.b64encode(jjson.dumps(refreshed_cookies).encode()).decode()
+                encoded = base64.b64encode(json.dumps(refreshed_cookies).encode()).decode()
                 subprocess.run(
                     ['gh', 'secret', 'set', 'INDEED_COOKIES', '--body', encoded, '--repo', 'BOBRIKH75/job-finder'],
                     capture_output=True, timeout=30
