@@ -1,0 +1,39 @@
+name: Runner Health Check
+
+on:
+  schedule:
+    - cron: '0 */2 * * *'  # Every 2 hours
+  workflow_dispatch: {}
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Check runner status
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT || github.token }}
+        run: |
+          echo "=== Runner Status ==="
+          RUNNER_STATUS=$(gh api repos/BOBRIKH75/job-finder/actions/runners --jq '.runners[0].status' 2>/dev/null || echo "unknown")
+          echo "Runner: $RUNNER_STATUS"
+          
+          if [ "$RUNNER_STATUS" != "online" ]; then
+            echo "⚠️ Runner is OFFLINE — self-hosted jobs will queue until it's back"
+            # Can't auto-restart from cloud — just alert
+          fi
+          
+          echo ""
+          echo "=== Stuck Jobs (running > 45 min) ==="
+          gh run list --repo BOBRIKH75/job-finder --status in_progress --json name,createdAt,databaseId \
+            --jq '.[] | select(.name != "Runner Health Check") | .name + " started " + .createdAt' 2>/dev/null || echo "none"
+          
+          echo ""
+          echo "=== Queued Jobs ==="
+          gh run list --repo BOBRIKH75/job-finder --status queued --json name --jq '.[].name' 2>/dev/null || echo "none"
+          
+          echo ""
+          echo "=== Last 5 Failures ==="
+          gh run list --repo BOBRIKH75/job-finder --status failure --limit 5 --json name,createdAt \
+            --jq '.[] | .createdAt[11:16] + " " + .name' 2>/dev/null || echo "none"

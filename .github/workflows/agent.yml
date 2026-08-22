@@ -3,7 +3,7 @@ name: AI Job Agent — Daily Run
 on:
   schedule:
     - cron: '0 13 * * *'    # 7:00 AM MT
-    - cron: '30 14 * * *'   # 8:30 AM MT
+    - cron: '0 21 * * *'   # 8:30 AM MT
     - cron: '0 16 * * *'    # 10:00 AM MT
     - cron: '30 17 * * *'   # 11:30 AM MT
     - cron: '0 19 * * *'    # 1:00 PM MT

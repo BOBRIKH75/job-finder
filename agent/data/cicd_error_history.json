@@ -248,7 +248,10 @@
     "cookie_refresh": "Indeed session cookies renew when used. Save context.storage_state() after each run and update GitHub Secret. Cookies stay valid indefinitely if bot runs daily.",
     "cloud_over_selfhosted": "Prefer ubuntu-latest over self-hosted for ALL workflows. Self-hosted is unreliable (sleep, WiFi, process death). Only use self-hosted if Chrome profile access is REQUIRED.",
     "indeed_ip_bound": "Indeed cookies are IP-BOUND. Extracting from laptop then using on cloud = instant expiration. Indeed MUST run on same network as cookie source OR use direct login.",
-    "dice_real_success_rate": "Dice automated Easy Apply has ~8% real success rate. Anti-bot silently rejects most clicks. Always verify page text. Export unverified for manual apply."
+    "dice_real_success_rate": "Dice automated Easy Apply has ~8% real success rate. Anti-bot silently rejects most clicks. Always verify page text. Export unverified for manual apply.",
+    "parallel_self_hosted": "Self-hosted runner has 1 worker. Jobs QUEUE, not parallel. Stagger schedules by runtime: AI Agent(40min) \u2192 Greenhouse(30min) \u2192 Indeed(10min). Never schedule 2 self-hosted jobs at same time.",
+    "stuck_job_handling": "If a job hangs: timeout-minutes kills it. Next queued job starts after timeout. No auto-restart mechanism for runner itself. Health check every 2h monitors status.",
+    "solve_unsolved": "Runs every 2h on cloud. Retries failed jobs from failed_jobs.json/unsolved_jobs.json. Uses Playwright. Max 5 jobs per run. Self-learning (learned_strategies.json)."
   },
   "rules_for_new_workflows": [
     "Use venv (python3 -m venv) \u2014 never bare pip install",

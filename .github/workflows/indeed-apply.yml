@@ -2,8 +2,8 @@ name: Indeed Easy Apply
 
 on:
   schedule:
-    - cron: '0 14 * * 1-5'  # 8:00 AM MT, weekdays
-    - cron: '0 20 * * 1-5'  # 2:00 PM MT, weekdays
+    - cron: '30 14 * * 1-5'  # 8:00 AM MT, weekdays
+    - cron: '30 20 * * 1-5'  # 2:00 PM MT, weekdays
   workflow_dispatch: {}
 
 concurrency:
