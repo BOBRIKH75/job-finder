@@ -121,7 +121,7 @@ jobs:
         working-directory: .
         run: python3 -m pytest test_career_ops_scorer.py -q
 
-      - name: Preflight — verify all API keys present
+      - name: Preflight - verify all API keys present
         run: |
           MISSING=""
           [ -z "$GEMINI_API_KEY" ] && MISSING="$MISSING GEMINI_API_KEY"
