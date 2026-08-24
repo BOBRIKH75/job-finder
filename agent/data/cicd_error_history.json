@@ -298,6 +298,16 @@
       "commit": "9fd47cb",
       "permanent": true,
       "note": "Rule: EVERY new feature that needs an API key MUST: (1) add to workflow env block, (2) be checked in preflight step. Never assume secrets are passed \u2014 VERIFY in workflow YAML."
+    },
+    {
+      "date": "2026-08-24",
+      "workflow": "AI Job Agent",
+      "error": "This run likely failed because of a workflow file issue (5 consecutive failures)",
+      "root_cause": "Em-dash character (\u2014) in workflow name field. GitHub Actions rejects non-ASCII in name: field. YAML validates locally but GitHub remote parser rejects it.",
+      "fix": "Replaced \u2014 with - in name field. Rule: NEVER use non-ASCII characters anywhere in workflow YAML.",
+      "commit": "c0c20c4",
+      "permanent": true,
+      "note": "Rule: Workflow YAML must be pure ASCII. No em-dashes, no unicode, no special chars in name/step fields. Local yaml.safe_load passes but GitHub rejects remotely. ALSO: duplicate env var keys cause silent rejection."
     }
   ],
   "patterns": {
@@ -328,7 +338,9 @@
     "aria_invalid_fields": "After submit failure: fields marked aria-invalid=true are the ones blocking. Scan these FIRST before retrying. They may not have required attribute.",
     "gmail_for_greenhouse": "Greenhouse sends email verification codes. Any workflow applying to Greenhouse MUST have GMAIL_USER + GMAIL_APP_PASSWORD env vars.",
     "env_var_preflight": "EVERY workflow MUST have a preflight step that checks ALL required env vars are set. Secrets exist in GitHub but are NOT automatically passed \u2014 they must be explicitly listed in the env: block. Missing key = silent feature failure.",
-    "recruiter_email_keys": "Recruiter email finding needs: HUNTER_API_KEY, APOLLO_API_KEY, SNOV_USER_ID, SNOV_API_SECRET, RESEND_KEY. ALL must be in agent.yml env block. Without them Phase 3c silently returns 0 emails."
+    "recruiter_email_keys": "Recruiter email finding needs: HUNTER_API_KEY, APOLLO_API_KEY, SNOV_USER_ID, SNOV_API_SECRET, RESEND_KEY. ALL must be in agent.yml env block. Without them Phase 3c silently returns 0 emails.",
+    "yaml_ascii_only": "GitHub Actions workflow YAML must be 100% ASCII. Em-dash (\u2014), unicode quotes, non-ASCII chars in name: or step names = instant parse failure. Local YAML validators DO NOT catch this. Always use plain hyphen (-).",
+    "workflow_debug_sequence": "When workflow shows file issue: (1) check non-ASCII chars first, (2) check duplicate keys, (3) compare with last working git commit, (4) restore and re-apply changes one by one."
   },
   "rules_for_new_workflows": [
     "Use venv (python3 -m venv) \u2014 never bare pip install",
