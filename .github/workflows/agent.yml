@@ -128,7 +128,7 @@ jobs:
 
       - name: Run agent (full pipeline)
         continue-on-error: true
-        timeout-minutes: 40
+        timeout-minutes: 55
         run: python3 agent.py --cloud
         env:
           RESEND_KEY: ${{ secrets.RESEND_KEY }}
