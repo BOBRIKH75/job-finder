@@ -580,3 +580,38 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+
+# Export search queries for Indeed/Dice scripts (dynamic)
+def export_search_queries(learned_keywords=None):
+    """Write search_queries.json so Indeed/Dice use dynamic queries."""
+    import json
+    from datetime import datetime
+    
+    base = ['Java Spring Boot', 'Java Kafka', 'Java AWS', 'Java microservices', 
+            'Java backend', 'Spring Boot Kubernetes', 'Java REST API', 'Java MongoDB']
+    
+    # Add learned keywords
+    extras = list(learned_keywords)[:5] if learned_keywords else []
+    
+    indeed = [f"{kw} developer contract remote" for kw in base[:6]]
+    indeed += [f"{kw} C2C contract" for kw in extras[:3]]
+    
+    dice = [f"{kw} contract remote" for kw in base[:6]]
+    dice += [f"{kw} C2C" for kw in extras[:3]]
+    
+    data = {
+        'generated': datetime.now().strftime('%Y-%m-%d'),
+        'indeed': indeed,
+        'dice': dice,
+    }
+    json.dump(data, open('agent/data/search_queries.json', 'w'), indent=2)
+    print(f"  📝 Exported {len(indeed)} Indeed + {len(dice)} Dice dynamic queries")
+
+
+# Run export at end of daily search
+if __name__ == '__main__':
+    try:
+        export_search_queries()
+    except Exception:
+        pass
