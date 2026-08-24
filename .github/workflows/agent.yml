@@ -128,6 +128,8 @@ jobs:
         env:
           RESEND_KEY: ${{ secrets.RESEND_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
           NOPECHA_API_KEY: ${{ secrets.NOPECHA_API_KEY }}
           CAPSOLVER_KEY: ${{ secrets.CAPSOLVER_KEY }}
           OHMYCAPTCHA_URL: "http://localhost:8000"
