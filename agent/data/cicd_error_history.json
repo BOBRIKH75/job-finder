@@ -308,6 +308,16 @@
       "commit": "c0c20c4",
       "permanent": true,
       "note": "Rule: Workflow YAML must be pure ASCII. No em-dashes, no unicode, no special chars in name/step fields. Local yaml.safe_load passes but GitHub rejects remotely. ALSO: duplicate env var keys cause silent rejection."
+    },
+    {
+      "date": "2026-08-24",
+      "workflow": "AI Job Agent",
+      "error": "Run stuck for 1.5 hours blocking ALL self-hosted jobs (Greenhouse, Indeed, next AI Agent)",
+      "root_cause": "Old run from before timeout fix had no step-level timeout. Job-level timeout was 50 min but did not kill the step. Runner only has 1 worker = everything queues.",
+      "fix": "Cancelled manually. Prevention: step timeout-minutes: 55 now in place. Also: always cancel runs older than 60 min.",
+      "commit": "N/A",
+      "permanent": true,
+      "note": "Rule: If a self-hosted run is stuck > 60 min, CANCEL it. It blocks everything. Check with: gh run list --status in_progress"
     }
   ],
   "patterns": {
@@ -340,7 +350,9 @@
     "env_var_preflight": "EVERY workflow MUST have a preflight step that checks ALL required env vars are set. Secrets exist in GitHub but are NOT automatically passed \u2014 they must be explicitly listed in the env: block. Missing key = silent feature failure.",
     "recruiter_email_keys": "Recruiter email finding needs: HUNTER_API_KEY, APOLLO_API_KEY, SNOV_USER_ID, SNOV_API_SECRET, RESEND_KEY. ALL must be in agent.yml env block. Without them Phase 3c silently returns 0 emails.",
     "yaml_ascii_only": "GitHub Actions workflow YAML must be 100% ASCII. Em-dash (\u2014), unicode quotes, non-ASCII chars in name: or step names = instant parse failure. Local YAML validators DO NOT catch this. Always use plain hyphen (-).",
-    "workflow_debug_sequence": "When workflow shows file issue: (1) check non-ASCII chars first, (2) check duplicate keys, (3) compare with last working git commit, (4) restore and re-apply changes one by one."
+    "workflow_debug_sequence": "When workflow shows file issue: (1) check non-ASCII chars first, (2) check duplicate keys, (3) compare with last working git commit, (4) restore and re-apply changes one by one.",
+    "stuck_run_blocks_all": "Self-hosted runner = 1 worker. ONE stuck run blocks ALL other self-hosted jobs (Indeed, Greenhouse, AI Agent). Always check in_progress runs and cancel any > 60 min. Prevention: timeout-minutes on EVERY step.",
+    "no_looping_checklist": "Before fixing ANY issue: (1) Read memory first, (2) Check if same error exists in patterns, (3) If yes - apply known fix immediately, (4) If no - investigate then ADD to memory. Never fix same thing twice."
   },
   "rules_for_new_workflows": [
     "Use venv (python3 -m venv) \u2014 never bare pip install",
@@ -379,10 +391,11 @@
     },
     "indeed": {
       "runner": "self-hosted (laptop)",
-      "schedule": "8:00 AM + 2:00 PM MT weekdays",
-      "real_success_rate": "0% Easy Apply (jobs are all external ATS)",
-      "auth": "cookies from GitHub Secret (IP-bound to self-hosted)",
-      "status": "cookies valid, but no Easy Apply jobs found \u2014 exports manual list"
+      "schedule": "8:30 AM, 2:30 PM MT weekdays",
+      "real_success_rate": "0% (no Easy Apply jobs exist for Java contract remote)",
+      "auth": "cookies from GitHub Secret (IP-bound, valid on self-hosted)",
+      "status": "Working but useless - Indeed has no Easy Apply for this search. Exports manual list only.",
+      "fix_needed": "Either: (1) change search to find Easy Apply jobs, or (2) remove Indeed and focus on AI Agent + LinkedIn"
     },
     "ai_agent": {
       "runner": "self-hosted (laptop)",
