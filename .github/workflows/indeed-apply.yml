@@ -2,7 +2,7 @@ name: Indeed Easy Apply
 
 on:
   schedule:
-    - cron: '30 14 * * 1-5'  # 8:00 AM MT, weekdays
+    - cron: '0 14 * * 1-5'   # 8:00 AM MT, weekdays (10 min, done before Greenhouse 8:30)
     - cron: '30 20 * * 1-5'  # 2:00 PM MT, weekdays
   workflow_dispatch: {}
 
