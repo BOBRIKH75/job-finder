@@ -3,14 +3,9 @@ name: AI Job Agent — Daily Run
 on:
   schedule:
     - cron: '0 13 * * *'    # 7:00 AM MT
-    - cron: '0 21 * * *'   # 8:30 AM MT
-    - cron: '0 16 * * *'    # 10:00 AM MT
-    - cron: '30 17 * * *'   # 11:30 AM MT
-    - cron: '0 19 * * *'    # 1:00 PM MT
-    - cron: '30 20 * * *'   # 2:30 PM MT
-    - cron: '0 22 * * *'    # 4:00 PM MT
-    - cron: '30 23 * * *'   # 5:30 PM MT
-    - cron: '0 1 * * *'     # 7:00 PM MT
+    - cron: '0 16 * * *'   # 10:00 AM MT
+    - cron: '0 19 * * *'   # 1:00 PM MT
+    - cron: '0 22 * * *'   # 4:00 PM MT
   workflow_dispatch: {}
   repository_dispatch:
     types: [jobs-found]
