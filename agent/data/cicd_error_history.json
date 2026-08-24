@@ -228,6 +228,66 @@
       "commit": "next",
       "permanent": true,
       "note": "Rule: Define all file path variables at function top, not inside nested blocks. Workflows need explicit permissions for git push."
+    },
+    {
+      "date": "2026-08-24",
+      "workflow": "AI Job Agent",
+      "error": "Phase 3 crashed: cookies[0].secure: expected boolean, got number",
+      "root_cause": "Same cookie bool bug from Friday \u2014 never fixed in agent/cookie_agent.py and agent/src/applier.py (only fixed in indeed_apply.py)",
+      "fix": "Added bool() conversion in cookie_agent.py (line 85) and applier.py (lines 1490, 1557)",
+      "commit": "0eceda6",
+      "permanent": true,
+      "note": "Rule: EVERY add_cookies() call in EVERY file needs bool conversion. Check ALL files when fixing cookie issues."
+    },
+    {
+      "date": "2026-08-24",
+      "workflow": "AI Job Agent",
+      "error": "Timed out at 40 min \u2014 got 13 submitted but missed 48 more",
+      "fix": "Increased step timeout from 40 to 55 min",
+      "root_cause": "With 61 jobs to apply \u00d7 ~45 sec each = 45 min needed. 40 min cap killed it.",
+      "commit": "b2be0af",
+      "permanent": true,
+      "note": "Rule: AI Agent needs 55 min minimum. 61 jobs \u00d7 45 sec = 45 min + buffer."
+    },
+    {
+      "date": "2026-08-24",
+      "workflow": "ALL (self-hosted)",
+      "error": "3 AI Agent runs cancelled \u2014 schedule overlap",
+      "root_cause": "9 AI Agent + 8 Greenhouse = 17 runs/day on 1 runner. They cancelled each other.",
+      "fix": "Reduced to 4 AI Agent (7,10,1,4 MT) + 4 Greenhouse (8:30,11:30,2:30,5:30 MT). No overlaps.",
+      "commit": "50acbf0",
+      "permanent": true,
+      "note": "Rule: Max 8 self-hosted runs/day. Space by runtime (55+30=85 min pairs). Never schedule overlapping self-hosted jobs."
+    },
+    {
+      "date": "2026-08-24",
+      "workflow": "AI Job Agent",
+      "error": "Email verification codes not read \u2014 Greenhouse requires code entry",
+      "root_cause": "GMAIL_USER and GMAIL_APP_PASSWORD env vars missing from agent.yml workflow",
+      "fix": "Added both env vars. email_code_reader.py already existed \u2014 just needed credentials.",
+      "commit": "f01532b",
+      "permanent": true,
+      "note": "Rule: ANY workflow that applies to Greenhouse MUST have GMAIL_USER + GMAIL_APP_PASSWORD for verification codes."
+    },
+    {
+      "date": "2026-08-24",
+      "workflow": "Dice Easy Apply",
+      "error": "Workflow file invalid YAML \u2014 could not run",
+      "root_cause": "Inline Python code edits (from Friday) broke YAML structure. permissions: block landed inside Python code.",
+      "fix": "Restored from last valid commit (78999ff). Lost dedup/verify features but at least runs.",
+      "commit": "4498b11",
+      "permanent": true,
+      "note": "Rule: NEVER edit workflow files with string replacement when they contain inline Python. Use separate .py files instead."
+    },
+    {
+      "date": "2026-08-24",
+      "workflow": "AI Job Agent",
+      "error": "16/51 jobs failed with Form errors: this field is required, 5_field_errors",
+      "root_cause": "ATS marks fields with aria-invalid=true AFTER submit \u2014 but bot only looked for required/aria-required BEFORE submit",
+      "fix": "Added aria-invalid detection in _fill_remaining_required. After submit failure, scans for invalid fields, fills them, retries.",
+      "commit": "ec908be",
+      "permanent": true,
+      "note": "Rule: After submit failure, check aria-invalid=true fields (ATS validation markers). These fields may not have required attribute but still block submit."
     }
   ],
   "patterns": {
@@ -251,7 +311,12 @@
     "dice_real_success_rate": "Dice automated Easy Apply has ~8% real success rate. Anti-bot silently rejects most clicks. Always verify page text. Export unverified for manual apply.",
     "parallel_self_hosted": "Self-hosted runner has 1 worker. Jobs QUEUE, not parallel. Stagger schedules by runtime: AI Agent(40min) \u2192 Greenhouse(30min) \u2192 Indeed(10min). Never schedule 2 self-hosted jobs at same time.",
     "stuck_job_handling": "If a job hangs: timeout-minutes kills it. Next queued job starts after timeout. No auto-restart mechanism for runner itself. Health check every 2h monitors status.",
-    "solve_unsolved": "Runs every 2h on cloud. Retries failed jobs from failed_jobs.json/unsolved_jobs.json. Uses Playwright. Max 5 jobs per run. Self-learning (learned_strategies.json)."
+    "solve_unsolved": "Runs every 2h on cloud. Retries failed jobs from failed_jobs.json/unsolved_jobs.json. Uses Playwright. Max 5 jobs per run. Self-learning (learned_strategies.json).",
+    "cookie_bool_all_files": "Cookie bool conversion must be in EVERY file that calls add_cookies(). Check: agent/cookie_agent.py, agent/src/applier.py, indeed_apply.py, any new file.",
+    "schedule_spacing": "Self-hosted runner = 1 worker. Max 8 runs/day. AI Agent (55min) + Greenhouse (30min) = 85 min pair. Space pairs 90 min apart minimum.",
+    "inline_python_yaml": "NEVER edit .yml workflow files containing inline Python with string replace. The indentation and special chars (quotes, colons) WILL break YAML. Use separate .py script files instead.",
+    "aria_invalid_fields": "After submit failure: fields marked aria-invalid=true are the ones blocking. Scan these FIRST before retrying. They may not have required attribute.",
+    "gmail_for_greenhouse": "Greenhouse sends email verification codes. Any workflow applying to Greenhouse MUST have GMAIL_USER + GMAIL_APP_PASSWORD env vars."
   },
   "rules_for_new_workflows": [
     "Use venv (python3 -m venv) \u2014 never bare pip install",
@@ -280,13 +345,13 @@
     }
   },
   "status": {
-    "last_updated": "2026-08-21",
+    "last_updated": "2026-08-24",
     "dice": {
       "runner": "ubuntu-latest (cloud)",
       "schedule": "10:30 AM MT weekdays",
       "real_success_rate": "8% (2/25 verified)",
       "auth": "DICE_EMAIL + DICE_PASSWORD (login in script)",
-      "status": "working but low success rate \u2014 exports manual_jobs.json"
+      "status": "YAML restored. Will run next scheduled time."
     },
     "indeed": {
       "runner": "self-hosted (laptop)",
@@ -297,10 +362,10 @@
     },
     "ai_agent": {
       "runner": "self-hosted (laptop)",
-      "schedule": "9:30 AM MT daily (+ 12:30 PM, 3:00 PM weekdays)",
-      "real_success_rate": "~60% on Greenhouse forms",
+      "schedule": "7AM, 10AM, 1PM, 4PM MT (4 runs/day, 55 min each)",
+      "real_success_rate": "69% form success (35/51). With aria-invalid fix: expected ~85%",
       "auth": "no login needed (direct company page)",
-      "status": "BEST performer \u2014 19 verified today"
+      "status": "64 submitted today (3 runs). Cookie fix + timeout + schedule + form fix all deployed."
     },
     "linkedin": {
       "runner": "self-hosted",
