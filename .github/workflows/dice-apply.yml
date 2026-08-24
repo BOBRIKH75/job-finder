@@ -118,10 +118,17 @@ jobs:
               time.sleep(5)
 
               # Search for Java contract jobs
-              searches = ['Java Developer contract remote', 'Java Spring Boot C2C', 'Senior Java Backend remote']
+              searches = [
+                  'Java Developer contract remote',
+                  'Java Spring Boot microservices contract',
+                  'Senior Java Backend engineer remote',
+                  'Java Kafka AWS developer contract',
+                  'Spring Boot Kubernetes developer remote',
+                  'Java API developer C2C contract',
+              ]
               for i, query in enumerate(searches):
                   if applied >= MAX_APPS: break
-                  driver.get(f'https://www.dice.com/jobs?q={query.replace(\" \", \"+\")}&filters.easyApply=true&filters.postedDate=THREE')
+                  driver.get(f'https://www.dice.com/jobs?q={query.replace(\" \", \"+\")}&filters.easyApply=true&filters.postedDate=ONE')
                   time.sleep(6)
 
                   # Try multiple selectors for job cards

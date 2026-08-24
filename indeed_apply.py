@@ -139,16 +139,40 @@ def main():
     # Search Indeed for Java contract jobs
     try:
         from jobspy import scrape_jobs
-        jobs = scrape_jobs(
-            site_name=['indeed'],
-            search_term='Java developer contract remote',
-            location='USA',
-            results_wanted=50,
-            hours_old=48,
-            job_type='contract',
-            is_remote=True,
-        )
-        print(f"🔍 Found {len(jobs)} Indeed contract jobs")
+        # Dynamic search queries - rotate through multiple keywords
+        import pandas as pd
+        SEARCHES = [
+            'Java Spring Boot developer contract remote',
+            'Senior Java backend microservices contract',
+            'Java Kafka Kubernetes developer remote',
+            'Java AWS developer contract C2C',
+            'Spring Boot microservices engineer remote contract',
+            'Java developer remote contract "easy apply"',
+        ]
+        # Pick 3 queries per run (rotate daily)
+        from datetime import datetime
+        day_offset = datetime.now().timetuple().tm_yday % len(SEARCHES)
+        queries = SEARCHES[day_offset:day_offset+3] if day_offset+3 <= len(SEARCHES) else SEARCHES[day_offset:] + SEARCHES[:3-(len(SEARCHES)-day_offset)]
+        
+        all_jobs = []
+        for q in queries:
+            try:
+                batch = scrape_jobs(
+                    site_name=['indeed'],
+                    search_term=q,
+                    location='USA',
+                    results_wanted=20,
+                    hours_old=48,
+                    job_type='contract',
+                    is_remote=True,
+                )
+                all_jobs.append(batch)
+                print(f"  🔍 '{q}' → {len(batch)} jobs")
+            except Exception as e:
+                print(f"  ⚠️ '{q}' failed: {str(e)[:40]}")
+        
+        jobs = pd.concat(all_jobs, ignore_index=True).drop_duplicates(subset=['job_url']) if all_jobs else pd.DataFrame()
+        print(f"🔍 Found {len(jobs)} Indeed contract jobs (from {len(queries)} searches)")
         # Filter to Easy Apply only (if jobspy provides the field)
         if 'is_remote' in jobs.columns:
             pass  # jobspy doesn't reliably filter easy apply
