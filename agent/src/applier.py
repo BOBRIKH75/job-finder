@@ -1487,6 +1487,10 @@ def run_applications(jobs: list[dict], dry_run: bool = True, max_apps: int = 10,
     # Inject Indeed cookies for authenticated apply
     indeed_cookies = load_indeed_cookies()
     if indeed_cookies:
+        # Fix: convert int to bool for Playwright
+        for c in indeed_cookies:
+            if "secure" in c: c["secure"] = bool(c["secure"])
+            if "httpOnly" in c: c["httpOnly"] = bool(c["httpOnly"])
         context.add_cookies(indeed_cookies)
         print(f"  🍪 Loaded {len(indeed_cookies)} Indeed cookies")
 
@@ -1554,6 +1558,10 @@ def run_applications(jobs: list[dict], dry_run: bool = True, max_apps: int = 10,
                     # Try cloudscraper for cookies
                     cf_cookies = _try_cloudscraper(url)
                     if cf_cookies:
+                        # Fix: convert int to bool for Playwright
+                        for c in cf_cookies:
+                            if "secure" in c: c["secure"] = bool(c["secure"])
+                            if "httpOnly" in c: c["httpOnly"] = bool(c["httpOnly"])
                         context.add_cookies(cf_cookies)
                         print(f"    🟢 cloudscraper bypassed CF — injected {len(cf_cookies)} cookies")
                     else:

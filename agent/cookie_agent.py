@@ -82,6 +82,12 @@ def refresh_indeed_cookies() -> bool:
         return False
 
     context = cloakbrowser.launch_context(headless=True)
+    # Fix: Playwright needs bool, Chrome SQLite stores int
+    for c in cookies:
+        if "secure" in c:
+            c["secure"] = bool(c["secure"])
+        if "httpOnly" in c:
+            c["httpOnly"] = bool(c["httpOnly"])
     context.add_cookies(cookies)
     page = context.new_page()
 
