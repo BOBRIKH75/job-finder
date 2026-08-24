@@ -30,7 +30,9 @@ jobs:
 
       - name: Send daily report
         working-directory: agent
-        run: python scripts/daily_report.py
+        run: |
+          python agent/scripts/application_confirmations.py
+          python scripts/daily_report.py
         env:
           RESEND_KEY: ${{ secrets.RESEND_KEY }}
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
