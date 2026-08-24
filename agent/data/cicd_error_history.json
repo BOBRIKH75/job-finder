@@ -363,7 +363,10 @@
     "workflow_debug_sequence": "When workflow shows file issue: (1) check non-ASCII chars first, (2) check duplicate keys, (3) compare with last working git commit, (4) restore and re-apply changes one by one.",
     "stuck_run_blocks_all": "Self-hosted runner = 1 worker. ONE stuck run blocks ALL other self-hosted jobs (Indeed, Greenhouse, AI Agent). Always check in_progress runs and cancel any > 60 min. Prevention: timeout-minutes on EVERY step.",
     "no_looping_checklist": "Before fixing ANY issue: (1) Read memory first, (2) Check if same error exists in patterns, (3) If yes - apply known fix immediately, (4) If no - investigate then ADD to memory. Never fix same thing twice.",
-    "radio_buttons_ats": "ATS forms use radio buttons for: work authorization (Yes), sponsorship needed (No), willing to relocate (No), background check (Yes), drug test (Yes), 18+ (Yes). These MUST be filled or form rejects. Match question text to yes/no patterns."
+    "radio_buttons_ats": "ATS forms use radio buttons for: work authorization (Yes), sponsorship needed (No), willing to relocate (No), background check (Yes), drug test (Yes), 18+ (Yes). These MUST be filled or form rejects. Match question text to yes/no patterns.",
+    "system_map_check": "BEFORE investigating ANY issue: check system_map in memory first. It shows what exists, what talks to what, and where configs live. Prevents re-investigating known architecture.",
+    "never_hardcode_queries": "Search queries MUST be dynamic (from search_queries.json or profile). NEVER hardcode a single query. System learns and rotates automatically.",
+    "vendor_is_automated": "Vendor outreach is AUTOMATED: monthly email blast + weekly portal upload + auto-discovery from job scraping. Do NOT manually manage vendor list \u2014 it grows from find_jobs.py."
   },
   "rules_for_new_workflows": [
     "Use venv (python3 -m venv) \u2014 never bare pip install",
@@ -420,6 +423,70 @@
       "schedule": "11:00 AM MT weekdays",
       "status": "broken \u2014 cookie format issue (str not dict)",
       "fix_needed": "refresh LINKEDIN_COOKIES as proper JSON list"
+    }
+  },
+  "system_map": {
+    "last_verified": "2026-08-24",
+    "job_sources": {
+      "ai_agent": {
+        "what": "Finds jobs from Google/Indeed/LinkedIn/Glassdoor + company career portals",
+        "searches": "Dynamic (find_jobs.py generates from learned keywords)",
+        "applies_to": "Greenhouse, Lever, any company career page with form",
+        "verification": "Page text (thank you) + URL redirect + HTTP POST 200",
+        "schedule": "7AM, 10AM, 1PM, 4PM MT",
+        "runner": "self-hosted"
+      },
+      "dice": {
+        "what": "Dice.com Easy Apply",
+        "searches": "6 queries from search_queries.json (dynamic)",
+        "applies_to": "Dice Easy Apply only",
+        "verification": "Page text confirmation after click",
+        "schedule": "10:30 AM MT weekdays",
+        "runner": "cloud (ubuntu-latest)"
+      },
+      "indeed": {
+        "what": "Indeed Easy Apply (rare for Java contract)",
+        "searches": "3 queries from search_queries.json (rotates daily)",
+        "applies_to": "Indeed Easy Apply only (most jobs are external ATS)",
+        "verification": "Page text confirmation",
+        "schedule": "8AM, 2PM MT weekdays",
+        "runner": "self-hosted (cookies IP-bound)"
+      },
+      "greenhouse_direct": {
+        "what": "Direct Greenhouse form filling",
+        "searches": "Uses found_jobs.json from daily search",
+        "applies_to": "Greenhouse only",
+        "verification": "Same as AI Agent",
+        "schedule": "8:30AM, 11:30AM, 2:30PM, 5:30PM MT",
+        "runner": "self-hosted"
+      }
+    },
+    "vendor_system": {
+      "vendor_list": "16 vendors in data/vendor_list.json (auto-discovers new ones)",
+      "monthly_outreach": "Sends availability email to all vendors (1st of month)",
+      "weekly_upload": "Uploads CV to vendor portals (Mondays)",
+      "auto_discover": "find_jobs.py detects new vendor names from TechFetch, NVoids, Google Groups \u2192 adds to vendor_list.json",
+      "ttl": "30 days between re-contacting same vendor",
+      "max_per_run": "15 emails per outreach run"
+    },
+    "recruiter_system": {
+      "finding_emails": "Hunter.io \u2192 Apollo \u2192 Snov cascade (Phase 3c in AI Agent)",
+      "sending_cv": "Resend API (3K free/month)",
+      "auto_reply": "Every 2 hours \u2014 classifies recruiter emails, auto-replies with scheduling/screening",
+      "tracking": "Gmail Reply Tracker (daily) \u2014 checks if recruiters replied",
+      "follow_up": "outreach.py sends follow-ups after 3 days if no reply (max 5/day)"
+    },
+    "confirmation_tracking": {
+      "page_level": "submit_and_verify() checks page text + URL redirect + HTTP 200",
+      "email_level": "application_confirmations.py scans Gmail for thank-you emails (GROUND TRUTH)",
+      "daily_report": "Runs 9 PM MT \u2014 includes confirmation count from emails"
+    },
+    "dynamic_queries": {
+      "source": "find_jobs.py learns keywords from job postings",
+      "exports_to": "agent/data/search_queries.json",
+      "consumed_by": "Indeed + Dice scripts (read on each run)",
+      "rotation": "Indeed rotates 3 queries per run (different each day)",
+      "dice": "Uses all 6 queries per run"
     }
   }
 }
