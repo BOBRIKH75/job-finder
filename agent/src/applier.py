@@ -834,7 +834,78 @@ def _fill_remaining_required(page, profile: dict) -> int:
                 
     except Exception:
         pass
-    
+
+    # 5. ARIA-INVALID: After submit failure, ATS marks invalid fields with aria-invalid="true"
+    # These fields may NOT have required/aria-required but are still blocking submit
+    try:
+        invalid_inputs = page.locator('input[aria-invalid="true"]:visible, select[aria-invalid="true"]:visible, textarea[aria-invalid="true"]:visible').all()
+        for inp in invalid_inputs:
+            try:
+                tag = inp.evaluate("el => el.tagName.toLowerCase()")
+                current_val = inp.input_value(timeout=500) if tag != "select" else ""
+                if current_val and current_val.strip():
+                    continue  # has value but still invalid (format issue) — skip
+
+                # Get label
+                label = ""
+                inp_id = inp.get_attribute("id") or ""
+                if inp_id:
+                    try:
+                        label = page.locator(f'label[for="{inp_id}"]').first.inner_text(timeout=300)
+                    except Exception:
+                        pass
+                if not label:
+                    label = inp.get_attribute("aria-label") or inp.get_attribute("placeholder") or inp.get_attribute("name") or ""
+
+                label_lower = label.lower()
+                if not label_lower:
+                    continue
+
+                # Try profile mapping then smart answers
+                value = None
+                profile_map = {
+                    "first name": profile.get("first_name", ""),
+                    "last name": profile.get("last_name", ""),
+                    "email": profile.get("email", ""),
+                    "phone": profile.get("phone", ""),
+                    "linkedin": profile.get("linkedin", ""),
+                    "city": profile.get("city", ""),
+                    "zip": profile.get("zip", ""),
+                    "location": profile.get("location", ""),
+                    "name": profile.get("name", ""),
+                }
+                for key, val in profile_map.items():
+                    if key in label_lower and val:
+                        value = val
+                        break
+
+                if not value:
+                    for key, ans in SMART_ANSWERS.items():
+                        if key in label_lower:
+                            value = ans
+                            break
+
+                if value:
+                    if tag == "select":
+                        # Try select option
+                        options = inp.locator("option").all()
+                        for opt in options[1:]:
+                            try:
+                                opt_text = opt.inner_text(timeout=200)
+                                if value.lower() in opt_text.lower():
+                                    inp.select_option(label=opt_text)
+                                    filled += 1
+                                    break
+                            except Exception:
+                                continue
+                    else:
+                        inp.fill(str(value))
+                        filled += 1
+            except Exception:
+                continue
+    except Exception:
+        pass
+
     return filled
 
 
