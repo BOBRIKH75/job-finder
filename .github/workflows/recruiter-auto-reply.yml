@@ -36,8 +36,11 @@ jobs:
         env:
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          RESEND_KEY: ${{ secrets.RESEND_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-        run: python3 agent/scripts/recruiter_auto_reply.py
+        run: |
+          python3 agent/scripts/recruiter_auto_reply.py
+          python3 agent/scripts/recruiter_pipeline.py
 
       - name: Save tracker
         if: always()

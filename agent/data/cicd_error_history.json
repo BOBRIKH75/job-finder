@@ -378,7 +378,8 @@
     "never_hardcode_queries": "Search queries MUST be dynamic (from search_queries.json or profile). NEVER hardcode a single query. System learns and rotates automatically.",
     "vendor_is_automated": "Vendor outreach is AUTOMATED: monthly email blast + weekly portal upload + auto-discovery from job scraping. Do NOT manually manage vendor list \u2014 it grows from find_jobs.py.",
     "verify_before_push": "MANDATORY before EVERY git push: (1) python syntax check, (2) YAML valid, (3) verify file paths EXIST on disk, (4) check working-directory in workflow, (5) no duplicate keys. NEVER push without verification. One bad push = 5 min wasted waiting for failure.",
-    "working_directory_paths": "If workflow has working-directory: X/ then ALL paths in run: are RELATIVE to X/. Writing X/scripts/foo.py becomes X/X/scripts/foo.py = file not found. Check FIRST."
+    "working_directory_paths": "If workflow has working-directory: X/ then ALL paths in run: are RELATIVE to X/. Writing X/scripts/foo.py becomes X/X/scripts/foo.py = file not found. Check FIRST.",
+    "recruiter_pipeline_tracking": "Every recruiter conversation is tracked through stages. Pipeline auto-advances based on email keywords. Silent recruiters get follow-up after 3 days. Never lose a conversation."
   },
   "rules_for_new_workflows": [
     "Use venv (python3 -m venv) \u2014 never bare pip install",
@@ -486,7 +487,10 @@
       "sending_cv": "Resend API (3K free/month)",
       "auto_reply": "Every 2 hours \u2014 classifies recruiter emails, auto-replies with scheduling/screening",
       "tracking": "Gmail Reply Tracker (daily) \u2014 checks if recruiters replied",
-      "follow_up": "outreach.py sends follow-ups after 3 days if no reply (max 5/day)"
+      "follow_up": "outreach.py sends follow-ups after 3 days if no reply (max 5/day)",
+      "pipeline_tracker": "recruiter_pipeline.py: scans Gmail, detects stage transitions (contacted\u2192replied\u2192screening\u2192scheduled\u2192interviewed\u2192offered), sends follow-ups after 3 days silence, max 2 follow-ups per recruiter. Runs every 2 hours with auto-reply.",
+      "follow_up_rules": "Auto follow-up after 3 days of silence in replied/screening stage. Max 2 follow-ups. Includes calendar booking link. Uses Resend API.",
+      "stages": "contacted \u2192 replied \u2192 screening \u2192 scheduled \u2192 interviewed \u2192 offered \u2192 hired (or dead)"
     },
     "confirmation_tracking": {
       "page_level": "submit_and_verify() checks page text + URL redirect + HTTP 200",
