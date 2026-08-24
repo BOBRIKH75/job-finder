@@ -288,6 +288,16 @@
       "commit": "ec908be",
       "permanent": true,
       "note": "Rule: After submit failure, check aria-invalid=true fields (ATS validation markers). These fields may not have required attribute but still block submit."
+    },
+    {
+      "date": "2026-08-24",
+      "workflow": "AI Job Agent",
+      "error": "Phase 3c: No recruiter emails found for 78 email-only jobs",
+      "root_cause": "HUNTER_API_KEY, APOLLO_API_KEY, SNOV_USER_ID, SNOV_API_SECRET, RESEND_KEY \u2014 all existed in GitHub Secrets but were NEVER added to agent.yml env block.",
+      "fix": "Added all 5 keys to env block. Added preflight check step that warns if any key is missing.",
+      "commit": "9fd47cb",
+      "permanent": true,
+      "note": "Rule: EVERY new feature that needs an API key MUST: (1) add to workflow env block, (2) be checked in preflight step. Never assume secrets are passed \u2014 VERIFY in workflow YAML."
     }
   ],
   "patterns": {
@@ -316,7 +326,9 @@
     "schedule_spacing": "Self-hosted runner = 1 worker. Max 8 runs/day. AI Agent (55min) + Greenhouse (30min) = 85 min pair. Space pairs 90 min apart minimum.",
     "inline_python_yaml": "NEVER edit .yml workflow files containing inline Python with string replace. The indentation and special chars (quotes, colons) WILL break YAML. Use separate .py script files instead.",
     "aria_invalid_fields": "After submit failure: fields marked aria-invalid=true are the ones blocking. Scan these FIRST before retrying. They may not have required attribute.",
-    "gmail_for_greenhouse": "Greenhouse sends email verification codes. Any workflow applying to Greenhouse MUST have GMAIL_USER + GMAIL_APP_PASSWORD env vars."
+    "gmail_for_greenhouse": "Greenhouse sends email verification codes. Any workflow applying to Greenhouse MUST have GMAIL_USER + GMAIL_APP_PASSWORD env vars.",
+    "env_var_preflight": "EVERY workflow MUST have a preflight step that checks ALL required env vars are set. Secrets exist in GitHub but are NOT automatically passed \u2014 they must be explicitly listed in the env: block. Missing key = silent feature failure.",
+    "recruiter_email_keys": "Recruiter email finding needs: HUNTER_API_KEY, APOLLO_API_KEY, SNOV_USER_ID, SNOV_API_SECRET, RESEND_KEY. ALL must be in agent.yml env block. Without them Phase 3c silently returns 0 emails."
   },
   "rules_for_new_workflows": [
     "Use venv (python3 -m venv) \u2014 never bare pip install",

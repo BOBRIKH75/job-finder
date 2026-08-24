@@ -121,6 +121,20 @@ jobs:
         working-directory: .
         run: python3 -m pytest test_career_ops_scorer.py -q
 
+      - name: Preflight — verify all API keys present
+        run: |
+          MISSING=""
+          [ -z "$GEMINI_API_KEY" ] && MISSING="$MISSING GEMINI_API_KEY"
+          [ -z "$GMAIL_USER" ] && MISSING="$MISSING GMAIL_USER"
+          [ -z "$GMAIL_APP_PASSWORD" ] && MISSING="$MISSING GMAIL_APP_PASSWORD"
+          [ -z "$HUNTER_API_KEY" ] && MISSING="$MISSING HUNTER_API_KEY"
+          [ -z "$RESEND_KEY" ] && MISSING="$MISSING RESEND_KEY"
+          if [ -n "$MISSING" ]; then
+            echo "⚠️ MISSING ENV VARS:$MISSING — some features disabled"
+          else
+            echo "✅ All API keys present"
+          fi
+
       - name: Run agent (full pipeline)
         continue-on-error: true
         timeout-minutes: 55
