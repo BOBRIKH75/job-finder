@@ -328,6 +328,16 @@
       "commit": "next",
       "permanent": true,
       "note": "Rule: Radio buttons are the #1 cause of form failures in ATS. NEVER exclude them from fill logic. Common ATS radio questions: authorized (Yes), sponsorship (No), relocate (No), background check (Yes), drug test (Yes)."
+    },
+    {
+      "date": "2026-08-24",
+      "workflow": "Daily Report",
+      "error": "python: cant open file agent/agent/scripts/application_confirmations.py",
+      "root_cause": "Workflow has working-directory: agent/. I wrote agent/scripts/... which becomes agent/agent/scripts/... at runtime.",
+      "fix": "Changed to scripts/application_confirmations.py (relative to working dir)",
+      "commit": "76e29df",
+      "permanent": true,
+      "note": "Rule: ALWAYS check working-directory in workflow BEFORE writing paths. If working-directory: agent/ then paths are RELATIVE to agent/."
     }
   ],
   "patterns": {
@@ -366,7 +376,9 @@
     "radio_buttons_ats": "ATS forms use radio buttons for: work authorization (Yes), sponsorship needed (No), willing to relocate (No), background check (Yes), drug test (Yes), 18+ (Yes). These MUST be filled or form rejects. Match question text to yes/no patterns.",
     "system_map_check": "BEFORE investigating ANY issue: check system_map in memory first. It shows what exists, what talks to what, and where configs live. Prevents re-investigating known architecture.",
     "never_hardcode_queries": "Search queries MUST be dynamic (from search_queries.json or profile). NEVER hardcode a single query. System learns and rotates automatically.",
-    "vendor_is_automated": "Vendor outreach is AUTOMATED: monthly email blast + weekly portal upload + auto-discovery from job scraping. Do NOT manually manage vendor list \u2014 it grows from find_jobs.py."
+    "vendor_is_automated": "Vendor outreach is AUTOMATED: monthly email blast + weekly portal upload + auto-discovery from job scraping. Do NOT manually manage vendor list \u2014 it grows from find_jobs.py.",
+    "verify_before_push": "MANDATORY before EVERY git push: (1) python syntax check, (2) YAML valid, (3) verify file paths EXIST on disk, (4) check working-directory in workflow, (5) no duplicate keys. NEVER push without verification. One bad push = 5 min wasted waiting for failure.",
+    "working_directory_paths": "If workflow has working-directory: X/ then ALL paths in run: are RELATIVE to X/. Writing X/scripts/foo.py becomes X/X/scripts/foo.py = file not found. Check FIRST."
   },
   "rules_for_new_workflows": [
     "Use venv (python3 -m venv) \u2014 never bare pip install",
