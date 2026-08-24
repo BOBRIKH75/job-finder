@@ -219,15 +219,23 @@ def handle_email_verification(page) -> bool:
     
     print("      📧 Email verification detected — reading code from Gmail...")
     
-    # Try Greenhouse-specific sender first (wait longer — emails can take 30-60 sec)
-    code = get_verification_code(sender_filter="greenhouse", max_wait_seconds=60)
-    if not code:
-        code = get_verification_code(sender_filter="no-reply", max_wait_seconds=20)
-    if not code:
-        code = get_verification_code(sender_filter="verify", max_wait_seconds=10)
-    if not code:
-        # Last resort: any recent email with a 6-digit code
-        code = get_verification_code(sender_filter="", max_wait_seconds=10)
+    # Try multiple ATS senders dynamically (Greenhouse, Lever, Ashby, Workday, generic)
+    senders_to_try = [
+        ("greenhouse", 45),
+        ("lever", 20),
+        ("ashby", 15),
+        ("workday", 15),
+        ("no-reply", 15),
+        ("noreply", 10),
+        ("verify", 10),
+        ("confirm", 10),
+        ("", 10),  # Last resort: any recent email
+    ]
+    code = None
+    for sender, wait_sec in senders_to_try:
+        code = get_verification_code(sender_filter=sender, max_wait_seconds=wait_sec)
+        if code:
+            break
     
     if code:
         return enter_verification_code(page, code)
