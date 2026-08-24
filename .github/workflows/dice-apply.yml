@@ -11,7 +11,7 @@ concurrency:
 
 jobs:
   dice-apply:
-    # Dice works BETTER on GitHub cloud (ubuntu) — confirmed getting email confirmations.
+    # Dice works BETTER on GitHub cloud (ubuntu) - confirmed getting email confirmations.
     # Self-hosted Mac: Dice detects headless Chrome 151 and silently rejects.
     runs-on: ubuntu-latest
     timeout-minutes: 20
