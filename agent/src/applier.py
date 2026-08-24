@@ -776,7 +776,76 @@ def _fill_remaining_required(page, profile: dict) -> int:
             except Exception:
                 continue
 
-        # 4. Handle old-style <select required> that are still empty
+        # 4. Handle required RADIO BUTTONS (authorization, sponsorship, relocation, etc.)
+        try:
+            # Find fieldsets/groups with required radio buttons that have NO selection
+            radio_groups = page.locator('fieldset:has(input[type="radio"])').all()
+            for group in radio_groups:
+                try:
+                    # Check if any radio in this group is already checked
+                    checked = group.locator('input[type="radio"]:checked')
+                    if checked.count() > 0:
+                        continue  # already answered
+
+                    # Get the question (legend or label)
+                    question = ""
+                    try:
+                        question = group.locator("legend").first.inner_text(timeout=300)
+                    except Exception:
+                        try:
+                            question = group.locator("label").first.inner_text(timeout=300)
+                        except Exception:
+                            pass
+
+                    if not question:
+                        continue
+
+                    q_lower = question.lower()
+
+                    # Determine answer based on question
+                    answer = None
+                    # Yes answers
+                    yes_patterns = ["authorized", "legally", "eligible", "right to work",
+                                    "background check", "consent", "18 years", "over 18",
+                                    "drug test", "agree", "acknowledge"]
+                    # No answers
+                    no_patterns = ["sponsorship", "visa", "require sponsor", "relocate",
+                                   "non-compete", "previously employed", "worked here",
+                                   "clearance", "disability"]
+
+                    if any(p in q_lower for p in yes_patterns):
+                        answer = "yes"
+                    elif any(p in q_lower for p in no_patterns):
+                        answer = "no"
+                    
+                    if not answer:
+                        continue
+
+                    # Click the matching radio button
+                    radios = group.locator('input[type="radio"]').all()
+                    for radio in radios:
+                        try:
+                            label = radio.locator("xpath=following-sibling::label | ancestor::label").first.inner_text(timeout=300).lower()
+                        except Exception:
+                            label = radio.get_attribute("value") or ""
+                            label = label.lower()
+
+                        if answer in label:
+                            radio.click()
+                            filled += 1
+                            break
+                    else:
+                        # Fallback: if no label matches, click first radio for "yes", second for "no"
+                        if len(radios) >= 2:
+                            idx = 0 if answer == "yes" else 1
+                            radios[idx].click()
+                            filled += 1
+                except Exception:
+                    continue
+        except Exception:
+            pass
+
+        # 5. Handle old-style <select required> that are still empty
         old_selects = page.locator('select[required], select[aria-required="true"]').all()
         for sel in old_selects:
             try:

@@ -318,6 +318,16 @@
       "commit": "N/A",
       "permanent": true,
       "note": "Rule: If a self-hosted run is stuck > 60 min, CANCEL it. It blocks everything. Check with: gh run list --status in_progress"
+    },
+    {
+      "date": "2026-08-24",
+      "workflow": "AI Job Agent",
+      "error": "16/51 form errors - radio buttons for authorization/sponsorship never filled",
+      "root_cause": "_fill_remaining_required explicitly excluded radio buttons: not([type=radio]). Greenhouse/Lever Yes/No questions (authorized to work, need sponsorship, relocate) are ALL radio buttons = always empty = always fail.",
+      "fix": "Added radio button group handler: detects fieldset with radios, reads question text, matches to yes/no patterns, clicks correct radio.",
+      "commit": "next",
+      "permanent": true,
+      "note": "Rule: Radio buttons are the #1 cause of form failures in ATS. NEVER exclude them from fill logic. Common ATS radio questions: authorized (Yes), sponsorship (No), relocate (No), background check (Yes), drug test (Yes)."
     }
   ],
   "patterns": {
@@ -352,7 +362,8 @@
     "yaml_ascii_only": "GitHub Actions workflow YAML must be 100% ASCII. Em-dash (\u2014), unicode quotes, non-ASCII chars in name: or step names = instant parse failure. Local YAML validators DO NOT catch this. Always use plain hyphen (-).",
     "workflow_debug_sequence": "When workflow shows file issue: (1) check non-ASCII chars first, (2) check duplicate keys, (3) compare with last working git commit, (4) restore and re-apply changes one by one.",
     "stuck_run_blocks_all": "Self-hosted runner = 1 worker. ONE stuck run blocks ALL other self-hosted jobs (Indeed, Greenhouse, AI Agent). Always check in_progress runs and cancel any > 60 min. Prevention: timeout-minutes on EVERY step.",
-    "no_looping_checklist": "Before fixing ANY issue: (1) Read memory first, (2) Check if same error exists in patterns, (3) If yes - apply known fix immediately, (4) If no - investigate then ADD to memory. Never fix same thing twice."
+    "no_looping_checklist": "Before fixing ANY issue: (1) Read memory first, (2) Check if same error exists in patterns, (3) If yes - apply known fix immediately, (4) If no - investigate then ADD to memory. Never fix same thing twice.",
+    "radio_buttons_ats": "ATS forms use radio buttons for: work authorization (Yes), sponsorship needed (No), willing to relocate (No), background check (Yes), drug test (Yes), 18+ (Yes). These MUST be filled or form rejects. Match question text to yes/no patterns."
   },
   "rules_for_new_workflows": [
     "Use venv (python3 -m venv) \u2014 never bare pip install",
