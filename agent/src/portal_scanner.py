@@ -24,7 +24,17 @@ SKILLS_FILTER = [
 
 # Seed companies known to hire Java developers on Lever/Greenhouse
 SEED_LEVER = [
+    # Top tech (remote-friendly)
     "netflix", "twitch", "coinbase", "stripe", "figma", "notion", "databricks",
+    "asana", "airtable", "linear", "clickup", "monday", "smartsheet",
+    "retool", "postman", "insomnia", "stoplight",
+    # International / Remote-first
+    "canonical", "suse", "redhat", "elastic", "cncf",
+    "wolt", "deliveryhero", "justeat", "glovo",
+    "revolut", "wise", "n26", "monzo", "starling",
+    # Cloud / DevOps (Java + Spring Boot)
+    "newrelic", "sumologic", "splunk", "logz", "coralogix",
+    "circleci", "travisci", "drone", "buildkite", "tekton",
     "cloudflare", "datadog", "elastic", "confluent", "mongodb", "cockroachlabs",
     "hashicorp", "grafana", "temporal", "pulumi", "airbyte", "dbt-labs",
     "snyk", "sonatype", "jfrog", "launchdarkly", "split", "optimizely",
@@ -46,6 +56,17 @@ SEED_LEVER = [
 ]
 
 SEED_GREENHOUSE = [
+    # FAANG / Big Tech
+    "meta", "apple", "amazon", "netflix", "google", "microsoft", "uber", "lyft",
+    "doordash", "instacart", "airbnb", "spotify", "pinterest", "snap", "reddit",
+    "linkedin", "twitter", "dropbox", "slack", "zoom", "shopify", "square", "block",
+    # Top Remote-first companies
+    "gitlab", "automattic", "zapier", "buffer", "doist", "toggl", "hotjar",
+    "invisionapp", "helpscout", "close", "basecamp", "37signals",
+    # Fintech (high Java demand)
+    "stripe", "plaid", "marqeta", "affirm", "brex", "chime", "sofi", "robinhood",
+    "coinbase", "kraken", "gemini", "blockfi", "anchorage", "fireblocks",
+    # Enterprise / SaaS (Java heavy)
     "axon", "blend", "brex", "chime", "plaid", "marqeta", "affirm",
     "squarespace", "webflow", "vercel", "supabase", "planetscale",
     "cockroachlabs", "timescale", "singlestore", "clickhouse",
