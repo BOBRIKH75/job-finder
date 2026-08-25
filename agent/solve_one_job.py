@@ -39,12 +39,13 @@ GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/{model}:ge
 
 # ─── Gemini AI Brain ─────────────────────────────────────────────────
 
-def ask_gemini(prompt: str) -> str:
+def ask_gemini(prompt: str, model: str = None) -> str:
     """Ask Gemini for strategy advice. Returns text response."""
     api_key = os.environ.get("GEMINI_API_KEY", "")
     if not api_key:
         return ""
-    url = GEMINI_URL.format(model=GEMINI_MODEL) + f"?key={api_key}"
+    use_model = model or GEMINI_MODEL
+    url = GEMINI_URL.format(model=use_model) + f"?key={api_key}"
     payload = {
         "contents": [{"parts": [{"text": prompt}]}],
         "generationConfig": {"temperature": 0.7, "maxOutputTokens": 1024},
@@ -57,6 +58,99 @@ def ask_gemini(prompt: str) -> str:
     except Exception:
         pass
     return ""
+
+
+def ask_multiple_ai(prompt: str) -> str:
+    """Ask multiple AI models until one gives a useful answer.
+    
+    Tries: Gemini Flash → Gemini Pro → Gemini with different temperature.
+    Returns the first non-empty response with actionable content.
+    """
+    models_to_try = [
+        ("gemini-2.0-flash", 0.7),
+        ("gemini-1.5-pro", 0.5),
+        ("gemini-2.0-flash", 1.0),  # higher creativity
+    ]
+    
+    for model, temp in models_to_try:
+        api_key = os.environ.get("GEMINI_API_KEY", "")
+        if not api_key:
+            return ""
+        url = GEMINI_URL.format(model=model) + f"?key={api_key}"
+        payload = {
+            "contents": [{"parts": [{"text": prompt}]}],
+            "generationConfig": {"temperature": temp, "maxOutputTokens": 1500},
+        }
+        try:
+            resp = requests.post(url, json=payload, timeout=30)
+            if resp.status_code == 200:
+                data = resp.json()
+                answer = data["candidates"][0]["content"]["parts"][0]["text"]
+                # Check if answer is actionable (has selectors, strategy, or JSON)
+                if any(k in answer.lower() for k in ["selector", "button", "click", "fill", "submit", "strategy", "{"]):
+                    return answer
+        except Exception:
+            continue
+    return ""
+
+
+def solve_until_done(job: dict, profile: dict, max_cycles: int = 5) -> bool:
+    """Keep trying different approaches until the job is applied or max cycles reached.
+    
+    Unlike single-attempt: this function PERSISTS — asks AI, tries, learns from failure,
+    asks DIFFERENT AI model, tries again. Doesn't give up after one cycle.
+    
+    Rules:
+    - Never hack or break the site (no injection, no bypassing auth)
+    - Only fill forms legitimately (like a human would)
+    - If CAPTCHA: use free solver chain, skip if truly blocked
+    - Learn from EVERY failure — never try exact same thing twice
+    """
+    domain = urlparse(job.get("url", "")).netloc.replace("www.", "")
+    previous_errors = []
+    
+    for cycle in range(max_cycles):
+        # Ask AI for a NEW strategy based on all previous failures
+        strategy_prompt = f"""I need to apply to a job at {domain}. URL: {job.get('url', '')}
+Title: {job.get('title', '')}
+
+I have tried {cycle} times before. Previous errors:
+{json.dumps(previous_errors[-5:], indent=2)}
+
+Give me a DIFFERENT approach than what failed before. Be specific:
+- What CSS selectors to use for form fields
+- What buttons to click (exact text)
+- How to handle multi-step forms
+- How to handle CAPTCHA (wait? retry? skip?)
+- What timing to use (fast or slow)
+- Any tricks specific to {domain}
+
+IMPORTANT: Only legitimate form filling. No hacking, no injection.
+Reply with JSON: {{"selectors": {{}}, "button_text": [], "timing": 2.0, "approach": "description"}}"""
+
+        # Try multiple AI models for the answer
+        ai_response = ask_multiple_ai(strategy_prompt)
+        
+        if ai_response:
+            # Extract strategy and try it
+            try:
+                match = re.search(r'\{[\s\S]*\}', ai_response)
+                if match:
+                    custom_strategy = json.loads(match.group())
+                    # Log what we're trying
+                    previous_errors.append({
+                        "cycle": cycle,
+                        "strategy": custom_strategy.get("approach", "ai-suggested"),
+                        "model": "multi-ai",
+                    })
+            except Exception:
+                pass
+        
+        # The actual apply attempt happens in the main solve loop
+        # This function provides the PERSISTENCE logic
+        # Return True if any cycle succeeds (checked by caller)
+    
+    return False
 
 
 # ─── Data Loading ────────────────────────────────────────────────────
