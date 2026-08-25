@@ -377,6 +377,25 @@ def fill_form(page, page_data, profile, learned, domain) -> dict:
                 filled.append(("additional_info", sel))
             except Exception:
                 pass
+        else:
+            # ANY other textarea question — use Gemini AI to generate answer
+            try:
+                from src.ai_fallback import ask_ai_about_field
+                ai_answer = ask_ai_about_field(label, "textarea")
+                if ai_answer:
+                    page.locator(sel).fill(ai_answer)
+                    filled.append(("ai:" + label[:30], sel))
+            except Exception:
+                # Fallback: generic answer
+                try:
+                    page.locator(sel).fill(
+                        "10+ years of Java/Spring Boot development. "
+                        "Expert in microservices, Kafka, Kubernetes, AWS. "
+                        "Available immediately for C2C contract. Green Card holder."
+                    )
+                    filled.append(("generic_answer", sel))
+                except Exception:
+                    pass
 
     # 5. Handle checkboxes (consent, agree, etc.)
     for inp in page_data["inputs"]:
