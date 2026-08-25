@@ -503,6 +503,42 @@
       "consumed_by": "Indeed + Dice scripts (read on each run)",
       "rotation": "Indeed rotates 3 queries per run (different each day)",
       "dice": "Uses all 6 queries per run"
+    },
+    "planned_features": {
+      "workday_support": {
+        "status": "PLANNED",
+        "what": "Separate workflow to apply to Workday companies (Microsoft, Disney, Walmart, Target, 40% of Fortune 500)",
+        "approach": "New portal scanner: search myworkdayjobs.com for Java jobs \u2192 feed URLs to existing AI Agent form filler (Playwright + Gemini)",
+        "companies": [
+          "microsoft",
+          "disney",
+          "walmart",
+          "target",
+          "johnsondohnson",
+          "pepsi",
+          "generalmotors",
+          "ford",
+          "boeing",
+          "lockheedmartin",
+          "raytheon",
+          "northropgrumman",
+          "deloitte",
+          "ey",
+          "pwc",
+          "kpmg"
+        ],
+        "reference": "https://github.com/ubangura/Workday-Application-Automator (archived, Node.js, basic only)",
+        "effort": "4-6 hours to build scanner + integrate with existing form filler",
+        "blocked_by": "nothing \u2014 can start anytime",
+        "expected_gain": "+30-50 applications/day from Fortune 500"
+      },
+      "linkedin_easy_apply": {
+        "status": "PLANNED",
+        "what": "Fix LinkedIn Easy Apply using invisible_playwright",
+        "approach": "Install AIHawk or invisible_playwright on self-hosted runner",
+        "expected_gain": "+30-50 applications/day",
+        "blocked_by": "Need to test invisible_playwright on Mac"
+      }
     }
   }
 }
