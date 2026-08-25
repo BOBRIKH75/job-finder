@@ -178,10 +178,21 @@ def get_next_strategy(attempt: int, domain: str, previous_errors: list[dict]) ->
 
     # Try Gemini for smart strategy selection
     if previous_errors and os.environ.get("GEMINI_API_KEY"):
+        # Search web for how others automated this domain
+        web_knowledge = ""
+        try:
+            search_prompt = f"How to automate job application on {domain}? What form fields does {domain} have? How to bypass CAPTCHA on {domain}? What selectors work for {domain} career page? Give me specific technical details: CSS selectors, button text, form structure, common issues."
+            web_tips = ask_gemini(search_prompt)
+            if web_tips:
+                web_knowledge = f"\n\nKnown information about {domain} from AI knowledge:\n{web_tips[:500]}"
+        except Exception:
+            pass
+
         prompt = f"""You are a job application automation expert. I'm trying to apply to a job on domain "{domain}".
 
 Previous {len(previous_errors)} attempts failed with these errors:
 {json.dumps(previous_errors[-3:], indent=2)}
+{web_knowledge}
 
 Available strategy templates (pick one number 0-4 or suggest modifications):
 0. standard_fill — fill all fields top-to-bottom, submit
@@ -190,8 +201,10 @@ Available strategy templates (pick one number 0-4 or suggest modifications):
 3. skip_optional — only fill required fields
 4. multi_page_aggressive — handle multi-step forms with Next/Continue buttons
 
-Based on the errors, which strategy should I try next? Reply with ONLY a JSON object like:
-{{"strategy_index": 2, "modifications": {{"wait_before_fill": 5.0, "extra_clicks": ["button.close-popup"]}}}}
+Based on the errors and the domain knowledge above, which strategy should I try next?
+Also suggest specific CSS selectors or button text if you know them for this site.
+Reply with ONLY a JSON object like:
+{{"strategy_index": 2, "modifications": {{"wait_before_fill": 5.0, "extra_clicks": ["button.close-popup"], "custom_selectors": {{"submit": "button[data-testid=submit]"}}}}}}
 """
         response = ask_gemini(prompt)
         try:
