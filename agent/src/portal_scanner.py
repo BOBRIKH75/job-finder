@@ -57,9 +57,9 @@ SEED_LEVER = [
 
 SEED_GREENHOUSE = [
     # FAANG / Big Tech
-    "meta", "apple", "amazon", "netflix", "google", "microsoft", "uber", "lyft",
-    "doordash", "instacart", "airbnb", "spotify", "pinterest", "snap", "reddit",
-    "linkedin", "twitter", "dropbox", "slack", "zoom", "shopify", "square", "block",
+    "netflix", 
+    "airbnb", "spotify", "pinterest", "snap", "reddit",
+    "linkedin", "dropbox", 
     # Top Remote-first companies
     "gitlab", "automattic", "zapier", "buffer", "doist", "toggl", "hotjar",
     "invisionapp", "helpscout", "close", "basecamp", "37signals",
