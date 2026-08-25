@@ -29,7 +29,7 @@ def dismiss_popups(page) -> int:
     """Close cookie banners, modals, overlays that block the form."""
     dismissed = 0
     # Cookie consent buttons
-    for text in ["Accept", "Accept All", "Accept Cookies", "I Agree", "Got it", "OK", "Close", "Dismiss", "×", "✕"]:
+    for text in ["Accept", "Accept All", "Allow All", "ALLOW ALL", "Allow Selection", "Accept Cookies", "I Agree", "Agree", "Got it", "OK", "Close", "Dismiss", "Deny", "Reject", "×", "✕", "Continue"]:
         try:
             btn = page.locator(f'button:has-text("{text}"), a:has-text("{text}"), [aria-label="Close"]').first
             if btn.is_visible(timeout=1000):
