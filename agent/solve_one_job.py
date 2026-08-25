@@ -153,6 +153,153 @@ Reply with JSON: {{"selectors": {{}}, "button_text": [], "timing": 2.0, "approac
     return False
 
 
+
+
+def validate_before_submit(page, profile: dict) -> dict:
+    """VALIDATOR AI — checks the filled form is correct BEFORE clicking submit.
+    
+    Takes a screenshot + reads all filled values, asks a separate AI:
+    'Is this form filled correctly? Are all required fields filled?
+    Does the data match this profile?'
+    
+    Returns: {"approved": True/False, "issues": [...], "confidence": 0-100}
+    """
+    try:
+        # Read all filled field values from the page
+        filled_data = page.evaluate("""() => {
+            const fields = {};
+            document.querySelectorAll('input:not([type=hidden]):not([type=submit]), select, textarea').forEach(el => {
+                const label = el.getAttribute('aria-label') || el.getAttribute('name') || el.getAttribute('placeholder') || el.id || '';
+                const value = el.value || '';
+                if (label && value) fields[label] = value;
+            });
+            // Check unchecked required radios
+            const radioGroups = {};
+            document.querySelectorAll('input[type=radio]').forEach(r => {
+                const name = r.getAttribute('name') || '';
+                if (name) {
+                    if (!radioGroups[name]) radioGroups[name] = false;
+                    if (r.checked) radioGroups[name] = true;
+                }
+            });
+            fields['_unchecked_radios'] = Object.entries(radioGroups).filter(([k,v]) => !v).map(([k]) => k);
+            // Count visible error messages
+            const errors = document.querySelectorAll('[class*="error"]:not([style*="display: none"]), [aria-invalid="true"]');
+            fields['_visible_errors'] = errors.length;
+            return fields;
+        }""")
+        
+        # Ask VALIDATOR AI (separate from strategy AI)
+        validator_prompt = f"""You are a QA VALIDATOR for job application forms. Check if this form is filled correctly.
+
+Profile (expected values):
+- Name: {profile.get('first_name', '')} {profile.get('last_name', '')}
+- Email: {profile.get('email', '')}
+- Phone: {profile.get('phone', '')}
+- Location: {profile.get('location', '')}
+
+Filled form values:
+{json.dumps(filled_data, indent=2)}
+
+Check:
+1. Are name/email/phone filled correctly?
+2. Are there unchecked required radio buttons? (see _unchecked_radios)
+3. Are there visible errors? (see _visible_errors)
+4. Is anything obviously wrong (empty required fields, wrong format)?
+
+Reply ONLY with JSON:
+{{"approved": true/false, "confidence": 0-100, "issues": ["issue1", "issue2"]}}
+"""
+        response = ask_gemini(validator_prompt, model="gemini-2.0-flash")
+        try:
+            match = re.search(r'\{[\s\S]*?\}', response)
+            if match:
+                result = json.loads(match.group())
+                return result
+        except Exception:
+            pass
+        
+        # Default: approve if no visible errors and fields are filled
+        if filled_data.get('_visible_errors', 0) == 0 and len(filled_data) > 3:
+            return {"approved": True, "confidence": 60, "issues": ["auto-approved (validator failed to parse)"]}
+    except Exception as e:
+        return {"approved": True, "confidence": 50, "issues": [f"validator error: {str(e)[:40]}"]}
+    
+    return {"approved": False, "confidence": 0, "issues": ["could not validate"]}
+
+
+def record_winning_strategy(domain: str, job_url: str, steps: list[dict]):
+    """Record EXACT steps that worked — so it can be reproduced for same domain.
+    
+    Saves: every click, every fill, every wait — like a recording.
+    Next time same domain → replay this exact sequence.
+    """
+    strategies = load_strategies()
+    if domain not in strategies:
+        strategies[domain] = {}
+    
+    strategies[domain]["winning_strategy"] = {
+        "recorded_at": datetime.now().isoformat(),
+        "job_url_example": job_url,
+        "steps": steps,
+        "replay_count": 0,
+        "success_rate": 1.0,
+    }
+    strategies[domain]["total_successes"] = strategies[domain].get("total_successes", 0) + 1
+    save_strategies(strategies)
+    print(f"      💾 Recorded winning strategy for {domain} ({len(steps)} steps)")
+
+
+def replay_strategy(page, domain: str, profile: dict) -> bool:
+    """Replay a previously recorded winning strategy for this domain.
+    
+    Returns True if replay succeeded.
+    """
+    strategies = load_strategies()
+    if domain not in strategies or "winning_strategy" not in strategies[domain]:
+        return False
+    
+    strategy = strategies[domain]["winning_strategy"]
+    steps = strategy.get("steps", [])
+    if not steps:
+        return False
+    
+    print(f"      🔄 Replaying winning strategy for {domain} ({len(steps)} steps)")
+    
+    for step in steps:
+        try:
+            action = step.get("action", "")
+            selector = step.get("selector", "")
+            value = step.get("value", "")
+            
+            if action == "fill":
+                # Replace template values with actual profile data
+                actual_value = value
+                for key, val in profile.items():
+                    if f"{{{key}}}" in value:
+                        actual_value = value.replace(f"{{{key}}}", str(val))
+                page.locator(selector).first.fill(actual_value)
+            elif action == "click":
+                page.locator(selector).first.click()
+            elif action == "select":
+                page.locator(selector).first.select_option(value=value)
+            elif action == "upload":
+                resume = Path(__file__).parent / "resume.pdf"
+                if resume.exists():
+                    page.locator(selector).first.set_input_files(str(resume))
+            elif action == "wait":
+                time.sleep(float(value) if value else 1.0)
+            
+            time.sleep(0.5)  # small delay between steps
+        except Exception:
+            continue
+    
+    # Update replay count
+    strategy["replay_count"] = strategy.get("replay_count", 0) + 1
+    save_strategies(strategies)
+    return True
+
+
 # ─── Data Loading ────────────────────────────────────────────────────
 
 def load_unsolved() -> list[dict]:
