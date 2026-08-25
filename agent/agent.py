@@ -278,7 +278,7 @@ def run_apply(db, jobs, dry_run=False):
     # These ALL require paid CAPTCHA solving (CapSolver $6) to work.
     # Without paid solver: 0% success rate. With: 90%+. Skip to save time.
     CAPTCHA_BLOCKED_DOMAINS = {
-        "myworkdayjobs.com", "wd1.myworkdaysite.com", "wd5.myworkdaysite.com",
+        # myworkdayjobs.com — REMOVED from block list (let agent try with free solver)
         "icims.com", "ultipro.com", "paycomonline.net",
         "smartrecruiters.com",  # Sometimes has invisible reCAPTCHA
         "jobs.lever.co",  # hCaptcha on ALL applications (2026)
