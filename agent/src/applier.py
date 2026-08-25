@@ -847,7 +847,7 @@ def _fill_remaining_required(page, profile: dict) -> int:
             pass
 
         # 5. Handle old-style <select required> that are still empty
-        old_selects = page.locator('select[required], select[aria-required="true"]').all()
+        old_selects = page.locator('select:visible').all()  # Fill ALL visible selects (not just required — Greenhouse validates via JS)
         for sel in old_selects:
             try:
                 current_val = sel.input_value(timeout=500)
