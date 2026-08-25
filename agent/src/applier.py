@@ -555,10 +555,11 @@ def _fill_remaining_required(page, profile: dict) -> int:
     # Smart answers for common job application patterns
     SMART_ANSWERS = {
         # Work authorization
-        "authorized": "Yes", "legally authorized": "Yes", "eligible": "Yes",
+        "authorized": "Yes", "legally authorized": "Yes", "eligible": "Yes", "permanent resident": "Yes",
         "right to work": "Yes", "work permit": "Yes", "employment eligibility": "Yes",
         # Sponsorship  
         "sponsorship": "No", "visa": "No", "require sponsor": "No", "immigration": "No",
+        "citizen": "No", "us citizen": "No", "citizenship": "No", "u.s. citizen": "No",
         # Relocation
         "relocate": "No", "willing to relocate": "No", "open to relocation": "No",
         # Availability

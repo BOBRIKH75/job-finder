@@ -112,6 +112,22 @@ def matches_skills(title: str, description: str = "") -> bool:
     return any(s in combined for s in SKILLS_FILTER)
 
 
+# Jobs to SKIP — require US Citizenship or Security Clearance (Green Card not enough)
+DISQUALIFY_SIGNALS = [
+    "must be a us citizen", "must be us citizen", "u.s. citizenship required",
+    "us citizenship required", "requires us citizenship", "citizen only",
+    "security clearance required", "top secret clearance", "ts/sci",
+    "must have active clearance", "secret clearance required",
+    "public trust clearance", "dod clearance",
+]
+
+
+def is_disqualified(title: str, description: str = "") -> bool:
+    """Check if job requires US Citizenship or Security Clearance (we have Green Card only)."""
+    combined = (title + " " + description).lower()
+    return any(s in combined for s in DISQUALIFY_SIGNALS)
+
+
 def scan_lever(company: str) -> list[dict]:
     """Check Lever API for Java jobs at a company. Free, no auth."""
     jobs = []
@@ -122,7 +138,7 @@ def scan_lever(company: str) -> list[dict]:
         for posting in resp.json():
             title = posting.get("text", "")
             desc = posting.get("descriptionPlain", "") or posting.get("description", "")
-            if matches_skills(title, desc):
+            if matches_skills(title, desc) and not is_disqualified(title, desc):
                 jobs.append({
                     "title": title,
                     "company": posting.get("categories", {}).get("team", company),
@@ -147,7 +163,7 @@ def scan_greenhouse(company: str) -> list[dict]:
         for posting in resp.json().get("jobs", []):
             title = posting.get("title", "")
             desc = posting.get("content", "")
-            if matches_skills(title, desc):
+            if matches_skills(title, desc) and not is_disqualified(title, desc):
                 url = posting.get("absolute_url", "")
                 job_id = posting.get("id", "")
                 # Always use direct Greenhouse URL (company-hosted URLs often need JS)
