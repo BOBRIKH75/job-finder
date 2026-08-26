@@ -754,46 +754,49 @@ def _fill_remaining_required(page, profile: dict) -> int:
                     
                     # React Select: click → ArrowDown (opens menu) → type (filters) → exact match select
                     combo.click()
-                    time.sleep(0.3)
+                    time.sleep(0.2)
                     page.keyboard.press("ArrowDown")  # Opens the dropdown
-                    time.sleep(0.5)
-                    page.keyboard.type(answer, delay=50)  # Type to filter options
-                    time.sleep(0.5)
+                    time.sleep(0.3)
+                    page.keyboard.type(answer, delay=30)  # Type to filter options (30ms = fast but triggers React)
+                    time.sleep(0.3)
                     
                     # Try EXACT match first (fixes Male→Female bug)
-                    # Look for an option whose text matches exactly (case-insensitive)
+                    # Use Playwright filter for performance instead of looping all options
                     options = page.locator('[role="option"]')
                     option_count = options.count()
                     exact_found = False
                     
                     if option_count > 0:
-                        for opt_idx in range(option_count):
-                            opt_text = options.nth(opt_idx).inner_text(timeout=300).strip()
-                            if opt_text.lower() == answer.lower():
-                                # Exact match — click it directly
-                                options.nth(opt_idx).click()
-                                exact_found = True
-                                break
+                        # Fast path: try to find exact text match using locator filter
+                        exact_option = options.filter(has_text=answer)
+                        if exact_option.count() > 0:
+                            # Verify it's truly exact (filter is substring match)
+                            for i in range(exact_option.count()):
+                                opt_text = exact_option.nth(i).inner_text(timeout=500).strip()
+                                if opt_text.lower() == answer.lower():
+                                    exact_option.nth(i).click()
+                                    exact_found = True
+                                    break
                         
                         if not exact_found:
-                            # No exact match — pick first option (best available)
+                            # No exact match — pick first visible option
                             page.keyboard.press("Enter")
                         
                         filled += 1
                         filled_this_pass += 1
-                        time.sleep(0.3)
+                        time.sleep(0.2)
                     else:
                         # No options from typing — try opening menu and selecting first
                         page.keyboard.press("Escape")
-                        time.sleep(0.2)
+                        time.sleep(0.15)
                         combo.click()
-                        time.sleep(0.3)
+                        time.sleep(0.2)
                         page.keyboard.press("ArrowDown")
-                        time.sleep(0.5)
+                        time.sleep(0.3)
                         page.keyboard.press("Enter")  # Select first available option
                         filled += 1
                         filled_this_pass += 1
-                        time.sleep(0.3)
+                        time.sleep(0.2)
                             
                 except Exception:
                     try:
@@ -806,7 +809,7 @@ def _fill_remaining_required(page, profile: dict) -> int:
             if filled_this_pass == 0:
                 break
             # Brief wait for any dynamic fields to render after selections
-            time.sleep(0.5)
+            time.sleep(0.3)
         
         # 3. Handle required checkboxes (consent, agree, terms)
         checkboxes = page.locator('input[type="checkbox"][required], input[type="checkbox"][aria-required="true"]').all()
