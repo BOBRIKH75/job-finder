@@ -392,7 +392,12 @@ def _click_submit_after_code(page) -> None:
             if btn.is_visible(timeout=1000):
                 btn.click()
                 print(f"      ✅ Clicked submit after code: {btn_sel}")
-                page.wait_for_timeout(3000)
+                # Wait for page to START navigating away from the OTP form.
+                # Greenhouse typically redirects within 2-5s; headless CI needs up to 8s.
+                try:
+                    page.wait_for_load_state("domcontentloaded", timeout=8000)
+                except Exception:
+                    page.wait_for_timeout(4000)
                 return
         except Exception:
             continue
@@ -401,7 +406,10 @@ def _click_submit_after_code(page) -> None:
     try:
         print("      ⏎ No button found — pressing Enter to submit code...")
         page.keyboard.press("Enter")
-        page.wait_for_timeout(3000)
+        try:
+            page.wait_for_load_state("domcontentloaded", timeout=8000)
+        except Exception:
+            page.wait_for_timeout(4000)
         return
     except Exception:
         pass

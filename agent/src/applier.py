@@ -1651,6 +1651,22 @@ def apply_to_job(page, profile, job, learned, dry_run=False, db=None, site_needs
                     if handle_email_verification(page, skip_detection=True):
                         print("      ✅ Email verification completed — rechecking submit status")
                         snap(page, f"email_verified_{attempt}")
+                        # Wait for Greenhouse to navigate to the thank-you page.
+                        # React apps take 3-8s in headless CI after OTP submit — do NOT read
+                        # text immediately. Wait until success/error text is actually in the DOM.
+                        try:
+                            page.wait_for_function(
+                                """() => {
+                                    const t = (document.body.innerText || '').toLowerCase();
+                                    return t.includes('thank you') || t.includes('application received')
+                                        || t.includes('successfully applied')
+                                        || t.includes('invalid') || t.includes('expired')
+                                        || t.includes('incorrect') || t.includes('try again');
+                                }""",
+                                timeout=12000,
+                            )
+                        except Exception:
+                            page.wait_for_timeout(4000)  # fallback: just wait 4s
                         # Re-check for success signals after verification
                         try:
                             post_verify_text = page.locator("body").inner_text(timeout=5000).lower()
