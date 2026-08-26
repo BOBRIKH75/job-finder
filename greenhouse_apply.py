@@ -86,9 +86,15 @@ def main():
         company_name = job.get('company', '')
 
         # Strategy 1: Try direct API POST (no browser, fastest)
-        resume = profile.get('resume_path', 'agent/resume.pdf')
+        resume = profile.get('resume_path', os.path.join(os.path.dirname(__file__), 'agent', 'resume.pdf'))
         if not os.path.exists(resume):
-            resume = os.path.expanduser('~/Downloads/CV/Bob_Rikh_Java_Backend_Developer_C2C.pdf')
+            resume_candidates = [
+                os.path.join(os.path.dirname(__file__), 'agent', 'resume.pdf'),
+                'resume.pdf',
+                os.path.expanduser('~/Downloads/CV/Bob_Rikh_Java_Backend_Developer_C2C.pdf'),
+                os.path.expanduser('~/Downloads/CV/job-finder/agent/resume.pdf'),
+            ]
+            resume = next((r for r in resume_candidates if os.path.exists(r)), resume)
 
         result = submit_greenhouse_api(url, profile, resume)
 
