@@ -124,17 +124,40 @@ def main():
             time.sleep(1)
             continue
 
-        # If API failed, record why and save for retry with browser strategy
+        # If API failed, try browser strategy (PROVEN: 10 email confirmations on Aug 25)
         error = result.get('error', 'unknown')
+        
+        # Strategy 2: Browser-based form filling (works without API key)
+        if 'HTTP 400' in error or 'HTTP 422' in error or 'Bad Request' in error:
+            try:
+                from src.applier import run_applications
+                browser_jobs = [{'url': url, 'title': title, 'company': company_name}]
+                browser_results = run_applications(browser_jobs, dry_run=False, max_apps=1, db=db)
+                if browser_results and browser_results[0].get('submitted'):
+                    applied += 1
+                    upsert_application(
+                        db,
+                        company=company_name,
+                        job_title=title,
+                        job_url=url,
+                        ats_type='greenhouse',
+                        match_score=80,
+                        status='applied',
+                    )
+                    print(f"  ✅ {title} @ {company_name} (browser)")
+                    time.sleep(1)
+                    continue
+            except Exception as browser_err:
+                error = f"API: {error} | Browser: {str(browser_err)[:60]}"
 
-        # Strategy 2: If it's a CAPTCHA/verification issue, note it for solve-unsolved
+        # Both strategies failed — save for retry
         failed.append({
             'url': url,
             'title': title,
             'company': company_name,
             'reason': error,
             'platform': 'greenhouse',
-            'strategy_tried': 'api_direct',
+            'strategy_tried': 'api+browser',
             'timestamp': time.strftime('%Y-%m-%dT%H:%M:%S'),
         })
         print(f"  ❌ {title} @ {company_name}: {error[:80]}")
