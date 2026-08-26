@@ -271,38 +271,47 @@ def _click_submit_after_code(page) -> None:
     print("      ⚠️ No submit button found after entering code — code was entered though")
 
 
-def handle_email_verification(page) -> bool:
+def handle_email_verification(page, skip_detection: bool = False) -> bool:
     """Detect and handle email verification challenge on current page.
     
     Call this when the page shows a verification/security code prompt.
     Returns True if verification was successful.
+    
+    Args:
+        page: Playwright page object
+        skip_detection: If True, skip the page text signal check (caller already confirmed
+                       this is a verification page, e.g. submit_and_verify returned 
+                       email_verification_required). Goes straight to reading code from Gmail.
     """
-    # Check if page is asking for email verification
-    try:
-        page_text = page.locator("body").inner_text(timeout=3000).lower()
-    except Exception:
-        return False
-    
-    verification_signals = [
-        "verification code",
-        "security code",
-        "sent a code",
-        "check your email",
-        "verify your email",
-        "enter the code",
-        "confirmation code",
-        "enter code",
-        "email a code",
-        "sent you a code",
-        "verify your identity",
-        "one-time code",
-        "one time code",
-        "6-digit code",
-        "digit code",
-    ]
-    
-    if not any(signal in page_text for signal in verification_signals):
-        return False
+    if not skip_detection:
+        # Check if page is asking for email verification
+        try:
+            page_text = page.locator("body").inner_text(timeout=3000).lower()
+        except Exception:
+            return False
+        
+        verification_signals = [
+            "verification code",
+            "security code",
+            "sent a code",
+            "check your email",
+            "verify your email",
+            "enter the code",
+            "confirmation code",
+            "enter code",
+            "email a code",
+            "sent you a code",
+            "verify your identity",
+            "one-time code",
+            "one time code",
+            "6-digit code",
+            "digit code",
+            "copy and paste this code",
+            "resubmit your application",
+        ]
+        
+        if not any(signal in page_text for signal in verification_signals):
+            return False
     
     print("      📧 Email verification detected — reading code from Gmail...")
     

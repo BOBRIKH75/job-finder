@@ -1546,7 +1546,7 @@ def apply_to_job(page, profile, job, learned, dry_run=False, db=None, site_needs
                 try:
                     page.wait_for_timeout(2000)  # Let the security code page fully load
                     from src.email_code_reader import handle_email_verification
-                    if handle_email_verification(page):
+                    if handle_email_verification(page, skip_detection=True):
                         print("      ✅ Email verification completed — rechecking submit status")
                         snap(page, f"email_verified_{attempt}")
                         # Re-check for success signals after verification
