@@ -98,9 +98,13 @@ MAX_CONTACTS_PER_RUN = 150
 
 
 def load_cookies() -> list:
-    """Load Apollo cookies from JSON file (exported via EditThisCookie)."""
+    """Load Apollo cookies from JSON file — with TTL expiration check.
+    
+    Cookies are only valid for a limited time. If expired, returns empty
+    so the system falls back to fresh login automatically.
+    """
     if not COOKIES_FILE.exists():
-        # Also check environment variable (for CI — base64-encoded JSON)
+        # Check environment variable (for CI — base64-encoded JSON)
         encoded = os.environ.get("APOLLO_COOKIES_B64", "")
         if encoded:
             import base64
@@ -110,12 +114,39 @@ def load_cookies() -> list:
         raw = os.environ.get("APOLLO_COOKIES_JSON", "")
         if raw:
             return json.loads(raw)
-        
-        print(f"❌ No cookies found. Export from Chrome using EditThisCookie extension.")
-        print(f"   Save to: {COOKIES_FILE}")
-        print(f"   Or set APOLLO_COOKIES_B64 env var (base64-encoded JSON)")
         return []
-    return json.loads(COOKIES_FILE.read_text())
+    
+    # Check TTL — cookies file older than 7 days = expired, force fresh login
+    import stat
+    file_age_seconds = time.time() - COOKIES_FILE.stat().st_mtime
+    max_age_seconds = 7 * 24 * 60 * 60  # 7 days TTL
+    
+    if file_age_seconds > max_age_seconds:
+        print(f"   ⚠️  Cookies expired (age: {int(file_age_seconds / 86400)}d, TTL: 7d) — will re-login")
+        # Don't delete — keep as backup, but return empty to trigger fresh login
+        return []
+    
+    cookies = json.loads(COOKIES_FILE.read_text())
+    
+    # Also check individual cookie expiry timestamps
+    now = time.time()
+    valid_cookies = []
+    expired_count = 0
+    for cookie in cookies:
+        expiry = cookie.get("expiry") or cookie.get("expirationDate")
+        if expiry and float(expiry) < now:
+            expired_count += 1
+            continue
+        valid_cookies.append(cookie)
+    
+    if expired_count > len(cookies) * 0.5:
+        # More than half expired — session is dead
+        print(f"   ⚠️  {expired_count}/{len(cookies)} cookies expired — will re-login")
+        return []
+    
+    days_old = int(file_age_seconds / 86400)
+    print(f"   ✅ Cookies loaded ({len(valid_cookies)} valid, {days_old}d old, TTL: 7d)")
+    return valid_cookies
 
 
 def create_driver(headless: bool = True) -> webdriver.Chrome:
@@ -544,9 +575,16 @@ def update_vendor_list(contacts: list):
 def main(headless: bool = True):
     """Main entry point — scrape Apollo for recruiters.
     
-    Strategy:
-    1. Try Apollo API (APOLLO_API_KEY) — already configured, no cookies needed
-    2. Fall back to Selenium + cookies only if API key not available
+    Strategy (fully dynamic — no manual setup needed):
+    1. Try Apollo API first (fast, no browser)
+    2. If API fails (403) → login with email/password via Selenium
+    3. Save session cookies for future runs (avoid re-login)
+    4. Scrape search results
+    
+    Required secrets (in GitHub):
+    - APOLLO_API_KEY (for API method)
+    - APOLLO_EMAIL + APOLLO_PASSWORD (for Selenium login)
+    - GMAIL_USER can be used as APOLLO_EMAIL fallback
     """
     print("🚀 Apollo.io Recruiter Scraper")
     print(f"   Target: Technical/IT Recruiters, Bench Sales at staffing firms")
@@ -560,22 +598,30 @@ def main(headless: bool = True):
 
     all_contacts = []
 
-    # ─── METHOD 1: Apollo API (preferred — already has APOLLO_API_KEY secret) ───
+    # ─── METHOD 1: Apollo API (fastest, no browser) ───
     api_key = os.environ.get("APOLLO_API_KEY", "")
     if api_key:
-        print("📡 Using Apollo API (APOLLO_API_KEY found)...")
+        print("📡 Method 1: Apollo API...")
         api_contacts = _search_via_api(api_key)
-        all_contacts.extend(api_contacts)
-        print(f"   API returned: {len(api_contacts)} contacts\n")
-    
-    # ─── METHOD 2: Selenium + cookies (fallback) ───
+        if api_contacts:
+            all_contacts.extend(api_contacts)
+            print(f"   ✅ API returned: {len(api_contacts)} contacts\n")
+        else:
+            print("   ⚠️  API failed (likely 403 — free plan). Trying Selenium login...\n")
+
+    # ─── METHOD 2: Selenium + Auto-Login (dynamic, no cookies needed) ───
     if not all_contacts:
-        cookies = load_cookies()
-        if cookies:
-            print("🌐 Falling back to Selenium + cookies...")
+        apollo_email = os.environ.get("APOLLO_EMAIL", os.environ.get("GMAIL_USER", ""))
+        apollo_password = os.environ.get("APOLLO_PASSWORD", "")
+        
+        if apollo_email and apollo_password:
+            print(f"🌐 Method 2: Selenium auto-login as {apollo_email[:5]}***...")
             driver = create_driver(headless=headless)
             try:
-                if inject_cookies(driver, cookies):
+                if _login_with_credentials(driver, apollo_email, apollo_password):
+                    # Save cookies for next time
+                    _save_session_cookies(driver)
+                    
                     for search in SEARCH_QUERIES:
                         contacts = run_search(driver, search)
                         new_contacts = deduplicate(contacts, existing_emails)
@@ -584,11 +630,29 @@ def main(headless: bool = True):
                         if len(all_contacts) >= MAX_CONTACTS_PER_RUN:
                             break
                 else:
-                    print("❌ Cookie auth failed")
+                    print("   ❌ Login failed")
             finally:
                 driver.quit()
-        elif not api_key:
-            print("❌ No APOLLO_API_KEY and no cookies — cannot scrape")
+        
+        # ─── METHOD 3: Saved cookies from previous login ───
+        elif load_cookies():
+            print("🌐 Method 3: Using saved cookies from previous session...")
+            driver = create_driver(headless=headless)
+            try:
+                if inject_cookies(driver, load_cookies()):
+                    for search in SEARCH_QUERIES:
+                        contacts = run_search(driver, search)
+                        new_contacts = deduplicate(contacts, existing_emails)
+                        all_contacts.extend(new_contacts)
+                        existing_emails.update(c.get("email", "").lower() for c in new_contacts)
+                        if len(all_contacts) >= MAX_CONTACTS_PER_RUN:
+                            break
+            finally:
+                driver.quit()
+        else:
+            print("❌ No credentials available. Add APOLLO_EMAIL + APOLLO_PASSWORD secrets to GitHub.")
+            print("   Run: gh secret set APOLLO_EMAIL")
+            print("   Run: gh secret set APOLLO_PASSWORD")
             return []
 
     # Deduplicate against all existing contacts
@@ -609,6 +673,68 @@ def main(headless: bool = True):
         print("\n⚠️  No new contacts found this run")
 
     return all_contacts
+
+
+def _login_with_credentials(driver, email: str, password: str) -> bool:
+    """Login to Apollo.io with email/password — fully automated."""
+    print("   Navigating to login page...")
+    driver.get("https://app.apollo.io/#/login")
+    time.sleep(4)
+
+    try:
+        # Find and fill email field
+        email_field = WebDriverWait(driver, 10).until(
+            EC.presence_of_element_located((By.CSS_SELECTOR, 
+                "input[name='email'], input[type='email'], input[placeholder*='email' i]"))
+        )
+        email_field.clear()
+        email_field.send_keys(email)
+        time.sleep(1)
+
+        # Find and fill password field
+        password_field = driver.find_element(By.CSS_SELECTOR, 
+            "input[name='password'], input[type='password']")
+        password_field.clear()
+        password_field.send_keys(password)
+        time.sleep(1)
+
+        # Click login button
+        login_btn = driver.find_element(By.CSS_SELECTOR, 
+            "button[type='submit'], button[class*='login'], button[class*='sign']")
+        login_btn.click()
+        time.sleep(5)
+
+        # Verify login success
+        if "/login" not in driver.current_url and "/sign" not in driver.current_url:
+            print("   ✅ Login successful!")
+            return True
+        
+        # Check for error messages
+        try:
+            error = driver.find_element(By.CSS_SELECTOR, "[class*='error'], [class*='alert']")
+            print(f"   ❌ Login error: {error.text[:100]}")
+        except:
+            pass
+
+        return False
+
+    except TimeoutException:
+        print("   ❌ Login page didn't load (timeout)")
+        return False
+    except Exception as e:
+        print(f"   ❌ Login error: {e}")
+        return False
+
+
+def _save_session_cookies(driver):
+    """Save current session cookies for future runs (avoid re-login)."""
+    try:
+        cookies = driver.get_cookies()
+        DATA_DIR.mkdir(parents=True, exist_ok=True)
+        COOKIES_FILE.write_text(json.dumps(cookies, indent=2))
+        print(f"   💾 Session cookies saved ({len(cookies)} cookies)")
+    except Exception as e:
+        print(f"   ⚠️  Could not save cookies: {e}")
 
 
 def _search_via_api(api_key: str) -> list:

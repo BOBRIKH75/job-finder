@@ -15,8 +15,8 @@ defaults:
 
 jobs:
   apollo-outreach:
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
+    runs-on: self-hosted
+    timeout-minutes: 20
 
     steps:
       - uses: actions/checkout@v4
@@ -26,21 +26,13 @@ jobs:
           python-version: "3.12"
 
       - name: Install dependencies
-        run: |
-          pip install selenium webdriver-manager requests
-
-      - name: Install Chrome (if not present)
-        run: |
-          if ! command -v google-chrome &> /dev/null; then
-            echo "Installing Chrome..."
-            wget -q -O /tmp/chrome.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
-            sudo dpkg -i /tmp/chrome.deb || sudo apt-get -f install -y
-          fi
-          google-chrome --version || true
+        run: pip install selenium webdriver-manager requests
 
       - name: Run Apollo scraper + outreach
         env:
           APOLLO_API_KEY: ${{ secrets.APOLLO_API_KEY }}
+          APOLLO_EMAIL: ${{ secrets.APOLLO_EMAIL }}
+          APOLLO_PASSWORD: ${{ secrets.APOLLO_PASSWORD }}
           APOLLO_COOKIES_B64: ${{ secrets.APOLLO_COOKIES_B64 }}
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
@@ -53,7 +45,7 @@ jobs:
           cd $GITHUB_WORKSPACE
           git config user.email "bot@github.actions"
           git config user.name "Apollo Recruiter Bot"
-          git add agent/data/apollo_recruiters.json agent/data/apollo_contacted.json agent/data/apollo_outreach_log.json agent/data/vendor_list.json 2>/dev/null || true
+          git add agent/data/apollo_recruiters.json agent/data/apollo_contacted.json agent/data/apollo_outreach_log.json agent/data/vendor_list.json agent/data/apollo_cookies.json 2>/dev/null || true
           git diff --staged --quiet || git commit -m "apollo: +recruiters discovered, outreach sent $(date +%Y-%m-%d) [skip ci]"
           git push || true
 
