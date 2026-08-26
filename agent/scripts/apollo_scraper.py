@@ -764,10 +764,16 @@ def _search_via_api(api_key: str) -> list:
 
     all_contacts = []
     
+    # Priority 1: US recruiters (C2C staffing — most relevant)
+    # Priority 2: International remote-friendly (UK, Canada, EU companies hiring remote US)
     searches = [
-        {"name": "Technical Recruiters at Staffing", "person_titles": ["Technical Recruiter", "IT Recruiter", "Bench Sales", "Staffing Manager"], "q_organization_name": ""},
-        {"name": "C2C / Corp-to-Corp Recruiters", "person_titles": ["Recruiter", "Account Manager", "Talent Acquisition"], "q_organization_name": "staffing OR consulting OR C2C"},
-        {"name": "IT Consulting Firm Recruiters", "person_titles": ["Sr. Recruiter", "Lead Recruiter", "Technical Recruiter"], "q_organization_name": "consulting OR technology OR IT services"},
+        # US — PRIORITY (run first)
+        {"name": "🇺🇸 US Technical Recruiters (C2C Staffing)", "person_titles": ["Technical Recruiter", "IT Recruiter", "Bench Sales", "Staffing Manager"], "q_organization_name": "", "locations": ["United States"]},
+        {"name": "🇺🇸 US C2C / Corp-to-Corp Recruiters", "person_titles": ["Recruiter", "Account Manager", "Talent Acquisition"], "q_organization_name": "staffing OR consulting OR C2C", "locations": ["United States"]},
+        {"name": "🇺🇸 US IT Consulting Firm Recruiters", "person_titles": ["Sr. Recruiter", "Lead Recruiter", "Technical Recruiter"], "q_organization_name": "consulting OR technology OR IT services", "locations": ["United States"]},
+        # INTERNATIONAL — remote-friendly (bonus, after US)
+        {"name": "🌍 International Remote Java Recruiters", "person_titles": ["Technical Recruiter", "IT Recruiter", "Talent Acquisition"], "q_organization_name": "remote OR distributed OR global", "locations": []},
+        {"name": "🇬🇧🇨🇦 UK/Canada Remote Staffing", "person_titles": ["Recruiter", "Technical Recruiter", "Account Manager"], "q_organization_name": "staffing OR consulting OR contract", "locations": ["United Kingdom", "Canada"]},
     ]
 
     # Build headers — cookie auth (from APOLLO_COOKIES_B64 secret)
@@ -788,7 +794,7 @@ def _search_via_api(api_key: str) -> list:
         payload = json.dumps({
             "person_titles": search["person_titles"],
             "q_organization_name": search["q_organization_name"],
-            "person_locations": ["United States"],
+            "person_locations": search.get("locations", ["United States"]),
             "per_page": 25,
             "page": 1,
         }).encode()
