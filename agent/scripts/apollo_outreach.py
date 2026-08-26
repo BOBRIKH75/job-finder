@@ -199,7 +199,7 @@ def build_recruiter_email(name: str, title: str, company: str) -> tuple[str, str
 <li><strong>Work type:</strong> C2C / Corp-to-Corp ONLY (no W2)</li>
 <li><strong>Rate:</strong> $70–95/hr C2C (flexible depending on project scope)</li>
 <li><strong>Availability:</strong> Immediate — can start within 2 weeks</li>
-<li><strong>Location:</strong> Remote preferred (Parker, CO)</li>
+<li><strong>Location:</strong> Parker, CO, United States — Remote preferred</li>
 <li><strong>Authorization:</strong> Green Card holder — NO sponsorship needed</li>
 </ul>
 
@@ -234,7 +234,7 @@ WHAT I'M LOOKING FOR:
 - Work type: C2C / Corp-to-Corp ONLY (no W2)
 - Rate: $70-95/hr C2C (flexible depending on project)
 - Availability: Immediate — can start within 2 weeks
-- Location: Remote preferred (Parker, CO)
+- Location: Parker, CO, United States — Remote preferred
 - Authorization: Green Card holder — NO sponsorship needed
 
 MY BACKGROUND (8+ years):
