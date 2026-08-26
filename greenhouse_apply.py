@@ -73,6 +73,12 @@ def main():
     for job in all_jobs:
         if applied >= MAX_APPS:
             break
+        
+        # Don't waste time on API attempts that always fail — limit to 30 attempts total
+        # so browser batch gets time to run within the 35-min timeout
+        if len(failed) >= MAX_APPS:
+            print(f"  ⚡ {len(failed)} API failures → skipping rest, moving to browser batch")
+            break
 
         url = job.get('url', '')
         if not url:
