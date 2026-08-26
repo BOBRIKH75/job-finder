@@ -102,7 +102,7 @@ def _answer_question(question: dict, profile: dict) -> Optional[str]:
         return ""
 
     if ftype == "textarea":
-        return ""
+        return "10+ years Java/Spring Boot experience with Kafka, Kubernetes, AWS. Green Card holder, available immediately, no sponsorship needed."
 
     if ftype in ("multi_value_single_select", "multi_value_multi_select"):
         values = field.get("values", [])
@@ -114,6 +114,13 @@ def _answer_question(question: dict, profile: dict) -> Optional[str]:
                 if keyword in str(v.get("label", "")).lower():
                     return str(v["value"])
             return None
+
+        # Work authorization / legal eligibility → Yes (Green Card holder)
+        if any(k in label for k in ("authorized", "eligible", "legal", "right to work",
+                                     "legally authorized", "legally eligible")):
+            ans = _pick("yes") or _pick("true")
+            if ans:
+                return ans
 
         # Sponsorship / visa → No
         if any(k in label for k in ("sponsor", "visa", "immigration", "work authorization")):
@@ -263,8 +270,10 @@ def submit_greenhouse_api(
 
         if resp.status_code in (200, 201):
             text_lower = resp.text.lower()
+            # "confirmation" removed — Greenhouse shows it on the email verification page too
             if any(w in text_lower for w in
-                   ["thank you", "application received", "confirmation", "successfully submitted"]):
+                   ["thank you for applying", "application received", "successfully submitted",
+                    "thank you for your application"]):
                 return {"submitted": True, "method": "direct_api"}
 
         if resp.status_code == 302:

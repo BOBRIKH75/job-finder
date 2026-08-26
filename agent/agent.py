@@ -281,7 +281,7 @@ def run_apply(db, jobs, dry_run=False):
         # myworkdayjobs.com — REMOVED from block list (let agent try with free solver)
         "icims.com", "ultipro.com", "paycomonline.net",
         "smartrecruiters.com",  # Sometimes has invisible reCAPTCHA
-        "jobs.lever.co",  # hCaptcha on ALL applications (2026)
+        # jobs.lever.co removed — Lever direct API works without CAPTCHA
     }
     before_count = len(automatable)
     automatable = [j for j in automatable if not any(

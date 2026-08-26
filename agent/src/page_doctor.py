@@ -763,10 +763,9 @@ def fill_greenhouse_custom_fields(page, profile: dict) -> int:
                     continue
                 
                 # Fill the combobox: click → type → select option
+                # Do NOT call combo.fill("") — it closes React Select dropdown
                 combo.click()
-                time.sleep(0.3)
-                combo.fill("")  # Clear any existing text
-                time.sleep(0.2)
+                time.sleep(0.5)
                 page.keyboard.type(answer, delay=30)  # Type triggers React search
                 time.sleep(0.5)
                 

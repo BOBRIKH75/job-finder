@@ -1145,7 +1145,7 @@ def _fill_remaining_required(page, profile: dict) -> int:
 
 def submit_and_verify(page, page_data, original_url) -> dict:
     """Find submit button, click it, verify success."""
-    submit_texts = ["submit application", "submit", "apply now", "apply for this job", "send application", "send", "complete"]
+    submit_texts = ["submit application", "submit", "apply now", "apply for this job", "send application"]
     skip_texts = ["linkedin", "google", "facebook", "twitter", "sign in", "log in", "dismiss"]
 
     # Intercept POST/PUT responses — a 2xx with no DOM errors is ground-truth success
@@ -1176,14 +1176,23 @@ def submit_and_verify(page, page_data, original_url) -> dict:
                     except Exception:
                         text = ""
 
-                    # 1. URL or page text success signal
-                    success_signals = ["thank", "success", "received", "submitted", "confirmation", "applied", "complete"]
-                    # Exclude pages that ask for security/verification code — those aren't real success
-                    is_verification_page = "security" in text or "verification code" in text or "paste this code" in text
-                    if not is_verification_page and (any(s in url for s in success_signals) or any(s in text for s in success_signals)):
+                    # 1. Reliable success signals only — must say "thank you" or "application received"
+                    # Do NOT count: url_changed, post_intercepted, "submitted", "applied", "complete"
+                    # — those all appear on non-confirmation pages and cause fake submissions
+                    real_success_signals = ["thank you for applying", "application received",
+                                            "thank you for your application", "successfully applied",
+                                            "thank you for submitting", "thank you for your interest"]
+                    is_verification_page = ("security" in text or "verification code" in text
+                                            or "paste this code" in text or "enter the" in text)
+                    if not is_verification_page and any(s in text for s in real_success_signals):
                         return {"submitted": True, "method": btn["text"]}
 
-                    # 2. Specific error phrases only — never match "a required field" or "indicates required"
+                    # 2. URL changed to confirmation path (Greenhouse uses /confirmation)
+                    if "confirmation" in url and url != original_url.lower().rstrip("/"):
+                        if "security" not in text and "verification" not in text and "code" not in text:
+                            return {"submitted": True, "method": "confirmation_url"}
+
+                    # 3. Specific error phrases only — never match "a required field" or "indicates required"
                     error_signals = ["this field is required", "please fill", "is invalid",
                                      "cannot be blank", "must be completed"]
                     errors = [s for s in error_signals if s in text]
@@ -1201,17 +1210,12 @@ def submit_and_verify(page, page_data, original_url) -> dict:
                     if errors:
                         return {"submitted": False, "reason": f"Form errors: {errors}"}
 
-                    # 3. URL changed = possible success (Greenhouse redirects on submit)
+                    # 4. URL changed — check if it needs email verification, else not confirmed
                     if url != original_url.lower().rstrip("/"):
-                        # BUT: check if the new page asks for a security code (email verification)
-                        # If so, it's NOT submitted yet — needs code entry
                         if "security" in text or "verification" in text or "code" in text:
                             return {"submitted": False, "reason": "email_verification_required"}
-                        return {"submitted": True, "method": "url_changed"}
-
-                    # 4. Intercepted a successful POST and no DOM errors visible
-                    if post_responses:
-                        return {"submitted": True, "method": "post_intercepted"}
+                        # URL changed but no "thank you" — do not trust as success
+                        return {"submitted": False, "reason": "url_changed_no_confirmation"}
 
                     return {"submitted": False, "reason": "No success signal after submit"}
                 except Exception as e:
@@ -1300,16 +1304,16 @@ def apply_to_job(page, profile, job, learned, dry_run=False, db=None, site_needs
                 if not cf_passed and site_needs_cf_solve:
                     # CF challenge couldn't be solved — skip gracefully
                     print(f"      ⏭️ CF challenge unsolvable — skipping")
-                    results.append({"url": url, "title": job.get("title", ""),
-                                    "company": job.get("company", ""), "status": "cf_blocked"})
                     snap(page, f"cf_blocked_{attempt}")
-                    break
+                    return {"url": url, "title": job.get("title", ""),
+                            "company": job.get("company", ""), "status": "cf_blocked",
+                            "fields_filled": 0}
             except Exception:
                 if site_needs_cf_solve:
                     print(f"      ⏭️ CF solve crashed — skipping")
-                    results.append({"url": url, "title": job.get("title", ""),
-                                    "company": job.get("company", ""), "status": "cf_crashed"})
-                    break
+                    return {"url": url, "title": job.get("title", ""),
+                            "company": job.get("company", ""), "status": "cf_crashed",
+                            "fields_filled": 0}
             # Wait for visible form inputs — React apps render after JS executes.
             # Try up to 10 seconds. Fall back to fixed wait if selector never appears.
             try:
@@ -1637,23 +1641,24 @@ def apply_to_job(page, profile, job, learned, dry_run=False, db=None, site_needs
                         except Exception:
                             post_verify_text = ""
                         post_verify_url = page.url.lower()
-                        success_signals_ev = ["thank", "success", "received", "submitted", "confirmation", "applied", "complete"]
-                        # CRITICAL: check for FAILURE signals — invalid/expired code means NOT submitted
-                        failure_signals_ev = ["invalid", "expired", "incorrect", "try again", "error", "security code", "verification code", "enter the code", "enter code"]
-                        has_success = any(s in post_verify_url for s in success_signals_ev) or any(s in post_verify_text for s in success_signals_ev)
+                        # Only trust "thank you" text as real success — URL change alone is not enough
+                        real_success_ev = ["thank you for applying", "application received",
+                                           "thank you for your application", "successfully applied",
+                                           "thank you for submitting"]
+                        failure_signals_ev = ["invalid", "expired", "incorrect", "try again",
+                                              "security code", "verification code", "enter the code", "enter code"]
+                        has_success = (any(s in post_verify_text for s in real_success_ev)
+                                       or ("confirmation" in post_verify_url and "thank" in post_verify_text))
                         has_failure = any(s in post_verify_text for s in failure_signals_ev)
                         if has_success and not has_failure:
                             submit_result = {"submitted": True, "method": "email_verification"}
                         elif has_failure:
                             print(f"      ❌ Code was REJECTED — page still shows verification/error signals")
                             submit_result = {"submitted": False, "reason": "verification_code_rejected"}
-                        elif post_verify_url != url.lower().rstrip("/") and not has_failure:
-                            # URL changed but no clear success signal — check it's not still on verification page
-                            if "security" not in post_verify_text and "verification" not in post_verify_text and "code" not in post_verify_text:
-                                submit_result = {"submitted": True, "method": "email_verification_redirect"}
-                            else:
-                                print(f"      ❌ URL changed but page still shows code/verification content — NOT submitted")
-                                submit_result = {"submitted": False, "reason": "verification_code_rejected"}
+                        else:
+                            # URL may have changed but no "thank you" — do NOT count as submitted
+                            print(f"      ❌ No 'thank you' text found after code entry — NOT submitted")
+                            submit_result = {"submitted": False, "reason": "no_confirmation_after_code"}
                     else:
                         print("      ❌ handle_email_verification returned False — code not obtained or not entered")
                 except Exception as ev_err:

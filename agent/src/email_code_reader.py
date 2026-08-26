@@ -57,24 +57,25 @@ def get_verification_code(
     if _USED_CODES:
         print(f"      📧 Already used codes this session: {_USED_CODES}")
     
-    # STEP 0: Clear ALL existing unread emails from this sender BEFORE waiting.
-    # This prevents picking up stale codes from previous runs/applications.
-    # The fresh code for THIS application hasn't been sent yet (Greenhouse sends
-    # it AFTER the submit, which just happened), so anything already in inbox is OLD.
+    # STEP 0: Mark ALL today's emails from this sender as SEEN before waiting.
+    # The fresh code hasn't arrived yet (Greenhouse sends AFTER submit).
+    # Use SINCE (same as main loop) so we're consistent — mark today's old codes as SEEN.
     try:
+        from datetime import datetime as _dt
+        _today = _dt.now().strftime("%d-%b-%Y")
         mail = imaplib.IMAP4_SSL("imap.gmail.com")
         mail.login(gmail_user, gmail_pass)
         mail.select('"[Gmail]/All Mail"')
         if sender_filter:
-            search_criteria = f'(UNSEEN FROM "{sender_filter}")'
+            search_criteria = f'(SINCE {_today} FROM "{sender_filter}")'
         else:
-            search_criteria = '(UNSEEN)'
+            search_criteria = f'(SINCE {_today})'
         status, messages = mail.search(None, search_criteria)
         if status == "OK" and messages[0]:
             msg_ids = messages[0].split()
             for msg_id in msg_ids:
                 mail.store(msg_id, '+FLAGS', '\\Seen')
-            print(f"      📧 Cleared {len(msg_ids)} old email(s) — waiting for fresh code only")
+            print(f"      📧 Cleared {len(msg_ids)} old email(s) from today — waiting for fresh code only")
         mail.logout()
     except Exception as e:
         print(f"      ⚠️ Could not clear old emails: {str(e)[:40]}")
