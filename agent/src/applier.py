@@ -1538,11 +1538,13 @@ def apply_to_job(page, profile, job, learned, dry_run=False, db=None, site_needs
             submit_result = submit_and_verify(page, page_data, url)
             snap(page, f"submit_{attempt}")
 
-            # EMAIL VERIFICATION: If submit didn't show immediate success,
-            # check if the page is asking for an email verification code (Greenhouse pattern).
-            # If so, read the code from Gmail and enter it automatically.
-            if not submit_result["submitted"]:
+            # EMAIL VERIFICATION: If submit returned email_verification_required,
+            # the page has redirected to a security code prompt (Greenhouse pattern).
+            # Wait for page to stabilize, then read code from Gmail and enter it.
+            if not submit_result["submitted"] and submit_result.get("reason") == "email_verification_required":
+                print("      📧 Security code page detected — attempting email verification...")
                 try:
+                    page.wait_for_timeout(2000)  # Let the security code page fully load
                     from src.email_code_reader import handle_email_verification
                     if handle_email_verification(page):
                         print("      ✅ Email verification completed — rechecking submit status")
@@ -1558,8 +1560,30 @@ def apply_to_job(page, profile, job, learned, dry_run=False, db=None, site_needs
                             submit_result = {"submitted": True, "method": "email_verification"}
                         elif post_verify_url != url.lower().rstrip("/"):
                             submit_result = {"submitted": True, "method": "email_verification_redirect"}
+                    else:
+                        print("      ❌ handle_email_verification returned False — code not obtained or not entered")
                 except Exception as ev_err:
                     print(f"      ⚠️ Email verification check failed: {str(ev_err)[:60]}")
+            elif not submit_result["submitted"]:
+                # Non-email-verification failures: try email verification as fallback
+                # (page might show security code without submit_and_verify detecting it)
+                try:
+                    from src.email_code_reader import handle_email_verification
+                    if handle_email_verification(page):
+                        print("      ✅ Email verification completed (fallback) — rechecking submit status")
+                        snap(page, f"email_verified_{attempt}")
+                        try:
+                            post_verify_text = page.locator("body").inner_text(timeout=5000).lower()
+                        except Exception:
+                            post_verify_text = ""
+                        post_verify_url = page.url.lower()
+                        success_signals_ev = ["thank", "success", "received", "submitted", "confirmation", "applied", "complete"]
+                        if any(s in post_verify_url for s in success_signals_ev) or any(s in post_verify_text for s in success_signals_ev):
+                            submit_result = {"submitted": True, "method": "email_verification"}
+                        elif post_verify_url != url.lower().rstrip("/"):
+                            submit_result = {"submitted": True, "method": "email_verification_redirect"}
+                except Exception as ev_err:
+                    print(f"      ⚠️ Email verification fallback check failed: {str(ev_err)[:60]}")
 
             if submit_result["submitted"]:
                 result["status"] = "submitted"
@@ -1579,6 +1603,18 @@ def apply_to_job(page, profile, job, learned, dry_run=False, db=None, site_needs
             else:
                 attempt_result["error"] = submit_result["reason"]
                 print(f"      ❌ Submit failed: {submit_result['reason']}")
+
+                # EMAIL VERIFICATION REQUIRED: don't retry submit — the page is waiting for a code.
+                # handle_email_verification was already attempted above. If it failed, retrying
+                # the form won't help — break out and mark as needing manual email verification.
+                if submit_result.get("reason") == "email_verification_required":
+                    result["status"] = "email_verification_failed"
+                    result["fields_filled"] = attempt_result.get("filled", 0)
+                    print(f"      📧 Email verification required but code not obtained — stopping retries")
+                    result["attempts"].append(attempt_result)
+                    save_learned(learned)
+                    return result
+
                 # DOCTOR: read error messages and try to fix
                 errors = read_errors(page)
                 if db:
