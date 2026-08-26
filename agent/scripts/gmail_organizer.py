@@ -21,18 +21,23 @@ GMAIL_USER = os.environ.get("GMAIL_USER", "bobrikh75@gmail.com")
 GMAIL_APP_PASSWORD = os.environ.get("GMAIL_APP_PASSWORD", "")
 
 # Label structure (Gmail uses / for nested labels)
+# Split into: ACTION (you check daily) vs AUTO (system handles)
 LABELS = {
-    "Jobs": None,  # parent
-    "Jobs/Recruiters": None,        # replies from recruiters YOU contacted
-    "Jobs/Applications": None,      # application confirmations
-    "Jobs/Interviews": None,        # interview invites — TOP PRIORITY
-    "Jobs/Rejections": None,        # position filled / not moving forward
-    "Jobs/Auto-Replies": None,      # OOO responses
-    "Jobs/Info-Requests": None,     # rate/availability questions
-    "Jobs/Acknowledged": None,      # "got your resume, will review"
-    "Jobs/Inbound": None,           # recruiters reaching OUT TO YOU (future — LinkedIn, job boards)
-    "Jobs/Failed": None,            # bounced emails, delivery failures
-    "Jobs/Spam": None,              # job-related spam, fake postings, scams, ads
+    "Jobs": None,                    # parent
+    # === ACTION NEEDED (check daily) ===
+    "Jobs/⚡Action": None,           # parent for stuff you DO
+    "Jobs/⚡Action/Interviews": None, # interview invites — RESPOND
+    "Jobs/⚡Action/Inbound": None,    # recruiters found YOU — RESPOND
+    # === AUTO-HANDLED (system deals with it) ===
+    "Jobs/Auto": None,               # parent for automatic stuff
+    "Jobs/Auto/Recruiters": None,    # replies from your outreach (auto-tracked)
+    "Jobs/Auto/Applications": None,  # application confirmations
+    "Jobs/Auto/Acknowledged": None,  # "got your resume, reviewing"
+    "Jobs/Auto/Info-Requests": None, # rate questions (auto-replied)
+    "Jobs/Auto/Rejections": None,    # position filled (follow-up stopped)
+    "Jobs/Auto/Auto-Replies": None,  # OOO
+    "Jobs/Auto/Failed": None,        # bounced (bad email removed)
+    "Jobs/Auto/Spam": None,          # ads, fake jobs
 }
 
 # Classification keywords
@@ -126,58 +131,58 @@ def classify_email(from_addr: str, subject: str, body: str) -> str:
     
     # 1. BOUNCE — delivery failures (highest priority — remove bad emails)
     if any(s in from_lower for s in BOUNCE_SENDERS) or BOUNCE_KW.search(text):
-        return "Jobs/Failed"
+        return "Jobs/Auto/Failed"
     
     # 2. SPAM — ads, fake jobs, marketing (but NOT if it's a reply to us)
     if not is_reply and not mentions_bob:
         if SPAM_KW.search(text) or any(s in from_lower for s in SPAM_DOMAINS):
-            return "Jobs/Spam"
+            return "Jobs/Auto/Spam"
     
     # 3. INTERVIEW — always top priority if keywords match
     if INTERVIEW_KW.search(text):
-        return "Jobs/Interviews"
+        return "Jobs/⚡Action/Interviews"
     
     # 4. INBOUND — recruiter found YOU (not a reply to your outreach)
     if INBOUND_KW.search(text) and not is_reply:
-        return "Jobs/Inbound"
+        return "Jobs/⚡Action/Inbound"
     
     # 5. Check by sender domain
     if from_domain in APPLICATION_DOMAINS:
         if REJECTION_KW.search(text):
-            return "Jobs/Rejections"
-        return "Jobs/Applications"
+            return "Jobs/Auto/Rejections"
+        return "Jobs/Auto/Applications"
     
     if from_domain in RECRUITER_DOMAINS:
         if REJECTION_KW.search(text):
-            return "Jobs/Rejections"
+            return "Jobs/Auto/Rejections"
         if INFO_REQUEST_KW.search(text):
-            return "Jobs/Info-Requests"
+            return "Jobs/Auto/Info-Requests"
         if ACKNOWLEDGED_KW.search(text):
-            return "Jobs/Acknowledged"
-        return "Jobs/Recruiters"
+            return "Jobs/Auto/Acknowledged"
+        return "Jobs/Auto/Recruiters"
     
     # 6. Check content keywords (unknown sender)
     if AUTO_REPLY_KW.search(text):
-        return "Jobs/Auto-Replies"
+        return "Jobs/Auto/Auto-Replies"
     if REJECTION_KW.search(text):
-        return "Jobs/Rejections"
+        return "Jobs/Auto/Rejections"
     if APPLICATION_KW.search(text):
-        return "Jobs/Applications"
+        return "Jobs/Auto/Applications"
     if ACKNOWLEDGED_KW.search(text):
-        return "Jobs/Acknowledged"
+        return "Jobs/Auto/Acknowledged"
     if INFO_REQUEST_KW.search(text):
-        return "Jobs/Info-Requests"
+        return "Jobs/Auto/Info-Requests"
     
     # 7. SAFETY NET — if it's a reply to our outreach OR mentions us, NEVER skip
     if is_reply and ("C2C" in subject or "Bob Rikh" in subject or "Java" in subject):
-        return "Jobs/Recruiters"  # It's a reply to us — always track
+        return "Jobs/Auto/Recruiters"  # It's a reply to us — always track
     if mentions_bob and is_reply:
-        return "Jobs/Recruiters"
+        return "Jobs/Auto/Recruiters"
     
     # 8. If from a staffing/consulting domain (even if not in our list) — track it
     staffing_signals = ["staffing", "recruit", "consult", "talent", "hiring", "hr"]
     if any(s in from_domain for s in staffing_signals):
-        return "Jobs/Recruiters"
+        return "Jobs/Auto/Recruiters"
     
     return None  # Truly not job-related — leave in inbox
 
@@ -194,8 +199,8 @@ def organize_inbox(conn, days_back=7):
     msg_ids = data[0].split()
     print(f"  Scanning {len(msg_ids)} emails from last {days_back} days...")
     
-    labeled = {"Jobs/Recruiters": 0, "Jobs/Applications": 0, "Jobs/Interviews": 0,
-               "Jobs/Rejections": 0, "Jobs/Auto-Replies": 0, "Jobs/Info-Requests": 0}
+    labeled = {"Jobs/Auto/Recruiters": 0, "Jobs/Auto/Applications": 0, "Jobs/⚡Action/Interviews": 0,
+               "Jobs/Auto/Rejections": 0, "Jobs/Auto/Auto-Replies": 0, "Jobs/Auto/Info-Requests": 0}
     
     for msg_id in msg_ids:
         try:

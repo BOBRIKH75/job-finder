@@ -469,6 +469,82 @@ def main():
         for r in info_requests:
             _send_info_reply(r["email"], r["subject"])
 
+    # Auto-reply to INTERVIEW_SCHEDULED with YOUR calendar link
+    interviews = [r for r in new_replies if r["classification"] == "INTERVIEW_SCHEDULED"]
+    if interviews and GMAIL_APP_PASSWORD:
+        print(f"\n🎯 Auto-replying to {len(interviews)} interview request(s) with your calendar...")
+        for r in interviews:
+            _send_interview_reply(r["email"], r["subject"])
+
+
+def _send_interview_reply(to_email: str, original_subject: str):
+    """Auto-reply to interview requests with YOUR Google Calendar booking link.
+    Recruiter picks a time that works for BOTH of you."""
+    import smtplib
+    from email.mime.text import MIMEText
+    from email.mime.multipart import MIMEMultipart
+
+    subject = f"Re: {original_subject}" if not original_subject.startswith("Re:") else original_subject
+
+    html = """<div style="font-family:Arial,sans-serif;font-size:14px;color:#333">
+<p>Hi,</p>
+
+<p>Thank you for your interest! I'd love to connect.</p>
+
+<p>Please pick a time that works for you — my calendar shows only my available slots:</p>
+
+<p style="margin:15px 0">
+  <a href="https://calendar.app.google/DG7ug2xFUuQneV2r6" 
+     style="background:#1a73e8;color:white;padding:12px 24px;text-decoration:none;border-radius:5px;font-weight:bold">
+     📅 Book a Time on My Calendar
+  </a>
+</p>
+
+<p>This automatically syncs with my schedule — any slot you see is confirmed available.</p>
+
+<p><strong>My timezone:</strong> Mountain Time (MT / UTC-6)<br>
+<strong>Preferred format:</strong> Zoom, Google Meet, or phone — all work for me.</p>
+
+<p>Looking forward to speaking with you!</p>
+
+<p>Best regards,<br>Bob Rikh<br>347-268-5917</p>
+</div>"""
+
+    plain = """Hi,
+
+Thank you for your interest! I'd love to connect.
+
+Please pick a time that works for you:
+https://calendar.app.google/DG7ug2xFUuQneV2r6
+
+This automatically syncs with my schedule — any slot you see is confirmed available.
+
+Timezone: Mountain Time (MT / UTC-6)
+Preferred format: Zoom, Google Meet, or phone — all work.
+
+Looking forward to speaking with you!
+
+Best regards,
+Bob Rikh
+347-268-5917"""
+
+    msg = MIMEMultipart("alternative")
+    msg["From"] = f"Bob Rikh <{GMAIL_USER}>"
+    msg["To"] = to_email
+    msg["Subject"] = subject
+    msg["Reply-To"] = GMAIL_USER
+    msg.attach(MIMEText(plain, "plain"))
+    msg.attach(MIMEText(html, "html"))
+
+    try:
+        with smtplib.SMTP("smtp.gmail.com", 587) as s:
+            s.starttls()
+            s.login(GMAIL_USER, GMAIL_APP_PASSWORD)
+            s.send_message(msg)
+        print(f"   ✅ Interview reply sent to {to_email} (with calendar link)")
+    except Exception as e:
+        print(f"   ❌ Failed: {e}")
+
 
 def _send_info_reply(to_email: str, original_subject: str):
     """Auto-reply to recruiter info requests with clear, direct answers.
