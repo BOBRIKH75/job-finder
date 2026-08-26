@@ -136,7 +136,7 @@ def main():
         # If API failed, collect for browser batch (don't open browser for each job!)
         error = result.get('error', 'unknown')
         
-        if 'HTTP 400' in error or 'HTTP 422' in error or 'Bad Request' in error:
+        if 'HTTP 4' in error or 'Bad Request' in error or 'captcha' in error.lower():
             # Save for browser batch below
             failed.append({
                 'url': url,
@@ -163,7 +163,7 @@ def main():
         time.sleep(0.5)
 
     # === STRATEGY 2: Browser batch (open Playwright ONCE for all API-failed jobs) ===
-    browser_queue = [j for j in failed if 'HTTP 400' in j.get('reason', '') or 'Bad Request' in j.get('reason', '')]
+    browser_queue = [j for j in failed if 'HTTP 4' in j.get('reason', '') or 'captcha' in j.get('reason', '').lower()]
     
     if browser_queue and applied < MAX_APPS:
         remaining = MAX_APPS - applied
