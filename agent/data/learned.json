@@ -138,7 +138,8 @@
     "browser_per_job_loop": "NEVER open Playwright browser inside a for-loop (per job). Open ONCE, process ALL jobs in batch. Opening browser = 10s overhead each time.",
     "import_in_loop": "NEVER import heavy modules (playwright, applier) inside a loop. Import ONCE at top or before the batch.",
     "eu_citizen_field": "Company 540 and Affirm ask Are you an EU citizen. Answer is No for Bob (Green Card holder in USA, not EU citizen). Add to SMART_ANSWERS.",
-    "false_positive_submit": "submit_and_verify detected URL change as success, but Greenhouse redirects to security code page (NOT real success). Fix: check if new page has security/verification/code text before declaring submitted=True."
+    "false_positive_submit": "submit_and_verify detected URL change as success, but Greenhouse redirects to security code page (NOT real success). Fix: check if new page has security/verification/code text before declaring submitted=True.",
+    "email_verification_not_called": "submit_and_verify returns email_verification_required but handle_email_verification at line 1538 is NEVER reached. The retry logic (lines ~1500-1530) retries submit_and_verify again instead of going to the email verification handler at line 1538. Fix: check if reason==email_verification_required INSIDE the retry loop and call handle_email_verification there."
   },
   "infrastructure_lessons": {
     "self_hosted_runner_different_user": {
@@ -171,6 +172,12 @@
       "correct_flow": "1. API tries all jobs fast (1s each, will get 400). 2. Collect all API-failed URLs. 3. Open Playwright ONCE. 4. Process all failed jobs in ONE browser session. 5. Close browser.",
       "wrong_flow": "Opening browser for each job inside the loop = 10s overhead x 30 jobs = 5 min wasted on browser startups alone.",
       "commit": "16cfd28 - batch browser strategy"
+    },
+    "ci_progress_aug26": {
+      "what_works": "API phase (2 min), browser batch launches, forms filled, reCAPTCHA solved, submit clicked, security code page detected",
+      "what_fails": "handle_email_verification never called because retry loop re-runs submit instead of going to verification handler",
+      "fix_needed": "In applier.py retry loop (~line 1500-1530): if submit_result reason == email_verification_required, break out of retry and let line 1538 handle it",
+      "logs_proof": "Run 32940218989 shows email_verification_required detected but no IMAP/Gmail connection attempted"
     }
   }
 }
