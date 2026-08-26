@@ -90,11 +90,13 @@ def get_verification_code(
             mail.login(gmail_user, gmail_pass)
             mail.select('"[Gmail]/All Mail"')  # Search ALL mail, not just Primary tab
             
-            # Search for UNSEEN emails from the sender
+            # Search for RECENT emails from the sender (today only)
+            from datetime import datetime, timedelta
+            today = datetime.now().strftime("%d-%b-%Y")
             if sender_filter:
-                search_criteria = f'(UNSEEN FROM "{sender_filter}")'
+                search_criteria = f'(SINCE {today} FROM "{sender_filter}")'
             else:
-                search_criteria = '(UNSEEN)'
+                search_criteria = f'(SINCE {today})'
             status, messages = mail.search(None, search_criteria)
             
             if status == "OK" and messages[0]:
