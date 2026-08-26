@@ -176,11 +176,61 @@ def _extract_code(body: str) -> Optional[str]:
 def enter_verification_code(page, code: str) -> bool:
     """Enter the verification code on the page and submit.
     
-    Greenhouse security code page has a simple text input for the code.
-    We try multiple selector strategies from most specific to broadest fallback.
+    Greenhouse security code page uses OTP-style multi-box inputs:
+    8 separate input boxes (#security-input-0 through #security-input-7).
+    The correct approach is to CLICK the first box and TYPE the full code —
+    the component auto-distributes characters across boxes.
+    
+    Fallback: single text input for other ATS systems.
     """
     try:
-        # Strategy 1: Try specific selectors for known ATS security code fields
+        # ═══════════════════════════════════════════════════════════════════
+        # Strategy 0: OTP-STYLE MULTI-BOX INPUT (Greenhouse pattern)
+        # Greenhouse uses #security-input-0 through #security-input-7
+        # Must click first box then TYPE (not fill) — component auto-advances
+        # ═══════════════════════════════════════════════════════════════════
+        otp_first_selectors = [
+            '#security-input-0',
+            'input[id^="security-input"]',
+            'input[id^="otp-input"]',
+            'input[id^="code-input"]',
+            'input[id^="verification-input"]',
+        ]
+        for otp_sel in otp_first_selectors:
+            try:
+                first_box = page.locator(otp_sel).first
+                if first_box.is_visible(timeout=500):
+                    # Click the first box to focus it
+                    first_box.click()
+                    page.wait_for_timeout(300)
+                    # TYPE the full code — the OTP component auto-distributes
+                    page.keyboard.type(code, delay=100)
+                    print(f"      ✅ Typed code into OTP boxes starting at: {otp_sel}")
+                    page.wait_for_timeout(500)
+                    _click_submit_after_code(page)
+                    return True
+            except Exception:
+                continue
+
+        # Also detect OTP by checking if there are multiple 1-char inputs in sequence
+        try:
+            single_char_inputs = page.locator('input[maxlength="1"]:visible')
+            count = single_char_inputs.count()
+            if count >= 6:  # OTP = 6-8 single-char boxes
+                print(f"      🔑 Detected {count} single-char inputs (OTP pattern)")
+                single_char_inputs.first.click()
+                page.wait_for_timeout(300)
+                page.keyboard.type(code, delay=100)
+                print(f"      ✅ Typed code into {count} OTP boxes")
+                page.wait_for_timeout(500)
+                _click_submit_after_code(page)
+                return True
+        except Exception:
+            pass
+
+        # ═══════════════════════════════════════════════════════════════════
+        # Strategy 1: SINGLE text input (Lever, Ashby, Workday, etc.)
+        # ═══════════════════════════════════════════════════════════════════
         selectors = [
             # Greenhouse-specific patterns
             'input[name="security_code"]',
@@ -236,8 +286,17 @@ def enter_verification_code(page, code: str) -> bool:
                         if label_for:
                             field = page.locator(f'#{label_for}')
                             if field.count() > 0 and field.first.is_visible():
-                                field.first.fill(code)
-                                print(f"      ✅ Entered code via label: '{label_text[:40]}' → #{label_for}")
+                                # Check if this is an OTP box (maxlength=1 or id ends in -0/-1)
+                                maxlen = field.first.get_attribute('maxlength') or ''
+                                if maxlen == '1' or label_for.endswith('-0') or label_for.endswith('-1'):
+                                    # OTP box — click and TYPE
+                                    field.first.click()
+                                    page.wait_for_timeout(300)
+                                    page.keyboard.type(code, delay=100)
+                                    print(f"      ✅ Typed code via label (OTP): '{label_text[:40]}' → #{label_for}")
+                                else:
+                                    field.first.fill(code)
+                                    print(f"      ✅ Entered code via label: '{label_text[:40]}' → #{label_for}")
                                 _click_submit_after_code(page)
                                 return True
                 except Exception:
@@ -286,20 +345,34 @@ def enter_verification_code(page, code: str) -> bool:
 
 
 def _click_submit_after_code(page) -> None:
-    """After entering verification code, click the submit/verify button."""
-    page.wait_for_timeout(500)
+    """After entering verification code, click the submit/verify button.
+    
+    Greenhouse security code page uses 'Resubmit your application' or similar.
+    Also try pressing Enter as fallback (many forms submit on Enter).
+    """
+    page.wait_for_timeout(1000)  # Give page time to register the code input
+    
+    # Try button selectors — ordered from most specific (Greenhouse) to generic
     for btn_sel in [
+        # Greenhouse specific — their actual button texts (case-insensitive via :has-text)
+        'button:has-text("Resubmit your application")',
+        'button:has-text("resubmit your application")',
+        'button:has-text("Resubmit")',
+        'button:has-text("Submit application")',
+        'button:has-text("Submit Application")',
+        # Generic
         'button:has-text("Submit")',
         'button:has-text("Verify")',
         'button:has-text("Confirm")',
         'button:has-text("Continue")',
-        'button:has-text("Submit application")',
-        'button:has-text("Resubmit")',
         'input[type="submit"]',
         'button[type="submit"]',
-        # Greenhouse specific
+        # Greenhouse specific selectors
         'input[value="Submit Application"]',
+        'input[value="Resubmit your application"]',
         'button[data-testid*="submit"]',
+        # Any button that's the only one on the page (security code page is simple)
+        'form button',
     ]:
         try:
             btn = page.locator(btn_sel).first
@@ -310,7 +383,17 @@ def _click_submit_after_code(page) -> None:
                 return
         except Exception:
             continue
-    print("      ⚠️ No submit button found after entering code — code was entered though")
+    
+    # FALLBACK: Press Enter — many forms submit the code on Enter keypress
+    try:
+        print("      ⏎ No button found — pressing Enter to submit code...")
+        page.keyboard.press("Enter")
+        page.wait_for_timeout(3000)
+        return
+    except Exception:
+        pass
+    
+    print("      ⚠️ No submit button found AND Enter didn't work — code was entered but NOT submitted")
 
 
 def handle_email_verification(page, skip_detection: bool = False) -> bool:
