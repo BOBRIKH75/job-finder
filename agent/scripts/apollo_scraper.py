@@ -752,99 +752,102 @@ def _save_session_cookies(driver):
 
 
 def _search_via_api(api_key: str) -> list:
-    """Search Apollo via their REST API — uses email credits (10K/month).
+    """Search Apollo via internal API — works with API key OR cookies.
     
-    This is the PREFERRED method — APOLLO_API_KEY is already in GitHub secrets.
-    No cookies, no Selenium, no browser needed.
+    Key insight: app.apollo.io/api/v1/mixed_people/search accepts BOTH:
+    - API key (paid plans): X-Api-Key header
+    - Session cookies (free plans): Cookie header + X-CSRF-TOKEN
+    
+    This is how Apify/Scrapeful scrapers work — no Selenium needed.
     """
     import urllib.request
-    import urllib.parse
 
     all_contacts = []
     
-    # Search queries for the API
     searches = [
-        {
-            "name": "Technical Recruiters at Staffing",
-            "person_titles": ["Technical Recruiter", "IT Recruiter", "Bench Sales", "Staffing Manager"],
-            "q_organization_name": "",
-            "person_locations": ["United States"],
-            "organization_industry_tag_ids": [],  # staffing/recruiting
-        },
-        {
-            "name": "C2C / Corp-to-Corp Recruiters",
-            "person_titles": ["Recruiter", "Account Manager", "Talent Acquisition"],
-            "q_organization_name": "staffing OR consulting OR C2C OR solutions",
-            "person_locations": ["United States"],
-            "organization_industry_tag_ids": [],
-        },
-        {
-            "name": "IT Consulting Firm Recruiters",
-            "person_titles": ["Sr. Recruiter", "Lead Recruiter", "Technical Recruiter"],
-            "q_organization_name": "consulting OR technology OR IT services",
-            "person_locations": ["United States"],
-            "organization_industry_tag_ids": [],
-        },
+        {"name": "Technical Recruiters at Staffing", "person_titles": ["Technical Recruiter", "IT Recruiter", "Bench Sales", "Staffing Manager"], "q_organization_name": ""},
+        {"name": "C2C / Corp-to-Corp Recruiters", "person_titles": ["Recruiter", "Account Manager", "Talent Acquisition"], "q_organization_name": "staffing OR consulting OR C2C"},
+        {"name": "IT Consulting Firm Recruiters", "person_titles": ["Sr. Recruiter", "Lead Recruiter", "Technical Recruiter"], "q_organization_name": "consulting OR technology OR IT services"},
     ]
+
+    # Build headers — cookie auth (from APOLLO_COOKIES_B64 secret)
+    cookies = load_cookies()
+    cookie_header = ""
+    csrf_token = ""
+    if cookies:
+        cookie_parts = []
+        for c in cookies:
+            cookie_parts.append(f"{c['name']}={c['value']}")
+            if c['name'] == 'X-CSRF-TOKEN':
+                csrf_token = c['value']
+        cookie_header = "; ".join(cookie_parts)
 
     for search in searches:
         print(f"   🔍 {search['name']}...")
         
         payload = json.dumps({
-            "api_key": api_key,
             "person_titles": search["person_titles"],
             "q_organization_name": search["q_organization_name"],
-            "person_locations": search["person_locations"],
-            "per_page": 50,
+            "person_locations": ["United States"],
+            "per_page": 25,
             "page": 1,
         }).encode()
 
-        req = urllib.request.Request(
-            "https://api.apollo.io/v1/mixed_people/search",
-            data=payload,
-            headers={
-                "Content-Type": "application/json",
-                "Cache-Control": "no-cache",
-                "X-Api-Key": api_key,
-            },
-            method="POST",
-        )
+        # Try API key first
+        success = False
+        if api_key:
+            headers = {"Content-Type": "application/json", "X-Api-Key": api_key, "Cache-Control": "no-cache"}
+            req = urllib.request.Request("https://app.apollo.io/api/v1/mixed_people/search", data=payload, headers=headers, method="POST")
+            try:
+                with urllib.request.urlopen(req, timeout=30) as resp:
+                    data = json.loads(resp.read())
+                people = data.get("people", [])
+                success = True
+            except urllib.error.HTTPError:
+                pass
 
-        try:
-            with urllib.request.urlopen(req, timeout=30) as resp:
-                data = json.loads(resp.read())
+        # Fall back to cookie auth
+        if not success and cookie_header:
+            headers = {
+                "Content-Type": "application/json",
+                "Cookie": cookie_header,
+                "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            }
+            if csrf_token:
+                headers["X-CSRF-TOKEN"] = csrf_token
             
-            people = data.get("people", [])
-            for p in people:
-                email = p.get("email", "")
-                name = p.get("name", "")
-                if not email or not name:
-                    continue
-                # Skip if email not verified
-                if "@" not in email:
-                    continue
-                    
+            req = urllib.request.Request("https://app.apollo.io/api/v1/mixed_people/search", data=payload, headers=headers, method="POST")
+            try:
+                with urllib.request.urlopen(req, timeout=30) as resp:
+                    data = json.loads(resp.read())
+                people = data.get("people", [])
+                success = True
+                print(f"      (using cookie auth)")
+            except Exception as e:
+                print(f"      ⚠️ Cookie API error: {e}")
+                people = []
+
+        if not success:
+            print(f"      ⚠️ Both API key and cookie auth failed")
+            continue
+
+        # Extract contacts
+        found = 0
+        for p in people:
+            email = p.get("email", "")
+            name = p.get("name", "")
+            if email and name and "@" in email:
                 all_contacts.append({
                     "email": email.lower(),
                     "name": name,
                     "title": p.get("title", ""),
                     "company": p.get("organization", {}).get("name", "") if isinstance(p.get("organization"), dict) else "",
                     "linkedin_url": p.get("linkedin_url", ""),
-                    "source": "apollo_api",
+                    "source": "apollo_cookie_api" if cookie_header else "apollo_api",
                 })
-            
-            print(f"      Found {len(people)} people, {len([p for p in people if p.get('email')])} with emails")
-            time.sleep(1)  # Rate limit respect
-            
-        except Exception as e:
-            print(f"      ⚠️ API error: {e}")
+                found += 1
+        
+        print(f"      ✅ {found} contacts with email")
+        time.sleep(2)
 
     return all_contacts
-
-
-if __name__ == "__main__":
-    import argparse
-    parser = argparse.ArgumentParser(description="Apollo.io Recruiter Scraper")
-    parser.add_argument("--visible", action="store_true", help="Run with visible browser (for debugging)")
-    args = parser.parse_args()
-    main(headless=not args.visible)
