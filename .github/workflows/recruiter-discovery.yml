@@ -1,0 +1,42 @@
+name: "Recruiter Discovery (Daily)"
+
+on:
+  schedule:
+    - cron: "0 13 * * *"   # 7:00 AM MT daily
+  workflow_dispatch: {}
+
+defaults:
+  run:
+    working-directory: agent
+
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Run recruiter discovery
+        env:
+          HUNTER_API_KEY: ${{ secrets.HUNTER_API_KEY }}
+          SNOV_USER_ID: ${{ secrets.SNOV_USER_ID }}
+          SNOV_API_SECRET: ${{ secrets.SNOV_API_SECRET }}
+        run: python scripts/recruiter_finder.py
+
+      - name: Commit new vendors
+        if: always()
+        run: |
+          cd $GITHUB_WORKSPACE
+          git config user.email "bot@github.actions"
+          git config user.name "Recruiter Discovery Bot"
+          git add agent/data/vendor_list.json 2>/dev/null || true
+          git diff --staged --quiet || git commit -m "recruiter: +$(git diff --staged --numstat agent/data/vendor_list.json | awk '{print $1}') new contacts [skip ci]"
+          git push || true
