@@ -113,25 +113,32 @@ def get_body(msg) -> str:
 
 
 def classify_email(from_addr: str, subject: str, body: str) -> str:
-    """Classify email into a label category. Priority order matters."""
+    """Classify email into a label category. Priority order matters.
+    
+    SAFETY NET: Any email that is a REPLY to our outreach (has "Re:" + our subject)
+    or from a domain we've contacted ALWAYS gets labeled — never skipped.
+    """
     text = f"{subject} {body}"
     from_lower = from_addr.lower()
     from_domain = from_addr.split("@")[-1].lower().strip(">")
+    is_reply = subject.strip().startswith("Re:")
+    mentions_bob = bool(re.search(r"bob|rikh|c2c|java.*backend", text, re.I))
     
     # 1. BOUNCE — delivery failures (highest priority — remove bad emails)
     if any(s in from_lower for s in BOUNCE_SENDERS) or BOUNCE_KW.search(text):
         return "Jobs/Failed"
     
-    # 2. SPAM — ads, fake jobs, marketing
-    if SPAM_KW.search(text) or any(s in from_lower for s in SPAM_DOMAINS):
-        return "Jobs/Spam"
+    # 2. SPAM — ads, fake jobs, marketing (but NOT if it's a reply to us)
+    if not is_reply and not mentions_bob:
+        if SPAM_KW.search(text) or any(s in from_lower for s in SPAM_DOMAINS):
+            return "Jobs/Spam"
     
     # 3. INTERVIEW — always top priority if keywords match
     if INTERVIEW_KW.search(text):
         return "Jobs/Interviews"
     
     # 4. INBOUND — recruiter found YOU (not a reply to your outreach)
-    if INBOUND_KW.search(text) and "Re:" not in subject:
+    if INBOUND_KW.search(text) and not is_reply:
         return "Jobs/Inbound"
     
     # 5. Check by sender domain
@@ -161,7 +168,18 @@ def classify_email(from_addr: str, subject: str, body: str) -> str:
     if INFO_REQUEST_KW.search(text):
         return "Jobs/Info-Requests"
     
-    return None  # Not job-related — leave in inbox
+    # 7. SAFETY NET — if it's a reply to our outreach OR mentions us, NEVER skip
+    if is_reply and ("C2C" in subject or "Bob Rikh" in subject or "Java" in subject):
+        return "Jobs/Recruiters"  # It's a reply to us — always track
+    if mentions_bob and is_reply:
+        return "Jobs/Recruiters"
+    
+    # 8. If from a staffing/consulting domain (even if not in our list) — track it
+    staffing_signals = ["staffing", "recruit", "consult", "talent", "hiring", "hr"]
+    if any(s in from_domain for s in staffing_signals):
+        return "Jobs/Recruiters"
+    
+    return None  # Truly not job-related — leave in inbox
 
 
 def organize_inbox(conn, days_back=7):
