@@ -588,15 +588,20 @@ def _fill_remaining_required(page, profile: dict) -> int:
         "salary": "150000", "expected salary": "150000", "desired salary": "150000",
         "compensation": "150000", "hourly": "75", "rate": "75",
         # Source
-        "hear about": "Job Board", "how did you": "Job Board", "source": "Job Board",
-        "where did you find": "Job Board", "referred": "No",
+        "hear about": "Other", "how did you": "Other", "source": "Other",
+        "where did you find": "Other", "referred": "No",
+        "learn about": "Other", "first learn": "Other",
         # Background
         "background check": "Yes", "consent": "Yes", "agree": "Yes",
         "acknowledge": "Yes", "terms": "Yes", "privacy": "Yes",
-        # Demographics (decline)
-        "gender": "Decline to self-identify", "race": "Decline to self-identify",
-        "ethnicity": "Decline to self-identify", "veteran": "I am not a protected veteran",
-        "disability": "I do not wish to answer",
+        # Demographics (use real answers — works better than "Decline" on most forms)
+        "gender": "Male", "gender identity": "Male",
+        "race": "White", "ethnicity": "White",
+        "veteran": "I am not a protected veteran", "military": "No",
+        "disability": "I do not want to answer",
+        "hispanic": "No", "latino": "No",
+        "transgender": "No",
+        "sexual orientation": "Heterosexual", "orientation": "Heterosexual",
         # Employment
         "previously employed": "No", "worked here before": "No", "former employee": "No",
         "worked for": "No", "ever worked": "No", "recording": "Yes", "interview recording": "Yes",
@@ -736,38 +741,31 @@ def _fill_remaining_required(page, profile: dict) -> int:
                 if not answer:
                     continue
                 
-                # Type answer to filter, then click option
+                # React Select: click → ArrowDown (opens menu) → type (filters) → Enter (selects)
                 combo.click()
                 time.sleep(0.3)
-                combo.fill(answer)
+                page.keyboard.press("ArrowDown")  # Opens the dropdown
+                time.sleep(0.5)
+                page.keyboard.type(answer, delay=50)  # Type to filter options
                 time.sleep(0.5)
                 
-                # Click first matching option
-                options = page.locator('[role="option"]').all()
-                clicked = False
-                for opt in options:
-                    try:
-                        if opt.is_visible(timeout=300):
-                            opt_text = opt.inner_text(timeout=200)
-                            if answer.lower() in opt_text.lower():
-                                opt.click()
-                                clicked = True
-                                filled += 1
-                                time.sleep(0.3)
-                                break
-                    except Exception:
-                        continue
-                
-                if not clicked:
-                    # Click first visible option as fallback
-                    try:
-                        first = page.locator('[role="option"]').first
-                        if first.is_visible(timeout=300):
-                            first.click()
-                            filled += 1
-                            time.sleep(0.3)
-                    except Exception:
-                        page.keyboard.press("Escape")
+                # Check if any option appeared, then select it
+                options = page.locator('[role="option"]')
+                if options.count() > 0:
+                    page.keyboard.press("Enter")  # Select first matching option
+                    filled += 1
+                    time.sleep(0.3)
+                else:
+                    # Fallback: clear and try just selecting first option
+                    page.keyboard.press("Escape")
+                    time.sleep(0.2)
+                    combo.click()
+                    time.sleep(0.3)
+                    page.keyboard.press("ArrowDown")
+                    time.sleep(0.5)
+                    page.keyboard.press("Enter")  # Select first available option
+                    filled += 1
+                    time.sleep(0.3)
                         
             except Exception:
                 try:
