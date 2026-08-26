@@ -179,5 +179,61 @@
       "fix_needed": "In applier.py retry loop (~line 1500-1530): if submit_result reason == email_verification_required, break out of retry and let line 1538 handle it",
       "logs_proof": "Run 32940218989 shows email_verification_required detected but no IMAP/Gmail connection attempted"
     }
+  },
+  "session_summary_aug25_26": {
+    "date": "2026-08-25 to 2026-08-26 01:00 AM",
+    "manual_testing": {
+      "result": "10 Gmail Thank You confirmations",
+      "companies": [
+        "Datadog",
+        "Affirm",
+        "Recorded Future",
+        "Spark Advisors",
+        "Metropolis",
+        "LearnLux",
+        "Air",
+        "Vonage",
+        "Glean",
+        "DataKind"
+      ],
+      "method": "Chrome DevTools MCP \u2014 combobox fix proven 100%"
+    },
+    "cicd_fixes_applied": [
+      "43589ab: resume path fix (runner is different user/laptop)",
+      "16cfd28: batch browser strategy (open Playwright ONCE)",
+      "5e553fd: limit API attempts to 30 (was trying all 1627 \u2192 timeout)",
+      "cf08618: add EU citizen \u2192 No to SMART_ANSWERS",
+      "c36078f: shuffle companies (was always picking 540+affirm)",
+      "272623c: detect security code page as NOT submitted (was false positive)",
+      "df138fe: queue ALL HTTP 4xx for browser (not just 400/422)"
+    ],
+    "cicd_current_state": {
+      "working": [
+        "API scan finds 1627 jobs",
+        "API phase breaks at 30 failures (2 min)",
+        "Browser batch launches Playwright on ubuntu-latest",
+        "Forms filled correctly (15/16 success in one run)",
+        "reCAPTCHA Enterprise solved automatically",
+        "Submit clicked successfully",
+        "Security code page detected (no longer false positive)"
+      ],
+      "not_working": [
+        "handle_email_verification at line 1538 never reached",
+        "Retry loop (lines ~1500-1530) re-runs submit instead of breaking to verification handler",
+        "Result: applications pending email code entry \u2192 no Thank You emails from CI yet"
+      ],
+      "fix_needed": "In applier.py retry loop: if submit_result reason == email_verification_required, BREAK the loop so line 1538 handle_email_verification runs. This reads code from Gmail via IMAP and enters it.",
+      "proof_runs": [
+        "32935972740 (15 SUBMITTED but false positive)",
+        "32940218989 (detection works but handler not called)"
+      ]
+    },
+    "infrastructure": {
+      "runner": "ubuntu-latest (changed from self-hosted because self-hosted cached old code)",
+      "PREFER_SELF_HOSTED": "false",
+      "resume": "agent/resume.pdf (in git, works on ubuntu-latest)",
+      "credentials": "GMAIL_USER + GMAIL_APP_PASSWORD + GEMINI_API_KEY all set in secrets"
+    },
+    "next_session_instruction": "In applier.py retry loop (~line 1500-1530): when submit_result reason == email_verification_required, BREAK out of retry loop. Let line 1538 handle_email_verification() run. It will read Gmail via IMAP, get security code, enter it, resubmit. Then Thank You email arrives. ONE fix = CI produces real confirmations."
   }
 }
