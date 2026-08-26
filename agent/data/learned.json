@@ -130,7 +130,8 @@
     "recaptcha_vs_email_verification": "Some forms that seem blocked by reCAPTCHA actually just need email verification code. Check Gmail for Security code emails.",
     "textarea_min_length": "Some textareas (like AI tools, LLM questions) have minimum character requirements. Use 200+ chars.",
     "home_dir_assumption": "NEVER use ~ or /Users/P3260288/ in CI code. Runner user is rikhsiboevgmail.com on a different laptop. Use script-relative paths: os.path.dirname(os.path.abspath(__file__))",
-    "push_without_verifying_runner_env": "BEFORE pushing path changes: ask WHERE does this run? WHO is the user? WHAT is the working directory? Check CI logs for the actual paths."
+    "push_without_verifying_runner_env": "BEFORE pushing path changes: ask WHERE does this run? WHO is the user? WHAT is the working directory? Check CI logs for the actual paths.",
+    "greenhouse_api_400": "Greenhouse POST API requires each companys API key (Basic Auth). We dont have those keys. ALWAYS fall back to browser (Playwright) when API returns 400. Browser approach is proven: 10 email confirmations Aug 25."
   },
   "infrastructure_lessons": {
     "self_hosted_runner_different_user": {
@@ -152,6 +153,12 @@
       "3. Is the file in git? (git ls-files <path>)",
       "4. Does os.path.expanduser(~) resolve correctly on BOTH machines?",
       "5. NEVER hardcode /Users/P3260288/ \u2014 use os.path.dirname(__file__) or GITHUB_WORKSPACE env var"
-    ]
+    ],
+    "greenhouse_apply_architecture": {
+      "problem": "greenhouse_apply.py tried API POST which needs company API keys we dont have. Gets HTTP 400 on ALL jobs.",
+      "solution": "When API returns 400 \u2192 immediately try browser strategy via run_applications() from applier.py",
+      "proof": "10 Gmail confirmations from browser-based submissions (Aug 25, 2026)",
+      "commit": "36b0622 - adds browser fallback to greenhouse_apply.py"
+    }
   }
 }
