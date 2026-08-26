@@ -96,6 +96,28 @@ else:
 - [x] LearnLux — SUBMITTED ✅, email confirmed (7:48 PM) — 6 technical skill comboboxes filled
 - [x] Air — SUBMITTED ✅, email confirmed (7:50 PM) — Green Card option available
 
+## Session 3 Continued — Additional Testing (10 more attempts)
+- [x] Vonage — SUBMITTED ✅, email confirmed (7:55 PM) — simple form, no EEOC
+- [x] Glean — SUBMITTED ✅, email confirmed (8:04 PM) — Autofill button loaded resume, AI tools textarea needed min length
+- [x] GreenSpark — SUBMITTED ✅ — Autofill loaded resume, simplest form (no required combos)
+- [x] DataKind — SUBMITTED ✅, Thank You page — 6 required combos all filled via focus+ArrowDown+opt.click()
+- [ ] Exadel — BLOCKED by reCAPTCHA + email verification (double security)
+- [ ] Cake AI — BLOCKED by reCAPTCHA (form filled correctly but submit didn't redirect)
+- [ ] Future — BLOCKED by resume upload (no Autofill available, file upload restricted)
+- [ ] Canonical — BLOCKED by resume upload + many custom fields (math score, nationality, etc.)
+- [ ] Buzz Solutions — BLOCKED by resume upload (no Autofill available)
+- [ ] Emergent Labs — BLOCKED by resume upload
+
+### Key Finding: Resume Upload is the Main Blocker
+- Forms where "Autofill my application" button exists → resume loads from Greenhouse account ✅
+- Forms without Autofill → need manual file upload → blocked by Chrome DevTools workspace restriction
+- The BOT uses Playwright which has full filesystem access → this is NOT a bot issue
+
+### Success Rate
+- **Forms WITH resume available: 12/14 submitted (86%)** — 2 blocked by reCAPTCHA
+- **reCAPTCHA blocks: 2/14 (14%)** — Exadel + Cake AI
+- **Combobox fix success: 100%** — every form where we could submit had ALL comboboxes filled correctly
+
 ## Session 3 Learnings (Chrome DevTools MCP — WORKING approach)
 1. **opt.click() DOES work** — previous JS verification was checking wrong class for singleValue
 2. **Toggle flyout buttons** open the correct dropdown reliably
