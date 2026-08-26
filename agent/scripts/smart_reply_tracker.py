@@ -470,11 +470,26 @@ def main():
             _send_info_reply(r["email"], r["subject"])
 
     # Auto-reply to INTERVIEW_SCHEDULED with YOUR calendar link
+    # BUT: if recruiter already sent THEIR calendar link, don't reply — you need to book on THEIRS
     interviews = [r for r in new_replies if r["classification"] == "INTERVIEW_SCHEDULED"]
     if interviews and GMAIL_APP_PASSWORD:
-        print(f"\n🎯 Auto-replying to {len(interviews)} interview request(s) with your calendar...")
+        import re
+        calendar_link_pattern = re.compile(
+            r"calendly\.com|hubspot\.com/meetings|outlook\.office\.com/bookings|"
+            r"cal\.com/|doodle\.com|schedule\..*\.com|booking\.|"
+            r"chili.*piper|acuity.*scheduling|appointlet|youcanbook",
+            re.I
+        )
         for r in interviews:
-            _send_interview_reply(r["email"], r["subject"])
+            body = r.get("body_preview", "") + r.get("subject", "")
+            if calendar_link_pattern.search(body):
+                # They sent THEIR calendar — YOU need to book manually
+                print(f"   📅 {r['email']} sent THEIR calendar link — check Jobs/⚡Action/Interviews")
+                print(f"      → Open their link, pick a time that matches YOUR calendar")
+            else:
+                # They asked to schedule but no link — send YOUR calendar
+                print(f"   📅 Auto-replying to {r['email']} with your calendar link...")
+                _send_interview_reply(r["email"], r["subject"])
 
 
 def _send_interview_reply(to_email: str, original_subject: str):
