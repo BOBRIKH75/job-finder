@@ -1189,8 +1189,24 @@ def submit_and_verify(page, page_data, original_url) -> dict:
 
                     # 2. URL changed to confirmation path (Greenhouse uses /confirmation)
                     if "confirmation" in url and url != original_url.lower().rstrip("/"):
-                        if "security" not in text and "verification" not in text and "code" not in text:
+                        # In headless CI, React pages take 3-6s to render — text may be empty here.
+                        # An empty body on a Greenhouse "confirmation" URL means we landed on
+                        # their OTP-pending page, NOT the final thank-you page.
+                        # Wait for render and re-read before deciding.
+                        if len(text) < 50:
+                            try:
+                                page.wait_for_timeout(5000)
+                                text = page.locator("body").inner_text(timeout=6000).lower()
+                            except Exception:
+                                pass
+                        otp_page_signals = ["security", "verification", "code", "check your email",
+                                            "sent you", "resubmit", "enter the", "paste"]
+                        if any(s in text for s in otp_page_signals):
+                            return {"submitted": False, "reason": "email_verification_required"}
+                        if any(s in text for s in real_success_signals):
                             return {"submitted": True, "method": "confirmation_url"}
+                        # Text present but no clear signal either way — not confirmed
+                        return {"submitted": False, "reason": "email_verification_required"}
 
                     # 3. Specific error phrases only — never match "a required field" or "indicates required"
                     error_signals = ["this field is required", "please fill", "is invalid",

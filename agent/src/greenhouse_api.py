@@ -266,7 +266,16 @@ def submit_greenhouse_api(
         # Success detection
         conf_slug = confirmation_path.rstrip("/").split("/")[-1]
         if conf_slug and conf_slug in (resp.url or ""):
-            return {"submitted": True, "method": "direct_api"}
+            # Guard: Greenhouse uses the same /confirmation path prefix even for the OTP-pending
+            # step ("check your email for a security code"). Check the body before declaring
+            # success — if the page is asking for a code, the application is not yet complete.
+            _body_lower = resp.text.lower()
+            _otp_signals = ["security code", "verification code", "check your email",
+                            "enter the code", "sent you a code", "resubmit", "paste this code",
+                            "sent a code", "enter your code"]
+            if not any(s in _body_lower for s in _otp_signals):
+                return {"submitted": True, "method": "direct_api"}
+            # Confirmation URL but OTP still required — fall through to body text check
 
         if resp.status_code in (200, 201):
             text_lower = resp.text.lower()

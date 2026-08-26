@@ -165,14 +165,24 @@ def _extract_code(body: str) -> Optional[str]:
         if match:
             return match.group(1)
     
-    # Alphanumeric codes (must contain at least one digit and one letter, 6-8 chars)
-    for match in re.finditer(r'(?<![A-Za-z0-9])([A-Z0-9]{6,8})(?![A-Za-z0-9])', body, re.IGNORECASE):
+    # Alphanumeric codes — two sub-cases:
+    #   1. Standard: mix of digits + letters (e.g., A1B2C3D4)
+    #   2. Greenhouse OTP: exactly 8 all-alpha mixed-case (e.g., EEtMwNKJ — NO digits)
+    #      Greenhouse tokens are mixed-case with multiple uppercase letters.
+    #      Requiring ≥2 uppercase prevents matching sentence-initial capitalized words
+    #      like "Security" (1 uppercase) or "Colorado" (1 uppercase).
+    for match in re.finditer(r'(?<![A-Za-z0-9])([A-Za-z0-9]{6,8})(?![A-Za-z0-9])', body):
         candidate = match.group(1)
         has_digit = any(c.isdigit() for c in candidate)
         has_letter = any(c.isalpha() for c in candidate)
         if has_digit and has_letter:
             return candidate
-    
+        if has_letter and not has_digit and len(candidate) == 8:
+            count_upper = sum(1 for c in candidate if c.isupper())
+            count_lower = sum(1 for c in candidate if c.islower())
+            if count_upper >= 2 and count_lower >= 1:
+                return candidate
+
     return None
 
 
