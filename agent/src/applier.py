@@ -595,13 +595,19 @@ def _fill_remaining_required(page, profile: dict) -> int:
         "background check": "Yes", "consent": "Yes", "agree": "Yes",
         "acknowledge": "Yes", "terms": "Yes", "privacy": "Yes",
         # Demographics (use real answers — works better than "Decline" on most forms)
-        "gender": "Male", "gender identity": "Male",
-        "race": "White", "ethnicity": "White",
+        "gender": "Male", "gender identity": "Male", "sex": "Male",
+        "identify your race": "White", "race": "White", "ethnicity": "White",
         "veteran": "I am not a protected veteran", "military": "No",
-        "disability": "I do not want to answer",
-        "hispanic": "No", "latino": "No",
+        "disability": "I do not want to answer", "i do not wish": "I do not want to answer",
+        "don't wish to answer": "I do not want to answer",
+        "hispanic": "No", "latino": "No", "latina": "No",
         "transgender": "No",
         "sexual orientation": "Heterosexual", "orientation": "Heterosexual",
+        # Planning/state questions
+        "planning to work": "Yes", "plan to work": "Yes", "work from these states": "Yes",
+        "intend to work": "Yes",
+        # Decline wording variants (different companies use different text)
+        "decline to self": "Decline To Self Identify", "self-identify": "Decline To Self Identify",
         # Employment
         "previously employed": "No", "worked here before": "No", "former employee": "No",
         "worked for": "No", "ever worked": "No", "recording": "Yes", "interview recording": "Yes",
@@ -703,76 +709,104 @@ def _fill_remaining_required(page, profile: dict) -> int:
                 continue
         
         # 2. Find empty required COMBOBOXES (React Select style)
-        comboboxes = page.locator('input[role="combobox"][aria-required="true"]').all()
-        for combo in comboboxes:
-            try:
-                # Check if already has value
-                parent_ctrl = combo.locator("xpath=ancestor::div[contains(@class,'select__control')]")
+        # Use a loop with re-scan to catch dynamically appearing fields (e.g., "race" after Hispanic=No)
+        max_combo_passes = 3  # Max re-scan attempts for dynamic fields
+        for combo_pass in range(max_combo_passes):
+            comboboxes = page.locator('input[role="combobox"][aria-required="true"]').all()
+            filled_this_pass = 0
+            
+            for combo in comboboxes:
                 try:
-                    single_val = parent_ctrl.locator('[class*="singleValue"], [class*="single-value"]')
-                    if single_val.count() > 0:
-                        text = single_val.first.inner_text(timeout=300)
-                        if text and text.strip() and text.strip() != "Select...":
-                            continue  # already filled
-                except Exception:
-                    pass
-                
-                # Get label
-                label = ""
-                label_id = combo.get_attribute("aria-labelledby") or ""
-                if label_id:
+                    # Check if already has value
+                    parent_ctrl = combo.locator("xpath=ancestor::div[contains(@class,'select__control')]")
                     try:
-                        label = page.locator(f"#{label_id}").first.inner_text(timeout=300)
+                        single_val = parent_ctrl.locator('[class*="singleValue"], [class*="single-value"]')
+                        if single_val.count() > 0:
+                            text = single_val.first.inner_text(timeout=300)
+                            if text and text.strip() and text.strip() != "Select...":
+                                continue  # already filled
                     except Exception:
                         pass
-                
-                if not label:
-                    continue
-                
-                label_lower = label.lower()
-                
-                # Find answer from smart answers
-                answer = None
-                for key, ans in SMART_ANSWERS.items():
-                    if key in label_lower:
-                        answer = ans
-                        break
-                
-                if not answer:
-                    continue
-                
-                # React Select: click → ArrowDown (opens menu) → type (filters) → Enter (selects)
-                combo.click()
-                time.sleep(0.3)
-                page.keyboard.press("ArrowDown")  # Opens the dropdown
-                time.sleep(0.5)
-                page.keyboard.type(answer, delay=50)  # Type to filter options
-                time.sleep(0.5)
-                
-                # Check if any option appeared, then select it
-                options = page.locator('[role="option"]')
-                if options.count() > 0:
-                    page.keyboard.press("Enter")  # Select first matching option
-                    filled += 1
-                    time.sleep(0.3)
-                else:
-                    # Fallback: clear and try just selecting first option
-                    page.keyboard.press("Escape")
-                    time.sleep(0.2)
+                    
+                    # Get label
+                    label = ""
+                    label_id = combo.get_attribute("aria-labelledby") or ""
+                    if label_id:
+                        try:
+                            label = page.locator(f"#{label_id}").first.inner_text(timeout=300)
+                        except Exception:
+                            pass
+                    
+                    if not label:
+                        continue
+                    
+                    label_lower = label.lower()
+                    
+                    # Find answer from smart answers
+                    answer = None
+                    for key, ans in SMART_ANSWERS.items():
+                        if key in label_lower:
+                            answer = ans
+                            break
+                    
+                    if not answer:
+                        continue
+                    
+                    # React Select: click → ArrowDown (opens menu) → type (filters) → exact match select
                     combo.click()
                     time.sleep(0.3)
-                    page.keyboard.press("ArrowDown")
+                    page.keyboard.press("ArrowDown")  # Opens the dropdown
                     time.sleep(0.5)
-                    page.keyboard.press("Enter")  # Select first available option
-                    filled += 1
-                    time.sleep(0.3)
+                    page.keyboard.type(answer, delay=50)  # Type to filter options
+                    time.sleep(0.5)
+                    
+                    # Try EXACT match first (fixes Male→Female bug)
+                    # Look for an option whose text matches exactly (case-insensitive)
+                    options = page.locator('[role="option"]')
+                    option_count = options.count()
+                    exact_found = False
+                    
+                    if option_count > 0:
+                        for opt_idx in range(option_count):
+                            opt_text = options.nth(opt_idx).inner_text(timeout=300).strip()
+                            if opt_text.lower() == answer.lower():
+                                # Exact match — click it directly
+                                options.nth(opt_idx).click()
+                                exact_found = True
+                                break
                         
-            except Exception:
-                try:
-                    page.keyboard.press("Escape")
+                        if not exact_found:
+                            # No exact match — pick first option (best available)
+                            page.keyboard.press("Enter")
+                        
+                        filled += 1
+                        filled_this_pass += 1
+                        time.sleep(0.3)
+                    else:
+                        # No options from typing — try opening menu and selecting first
+                        page.keyboard.press("Escape")
+                        time.sleep(0.2)
+                        combo.click()
+                        time.sleep(0.3)
+                        page.keyboard.press("ArrowDown")
+                        time.sleep(0.5)
+                        page.keyboard.press("Enter")  # Select first available option
+                        filled += 1
+                        filled_this_pass += 1
+                        time.sleep(0.3)
+                            
                 except Exception:
-                    pass
-                continue
+                    try:
+                        page.keyboard.press("Escape")
+                    except Exception:
+                        pass
+                    continue
+            
+            # If nothing was filled this pass, no new fields appeared — stop re-scanning
+            if filled_this_pass == 0:
+                break
+            # Brief wait for any dynamic fields to render after selections
+            time.sleep(0.5)
         
         # 3. Handle required checkboxes (consent, agree, terms)
         checkboxes = page.locator('input[type="checkbox"][required], input[type="checkbox"][aria-required="true"]').all()
