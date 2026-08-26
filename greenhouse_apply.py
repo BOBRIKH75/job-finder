@@ -100,6 +100,12 @@ def main():
         resume = profile.get('resume_path', '')
         if not resume or not os.path.exists(resume):
             resume = next((r for r in resume_candidates if os.path.exists(r)), 'agent/resume.pdf')
+        
+        # Debug: show which resume path was resolved
+        if applied == 0 and len(failed) == 0 and skipped == 0:
+            print(f"  📁 Resume resolved to: {resume} (exists: {os.path.exists(resume)})")
+            print(f"  📁 CWD: {os.getcwd()}")
+            print(f"  📁 script_dir: {script_dir}")
 
         result = submit_greenhouse_api(url, profile, resume)
 
