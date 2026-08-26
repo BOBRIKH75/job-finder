@@ -137,7 +137,8 @@
     "greenhouse_api_400": "Greenhouse POST API requires each companys API key (Basic Auth). We dont have those keys. ALWAYS fall back to browser (Playwright) when API returns 400. Browser approach is proven: 10 email confirmations Aug 25.",
     "browser_per_job_loop": "NEVER open Playwright browser inside a for-loop (per job). Open ONCE, process ALL jobs in batch. Opening browser = 10s overhead each time.",
     "import_in_loop": "NEVER import heavy modules (playwright, applier) inside a loop. Import ONCE at top or before the batch.",
-    "eu_citizen_field": "Company 540 and Affirm ask Are you an EU citizen. Answer is No for Bob (Green Card holder in USA, not EU citizen). Add to SMART_ANSWERS."
+    "eu_citizen_field": "Company 540 and Affirm ask Are you an EU citizen. Answer is No for Bob (Green Card holder in USA, not EU citizen). Add to SMART_ANSWERS.",
+    "false_positive_submit": "submit_and_verify detected URL change as success, but Greenhouse redirects to security code page (NOT real success). Fix: check if new page has security/verification/code text before declaring submitted=True."
   },
   "infrastructure_lessons": {
     "self_hosted_runner_different_user": {

@@ -1103,7 +1103,9 @@ def submit_and_verify(page, page_data, original_url) -> dict:
 
                     # 1. URL or page text success signal
                     success_signals = ["thank", "success", "received", "submitted", "confirmation", "applied", "complete"]
-                    if any(s in url for s in success_signals) or any(s in text for s in success_signals):
+                    # Exclude pages that ask for security/verification code — those aren't real success
+                    is_verification_page = "security" in text or "verification code" in text or "paste this code" in text
+                    if not is_verification_page and (any(s in url for s in success_signals) or any(s in text for s in success_signals)):
                         return {"submitted": True, "method": btn["text"]}
 
                     # 2. Specific error phrases only — never match "a required field" or "indicates required"
