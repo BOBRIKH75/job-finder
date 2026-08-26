@@ -577,6 +577,33 @@ def fill_greenhouse_custom_fields(page, profile: dict) -> int:
         "acknowledge": "Yes",
         "agree to": "Yes",
         "consent": "Yes",
+        # Canonical-specific questions
+        "how many companies": "4",
+        "past ten years": "4",
+        "privacy notice": "Yes",
+        "privacy policy": "Yes",
+        "confirm that you have read": "Yes",
+        "read and agree": "Yes",
+        # Immigration / work auth
+        "alien illegally": "No",
+        "unlawfully in the united states": "No",
+        "legally authorized to work": "Yes",
+        "now or in the future require sponsorship": "No",
+        "eligible to work": "Yes",
+        "work permit": "Yes",
+        # Location
+        "location (city)": "Parker, CO",
+        "city": "Parker",
+        "where are you located": "Parker, CO",
+        "current location": "Parker, CO",
+        # Interest / motivation (short answer for textareas)
+        "why are you interested": "I'm passionate about the company's mission and believe my 10+ years of Java/Spring Boot experience with distributed systems, Kafka, and cloud-native architectures align well with this role. I'm excited to contribute to impactful engineering challenges.",
+        "what interests you": "I'm passionate about the company's mission and believe my 10+ years of Java/Spring Boot experience with distributed systems, Kafka, and cloud-native architectures align well with this role.",
+        "why do you want to work": "I'm drawn to the technical challenges and the opportunity to apply my expertise in microservices, event-driven architecture, and cloud platforms at scale.",
+        "tell us about yourself": "Senior Java Backend Developer with 10+ years of experience building microservices with Spring Boot, Kafka, Kubernetes, and AWS. Passionate about clean architecture, system reliability, and mentoring teams.",
+        # Technology experience
+        "describe your experience": "10+ years building distributed systems with Java/Spring Boot, Apache Kafka, Kubernetes, AWS (EKS, S3, DocumentDB), MongoDB, Cassandra, PostgreSQL, Redis, Docker, and Terraform. Experienced with event-driven architectures, CI/CD pipelines (GitLab/Jenkins), and observability (DataDog, Splunk).",
+        "technologies": "Java, Spring Boot, Kafka, Kubernetes, Docker, AWS, MongoDB, Cassandra, PostgreSQL, Redis, GraphQL, REST APIs",
     }
     
     try:

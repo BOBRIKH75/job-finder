@@ -644,6 +644,22 @@ def _fill_remaining_required(page, profile: dict) -> int:
         "18 years": "Yes", "over 18": "Yes", "at least 18": "Yes",
         # Shift
         "shift": "Day", "work schedule": "Regular",
+        # Interest/motivation textareas (generic meaningful answer)
+        "why are you interested": "I'm passionate about the company's mission and believe my 10+ years of distributed systems experience with Java, Spring Boot, Kafka, and cloud-native architectures align well with this role.",
+        "what interests you": "The technical challenges and opportunity to apply my expertise in microservices, event-driven architecture, and cloud platforms at scale.",
+        "why do you want to work": "I'm drawn to the impactful engineering work and the chance to contribute my decade of experience building scalable backend systems.",
+        "what excites you": "The opportunity to solve complex distributed systems challenges and work with a talented engineering team.",
+        "describe your experience": "10+ years building distributed systems with Java/Spring Boot, Apache Kafka, Kubernetes, AWS, MongoDB, Cassandra, PostgreSQL, Redis, Docker. Experienced with event-driven architectures, CI/CD, and observability.",
+        "tell us about": "Senior Java Backend Developer with 10+ years of experience building microservices with Spring Boot, Kafka, Kubernetes, and AWS. Passionate about clean architecture and system reliability.",
+        # Canonical-specific
+        "how many companies": "4",
+        "past ten years": "4",
+        "privacy notice": "Yes",
+        "confirm that you have read": "Yes",
+        "read and agree": "Yes",
+        # Immigration extras
+        "alien illegally": "No",
+        "unlawfully": "No",
     }
     
     try:
@@ -1060,6 +1076,65 @@ def _fill_remaining_required(page, profile: dict) -> int:
                     else:
                         inp.fill(str(value))
                         filled += 1
+            except Exception:
+                continue
+    except Exception:
+        pass
+
+    # 4. Fill empty required TEXTAREAS (motivation questions, cover letters, etc.)
+    try:
+        textareas = page.locator('textarea[aria-required="true"], textarea[required]').all()
+        for ta in textareas:
+            try:
+                val = ta.input_value(timeout=500)
+                if val and val.strip():
+                    continue  # already filled
+                
+                # Get label
+                label = ""
+                ta_id = ta.get_attribute("id") or ""
+                if ta_id:
+                    try:
+                        label_el = page.locator(f'label[for="{ta_id}"]')
+                        if label_el.count() > 0:
+                            label = label_el.first.inner_text(timeout=300)
+                    except Exception:
+                        pass
+                if not label:
+                    label = ta.get_attribute("aria-label") or ta.get_attribute("placeholder") or ""
+                if not label:
+                    # Try aria-labelledby
+                    label_id = ta.get_attribute("aria-labelledby") or ""
+                    if label_id:
+                        try:
+                            label = page.locator(f"#{label_id}").first.inner_text(timeout=300)
+                        except Exception:
+                            pass
+                
+                if not label:
+                    continue
+                
+                label_lower = label.lower()
+                
+                # Find answer from SMART_ANSWERS
+                answer = None
+                for key, ans in SMART_ANSWERS.items():
+                    if key in label_lower:
+                        answer = ans
+                        break
+                
+                # Fallback: generic professional answer for any "why" or "describe" questions
+                if not answer:
+                    if any(kw in label_lower for kw in ['why', 'interest', 'motivat', 'excite', 'attract']):
+                        answer = "I'm passionate about the company's mission and believe my 10+ years of distributed systems experience with Java, Spring Boot, Kafka, and cloud-native architectures align well with this role. I'm excited to contribute to impactful engineering challenges."
+                    elif any(kw in label_lower for kw in ['describe', 'experience', 'background', 'about you', 'tell us']):
+                        answer = "Senior Java Backend Developer with 10+ years of experience building microservices with Spring Boot, Kafka, Kubernetes, and AWS. Experienced with event-driven architectures, distributed databases (Cassandra, MongoDB), and observability platforms. Passionate about clean code, system reliability, and team collaboration."
+                    elif any(kw in label_lower for kw in ['additional', 'anything else', 'comments', 'notes']):
+                        answer = "Thank you for the opportunity. I look forward to discussing how my experience can contribute to the team."
+                
+                if answer:
+                    ta.fill(answer)
+                    filled += 1
             except Exception:
                 continue
     except Exception:
