@@ -81,5 +81,53 @@
         ]
       }
     ]
+  },
+  "combobox_answers": {
+    "gender": "Male",
+    "gender identity": "Male",
+    "what gender identity do you most closely identify with": "Male",
+    "sex": "Male",
+    "race": "White",
+    "ethnicity": "White",
+    "please identify your race": "White",
+    "are you hispanic/latino": "No",
+    "hispanic": "No",
+    "latino": "No",
+    "veteran status": "I am not a protected veteran",
+    "disability status": "I do not want to answer",
+    "are you legally authorized": "Yes",
+    "authorized to work": "Yes",
+    "require sponsorship": "No",
+    "visa sponsorship": "No",
+    "will you now or in the future require": "No",
+    "how did you hear": "Other",
+    "how did you first hear": "Other",
+    "source": "Other",
+    "previously employed": "No",
+    "worked for": "No",
+    "ever worked": "No",
+    "have you applied": "No",
+    "commute": "Yes",
+    "onsite": "Yes",
+    "work remotely": "Yes",
+    "planning to work": "Yes",
+    "work from these states": "Yes",
+    "non-compete": "No",
+    "non compete": "No",
+    "country": "United States",
+    "state": "Colorado",
+    "which state": "Colorado",
+    "transgender": "No",
+    "sexual orientation": "Heterosexual",
+    "military": "No"
+  },
+  "known_mistakes": {
+    "male_matches_female": "When typing Male in React Select, Female shows first because Female contains male. ALWAYS use exact opt.click() not Enter.",
+    "bobbob_name_doubling": "Chrome DevTools fill() appends instead of replacing. Use native value setter: Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, value).set + dispatchEvent.",
+    "dynamic_race_field": "After selecting Hispanic=No, a new Please identify your race combobox appears. Must re-scan with max_combo_passes=3.",
+    "disability_wording": "Correct text is I do not want to answer (NOT wish). Different companies use: I dont wish to answer, Decline To Self Identify.",
+    "job_board_matches_school": "Typing Job Board matches School job board first. Use Other instead.",
+    "recaptcha_vs_email_verification": "Some forms that seem blocked by reCAPTCHA actually just need email verification code. Check Gmail for Security code emails.",
+    "textarea_min_length": "Some textareas (like AI tools, LLM questions) have minimum character requirements. Use 200+ chars."
   }
 }
