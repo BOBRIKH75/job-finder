@@ -623,6 +623,10 @@ def _fill_remaining_required(page, profile: dict) -> int:
         "non-compete": "No", "non compete": "No", "restrictive covenant": "No",
         # Country/Location
         "country": "United States", "state": profile.get("state", "CO"),
+        # EU/citizenship questions
+        "eu citizen": "No", "european union": "No", "citizen": "No",
+        "right to work": "Yes", "legal right": "Yes", "legally authorized": "Yes",
+        "work permit": "No", "visa": "No",
         "province": profile.get("state", "CO"),
         # Pronoun
         "pronoun": "He/Him",

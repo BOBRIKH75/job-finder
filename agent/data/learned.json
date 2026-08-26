@@ -119,7 +119,10 @@
     "which state": "Colorado",
     "transgender": "No",
     "sexual orientation": "Heterosexual",
-    "military": "No"
+    "military": "No",
+    "eu citizen": "No",
+    "european union": "No",
+    "are you an eu citizen": "No"
   },
   "known_mistakes": {
     "male_matches_female": "When typing Male in React Select, Female shows first because Female contains male. ALWAYS use exact opt.click() not Enter.",
@@ -133,7 +136,8 @@
     "push_without_verifying_runner_env": "BEFORE pushing path changes: ask WHERE does this run? WHO is the user? WHAT is the working directory? Check CI logs for the actual paths.",
     "greenhouse_api_400": "Greenhouse POST API requires each companys API key (Basic Auth). We dont have those keys. ALWAYS fall back to browser (Playwright) when API returns 400. Browser approach is proven: 10 email confirmations Aug 25.",
     "browser_per_job_loop": "NEVER open Playwright browser inside a for-loop (per job). Open ONCE, process ALL jobs in batch. Opening browser = 10s overhead each time.",
-    "import_in_loop": "NEVER import heavy modules (playwright, applier) inside a loop. Import ONCE at top or before the batch."
+    "import_in_loop": "NEVER import heavy modules (playwright, applier) inside a loop. Import ONCE at top or before the batch.",
+    "eu_citizen_field": "Company 540 and Affirm ask Are you an EU citizen. Answer is No for Bob (Green Card holder in USA, not EU citizen). Add to SMART_ANSWERS."
   },
   "infrastructure_lessons": {
     "self_hosted_runner_different_user": {
