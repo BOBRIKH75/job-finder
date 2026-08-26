@@ -483,13 +483,67 @@ def main():
         for r in interviews:
             body = r.get("body_preview", "") + r.get("subject", "")
             if calendar_link_pattern.search(body):
-                # They sent THEIR calendar — YOU need to book manually
-                print(f"   📅 {r['email']} sent THEIR calendar link — check Jobs/⚡Action/Interviews")
-                print(f"      → Open their link, pick a time that matches YOUR calendar")
+                # They sent THEIR calendar — auto-reply with 24hr commitment
+                print(f"   📅 {r['email']} sent THEIR calendar link — auto-replying with 24hr commitment")
+                _send_calendar_ack_reply(r["email"], r["subject"])
             else:
                 # They asked to schedule but no link — send YOUR calendar
                 print(f"   📅 Auto-replying to {r['email']} with your calendar link...")
                 _send_interview_reply(r["email"], r["subject"])
+
+
+def _send_calendar_ack_reply(to_email: str, original_subject: str):
+    """When recruiter sends THEIR calendar link — auto-reply confirming you'll book within 24h."""
+    import smtplib
+    from email.mime.text import MIMEText
+    from email.mime.multipart import MIMEMultipart
+
+    subject = f"Re: {original_subject}" if not original_subject.startswith("Re:") else original_subject
+
+    html = """<div style="font-family:Arial,sans-serif;font-size:14px;color:#333">
+<p>Hi,</p>
+
+<p>Thank you! I'll review your calendar and book a slot within the next 24 hours.</p>
+
+<p><strong>My timezone:</strong> Mountain Time (MT / Colorado, UTC-6)<br>
+<strong>Preferred times:</strong> Mon–Fri, 9 AM – 5 PM MT<br>
+<strong>Format:</strong> Zoom, Google Meet, Teams, or phone — all work.</p>
+
+<p>Looking forward to connecting!</p>
+
+<p>Best regards,<br>Bob Rikh<br>347-268-5917</p>
+</div>"""
+
+    plain = """Hi,
+
+Thank you! I'll review your calendar and book a slot within the next 24 hours.
+
+My timezone: Mountain Time (MT / Colorado, UTC-6)
+Preferred times: Mon-Fri, 9 AM - 5 PM MT
+Format: Zoom, Google Meet, Teams, or phone — all work.
+
+Looking forward to connecting!
+
+Best regards,
+Bob Rikh
+347-268-5917"""
+
+    msg = MIMEMultipart("alternative")
+    msg["From"] = f"Bob Rikh <{GMAIL_USER}>"
+    msg["To"] = to_email
+    msg["Subject"] = subject
+    msg["Reply-To"] = GMAIL_USER
+    msg.attach(MIMEText(plain, "plain"))
+    msg.attach(MIMEText(html, "html"))
+
+    try:
+        with smtplib.SMTP("smtp.gmail.com", 587) as s:
+            s.starttls()
+            s.login(GMAIL_USER, GMAIL_APP_PASSWORD)
+            s.send_message(msg)
+        print(f"   ✅ Sent 24hr booking commitment to {to_email}")
+    except Exception as e:
+        print(f"   ❌ Failed: {e}")
 
 
 def _send_interview_reply(to_email: str, original_subject: str):
