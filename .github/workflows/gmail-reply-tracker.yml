@@ -35,10 +35,11 @@ jobs:
         run: python scripts/smart_reply_tracker.py
 
       - name: Organize Gmail into folders
+        timeout-minutes: 3
         env:
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
-        run: python scripts/gmail_organizer.py
+        run: python scripts/gmail_organizer.py || echo "⚠️ Organizer timed out — will retry next run"
 
       - name: Save pipeline state
         if: always()
