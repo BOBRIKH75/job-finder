@@ -41,6 +41,9 @@ def get_verification_code(
     
     print(f"      📧 Waiting for verification email (max {max_wait_seconds}s)...")
     
+    # Track the time we started waiting — only accept emails received AFTER this
+    wait_start = datetime.now()
+    
     start_time = time.time()
     while time.time() - start_time < max_wait_seconds:
         try:
@@ -49,22 +52,16 @@ def get_verification_code(
             mail.login(gmail_user, gmail_pass)
             mail.select("inbox")
             
-            # Search for recent emails from the sender (last 1 minute)
-            # Search recent emails (UNSEEN or within last 2 minutes)
-            since_date = (datetime.now() - timedelta(minutes=2)).strftime("%d-%b-%Y")
+            # Strategy: search for UNSEEN emails from the sender ONLY
+            # This ensures we never reuse an old code
             if sender_filter:
                 search_criteria = f'(UNSEEN FROM "{sender_filter}")'
             else:
                 search_criteria = '(UNSEEN)'
             status, messages = mail.search(None, search_criteria)
             
-            # If no UNSEEN, try ALL recent from this sender
-            if status == "OK" and not messages[0] and sender_filter:
-                search_criteria = f'(SINCE {since_date} FROM "{sender_filter}")'
-                status, messages = mail.search(None, search_criteria)
-            
             if status == "OK" and messages[0]:
-                # Get the most recent matching email
+                # Get the most recent matching UNSEEN email
                 msg_ids = messages[0].split()
                 latest_id = msg_ids[-1]  # most recent
                 
@@ -72,6 +69,23 @@ def get_verification_code(
                 if status == "OK":
                     raw_email = msg_data[0][1]
                     msg = email.message_from_bytes(raw_email)
+                    
+                    # Check email date — only accept if received recently (within last 2 minutes)
+                    email_date = msg.get("Date", "")
+                    try:
+                        from email.utils import parsedate_to_datetime
+                        email_dt = parsedate_to_datetime(email_date)
+                        # Make both timezone-naive for comparison
+                        email_dt_naive = email_dt.replace(tzinfo=None) if email_dt.tzinfo else email_dt
+                        age_seconds = (datetime.now() - email_dt_naive).total_seconds()
+                        if age_seconds > 120:  # older than 2 minutes — stale code
+                            # Mark as seen so we don't pick it up again
+                            mail.store(latest_id, '+FLAGS', '\\Seen')
+                            mail.logout()
+                            time.sleep(poll_interval)
+                            continue
+                    except Exception:
+                        pass  # If we can't parse date, try extracting code anyway
                     
                     # Extract body text
                     body = ""
