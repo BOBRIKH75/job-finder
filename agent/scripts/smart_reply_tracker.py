@@ -493,20 +493,38 @@ def main():
 
 
 def _send_calendar_ack_reply(to_email: str, original_subject: str):
-    """When recruiter sends THEIR calendar link — auto-reply confirming you'll book within 24h."""
+    """When recruiter sends THEIR calendar link — auto-reply with 24hr commitment + YOUR free times."""
     import smtplib
     from email.mime.text import MIMEText
     from email.mime.multipart import MIMEMultipart
+    from datetime import datetime, timedelta
 
     subject = f"Re: {original_subject}" if not original_subject.startswith("Re:") else original_subject
 
-    html = """<div style="font-family:Arial,sans-serif;font-size:14px;color:#333">
+    # Generate next 3 business days with available times (Mon-Fri 9AM-5PM MT)
+    now = datetime.now()
+    available_slots = []
+    day = now + timedelta(days=1)
+    while len(available_slots) < 3:
+        if day.weekday() < 5:  # Mon-Fri
+            available_slots.append(day.strftime("%A, %B %d"))
+        day += timedelta(days=1)
+
+    slots_text = "\n".join(f"  • {s} — 9:00 AM – 5:00 PM MT (flexible)" for s in available_slots)
+    slots_html = "".join(f"<li>{s} — 9:00 AM – 5:00 PM MT (flexible)</li>" for s in available_slots)
+
+    html = f"""<div style="font-family:Arial,sans-serif;font-size:14px;color:#333">
 <p>Hi,</p>
 
 <p>Thank you! I'll review your calendar and book a slot within the next 24 hours.</p>
 
-<p><strong>My timezone:</strong> Mountain Time (MT / Colorado, UTC-6)<br>
-<strong>Preferred times:</strong> Mon–Fri, 9 AM – 5 PM MT<br>
+<p>In case it helps, here are my available times (Mountain Time, Colorado):</p>
+<ul>{slots_html}</ul>
+
+<p>Or feel free to use my booking link — it shows only my free slots in real-time:<br>
+<a href="https://calendar.app.google/DG7ug2xFUuQneV2r6">📅 Book directly on my calendar</a></p>
+
+<p><strong>Timezone:</strong> Mountain Time (MT / UTC-6, Colorado)<br>
 <strong>Format:</strong> Zoom, Google Meet, Teams, or phone — all work.</p>
 
 <p>Looking forward to connecting!</p>
@@ -514,12 +532,17 @@ def _send_calendar_ack_reply(to_email: str, original_subject: str):
 <p>Best regards,<br>Bob Rikh<br>347-268-5917</p>
 </div>"""
 
-    plain = """Hi,
+    plain = f"""Hi,
 
 Thank you! I'll review your calendar and book a slot within the next 24 hours.
 
-My timezone: Mountain Time (MT / Colorado, UTC-6)
-Preferred times: Mon-Fri, 9 AM - 5 PM MT
+My available times (Mountain Time, Colorado):
+{slots_text}
+
+Or book directly on my calendar (shows real-time availability):
+https://calendar.app.google/DG7ug2xFUuQneV2r6
+
+Timezone: Mountain Time (MT / UTC-6, Colorado)
 Format: Zoom, Google Meet, Teams, or phone — all work.
 
 Looking forward to connecting!
@@ -541,7 +564,7 @@ Bob Rikh
             s.starttls()
             s.login(GMAIL_USER, GMAIL_APP_PASSWORD)
             s.send_message(msg)
-        print(f"   ✅ Sent 24hr booking commitment to {to_email}")
+        print(f"   ✅ Sent 24hr commitment + available times to {to_email}")
     except Exception as e:
         print(f"   ❌ Failed: {e}")
 
