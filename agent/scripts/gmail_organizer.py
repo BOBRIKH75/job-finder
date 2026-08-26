@@ -23,12 +23,16 @@ GMAIL_APP_PASSWORD = os.environ.get("GMAIL_APP_PASSWORD", "")
 # Label structure (Gmail uses / for nested labels)
 LABELS = {
     "Jobs": None,  # parent
-    "Jobs/Recruiters": None,
-    "Jobs/Applications": None,
-    "Jobs/Interviews": None,
-    "Jobs/Rejections": None,
-    "Jobs/Auto-Replies": None,
-    "Jobs/Info-Requests": None,
+    "Jobs/Recruiters": None,        # replies from recruiters YOU contacted
+    "Jobs/Applications": None,      # application confirmations
+    "Jobs/Interviews": None,        # interview invites — TOP PRIORITY
+    "Jobs/Rejections": None,        # position filled / not moving forward
+    "Jobs/Auto-Replies": None,      # OOO responses
+    "Jobs/Info-Requests": None,     # rate/availability questions
+    "Jobs/Acknowledged": None,      # "got your resume, will review"
+    "Jobs/Inbound": None,           # recruiters reaching OUT TO YOU (future — LinkedIn, job boards)
+    "Jobs/Failed": None,            # bounced emails, delivery failures
+    "Jobs/Spam": None,              # job-related spam, fake postings, scams, ads
 }
 
 # Classification keywords
@@ -37,6 +41,21 @@ REJECTION_KW = re.compile(r"position.*filled|moved forward with other|not a matc
 APPLICATION_KW = re.compile(r"application.*received|thank.*applying|submission.*confirm|we.*received.*resume", re.I)
 AUTO_REPLY_KW = re.compile(r"out of office|automatic reply|auto-reply|OOO|currently away", re.I)
 INFO_REQUEST_KW = re.compile(r"rate|availability|visa|authorization|resume|when.*start", re.I)
+ACKNOWLEDGED_KW = re.compile(r"thank.*for.*(reaching|sending|your)|received.*resume|will.*review|under.*review|keep.*on\s*file|added.*database", re.I)
+
+# Bounce / delivery failure
+BOUNCE_KW = re.compile(r"delivery.*fail|undeliverable|returned.*mail|mailbox.*full|address.*rejected|550.*reject|user.*unknown|no.*such.*user", re.I)
+BOUNCE_SENDERS = {"mailer-daemon@", "postmaster@", "noreply@google.com"}
+
+# Spam / advertising / fake jobs
+SPAM_KW = re.compile(r"unsubscribe|click here to|limited time|act now|congratulations.*won|earn.*\$.*from home|MLM|crypto.*opportunity|marketing.*automation|bulk email", re.I)
+SPAM_DOMAINS = {
+    "marketing.", "promo.", "newsletter.", "offers.", "deals.",
+    "noreply@", "bulk@", "campaign@", "blast@",
+}
+
+# Inbound — recruiters finding YOU (not replies to your outreach)
+INBOUND_KW = re.compile(r"(found|saw|noticed|came across)\s*(your|you).*(profile|linkedin|resume|background)|we.*(have|got)\s*a.*position.*for you|would you be (interested|open)|reaching out.*because.*your (profile|experience)", re.I)
 
 # Known recruiter/job domains
 RECRUITER_DOMAINS = {
@@ -94,36 +113,55 @@ def get_body(msg) -> str:
 
 
 def classify_email(from_addr: str, subject: str, body: str) -> str:
-    """Classify email into a label category."""
+    """Classify email into a label category. Priority order matters."""
     text = f"{subject} {body}"
+    from_lower = from_addr.lower()
     from_domain = from_addr.split("@")[-1].lower().strip(">")
     
-    # Check domain first
+    # 1. BOUNCE — delivery failures (highest priority — remove bad emails)
+    if any(s in from_lower for s in BOUNCE_SENDERS) or BOUNCE_KW.search(text):
+        return "Jobs/Failed"
+    
+    # 2. SPAM — ads, fake jobs, marketing
+    if SPAM_KW.search(text) or any(s in from_lower for s in SPAM_DOMAINS):
+        return "Jobs/Spam"
+    
+    # 3. INTERVIEW — always top priority if keywords match
+    if INTERVIEW_KW.search(text):
+        return "Jobs/Interviews"
+    
+    # 4. INBOUND — recruiter found YOU (not a reply to your outreach)
+    if INBOUND_KW.search(text) and "Re:" not in subject:
+        return "Jobs/Inbound"
+    
+    # 5. Check by sender domain
     if from_domain in APPLICATION_DOMAINS:
-        if INTERVIEW_KW.search(text):
-            return "Jobs/Interviews"
+        if REJECTION_KW.search(text):
+            return "Jobs/Rejections"
         return "Jobs/Applications"
     
     if from_domain in RECRUITER_DOMAINS:
-        if INTERVIEW_KW.search(text):
-            return "Jobs/Interviews"
         if REJECTION_KW.search(text):
             return "Jobs/Rejections"
         if INFO_REQUEST_KW.search(text):
             return "Jobs/Info-Requests"
+        if ACKNOWLEDGED_KW.search(text):
+            return "Jobs/Acknowledged"
         return "Jobs/Recruiters"
     
-    # Check content keywords
+    # 6. Check content keywords (unknown sender)
     if AUTO_REPLY_KW.search(text):
         return "Jobs/Auto-Replies"
-    if INTERVIEW_KW.search(text):
-        return "Jobs/Interviews"
-    if APPLICATION_KW.search(text):
-        return "Jobs/Applications"
     if REJECTION_KW.search(text):
         return "Jobs/Rejections"
+    if APPLICATION_KW.search(text):
+        return "Jobs/Applications"
+    if ACKNOWLEDGED_KW.search(text):
+        return "Jobs/Acknowledged"
+    if INFO_REQUEST_KW.search(text):
+        return "Jobs/Info-Requests"
     
-    return None  # Don't label — not job-related
+    return None  # Not job-related — leave in inbox
 
 
 def organize_inbox(conn, days_back=7):
