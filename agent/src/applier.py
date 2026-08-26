@@ -749,6 +749,37 @@ def _fill_remaining_required(page, profile: dict) -> int:
                             answer = ans
                             break
                     
+                    # Check learned answers from previous AI calls
+                    if not answer:
+                        learned = load_learned()
+                        learned_combos = learned.get("combobox_answers", {})
+                        if label_lower in learned_combos:
+                            answer = learned_combos[label_lower]
+                    
+                    # AI fallback — ask Gemini if still no answer
+                    if not answer:
+                        try:
+                            from src.ai_fallback import ask_ai_about_field
+                            # First open dropdown to get options
+                            combo.click()
+                            time.sleep(0.2)
+                            page.keyboard.press("ArrowDown")
+                            time.sleep(0.3)
+                            opts = page.locator('[role="option"]')
+                            opt_texts = [opts.nth(i).inner_text(timeout=300).strip() for i in range(min(opts.count(), 15))]
+                            page.keyboard.press("Escape")
+                            time.sleep(0.1)
+                            
+                            if opt_texts:
+                                ai_answer = ask_ai_about_field(label, "combobox", opt_texts)
+                                if ai_answer and ai_answer.upper() != "SKIP":
+                                    answer = ai_answer
+                                    # Save for next time — no API call needed
+                                    learned.setdefault("combobox_answers", {})[label_lower] = answer
+                                    save_learned(learned)
+                        except Exception:
+                            pass
+                    
                     if not answer:
                         continue
                     
