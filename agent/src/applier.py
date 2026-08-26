@@ -1145,7 +1145,7 @@ def _fill_remaining_required(page, profile: dict) -> int:
 
 def submit_and_verify(page, page_data, original_url) -> dict:
     """Find submit button, click it, verify success."""
-    submit_texts = ["submit application", "submit", "apply now", "apply", "send application", "send", "complete"]
+    submit_texts = ["submit application", "submit", "apply now", "apply for this job", "send application", "send", "complete"]
     skip_texts = ["linkedin", "google", "facebook", "twitter", "sign in", "log in", "dismiss"]
 
     # Intercept POST/PUT responses — a 2xx with no DOM errors is ground-truth success

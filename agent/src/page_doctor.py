@@ -553,9 +553,20 @@ def fill_greenhouse_custom_fields(page, profile: dict) -> int:
         "previously been employed": "not previously",
         "previously employed": "No",
         "pronoun": "He/him",
-        "gender": "prefer not to say",
-        "race": "prefer not to say",
-        "ethnicity": "prefer not to say",
+        "gender": "Decline To Self Identify",
+        "race": "Decline To Self Identify",
+        "ethnicity": "Decline To Self Identify",
+        "race/ethnicity": "Decline To Self Identify",
+        "how do you identify": "Decline To Self Identify",
+        "gender identity": "Decline To Self Identify",
+        "hispanic/latino": "No",
+        "hispanic": "No",
+        "latino": "No",
+
+
+        "disability status": "I do not want to answer",
+        "disability": "I do not want to answer",
+        "do you have a disability": "I do not want to answer",
         "language": "English",
         "languages you speak": "English",
         "fluent": "English",
@@ -608,11 +619,15 @@ def fill_greenhouse_custom_fields(page, profile: dict) -> int:
     
     try:
         # Find all required React Select comboboxes
-        comboboxes = page.locator('input[role="combobox"][aria-required="true"]').all()
+        comboboxes = page.locator('input[role="combobox"]').all()
         
         for combo in comboboxes:
             try:
                 combo_id = combo.get_attribute("id") or ""
+                
+                # Skip phone country code dropdown (not a question)
+                if "iti-" in combo_id or "search-input" in combo_id:
+                    continue
                     
                 # Check if already has a value selected
                 value_container = combo.locator("xpath=ancestor::div[contains(@class,'select__control')]//div[contains(@class,'single-value')]")
@@ -637,43 +652,71 @@ def fill_greenhouse_custom_fields(page, profile: dict) -> int:
                         pass
                 
                 if not label_text:
+                    # Fallback: use element ID as label hint
+                    label_text = combo_id
+                
+                if not label_text:
                     continue
                 
                 # Find matching answer
                 answer = None
                 label_lower = label_text.lower()
-                for key, val in GH_ANSWERS.items():
-                    if key in label_lower:
-                        answer = val
-                        break
+                
+                # ID-based matching for known EEO fields (Greenhouse IDs)
+                ID_ANSWERS = {
+                    "gender": "Decline To Self Identify",
+                    "hispanic_ethnicity": "No",
+                    "veteran_status": "I am not a protected",
+                    "disability_status": "I do not want to answer",
+                }
+                if combo_id in ID_ANSWERS:
+                    answer = ID_ANSWERS[combo_id]
                 
                 if not answer:
-                    # No known answer — but if required, try selecting first option
-                    is_required = combo.get_attribute("aria-required") == "true"
-                    if not is_required:
-                        continue
-                    # Click to open, select first non-empty option
+                    for key, val in GH_ANSWERS.items():
+                        if key in label_lower:
+                            answer = val
+                            break
+                
+                if not answer:
+                    # No known answer — for ANY unfilled combobox, try selecting first option
+                    # This handles EEO fields with no label (id like 4028768003)
                     try:
                         combo.click()
                         time.sleep(0.5)
-                        first_opt = page.locator('[role="option"]').first
-                        if first_opt.is_visible(timeout=500):
-                            first_opt.click()
-                            filled += 1
-                            time.sleep(0.3)
-                        else:
-                            page.keyboard.press("Escape")
+                        # Look for "Decline" or "prefer not" option first
+                        options = page.locator('[role="option"]').all()
+                        decline_clicked = False
+                        for opt in options:
+                            opt_text = opt.inner_text(timeout=300).lower()
+                            if any(kw in opt_text for kw in ['decline', 'prefer not', 'do not', 'not to say', 'not wish']):
+                                opt.click()
+                                decline_clicked = True
+                                filled += 1
+                                time.sleep(0.3)
+                                break
+                        if not decline_clicked:
+                            # Just pick first option
+                            first_opt = page.locator('[role="option"]').first
+                            if first_opt.is_visible(timeout=500):
+                                first_opt.click()
+                                filled += 1
+                                time.sleep(0.3)
+                            else:
+                                page.keyboard.press("Escape")
                     except Exception:
                         try:
                             page.keyboard.press("Escape")
-                        except Exception:
+                        except:
                             pass
                     continue
                 
                 # Fill the combobox: click → type → select option
                 combo.click()
                 time.sleep(0.3)
-                combo.fill(answer)
+                combo.fill("")  # Clear any existing text
+                time.sleep(0.2)
+                page.keyboard.type(answer, delay=30)  # Type triggers React search
                 time.sleep(0.5)
                 
                 # Click the first visible option
@@ -709,6 +752,12 @@ def fill_greenhouse_custom_fields(page, profile: dict) -> int:
                 
                 if not option_clicked:
                     page.keyboard.press("Escape")
+                else:
+                    # Ensure dropdown is closed after successful selection
+                    try:
+                        page.keyboard.press("Escape")
+                    except:
+                        pass
                     
             except Exception:
                 try:
@@ -757,6 +806,44 @@ def fill_greenhouse_custom_fields(page, profile: dict) -> int:
     except Exception:
         pass
     
+    # Second pass: directly fill known EEO fields by ID if still empty
+    EEO_FIXES = {
+        "veteran_status": "I am not a protected",
+        "disability_status": "I do not want to answer",
+        "gender": "Decline To Self Identify",
+        "hispanic_ethnicity": "No",
+    }
+    for eid, etext in EEO_FIXES.items():
+        try:
+            combo = page.locator(f"#{eid}")
+            if not combo.is_visible(timeout=500):
+                continue
+            # Check if already filled
+            try:
+                vc = combo.locator("xpath=ancestor::div[contains(@class,'select__control')]//div[contains(@class,'single-value')]")
+                if vc.count() > 0 and vc.first.inner_text(timeout=300).strip():
+                    continue
+            except:
+                pass
+            # Fill it
+            combo.scroll_into_view_if_needed()
+            time.sleep(0.2)
+            combo.click()
+            time.sleep(0.3)
+            page.keyboard.type(etext, delay=30)
+            time.sleep(0.8)
+            opts = page.locator('[role="option"]:visible').all()
+            if opts:
+                opts[0].click()
+                filled += 1
+                time.sleep(0.3)
+            page.keyboard.press("Escape")
+        except:
+            try:
+                page.keyboard.press("Escape")
+            except:
+                pass
+
     if filled:
         print(f"      🔽 Filled {filled} Greenhouse custom dropdowns")
     
