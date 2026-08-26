@@ -12,6 +12,7 @@ import json
 import os
 import sys
 import time
+import random
 
 # Force unbuffered output so CI shows progress in real-time
 os.environ['PYTHONUNBUFFERED'] = '1'
@@ -52,7 +53,9 @@ def main():
 
     # Scan top 30 Greenhouse companies for open Java jobs
     all_jobs = []
-    greenhouse_companies = companies.get('greenhouse', [])[:15]
+    greenhouse_companies = companies.get('greenhouse', [])
+    random.shuffle(greenhouse_companies)  # Don't always try same companies first
+    greenhouse_companies = greenhouse_companies[:15]
     print(f"🔍 Scanning {len(greenhouse_companies)} Greenhouse companies...")
 
     for company in greenhouse_companies:
