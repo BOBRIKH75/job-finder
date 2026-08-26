@@ -246,6 +246,40 @@ def main():
             time.sleep(1)
         print()
 
+    # Source 5: Apollo.io Scraper (Selenium + cookies — only if cookies available)
+    apollo_cookies_available = (
+        os.environ.get("APOLLO_COOKIES_B64", "")
+        or (VENDOR_FILE.parent / "apollo_cookies.json").exists()
+    )
+    if apollo_cookies_available:
+        print("📡 Source 5: Apollo.io (Selenium scraper — recruiters at staffing firms)...")
+        try:
+            from apollo_scraper import main as run_apollo
+            apollo_contacts = run_apollo(headless=True)
+            new_apollo = [
+                {
+                    "name": c.get("name", ""),
+                    "company": c.get("company", ""),
+                    "email": c.get("email", "").lower(),
+                    "title": c.get("title", ""),
+                    "linkedin_url": c.get("linkedin_url", ""),
+                    "source": "apollo_scraper",
+                    "verified": datetime.now().strftime("%Y-%m-%d"),
+                    "confidence": 90,
+                }
+                for c in apollo_contacts
+                if c.get("email", "").lower() not in existing
+            ]
+            all_new.extend(new_apollo)
+            existing.update(v["email"] for v in new_apollo)
+            print(f"  Apollo: {len(apollo_contacts)} scraped, {len(new_apollo)} new\n")
+        except ImportError:
+            print("  ⚠️  selenium not installed — skipping Apollo scraper\n")
+        except Exception as e:
+            print(f"  ⚠️  Apollo scraper error: {e}\n")
+    else:
+        print("📡 Source 5: Apollo.io — SKIPPED (no cookies configured)\n")
+
     # Save results
     vendors.extend(all_new)
     save_vendors(vendors)
