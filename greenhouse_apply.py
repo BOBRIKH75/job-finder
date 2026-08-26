@@ -124,48 +124,71 @@ def main():
             time.sleep(1)
             continue
 
-        # If API failed, try browser strategy (PROVEN: 10 email confirmations on Aug 25)
+        # If API failed, collect for browser batch (don't open browser for each job!)
         error = result.get('error', 'unknown')
         
-        # Strategy 2: Browser-based form filling (works without API key)
         if 'HTTP 400' in error or 'HTTP 422' in error or 'Bad Request' in error:
-            try:
-                from src.applier import run_applications
-                browser_jobs = [{'url': url, 'title': title, 'company': company_name}]
-                browser_results = run_applications(browser_jobs, dry_run=False, max_apps=1, db=db)
-                if browser_results and browser_results[0].get('submitted'):
-                    applied += 1
+            # Save for browser batch below
+            failed.append({
+                'url': url,
+                'title': title,
+                'company': company_name,
+                'reason': error,
+                'platform': 'greenhouse',
+                'strategy_tried': 'api_only',
+                'timestamp': time.strftime('%Y-%m-%dT%H:%M:%S'),
+            })
+            print(f"  ⏳ {title} @ {company_name}: API 400 → queued for browser")
+        else:
+            failed.append({
+                'url': url,
+                'title': title,
+                'company': company_name,
+                'reason': error,
+                'platform': 'greenhouse',
+                'strategy_tried': 'api_only',
+                'timestamp': time.strftime('%Y-%m-%dT%H:%M:%S'),
+            })
+            print(f"  ❌ {title} @ {company_name}: {error[:80]}")
+
+        time.sleep(0.5)
+
+    # === STRATEGY 2: Browser batch (open Playwright ONCE for all API-failed jobs) ===
+    browser_queue = [j for j in failed if 'HTTP 400' in j.get('reason', '') or 'Bad Request' in j.get('reason', '')]
+    
+    if browser_queue and applied < MAX_APPS:
+        remaining = MAX_APPS - applied
+        browser_jobs = [{'url': j['url'], 'title': j['title'], 'company': j['company']} for j in browser_queue[:remaining]]
+        
+        print(f"\n🌐 Browser Strategy: {len(browser_jobs)} jobs (Playwright, one browser session)...")
+        try:
+            from src.applier import run_applications
+            browser_results = run_applications(browser_jobs, dry_run=False, max_apps=remaining, db=db)
+            
+            browser_applied = 0
+            for res in (browser_results or []):
+                if res.get('submitted'):
+                    browser_applied += 1
                     upsert_application(
                         db,
-                        company=company_name,
-                        job_title=title,
-                        job_url=url,
+                        company=res.get('company', ''),
+                        job_title=res.get('title', ''),
+                        job_url=res.get('url', ''),
                         ats_type='greenhouse',
                         match_score=80,
                         status='applied',
                     )
-                    print(f"  ✅ {title} @ {company_name} (browser)")
-                    time.sleep(1)
-                    continue
-            except Exception as browser_err:
-                error = f"API: {error} | Browser: {str(browser_err)[:60]}"
+            applied += browser_applied
+            print(f"  🌐 Browser results: {browser_applied} submitted")
+            
+            # Remove successfully submitted from failed list
+            submitted_urls = {r['url'] for r in (browser_results or []) if r.get('submitted')}
+            failed = [f for f in failed if f['url'] not in submitted_urls]
+            
+        except Exception as browser_err:
+            print(f"  ❌ Browser strategy error: {str(browser_err)[:100]}")
 
-        # Both strategies failed — save for retry
-        failed.append({
-            'url': url,
-            'title': title,
-            'company': company_name,
-            'reason': error,
-            'platform': 'greenhouse',
-            'strategy_tried': 'api+browser',
-            'timestamp': time.strftime('%Y-%m-%dT%H:%M:%S'),
-        })
-        print(f"  ❌ {title} @ {company_name}: {error[:80]}")
-
-        # Don't hammer the server
-        time.sleep(1)
-
-    # Save failed for solve-unsolved to retry with different strategies
+    # Save remaining failed for solve-unsolved to retry
     failed_file = 'agent/data/failed_jobs.json'
     existing = load_failed_jobs(failed_file)
     existing.extend(failed)
