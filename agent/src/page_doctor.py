@@ -615,6 +615,57 @@ def fill_greenhouse_custom_fields(page, profile: dict) -> int:
         # Technology experience
         "describe your experience": "10+ years building distributed systems with Java/Spring Boot, Apache Kafka, Kubernetes, AWS (EKS, S3, DocumentDB), MongoDB, Cassandra, PostgreSQL, Redis, Docker, and Terraform. Experienced with event-driven architectures, CI/CD pipelines (GitLab/Jenkins), and observability (DataDog, Splunk).",
         "technologies": "Java, Spring Boot, Kafka, Kubernetes, Docker, AWS, MongoDB, Cassandra, PostgreSQL, Redis, GraphQL, REST APIs",
+        # Certify / Legal agreements (Datadog, etc.)
+        "certify": "Yes",
+        "i certify": "Yes",
+        "true and correct": "Yes",
+        "information provided": "Yes",
+        "processed in accordance": "Yes",
+        "candidate privacy": "Yes",
+        "data protection": "Yes",
+        "terms and conditions": "Yes",
+        # Work authorization (international patterns)
+        "legally authorised": "Yes",
+        "authorized to work full-time": "Yes",
+        "authorised to work full-time": "Yes",
+        "right to work": "Yes",
+        "require visa": "No",
+        "need sponsorship": "No",
+        # Cities / office location
+        "cities are you available": "Remote",
+        "preferred office": "Remote",
+        "office location": "Remote",
+        "which office": "Remote",
+        "which location": "Remote",
+        "in what city": "Parker, CO",
+        "in what cities": "Remote",
+        # Salary
+        "salary expectation": "95000",
+        "expected salary": "95000",
+        "desired salary": "95000",
+        "compensation expectation": "95000",
+        # Start date
+        "start date": "Immediately",
+        "available to start": "Immediately",
+        "earliest start": "Immediately",
+        "notice period": "Immediately",
+        "when can you start": "Immediately",
+        # Office/hybrid
+        "in the office": "Yes",
+        "hybrid work": "Yes",
+        "comfortable working in office": "Yes",
+        "days a week": "Yes",
+        # Background/legal
+        "background check": "Yes",
+        "drug test": "Yes",
+        "non-compete": "No",
+        "non compete": "No",
+        "18 years": "Yes",
+        "at least 18": "Yes",
+        # Referral
+        "referred by someone": "No",
+        "employee referral": "No",
+        "security clearance": "No",
     }
     
     try:
