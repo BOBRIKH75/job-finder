@@ -86,10 +86,25 @@ else:
 - Code is 8-character alphanumeric, sent from no-reply@greenhouse.io
 
 ## Testing Progress
-- [x] Datadog — CONFIRMED via email ✅
-- [x] Affirm — CONFIRMED via email ✅
-- [x] Chainguard — all comboboxes filled correctly (verified via JS, not submitted — they said no AI)
-- [x] Reddit — demonstrated Chrome DevTools MCP limitation (fill/type_text don't trigger React onChange same as Playwright keyboard.type)
+- [x] Datadog — CONFIRMED via email ✅ (6:34 PM)
+- [x] Affirm — CONFIRMED via email ✅ (6:39 PM)
+- [x] Chainguard — all comboboxes filled correctly (verified via JS, not submitted — no AI policy)
+- [x] Reddit — tested, found demographic field limitations
+- [x] Recorded Future — SUBMITTED ✅, Thank You page + email (7:12 PM)
+- [x] Spark Advisors — SUBMITTED ✅, Thank You page + email (7:22 PM)
+- [x] Metropolis — SUBMITTED ✅, Thank You page + email (7:44 PM)
+- [x] LearnLux — SUBMITTED ✅, email confirmed (7:48 PM) — 6 technical skill comboboxes filled
+- [x] Air — SUBMITTED ✅, email confirmed (7:50 PM) — Green Card option available
+
+## Session 3 Learnings (Chrome DevTools MCP — WORKING approach)
+1. **opt.click() DOES work** — previous JS verification was checking wrong class for singleValue
+2. **Toggle flyout buttons** open the correct dropdown reliably
+3. **Exact match via JS** fixes Male→Female: type "Male" → `evaluate_script` finds option with `.textContent.trim() === 'Male'` → `opt.click()`
+4. **Dynamic race field** detected after Hispanic=No on Metropolis (filled with "White")
+5. **BobBob FIXED** — use `Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set` + `dispatchEvent` to clear+fill (new submissions show "Bob" not "BobBob")
+6. **Resume auto-uploads** from Greenhouse cookies (no manual upload needed)
+7. **Technical skill comboboxes** (LearnLux): click combobox → ArrowDown → read options → click first/best match
+8. **Green Card option** exists on Air (not just Yes/No for citizenship)
 
 ## SMART_ANSWERS Updates Applied
 | Field | Old Value | New Value | Why |
