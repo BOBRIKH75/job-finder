@@ -64,7 +64,7 @@ def get_verification_code(
     try:
         mail = imaplib.IMAP4_SSL("imap.gmail.com")
         mail.login(gmail_user, gmail_pass)
-        mail.select("inbox")
+        mail.select('"[Gmail]/All Mail"')
         if sender_filter:
             search_criteria = f'(UNSEEN FROM "{sender_filter}")'
         else:
@@ -80,7 +80,7 @@ def get_verification_code(
         print(f"      ⚠️ Could not clear old emails: {str(e)[:40]}")
     
     # Small delay to allow Greenhouse to send the new code
-    time.sleep(3)
+    time.sleep(8)  # Greenhouse typically takes 5-15 seconds to send
     
     start_time = time.time()
     while time.time() - start_time < max_wait_seconds:
@@ -88,7 +88,7 @@ def get_verification_code(
             # Connect to Gmail IMAP
             mail = imaplib.IMAP4_SSL("imap.gmail.com")
             mail.login(gmail_user, gmail_pass)
-            mail.select("inbox")
+            mail.select('"[Gmail]/All Mail"')  # Search ALL mail, not just Primary tab
             
             # Search for UNSEEN emails from the sender
             if sender_filter:
