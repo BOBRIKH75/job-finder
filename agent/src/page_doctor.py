@@ -566,6 +566,17 @@ def fill_greenhouse_custom_fields(page, profile: dict) -> int:
         "employment type": "Contract",
         "relocate": "No",
         "years of experience": "10",
+        # AI consent (Greenhouse 2025+ pattern)
+        "consenting to the use of ai": "Yes",
+        "consent to the use of ai": "Yes",
+        "use of ai for evaluating": "Yes",
+        "ai for evaluating my candidacy": "Yes",
+        "ai to evaluate": "Yes",
+        "use of artificial intelligence": "Yes",
+        # Other consent/acknowledge patterns
+        "acknowledge": "Yes",
+        "agree to": "Yes",
+        "consent": "Yes",
     }
     
     try:
