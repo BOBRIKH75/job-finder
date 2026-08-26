@@ -17,12 +17,26 @@ from datetime import datetime, timedelta
 from typing import Optional
 
 
+# Module-level set to track codes we've already used this session.
+# This prevents reusing the same code even if IMAP returns the same email.
+_USED_CODES: set = set()
+
+
 def get_verification_code(
     sender_filter: str = "greenhouse",
     max_wait_seconds: int = 30,
     poll_interval: int = 3,
 ) -> Optional[str]:
-    """Poll Gmail IMAP for a recent verification code email.
+    """Poll Gmail IMAP for a FRESH verification code email.
+    
+    CRITICAL: Each Greenhouse application sends a UNIQUE code. Reusing an old
+    code silently fails (page redirects but application is NOT actually submitted).
+    
+    Strategy:
+    1. Search UNSEEN emails from sender
+    2. Loop through ALL matches (newest first) looking for a code NOT in _USED_CODES
+    3. Mark every processed email as SEEN (prevents re-reads)
+    4. If no fresh code found, wait and retry until timeout
     
     Args:
         sender_filter: keyword to match in sender address (e.g., 'greenhouse', 'no-reply')
@@ -40,9 +54,8 @@ def get_verification_code(
         return None
     
     print(f"      📧 Waiting for verification email (max {max_wait_seconds}s)...")
-    
-    # Track the time we started waiting — only accept emails received AFTER this
-    wait_start = datetime.now()
+    if _USED_CODES:
+        print(f"      📧 Already used codes this session: {_USED_CODES}")
     
     start_time = time.time()
     while time.time() - start_time < max_wait_seconds:
@@ -52,8 +65,7 @@ def get_verification_code(
             mail.login(gmail_user, gmail_pass)
             mail.select("inbox")
             
-            # Strategy: search for UNSEEN emails from the sender ONLY
-            # This ensures we never reuse an old code
+            # Search for UNSEEN emails from the sender
             if sender_filter:
                 search_criteria = f'(UNSEEN FROM "{sender_filter}")'
             else:
@@ -61,31 +73,15 @@ def get_verification_code(
             status, messages = mail.search(None, search_criteria)
             
             if status == "OK" and messages[0]:
-                # Get the most recent matching UNSEEN email
                 msg_ids = messages[0].split()
-                latest_id = msg_ids[-1]  # most recent
-                
-                status, msg_data = mail.fetch(latest_id, "(RFC822)")
-                if status == "OK":
+                # Process from NEWEST to OLDEST
+                for msg_id in reversed(msg_ids):
+                    status, msg_data = mail.fetch(msg_id, "(RFC822)")
+                    if status != "OK":
+                        continue
+                    
                     raw_email = msg_data[0][1]
                     msg = email.message_from_bytes(raw_email)
-                    
-                    # Check email date — only accept if received recently (within last 2 minutes)
-                    email_date = msg.get("Date", "")
-                    try:
-                        from email.utils import parsedate_to_datetime
-                        email_dt = parsedate_to_datetime(email_date)
-                        # Make both timezone-naive for comparison
-                        email_dt_naive = email_dt.replace(tzinfo=None) if email_dt.tzinfo else email_dt
-                        age_seconds = (datetime.now() - email_dt_naive).total_seconds()
-                        if age_seconds > 120:  # older than 2 minutes — stale code
-                            # Mark as seen so we don't pick it up again
-                            mail.store(latest_id, '+FLAGS', '\\Seen')
-                            mail.logout()
-                            time.sleep(poll_interval)
-                            continue
-                    except Exception:
-                        pass  # If we can't parse date, try extracting code anyway
                     
                     # Extract body text
                     body = ""
@@ -99,12 +95,19 @@ def get_verification_code(
                     else:
                         body = msg.get_payload(decode=True).decode("utf-8", errors="ignore")
                     
-                    # Extract verification code (typically 4-8 digit number or alphanumeric)
+                    # Extract verification code
                     code = _extract_code(body)
+                    
+                    # ALWAYS mark as SEEN — whether we use the code or not
+                    mail.store(msg_id, '+FLAGS', '\\Seen')
+                    
                     if code:
-                        print(f"      ✅ Got verification code: {code}")
-                        # Mark as read
-                        mail.store(latest_id, '+FLAGS', '\\Seen')
+                        if code in _USED_CODES:
+                            print(f"      ⏭️  Skipping already-used code: {code}")
+                            continue
+                        # FRESH code found!
+                        print(f"      ✅ Got FRESH verification code: {code}")
+                        _USED_CODES.add(code)
                         mail.logout()
                         return code
             
@@ -114,7 +117,7 @@ def get_verification_code(
         
         time.sleep(poll_interval)
     
-    print(f"      ❌ No verification email received within {max_wait_seconds}s")
+    print(f"      ❌ No FRESH verification email received within {max_wait_seconds}s (used codes: {_USED_CODES})")
     return None
 
 
