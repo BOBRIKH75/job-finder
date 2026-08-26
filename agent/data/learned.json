@@ -128,6 +128,30 @@
     "disability_wording": "Correct text is I do not want to answer (NOT wish). Different companies use: I dont wish to answer, Decline To Self Identify.",
     "job_board_matches_school": "Typing Job Board matches School job board first. Use Other instead.",
     "recaptcha_vs_email_verification": "Some forms that seem blocked by reCAPTCHA actually just need email verification code. Check Gmail for Security code emails.",
-    "textarea_min_length": "Some textareas (like AI tools, LLM questions) have minimum character requirements. Use 200+ chars."
+    "textarea_min_length": "Some textareas (like AI tools, LLM questions) have minimum character requirements. Use 200+ chars.",
+    "home_dir_assumption": "NEVER use ~ or /Users/P3260288/ in CI code. Runner user is rikhsiboevgmail.com on a different laptop. Use script-relative paths: os.path.dirname(os.path.abspath(__file__))",
+    "push_without_verifying_runner_env": "BEFORE pushing path changes: ask WHERE does this run? WHO is the user? WHAT is the working directory? Check CI logs for the actual paths."
+  },
+  "infrastructure_lessons": {
+    "self_hosted_runner_different_user": {
+      "issue": "Self-hosted runner runs as user rikhsiboevgmail.com on OTHER laptop. Home dir is /Users/rikhsiboevgmail.com/ not /Users/P3260288/. Any path using ~ or hardcoded /Users/P3260288/ WILL FAIL.",
+      "fix": "ALWAYS use paths relative to the script or GITHUB_WORKSPACE. Never use ~ or hardcoded home paths in CI code.",
+      "runner_workspace": "/Users/rikhsiboevgmail.com/actions-runner/_work/job-finder/job-finder/",
+      "runner_user": "rikhsiboevgmail.com",
+      "dev_user": "P3260288",
+      "rule": "BEFORE pushing ANY path change: ask \u2014 does this path exist on the RUNNER machine? Check with os.path.dirname(__file__) relative paths ONLY."
+    },
+    "resume_path_resolution": {
+      "issue": "resume.pdf in profile.json was relative to agent/ dir but greenhouse_apply.py runs from repo root",
+      "fix": "profile.json says agent/resume.pdf. Script tries multiple candidates. The file EXISTS in git repo at agent/resume.pdf.",
+      "rule": "Any file the CI needs MUST be in the git repo or generated during the run. Never depend on local filesystem files."
+    },
+    "verify_before_push_checklist": [
+      "1. Does this path exist on the RUNNER (user=rikhsiboevgmail.com)?",
+      "2. Is the working directory what I think? (greenhouse_apply.py: repo root. agent scripts: agent/)",
+      "3. Is the file in git? (git ls-files <path>)",
+      "4. Does os.path.expanduser(~) resolve correctly on BOTH machines?",
+      "5. NEVER hardcode /Users/P3260288/ \u2014 use os.path.dirname(__file__) or GITHUB_WORKSPACE env var"
+    ]
   }
 }
