@@ -609,17 +609,36 @@ def main(headless: bool = True):
         else:
             print("   ⚠️  API failed (likely 403 — free plan). Trying Selenium login...\n")
 
-    # ─── METHOD 2: Selenium + Auto-Login (dynamic, no cookies needed) ───
+    # ─── METHOD 2: Cookies (fastest after API — no login needed) ───
+    if not all_contacts:
+        cookies = load_cookies()
+        if cookies:
+            print("🍪 Method 2: Using cookies (APOLLO_COOKIES_B64 or saved session)...")
+            driver = create_driver(headless=headless)
+            try:
+                if inject_cookies(driver, cookies):
+                    for search in SEARCH_QUERIES:
+                        contacts = run_search(driver, search)
+                        new_contacts = deduplicate(contacts, existing_emails)
+                        all_contacts.extend(new_contacts)
+                        existing_emails.update(c.get("email", "").lower() for c in new_contacts)
+                        if len(all_contacts) >= MAX_CONTACTS_PER_RUN:
+                            break
+                else:
+                    print("   ⚠️  Cookies expired or invalid")
+            finally:
+                driver.quit()
+
+    # ─── METHOD 3: Selenium + Auto-Login (fallback — needs real password) ───
     if not all_contacts:
         apollo_email = os.environ.get("APOLLO_EMAIL", os.environ.get("GMAIL_USER", ""))
         apollo_password = os.environ.get("APOLLO_PASSWORD", "")
         
-        if apollo_email and apollo_password:
-            print(f"🌐 Method 2: Selenium auto-login as {apollo_email[:5]}***...")
+        if apollo_email and apollo_password and apollo_password != "PLACEHOLDER_CHANGE_ME":
+            print(f"🌐 Method 3: Selenium auto-login as {apollo_email[:5]}***...")
             driver = create_driver(headless=headless)
             try:
                 if _login_with_credentials(driver, apollo_email, apollo_password):
-                    # Save cookies for next time
                     _save_session_cookies(driver)
                     
                     for search in SEARCH_QUERIES:
@@ -630,30 +649,13 @@ def main(headless: bool = True):
                         if len(all_contacts) >= MAX_CONTACTS_PER_RUN:
                             break
                 else:
-                    print("   ❌ Login failed")
+                    print("   ❌ Login failed (Google OAuth accounts need cookies, not password)")
             finally:
                 driver.quit()
-        
-        # ─── METHOD 3: Saved cookies from previous login ───
-        elif load_cookies():
-            print("🌐 Method 3: Using saved cookies from previous session...")
-            driver = create_driver(headless=headless)
-            try:
-                if inject_cookies(driver, load_cookies()):
-                    for search in SEARCH_QUERIES:
-                        contacts = run_search(driver, search)
-                        new_contacts = deduplicate(contacts, existing_emails)
-                        all_contacts.extend(new_contacts)
-                        existing_emails.update(c.get("email", "").lower() for c in new_contacts)
-                        if len(all_contacts) >= MAX_CONTACTS_PER_RUN:
-                            break
-            finally:
-                driver.quit()
-        else:
-            print("❌ No credentials available. Add APOLLO_EMAIL + APOLLO_PASSWORD secrets to GitHub.")
-            print("   Run: gh secret set APOLLO_EMAIL")
-            print("   Run: gh secret set APOLLO_PASSWORD")
-            return []
+
+    if not all_contacts:
+        print("\n❌ All methods failed. Ensure APOLLO_COOKIES_B64 is set with fresh cookies.")
+        return []
 
     # Deduplicate against all existing contacts
     all_contacts = deduplicate(all_contacts, existing_emails)
