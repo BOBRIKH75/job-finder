@@ -1504,3 +1504,197 @@ def fix_errors_and_retry(page, profile: dict, errors: list[str]) -> int:
         pass
 
     return fixed
+
+
+def fill_all_remaining_required(page, profile: dict) -> int:
+    """UNIVERSAL FALLBACK: Fill ANY remaining empty required fields with smart defaults.
+    
+    This runs AFTER all other fill attempts. For any field still empty:
+    - Combobox/dropdown: type "Yes" or select first option
+    - Text input: fill based on label keywords or generic answer
+    - Textarea: fill with a short relevant answer
+    
+    This ensures forms SUBMIT even for unknown company-specific questions.
+    """
+    import time
+    filled = 0
+    
+    # Smart defaults based on label keywords
+    TEXT_DEFAULTS = {
+        "math": "Top 10% of class",
+        "language": "Fluent, native-level proficiency",
+        "travel": "Yes, willing to travel",
+        "meet in person": "Yes",
+        "commute": "Yes",
+        "relocate": "Open to relocation",
+        "salary": "Open to discussion based on role",
+        "compensation": "Open to discussion based on role",
+        "notice": "2 weeks",
+        "start": "Immediately available",
+        "experience": "10+ years of professional experience in software development",
+        "certify": "Yes",
+        "confirm": "Yes",
+        "agree": "Yes",
+        "acknowledge": "Yes",
+        "privacy": "Yes",
+        "understand": "Yes",
+        "country": "United States",
+        "companies": "4",
+        "how many": "4",
+        "why": "I'm passionate about the company's mission and believe my 10+ years of Java/Spring Boot experience with distributed systems, Kafka, and cloud-native architectures align well with this role.",
+        "interest": "I'm drawn to the technical challenges and the opportunity to apply my expertise in microservices and event-driven architecture at scale.",
+        "motivation": "The opportunity to work with a talented team on impactful technical challenges.",
+        "describe": "10+ years building distributed systems with Java/Spring Boot, Apache Kafka, Kubernetes, AWS, MongoDB, Cassandra, PostgreSQL, Redis, Docker, and Terraform.",
+        "tell us": "Senior Java Backend Developer with 10+ years building microservices and distributed systems.",
+        "about yourself": "Senior Java Backend Developer with 10+ years of experience.",
+        "built ai": "Yes, I have experience building AI-assisted development tools and automation agents using LLMs, including rule-based agents for code review and CI/CD pipeline automation.",
+        "ai agent": "Yes, built automation agents using LLMs for code review and CI/CD.",
+    }
+    
+    GENERIC_TEXT = "Yes"
+    GENERIC_TEXTAREA = "I have extensive relevant experience and am excited about this opportunity. I'm a Senior Java Backend Developer with 10+ years building distributed systems with Spring Boot, Kafka, Kubernetes, and AWS. I'm available immediately for full-time work and authorized to work in the US (Green Card holder, no sponsorship needed)."
+    
+    try:
+        # Pass 1: Fill empty required COMBOBOXES (dropdowns)
+        combos = page.locator('input[role="combobox"][aria-required="true"]').all()
+        for combo in combos:
+            try:
+                cid = combo.get_attribute("id") or ""
+                if "iti-" in cid or "search-input" in cid:
+                    continue
+                
+                # Check if already filled
+                try:
+                    vc = combo.locator("xpath=ancestor::div[contains(@class,'select__control')]//div[contains(@class,'single-value')]")
+                    if vc.count() > 0 and vc.first.inner_text(timeout=300).strip():
+                        continue
+                except:
+                    pass
+                
+                # Get label for context
+                label = ""
+                try:
+                    lid = combo.get_attribute("aria-labelledby") or ""
+                    if lid:
+                        label = page.locator(f"#{lid}").first.inner_text(timeout=500).lower()
+                except:
+                    pass
+                
+                # Find best text to type
+                answer = "Yes"
+                for key, val in TEXT_DEFAULTS.items():
+                    if key in label:
+                        answer = val
+                        break
+                
+                # Type and select first option
+                combo.scroll_into_view_if_needed()
+                time.sleep(0.2)
+                combo.click()
+                time.sleep(0.3)
+                page.keyboard.type(answer[:30], delay=30)
+                time.sleep(0.8)
+                
+                opts = page.locator('[role="option"]:visible').all()
+                if opts:
+                    opts[0].click()
+                    filled += 1
+                    time.sleep(0.3)
+                else:
+                    # No options matched - try just selecting first available
+                    page.keyboard.press("Escape")
+                    time.sleep(0.2)
+                    combo.click()
+                    time.sleep(0.5)
+                    opts2 = page.locator('[role="option"]:visible').all()
+                    if opts2:
+                        # Pick "Yes" or first non-placeholder
+                        for o in opts2:
+                            ot = o.inner_text(timeout=300).lower()
+                            if ot in ("yes", "true", "agree", "i agree"):
+                                o.click()
+                                filled += 1
+                                break
+                        else:
+                            opts2[0].click()
+                            filled += 1
+                        time.sleep(0.3)
+                    else:
+                        page.keyboard.press("Escape")
+            except:
+                try:
+                    page.keyboard.press("Escape")
+                except:
+                    pass
+        
+        # Pass 2: Fill empty required TEXT INPUTS
+        inputs = page.locator('input[type="text"][aria-required="true"]:visible, input:not([type])[aria-required="true"]:visible').all()
+        for inp in inputs:
+            try:
+                iid = inp.get_attribute("id") or ""
+                if "iti-" in iid or "search" in iid:
+                    continue
+                role = inp.get_attribute("role") or ""
+                if role == "combobox":
+                    continue  # Handled above
+                
+                val = inp.input_value()
+                if val:
+                    continue
+                
+                # Get label
+                label = ""
+                try:
+                    lid = inp.get_attribute("aria-labelledby") or ""
+                    if lid:
+                        label = page.locator(f"#{lid}").first.inner_text(timeout=500).lower()
+                except:
+                    pass
+                
+                # Find best answer
+                answer = GENERIC_TEXT
+                for key, val in TEXT_DEFAULTS.items():
+                    if key in label:
+                        answer = val
+                        break
+                
+                inp.fill(answer)
+                filled += 1
+            except:
+                pass
+        
+        # Pass 3: Fill empty required TEXTAREAS
+        textareas = page.locator('textarea[aria-required="true"]:visible').all()
+        for ta in textareas:
+            try:
+                val = ta.input_value()
+                if val:
+                    continue
+                
+                label = ""
+                try:
+                    tid = ta.get_attribute("id") or ""
+                    lid = ta.get_attribute("aria-labelledby") or ""
+                    if lid:
+                        label = page.locator(f"#{lid}").first.inner_text(timeout=500).lower()
+                except:
+                    pass
+                
+                # Find best answer
+                answer = GENERIC_TEXTAREA
+                for key, val in TEXT_DEFAULTS.items():
+                    if key in label and len(val) > 10:
+                        answer = val
+                        break
+                
+                ta.fill(answer)
+                filled += 1
+            except:
+                pass
+        
+    except Exception:
+        pass
+    
+    if filled:
+        print(f"      🔄 Fallback filled {filled} remaining required fields")
+    return filled

@@ -1583,6 +1583,13 @@ def apply_to_job(page, profile, job, learned, dry_run=False, db=None, site_needs
                 attempt_result["filled"] += dynamic_filled
                 print(f"      🔄 Dynamic fill: {dynamic_filled} additional fields")
 
+            # UNIVERSAL FALLBACK: fill ANY remaining empty required fields
+            # This ensures forms submit even for unknown company-specific questions
+            from src.page_doctor import fill_all_remaining_required
+            fallback_filled = fill_all_remaining_required(page, profile)
+            if fallback_filled:
+                attempt_result["filled"] += fallback_filled
+
             # Handle reCAPTCHA / CAPTCHA — use auto-captcha solver (NopeCHA, 100 free/day)
             from src.page_doctor import simulate_human_behavior
             simulate_human_behavior(page)
