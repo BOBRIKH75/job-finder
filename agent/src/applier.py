@@ -1631,10 +1631,22 @@ def apply_to_job(page, profile, job, learned, dry_run=False, db=None, site_needs
                             post_verify_text = ""
                         post_verify_url = page.url.lower()
                         success_signals_ev = ["thank", "success", "received", "submitted", "confirmation", "applied", "complete"]
-                        if any(s in post_verify_url for s in success_signals_ev) or any(s in post_verify_text for s in success_signals_ev):
+                        # CRITICAL: check for FAILURE signals — invalid/expired code means NOT submitted
+                        failure_signals_ev = ["invalid", "expired", "incorrect", "try again", "error", "security code", "verification code", "enter the code", "enter code"]
+                        has_success = any(s in post_verify_url for s in success_signals_ev) or any(s in post_verify_text for s in success_signals_ev)
+                        has_failure = any(s in post_verify_text for s in failure_signals_ev)
+                        if has_success and not has_failure:
                             submit_result = {"submitted": True, "method": "email_verification"}
-                        elif post_verify_url != url.lower().rstrip("/"):
-                            submit_result = {"submitted": True, "method": "email_verification_redirect"}
+                        elif has_failure:
+                            print(f"      ❌ Code was REJECTED — page still shows verification/error signals")
+                            submit_result = {"submitted": False, "reason": "verification_code_rejected"}
+                        elif post_verify_url != url.lower().rstrip("/") and not has_failure:
+                            # URL changed but no clear success signal — check it's not still on verification page
+                            if "security" not in post_verify_text and "verification" not in post_verify_text and "code" not in post_verify_text:
+                                submit_result = {"submitted": True, "method": "email_verification_redirect"}
+                            else:
+                                print(f"      ❌ URL changed but page still shows code/verification content — NOT submitted")
+                                submit_result = {"submitted": False, "reason": "verification_code_rejected"}
                     else:
                         print("      ❌ handle_email_verification returned False — code not obtained or not entered")
                 except Exception as ev_err:
@@ -1653,10 +1665,20 @@ def apply_to_job(page, profile, job, learned, dry_run=False, db=None, site_needs
                             post_verify_text = ""
                         post_verify_url = page.url.lower()
                         success_signals_ev = ["thank", "success", "received", "submitted", "confirmation", "applied", "complete"]
-                        if any(s in post_verify_url for s in success_signals_ev) or any(s in post_verify_text for s in success_signals_ev):
+                        failure_signals_ev = ["invalid", "expired", "incorrect", "try again", "error", "security code", "verification code", "enter the code", "enter code"]
+                        has_success = any(s in post_verify_url for s in success_signals_ev) or any(s in post_verify_text for s in success_signals_ev)
+                        has_failure = any(s in post_verify_text for s in failure_signals_ev)
+                        if has_success and not has_failure:
                             submit_result = {"submitted": True, "method": "email_verification"}
-                        elif post_verify_url != url.lower().rstrip("/"):
-                            submit_result = {"submitted": True, "method": "email_verification_redirect"}
+                        elif has_failure:
+                            print(f"      ❌ Code was REJECTED (fallback) — page still shows verification/error signals")
+                            submit_result = {"submitted": False, "reason": "verification_code_rejected"}
+                        elif post_verify_url != url.lower().rstrip("/") and not has_failure:
+                            if "security" not in post_verify_text and "verification" not in post_verify_text and "code" not in post_verify_text:
+                                submit_result = {"submitted": True, "method": "email_verification_redirect"}
+                            else:
+                                print(f"      ❌ URL changed but page still shows code content (fallback) — NOT submitted")
+                                submit_result = {"submitted": False, "reason": "verification_code_rejected"}
                 except Exception as ev_err:
                     print(f"      ⚠️ Email verification fallback check failed: {str(ev_err)[:60]}")
 
