@@ -57,6 +57,31 @@ def get_verification_code(
     if _USED_CODES:
         print(f"      📧 Already used codes this session: {_USED_CODES}")
     
+    # STEP 0: Clear ALL existing unread emails from this sender BEFORE waiting.
+    # This prevents picking up stale codes from previous runs/applications.
+    # The fresh code for THIS application hasn't been sent yet (Greenhouse sends
+    # it AFTER the submit, which just happened), so anything already in inbox is OLD.
+    try:
+        mail = imaplib.IMAP4_SSL("imap.gmail.com")
+        mail.login(gmail_user, gmail_pass)
+        mail.select("inbox")
+        if sender_filter:
+            search_criteria = f'(UNSEEN FROM "{sender_filter}")'
+        else:
+            search_criteria = '(UNSEEN)'
+        status, messages = mail.search(None, search_criteria)
+        if status == "OK" and messages[0]:
+            msg_ids = messages[0].split()
+            for msg_id in msg_ids:
+                mail.store(msg_id, '+FLAGS', '\\Seen')
+            print(f"      📧 Cleared {len(msg_ids)} old email(s) — waiting for fresh code only")
+        mail.logout()
+    except Exception as e:
+        print(f"      ⚠️ Could not clear old emails: {str(e)[:40]}")
+    
+    # Small delay to allow Greenhouse to send the new code
+    time.sleep(3)
+    
     start_time = time.time()
     while time.time() - start_time < max_wait_seconds:
         try:
