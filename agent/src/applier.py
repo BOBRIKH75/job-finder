@@ -1124,8 +1124,12 @@ def submit_and_verify(page, page_data, original_url) -> dict:
                     if errors:
                         return {"submitted": False, "reason": f"Form errors: {errors}"}
 
-                    # 3. URL changed = success (Greenhouse redirects on submit)
+                    # 3. URL changed = possible success (Greenhouse redirects on submit)
                     if url != original_url.lower().rstrip("/"):
+                        # BUT: check if the new page asks for a security code (email verification)
+                        # If so, it's NOT submitted yet — needs code entry
+                        if "security" in text or "verification" in text or "code" in text:
+                            return {"submitted": False, "reason": "email_verification_required"}
                         return {"submitted": True, "method": "url_changed"}
 
                     # 4. Intercepted a successful POST and no DOM errors visible

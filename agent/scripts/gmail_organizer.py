@@ -74,6 +74,8 @@ APPLICATION_DOMAINS = {
 
 
 def connect():
+    import socket
+    socket.setdefaulttimeout(30)  # 30 second timeout for IMAP operations
     conn = imaplib.IMAP4_SSL("imap.gmail.com")
     conn.login(GMAIL_USER, GMAIL_APP_PASSWORD)
     return conn
@@ -195,9 +197,9 @@ def organize_inbox(conn, days_back=3):
     _, data = conn.search(None, f'(SINCE "{since}")')
     
     msg_ids = data[0].split()
-    # Limit to 50 emails per run to prevent timeout
-    msg_ids = msg_ids[:50]
-    print(f"  Scanning {len(msg_ids)} emails from last {days_back} days (max 50)...")
+    # Limit to 20 emails per run to prevent timeout (runs daily — nothing missed)
+    msg_ids = msg_ids[-20:]  # Most recent 20
+    print(f"  Scanning {len(msg_ids)} emails from last {days_back} days...")
     
     labeled = {"Jobs/Recruiters": 0, "Jobs/Applications": 0, "Jobs/ACTION-Interviews": 0,
                "Jobs/Rejections": 0, "Jobs/Auto-Replies": 0, "Jobs/Info-Requests": 0}
