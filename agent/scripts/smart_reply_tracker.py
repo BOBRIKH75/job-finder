@@ -86,6 +86,18 @@ _AUTO_REPLY_KEYWORDS = [
     r"currently\s*away", r"not\s*available\s*until",
 ]
 
+# Acknowledgment — recruiter confirms receipt (don't follow up, they're reviewing)
+_ACKNOWLEDGMENT_KEYWORDS = [
+    r"(thank|thanks)\s*(you)?\s*for\s*(your|the|sending|reaching)",
+    r"(received|got)\s*(your)?\s*(resume|cv|profile|application)",
+    r"will\s*(review|look|go\s*through|check)",
+    r"(i'?ll|we'?ll)\s*(get\s*back|respond|follow\s*up|reach\s*out)",
+    r"under\s*review", r"reviewing\s*(your|the)",
+    r"keep\s*(you|your\s*resume)\s*(on\s*file|in\s*mind)",
+    r"(noted|acknowledged)", r"added\s*to\s*(our|the)\s*(database|system|pool)",
+    r"if\s*(something|a\s*position|anything)\s*(comes\s*up|opens|matches)",
+]
+
 
 def classify_reply(subject: str, body: str) -> str:
     """Classify a recruiter reply into a pipeline stage.
@@ -115,6 +127,10 @@ def classify_reply(subject: str, body: str) -> str:
     for pattern in _INFO_REQUEST_KEYWORDS:
         if re.search(pattern, text):
             return "INFO_REQUEST"
+
+    for pattern in _ACKNOWLEDGMENT_KEYWORDS:
+        if re.search(pattern, text):
+            return "ACKNOWLEDGED"
 
     # Default: they replied but we can't classify
     return "REPLIED"
