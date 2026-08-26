@@ -45,7 +45,7 @@ jobs:
           cd $GITHUB_WORKSPACE
           git config user.email "bot@github.actions"
           git config user.name "Apollo Recruiter Bot"
-          git add agent/data/apollo_recruiters.json agent/data/apollo_contacted.json agent/data/apollo_outreach_log.json agent/data/vendor_list.json agent/data/apollo_cookies.json 2>/dev/null || true
+          git add agent/data/apollo_recruiters.json agent/data/apollo_outreach_log.json agent/data/vendor_list.json 2>/dev/null || true
           git diff --staged --quiet || git commit -m "apollo: +recruiters discovered, outreach sent $(date +%Y-%m-%d) [skip ci]"
           git push || true
 

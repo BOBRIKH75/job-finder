@@ -48,7 +48,7 @@ except ImportError:
 
 # ─── Paths ────────────────────────────────────────────────────────────────────
 DATA_DIR = Path(__file__).parent.parent / "data"
-COOKIES_FILE = DATA_DIR / "apollo_cookies.json"
+COOKIES_FILE = Path("/tmp/apollo_cookies.json")  # /tmp ONLY — never in repo (public!)
 RESULTS_FILE = DATA_DIR / "apollo_recruiters.json"
 VENDOR_FILE = DATA_DIR / "vendor_list.json"
 
@@ -727,12 +727,24 @@ def _login_with_credentials(driver, email: str, password: str) -> bool:
 
 
 def _save_session_cookies(driver):
-    """Save current session cookies for future runs (avoid re-login)."""
+    """Save current session cookies for future runs.
+    SECURITY: Saves to /tmp ONLY — never in repo (repo is PUBLIC).
+    Cookies in GitHub Secrets (APOLLO_COOKIES_B64) are encrypted and safe.
+    """
     try:
         cookies = driver.get_cookies()
-        DATA_DIR.mkdir(parents=True, exist_ok=True)
         COOKIES_FILE.write_text(json.dumps(cookies, indent=2))
-        print(f"   💾 Session cookies saved ({len(cookies)} cookies)")
+        print(f"   💾 Session cookies saved to /tmp ({len(cookies)} cookies)")
+        
+        # Also try to update GitHub secret for next CI run
+        import base64, subprocess
+        encoded = base64.b64encode(json.dumps(cookies).encode()).decode()
+        result = subprocess.run(
+            ["gh", "secret", "set", "APOLLO_COOKIES_B64", "--repo", "BOBRIKH75/job-finder"],
+            input=encoded, text=True, capture_output=True, timeout=10
+        )
+        if result.returncode == 0:
+            print(f"   🔒 Cookies saved to GitHub Secret (encrypted, safe)")
     except Exception as e:
         print(f"   ⚠️  Could not save cookies: {e}")
 

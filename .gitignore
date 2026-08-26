@@ -11,10 +11,18 @@ agent/data/indeed_cookies.json
 agent/data/linkedin_cookies.json
 __pycache__/
 
-# Credentials — NEVER commit these
+# Credentials — NEVER commit these (PUBLIC REPO!)
 .env
 .env.local
 *.key
 *.pem
+*_cookies.json
 agent/data/*_cookies.json
+agent/data/apollo_cookies.json
+agent/data/apollo_contacted.json
+agent/data/contacted.json
+contacted.json
+**/cookies.json
+**/credentials.json
+**/secrets.json
 agent/data/agent_memory.db

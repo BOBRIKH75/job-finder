@@ -1,0 +1,23 @@
+name: "Apollo Cookie Refresh (Self-Hosted)"
+
+on:
+  schedule:
+    # Every 5 days at 8 AM MT — refresh before 7-day TTL expires
+    - cron: "0 14 */5 * *"
+  workflow_dispatch: {}
+
+# Runs on self-hosted runner (your laptop with Chrome logged into Apollo)
+jobs:
+  refresh-cookies:
+    runs-on: self-hosted
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Extract Apollo cookies from Chrome
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          pip install cryptography 2>/dev/null || true
+          python3 scripts/extract_apollo_cookies.py
