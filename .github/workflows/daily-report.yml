@@ -15,7 +15,7 @@ on:
 jobs:
   send-report:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 40
 
     steps:
       - uses: actions/checkout@v4
@@ -38,6 +38,7 @@ jobs:
       - name: Organize Gmail inbox
         working-directory: agent
         continue-on-error: true
+        timeout-minutes: 30
         run: |
           if [ "${{ github.event.inputs.backfill }}" = "true" ]; then
             echo "Running BACKFILL mode — all emails since 2024"
