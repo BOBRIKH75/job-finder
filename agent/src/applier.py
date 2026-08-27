@@ -1888,14 +1888,14 @@ def run_applications(jobs: list[dict], dry_run: bool = True, max_apps: int = 10,
         else:
             raise ImportError("cloakbrowser not installed")
     except Exception as cloak_err:
-        print(f"  Using Playwright (cloakbrowser not available)")
-        from playwright.sync_api import sync_playwright
-        pw = sync_playwright().start()
+        # patchright patches Chromium at binary level — navigator.webdriver invisible.
+        # Falls back to regular playwright if patchright not installed.
+        from src.human_behavior import get_playwright_module, random_context_args
+        pw = get_playwright_module()().start()
         browser = pw.chromium.launch(headless=True)
-        context = browser.new_context(
-            user_agent="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
-            viewport={"width": 1920, "height": 1080},
-        )
+        ctx_args = random_context_args()
+        print(f"  🛡️ Browser context: {ctx_args['user_agent'][:60]}… | {ctx_args['viewport']}")
+        context = browser.new_context(**ctx_args)
 
     # Inject Indeed cookies for authenticated apply
     indeed_cookies = load_indeed_cookies()
