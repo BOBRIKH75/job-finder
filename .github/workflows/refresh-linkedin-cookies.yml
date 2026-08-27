@@ -17,9 +17,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Install browser-cookie3
+        run: pip3 install browser-cookie3 --break-system-packages 2>/dev/null || pip3 install browser-cookie3 || true
+
       - name: Extract LinkedIn cookies from local Chrome and update secret
         env:
-          GH_TOKEN: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_PAT }}
         run: |
           python3 << 'EOF'
           """Extract LinkedIn cookies directly from Chrome's sqlite DB (no pip packages needed).
