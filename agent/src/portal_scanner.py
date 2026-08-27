@@ -3,7 +3,7 @@
 Flow:
 1. Load company list (seed + learned)
 2. For each company, check Lever API and Greenhouse API
-3. Filter jobs matching Java/Spring Boot/Kafka skills
+3. Filter jobs matching profile skills (loaded dynamically from profile.json)
 4. When agent applies anywhere, extract company → add to list
 5. List grows every day automatically
 
@@ -14,12 +14,38 @@ from pathlib import Path
 import httpx
 
 COMPANIES_FILE = Path(__file__).parent.parent / "data" / "companies.json"
+_PROFILE_FILE = Path(__file__).parent.parent / "config" / "profile.json"
 
-SKILLS_FILTER = [
-    "java", "spring", "kafka", "kubernetes", "microservice", "backend", "back-end",
-    "back end", "docker", "aws", "rest api", "graphql", "mongodb", "cassandra",
-    "postgresql", "redis", "devops", "ci/cd", "software engineer", "developer",
-    "full stack", "fullstack", "platform engineer", "site reliability",
+# Load skills dynamically from profile.json so changes to CV auto-reflect here
+try:
+    _PROFILE_SKILLS = json.loads(_PROFILE_FILE.read_text()).get("skills", [])
+except Exception:
+    _PROFILE_SKILLS = []
+
+# Merge profile skills with extra role-level signals not in the skills list
+SKILLS_FILTER = list(set(_PROFILE_SKILLS + [
+    "java", "spring", "spring boot", "spring mvc", "spring cloud", "spring security",
+    "spring data", "spring aop", "kafka", "apache kafka", "kubernetes", "k8s",
+    "microservice", "microservices", "backend", "back-end", "back end",
+    "software engineer", "developer", "architect", "api developer",
+    "full stack", "fullstack", "platform engineer", "site reliability", "sre",
+    "jvm", "jdk", "j2ee", "jakarta ee", "java 17", "java 21",
+]))
+
+# Job TITLE must indicate a dev/engineering role — prevents matching a Sales job
+# that merely mentions "Kafka" in the requirements section of its JD.
+TITLE_SIGNALS = [
+    "java", "backend", "back-end", "back end", "spring", "software engineer",
+    "software developer", "software dev", "developer", "architect", "engineer",
+    "full stack", "fullstack", "platform", "sre", "devops", "api", "microservice",
+]
+
+# Jobs that explicitly reject C2C / contractors — skip these, they will never call you
+C2C_REJECT_SIGNALS = [
+    "w2 only", "w-2 only", "no c2c", "no corp to corp", "no corp-to-corp",
+    "no contractors", "no third party", "no third-party", "employees only",
+    "full-time only", "fte only", "permanent position only",
+    "no 1099", "must be w2", "direct hire only", "no agencies",
 ]
 
 # Seed companies known to hire Java developers on Lever/Greenhouse
@@ -57,9 +83,9 @@ SEED_LEVER = [
 
 SEED_GREENHOUSE = [
     # FAANG / Big Tech
-    "netflix", 
+    "netflix",
     "airbnb", "spotify", "pinterest", "snap", "reddit",
-    "linkedin", "dropbox", 
+    "linkedin", "dropbox",
     # Top Remote-first companies
     "gitlab", "automattic", "zapier", "buffer", "doist", "toggl", "hotjar",
     "invisionapp", "helpscout", "close", "basecamp", "37signals",
@@ -100,7 +126,6 @@ def load_companies() -> dict:
 
 def save_companies(data: dict):
     COMPANIES_FILE.parent.mkdir(parents=True, exist_ok=True)
-    # Deduplicate
     data["lever"] = sorted(set(data.get("lever", [])))
     data["greenhouse"] = sorted(set(data.get("greenhouse", [])))
     data["discovered"] = sorted(set(data.get("discovered", [])))
@@ -108,11 +133,17 @@ def save_companies(data: dict):
 
 
 def matches_skills(title: str, description: str = "") -> bool:
-    combined = (title + " " + description).lower()
+    """Job must: (1) have a dev/engineering title, (2) match at least one skill."""
+    title_lower = title.lower()
+    # Must be a developer/engineer role — rejects sales, marketing, etc.
+    if not any(s in title_lower for s in TITLE_SIGNALS):
+        return False
+    combined = (title_lower + " " + description.lower())
     return any(s in combined for s in SKILLS_FILTER)
 
 
-# Jobs to SKIP — require US Citizenship or Security Clearance (Green Card not enough)
+# Jobs to SKIP — require US Citizenship / Security Clearance (Green Card not enough)
+# OR explicitly reject C2C/contractors (not worth applying)
 DISQUALIFY_SIGNALS = [
     "must be a us citizen", "must be us citizen", "u.s. citizenship required",
     "us citizenship required", "requires us citizenship", "citizen only",
@@ -123,9 +154,13 @@ DISQUALIFY_SIGNALS = [
 
 
 def is_disqualified(title: str, description: str = "") -> bool:
-    """Check if job requires US Citizenship or Security Clearance (we have Green Card only)."""
+    """Skip if job requires US Citizenship, clearance, or explicitly rejects C2C."""
     combined = (title + " " + description).lower()
-    return any(s in combined for s in DISQUALIFY_SIGNALS)
+    if any(s in combined for s in DISQUALIFY_SIGNALS):
+        return True
+    if any(s in combined for s in C2C_REJECT_SIGNALS):
+        return True
+    return False
 
 
 def scan_lever(company: str) -> list[dict]:
@@ -166,7 +201,6 @@ def scan_greenhouse(company: str) -> list[dict]:
             if matches_skills(title, desc) and not is_disqualified(title, desc):
                 url = posting.get("absolute_url", "")
                 job_id = posting.get("id", "")
-                # Always use direct Greenhouse URL (company-hosted URLs often need JS)
                 if "greenhouse.io" not in url and job_id:
                     url = f"https://job-boards.greenhouse.io/{company}/jobs/{job_id}"
                 jobs.append({
@@ -189,7 +223,6 @@ def discover_company(company_name: str, companies: dict):
     if slug in companies["lever"] or slug in companies["greenhouse"]:
         return
 
-    # Try Lever
     try:
         resp = httpx.get(f"https://api.lever.co/v0/postings/{slug}?mode=json", timeout=5)
         if resp.status_code == 200 and resp.json():
@@ -199,7 +232,6 @@ def discover_company(company_name: str, companies: dict):
     except Exception:
         pass
 
-    # Try Greenhouse
     try:
         resp = httpx.get(f"https://boards-api.greenhouse.io/v1/boards/{slug}/jobs", timeout=5)
         if resp.status_code == 200 and resp.json().get("jobs"):
@@ -209,7 +241,6 @@ def discover_company(company_name: str, companies: dict):
     except Exception:
         pass
 
-    # Try common variations
     for variant in [slug + "io", slug + "hq", slug + "-jobs", slug + "inc"]:
         try:
             resp = httpx.get(f"https://api.lever.co/v0/postings/{variant}?mode=json", timeout=5)
@@ -275,7 +306,6 @@ def scan_wellfound() -> list[dict]:
         resp = httpx.get("https://wellfound.com/role/r/java-developer", timeout=10,
                          headers={"User-Agent": "Mozilla/5.0"})
         if resp.status_code == 200 and "java" in resp.text.lower():
-            # Extract job links from HTML
             import re
             links = re.findall(r'href="(/jobs/[^"]+)"', resp.text)
             for link in links[:20]:
@@ -302,7 +332,7 @@ def scan_remoteok() -> list[dict]:
         if resp.status_code != 200:
             return []
         data = resp.json()
-        for item in data[1:]:  # first item is API metadata
+        for item in data[1:]:
             if not isinstance(item, dict):
                 continue
             title = item.get("position", "")
@@ -349,7 +379,6 @@ def scan_weworkremotely() -> list[dict]:
             link = item.findtext("link", "")
             if not link or not matches_skills(title, desc):
                 continue
-            # WWR puts "Company: Title" in the title field
             company = ""
             if ": " in title:
                 parts = title.split(": ", 1)
@@ -471,22 +500,16 @@ SEED_WORKABLE = ["twilio", "elastic", "n8n", "zapier", "talkdesk", "genesys"]
 
 
 def scan_all_companies(max_companies: int = 30, found_jobs: list = None) -> list[dict]:
-    """Scan all known companies for Java jobs. Returns list of jobs.
-    
-    If found_jobs is provided, dynamically discover new company ATS portals
-    from the company names in those jobs (turns LinkedIn/Indeed company names
-    into Lever/Greenhouse direct-apply URLs).
-    """
+    """Scan all known companies for Java jobs. Returns list of jobs."""
     companies = load_companies()
     all_jobs = []
     scanned = 0
 
-    # Dynamic discovery: extract company names from found_jobs and probe their ATS
     if found_jobs:
         from src.bridge import extract_companies_from_jobs
         new_companies = extract_companies_from_jobs(found_jobs)
         discovered_count = 0
-        for company_name in new_companies[:50]:  # cap at 50 to avoid rate limits
+        for company_name in new_companies[:50]:
             discover_company(company_name, companies)
             discovered_count += 1
         if discovered_count:
@@ -494,17 +517,16 @@ def scan_all_companies(max_companies: int = 30, found_jobs: list = None) -> list
             print(f"  🔍 Dynamic discovery: probed {discovered_count} companies from found_jobs")
 
     print(f"  Scanning {len(companies['lever'])} Lever + {len(companies['greenhouse'])} Greenhouse companies...")
+    print(f"  Skills filter: {len(SKILLS_FILTER)} keywords from profile.json")
 
-    # Scan Lever companies
     for company in companies["lever"][:max_companies]:
         jobs = scan_lever(company)
         if jobs:
             all_jobs.extend(jobs)
             print(f"    ✅ Lever/{company}: {len(jobs)} Java jobs")
         scanned += 1
-        time.sleep(0.3)  # rate limit
+        time.sleep(0.3)
 
-    # Scan Greenhouse companies
     for company in companies["greenhouse"][:max_companies]:
         jobs = scan_greenhouse(company)
         if jobs:
@@ -513,7 +535,6 @@ def scan_all_companies(max_companies: int = 30, found_jobs: list = None) -> list
         scanned += 1
         time.sleep(0.3)
 
-    # Scan Ashby companies
     for company in SEED_ASHBY[:max_companies]:
         jobs = scan_ashby(company)
         if jobs:
@@ -522,7 +543,6 @@ def scan_all_companies(max_companies: int = 30, found_jobs: list = None) -> list
         scanned += 1
         time.sleep(0.3)
 
-    # Scan Workable companies
     for company in SEED_WORKABLE[:max_companies]:
         jobs = scan_workable(company)
         if jobs:
@@ -531,41 +551,35 @@ def scan_all_companies(max_companies: int = 30, found_jobs: list = None) -> list
         scanned += 1
         time.sleep(0.3)
 
-    # Scan Wellfound
     wf_jobs = scan_wellfound()
     if wf_jobs:
         all_jobs.extend(wf_jobs)
         print(f"    ✅ Wellfound: {len(wf_jobs)} jobs")
 
-    # RemoteOK — free public JSON API
     rok_jobs = scan_remoteok()
     if rok_jobs:
         all_jobs.extend(rok_jobs)
         print(f"    ✅ RemoteOK: {len(rok_jobs)} jobs")
     time.sleep(random.uniform(1.0, 2.0))
 
-    # We Work Remotely — RSS feed (backend category)
     wwr_jobs = scan_weworkremotely()
     if wwr_jobs:
         all_jobs.extend(wwr_jobs)
         print(f"    ✅ WeWorkRemotely: {len(wwr_jobs)} jobs")
     time.sleep(random.uniform(1.0, 2.0))
 
-    # ZipRecruiter — python-jobspy (contract filter)
     zr_jobs = scan_ziprecruiter()
     if zr_jobs:
         all_jobs.extend(zr_jobs)
         print(f"    ✅ ZipRecruiter: {len(zr_jobs)} jobs")
     time.sleep(random.uniform(1.0, 2.0))
 
-    # Remotive — free public JSON API (software-dev category)
     rem_jobs = scan_remotive()
     if rem_jobs:
         all_jobs.extend(rem_jobs)
         print(f"    ✅ Remotive: {len(rem_jobs)} jobs")
     time.sleep(random.uniform(1.0, 2.0))
 
-    # Himalayas — free public JSON API
     him_jobs = scan_himalayas()
     if him_jobs:
         all_jobs.extend(him_jobs)
@@ -573,7 +587,6 @@ def scan_all_companies(max_companies: int = 30, found_jobs: list = None) -> list
 
     save_companies(companies)
 
-    # Deduplicate by URL
     seen = set()
     unique = []
     for j in all_jobs:
