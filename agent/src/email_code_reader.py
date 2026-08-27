@@ -111,18 +111,32 @@ def get_verification_code(
                     raw_email = msg_data[0][1]
                     msg = email.message_from_bytes(raw_email)
                     
-                    # Extract body text
-                    body = ""
+                    # Extract body text — prefer text/plain; fall back to text/html
+                    plain_body = ""
+                    html_body = ""
                     if msg.is_multipart():
                         for part in msg.walk():
-                            if part.get_content_type() == "text/plain":
-                                body = part.get_payload(decode=True).decode("utf-8", errors="ignore")
-                                break
-                            elif part.get_content_type() == "text/html":
-                                body = part.get_payload(decode=True).decode("utf-8", errors="ignore")
+                            if part.get_content_type() == "text/plain" and not plain_body:
+                                plain_body = part.get_payload(decode=True).decode("utf-8", errors="ignore")
+                            elif part.get_content_type() == "text/html" and not html_body:
+                                html_body = part.get_payload(decode=True).decode("utf-8", errors="ignore")
                     else:
-                        body = msg.get_payload(decode=True).decode("utf-8", errors="ignore")
-                    
+                        raw = msg.get_payload(decode=True).decode("utf-8", errors="ignore")
+                        if "<html" in raw.lower() or "<div" in raw.lower():
+                            html_body = raw
+                        else:
+                            plain_body = raw
+
+                    # Greenhouse sends HTML-only emails — strip tags so regex hits real code,
+                    # not CSS color values like #15372C which match the digit+letter pattern.
+                    if plain_body:
+                        body = plain_body
+                    elif html_body:
+                        body = re.sub(r'<[^>]+>', ' ', html_body)
+                        body = re.sub(r'\s+', ' ', body).strip()
+                    else:
+                        body = ""
+
                     # Extract verification code
                     code = _extract_code(body)
                     
