@@ -3,12 +3,19 @@ name: Daily Report
 on:
   schedule:
     - cron: '0 3 * * *'   # 9:00 PM MT (UTC-6) = 3:00 AM UTC
-  workflow_dispatch:        # manual trigger for testing
+  workflow_dispatch:
+    inputs:
+      backfill:
+        description: 'Backfill all existing emails (2 years)'
+        required: false
+        default: 'false'
+        type: choice
+        options: ['false', 'true']
 
 jobs:
   send-report:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
 
     steps:
       - uses: actions/checkout@v4
@@ -31,7 +38,13 @@ jobs:
       - name: Organize Gmail inbox
         working-directory: agent
         continue-on-error: true
-        run: python scripts/gmail_organizer.py
+        run: |
+          if [ "${{ github.event.inputs.backfill }}" = "true" ]; then
+            echo "Running BACKFILL mode — all emails since 2024"
+            python scripts/gmail_organizer.py --backfill
+          else
+            python scripts/gmail_organizer.py
+          fi
         env:
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
