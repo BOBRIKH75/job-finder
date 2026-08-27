@@ -1989,7 +1989,7 @@ def run_applications(jobs: list[dict], dry_run: bool = True, max_apps: int = 10,
         # For Lever jobs: try direct API POST first (no browser / no CAPTCHA)
         if "lever.co/" in url:
             from src.lever_api import submit_lever_api
-            _resume = profile.get("resume_path",
+            _resume = str(RESUME_PATH) if RESUME_PATH.exists() else profile.get("resume_path",
                                   "~/Downloads/CV/Bob_Rikh_Java_Backend_Developer_C2C.pdf")
             _api = submit_lever_api(url, profile, _resume, dry_run=dry_run)
             if _api.get("submitted"):
@@ -2010,7 +2010,7 @@ def run_applications(jobs: list[dict], dry_run: bool = True, max_apps: int = 10,
         # For Greenhouse jobs: try direct multipart POST first (no browser / no CAPTCHA risk)
         if "greenhouse.io" in url:
             from src.greenhouse_api import submit_greenhouse_api
-            _resume = profile.get("resume_path",
+            _resume = str(RESUME_PATH) if RESUME_PATH.exists() else profile.get("resume_path",
                                   "~/Downloads/CV/Bob_Rikh_Java_Backend_Developer_C2C.pdf")
             _api = submit_greenhouse_api(url, profile, _resume, dry_run=dry_run)
             if _api.get("submitted"):
