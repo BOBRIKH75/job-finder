@@ -22,8 +22,15 @@ try:
 except Exception:
     _PROFILE_SKILLS = []
 
+# Core skills that MUST always be present regardless of profile.json loading
+_CORE_SKILLS = [
+    "java", "spring", "spring boot", "kafka", "microservices", "microservice",
+    "kubernetes", "docker", "aws", "backend", "back-end", "rest", "api",
+    "postgresql", "mongodb", "cassandra", "redis", "graphql",
+]
+
 # Merge profile skills with extra role-level signals not in the skills list
-SKILLS_FILTER = list(set(_PROFILE_SKILLS + [
+SKILLS_FILTER = list(set(_PROFILE_SKILLS + _CORE_SKILLS + [
     "java", "spring", "spring boot", "spring mvc", "spring cloud", "spring security",
     "spring data", "spring aop", "kafka", "apache kafka", "kubernetes", "k8s",
     "microservice", "microservices", "backend", "back-end", "back end",

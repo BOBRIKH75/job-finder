@@ -22,30 +22,76 @@ jobs:
           GH_TOKEN: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
         run: |
           python3 << 'EOF'
-          import json, os, base64, subprocess, sys
+          """Extract LinkedIn cookies directly from Chrome's sqlite DB (no pip packages needed).
+          
+          macOS Chrome stores cookies in:
+          ~/Library/Application Support/Google/Chrome/Default/Cookies
+          (or Profile 1/Cookies, Profile 2/Cookies, etc.)
+          
+          The DB is SQLite — we copy it (Chrome locks it) and query directly.
+          """
+          import json, os, base64, subprocess, sqlite3, shutil, tempfile, glob
 
-          print("🔄 Extracting LinkedIn cookies from local Chrome...")
+          print("🔄 Extracting LinkedIn cookies from Chrome (direct sqlite)...")
+
+          # Find Chrome cookie files (check all profiles)
+          home = os.path.expanduser("~")
+          cookie_paths = glob.glob(f"{home}/Library/Application Support/Google/Chrome/*/Cookies")
+          if not cookie_paths:
+              # Try default profile path
+              default_path = f"{home}/Library/Application Support/Google/Chrome/Default/Cookies"
+              if os.path.exists(default_path):
+                  cookie_paths = [default_path]
+
+          if not cookie_paths:
+              print("❌ Chrome Cookies DB not found")
+              print(f"   Checked: {home}/Library/Application Support/Google/Chrome/*/Cookies")
+              exit(1)
 
           cookies = []
-
-          # Method 1: browser-cookie3 (reads Chrome's cookie DB directly)
-          try:
-              import browser_cookie3
-              cj = browser_cookie3.chrome(domain_name='.linkedin.com')
-              for c in cj:
-                  cookies.append({
-                      "name": c.name,
-                      "value": c.value,
-                      "domain": c.domain,
-                      "path": c.path,
-                      "secure": c.secure,
-                  })
-              print(f"✅ Extracted {len(cookies)} LinkedIn cookies from Chrome")
-          except ImportError:
-              print("⚠️ browser-cookie3 not installed — installing...")
-              subprocess.run([sys.executable, "-m", "pip", "install", "browser-cookie3"], 
-                          capture_output=True)
+          for cookie_db in cookie_paths:
+              print(f"  📂 Checking: {os.path.basename(os.path.dirname(cookie_db))}")
+              # Copy DB (Chrome has it locked)
+              tmp = tempfile.mktemp(suffix=".db")
+              shutil.copy2(cookie_db, tmp)
+              
               try:
+                  conn = sqlite3.connect(tmp)
+                  cursor = conn.execute(
+                      "SELECT name, value, host_key, path, is_secure, expires_utc "
+                      "FROM cookies WHERE host_key LIKE '%linkedin.com%'"
+                  )
+                  for row in cursor:
+                      name, value, domain, path, secure, expires = row
+                      # Chrome 80+ encrypts values — encrypted values are empty string
+                      # But li_at and JSESSIONID are usually available
+                      if value:  # Only take cookies with readable values
+                          cookies.append({
+                              "name": name,
+                              "value": value,
+                              "domain": domain,
+                              "path": path,
+                              "secure": bool(secure),
+                          })
+                  conn.close()
+              except Exception as e:
+                  print(f"  ⚠️ Error reading {cookie_db}: {e}")
+              finally:
+                  os.unlink(tmp)
+              
+              if cookies:
+                  break  # Found cookies, no need to check other profiles
+
+          # Chrome 80+ encrypts cookie values on macOS using Keychain
+          # If we got empty values, try using the security command to decrypt
+          if not cookies:
+              print("  ⚠️ No readable cookies (Chrome encrypts them on macOS)")
+              print("  🔄 Trying browser-cookie3 as fallback...")
+              try:
+                  subprocess.run(["pip3", "install", "--quiet", "browser-cookie3"], 
+                               capture_output=True, timeout=30)
+                  # Re-import after install
+                  import importlib
                   import browser_cookie3
                   cj = browser_cookie3.chrome(domain_name='.linkedin.com')
                   for c in cj:
@@ -53,27 +99,33 @@ jobs:
                           "name": c.name, "value": c.value,
                           "domain": c.domain, "path": c.path, "secure": c.secure,
                       })
-                  print(f"✅ Extracted {len(cookies)} LinkedIn cookies from Chrome")
+                  print(f"  ✅ browser-cookie3 extracted {len(cookies)} cookies")
               except Exception as e:
-                  print(f"❌ browser-cookie3 failed: {e}")
-          except Exception as e:
-              print(f"❌ Chrome cookie extraction failed: {e}")
+                  print(f"  ❌ browser-cookie3 also failed: {e}")
+                  print("")
+                  print("  🔧 MANUAL FIX (one-time):")
+                  print("     1. Open Chrome → linkedin.com (make sure you're logged in)")
+                  print("     2. DevTools (F12) → Application → Cookies → www.linkedin.com")
+                  print("     3. Copy li_at value")
+                  print("     4. Run: gh secret set LINKEDIN_COOKIES --body 'li_at=YOUR_VALUE; JSESSIONID=YOUR_VALUE'")
+                  exit(1)
 
           if not cookies:
-              print("❌ No LinkedIn cookies found — make sure you're logged into LinkedIn in Chrome")
-              print("   Open Chrome → linkedin.com → login → then re-run this workflow")
+              print("❌ No LinkedIn cookies extracted")
               exit(1)
 
-          # Validate essential cookies
+          # Validate
           names = {c["name"] for c in cookies}
+          print(f"  📋 Found {len(cookies)} cookies: {sorted(names)[:10]}")
+          
           if "li_at" not in names:
-              print(f"⚠️ Missing li_at cookie — found: {sorted(names)[:15]}")
-              print("   You may not be logged in to LinkedIn in Chrome")
+              print("  ⚠️ Missing li_at — you may not be logged into LinkedIn in Chrome")
+              print("  💡 Open Chrome → linkedin.com → login → re-run this workflow")
               exit(1)
 
-          print(f"✅ Essential cookies present: li_at={'li_at' in names}, JSESSIONID={'JSESSIONID' in names}")
+          print(f"  ✅ Essential cookies present: li_at={'li_at' in names}, JSESSIONID={'JSESSIONID' in names}")
 
-          # Encode and update GitHub secret
+          # Encode and update secret
           encoded = base64.b64encode(json.dumps(cookies).encode()).decode()
           result = subprocess.run(
               ["gh", "secret", "set", "LINKEDIN_COOKIES", "--body", encoded,
@@ -82,16 +134,26 @@ jobs:
           )
 
           if result.returncode == 0:
-              print(f"✅ LINKEDIN_COOKIES secret updated! ({len(cookies)} cookies, {len(encoded)} bytes)")
-              print(f"   Next expiry: ~7-14 days from now")
-              print(f"   Auto-refresh runs every 3 days — you'll never need to do this manually")
+              print(f"  ✅ LINKEDIN_COOKIES secret updated! ({len(cookies)} cookies)")
+              print(f"     Auto-refresh every 3 days — fully automatic")
           else:
-              print(f"❌ Failed to update secret: {result.stderr[:200]}")
-              # Save to file as fallback
-              os.makedirs("data", exist_ok=True)
-              with open("data/linkedin_cookies_latest.json", "w") as f:
-                  json.dump(cookies, f)
-              print("   Saved to data/linkedin_cookies_latest.json — update manually:")
-              print(f"   gh secret set LINKEDIN_COOKIES --body '{encoded[:50]}...'")
-              exit(1)
+              print(f"  ❌ gh secret set failed: {result.stderr[:200]}")
+              # Try with GH_TOKEN env
+              os.environ["GH_TOKEN"] = os.environ.get("GH_TOKEN", "")
+              result2 = subprocess.run(
+                  ["gh", "secret", "set", "LINKEDIN_COOKIES", "--body", encoded,
+                   "--repo", "BOBRIKH75/job-finder"],
+                  capture_output=True, text=True,
+                  env={**os.environ}
+              )
+              if result2.returncode == 0:
+                  print(f"  ✅ LINKEDIN_COOKIES updated (via GH_TOKEN)")
+              else:
+                  # Save to file as last resort
+                  os.makedirs("data", exist_ok=True)
+                  with open("data/linkedin_cookies_latest.json", "w") as f:
+                      json.dump(cookies, f)
+                  print(f"  📝 Saved to data/linkedin_cookies_latest.json")
+                  print(f"     Run manually: gh secret set LINKEDIN_COOKIES --body '{encoded[:40]}...'")
+                  exit(1)
           EOF
