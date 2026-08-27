@@ -139,10 +139,15 @@ def save_companies(data: dict):
 
 
 def matches_skills(title: str, description: str = "") -> bool:
-    """Job must: (1) have a dev/engineering title, (2) match at least one skill."""
+    """Job must: (1) have a dev/engineering title OR no title given, (2) match a skill.
+
+    Title guard is skipped when title is empty — some callers pass only a description.
+    When title is present, it must contain a dev/engineering signal to avoid matching
+    sales or marketing jobs that happen to mention Kafka in their requirements.
+    """
     title_lower = title.lower()
-    # Must be a developer/engineer role — rejects sales, marketing, etc.
-    if not any(s in title_lower for s in TITLE_SIGNALS):
+    # Only enforce title guard when a title is actually provided
+    if title_lower and not any(s in title_lower for s in TITLE_SIGNALS):
         return False
     combined = (title_lower + " " + description.lower())
     return any(s in combined for s in SKILLS_FILTER)
