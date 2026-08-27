@@ -40,13 +40,19 @@ TITLE_SIGNALS = [
     "full stack", "fullstack", "platform", "sre", "devops", "api", "microservice",
 ]
 
-# Jobs that explicitly reject C2C / contractors — skip these, they will never call you
-C2C_REJECT_SIGNALS = [
+# Jobs that SAY they prefer W2/no-C2C — we still APPLY but flag them.
+# After an interview they may negotiate. Never skip based on this alone.
+C2C_FLAG_SIGNALS = [
     "w2 only", "w-2 only", "no c2c", "no corp to corp", "no corp-to-corp",
     "no contractors", "no third party", "no third-party", "employees only",
     "full-time only", "fte only", "permanent position only",
     "no 1099", "must be w2", "direct hire only", "no agencies",
 ]
+
+
+def has_c2c_restriction(title: str, description: str = "") -> bool:
+    combined = (title + " " + description).lower()
+    return any(s in combined for s in C2C_FLAG_SIGNALS)
 
 # Seed companies known to hire Java developers on Lever/Greenhouse
 SEED_LEVER = [
@@ -154,13 +160,9 @@ DISQUALIFY_SIGNALS = [
 
 
 def is_disqualified(title: str, description: str = "") -> bool:
-    """Skip if job requires US Citizenship, clearance, or explicitly rejects C2C."""
+    """Skip only if job requires US Citizenship or active security clearance."""
     combined = (title + " " + description).lower()
-    if any(s in combined for s in DISQUALIFY_SIGNALS):
-        return True
-    if any(s in combined for s in C2C_REJECT_SIGNALS):
-        return True
-    return False
+    return any(s in combined for s in DISQUALIFY_SIGNALS)
 
 
 def scan_lever(company: str) -> list[dict]:
@@ -182,6 +184,7 @@ def scan_lever(company: str) -> list[dict]:
                     "description": desc[:1000],
                     "source": "lever_api",
                     "ats_type": "lever",
+                    "c2c_flag": has_c2c_restriction(title, desc),
                 })
     except Exception:
         pass
@@ -211,6 +214,7 @@ def scan_greenhouse(company: str) -> list[dict]:
                     "description": __import__('html').unescape(re.sub(r'<[^>]+>', '', desc))[:1000],
                     "source": "greenhouse_api",
                     "ats_type": "greenhouse",
+                    "c2c_flag": has_c2c_restriction(title, desc),
                 })
     except Exception:
         pass
