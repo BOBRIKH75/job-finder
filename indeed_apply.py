@@ -290,23 +290,27 @@ def main():
                         )
                         print(f"  ✅ {title} @ {company}")
                     else:
+                        reason = 'No success signal after submit'
                         failed.append({
                             'url': url,
                             'title': title,
                             'company': company,
-                            'reason': 'No success signal after submit',
+                            'reason': reason,
                             'platform': 'indeed',
                             'timestamp': time.strftime('%Y-%m-%dT%H:%M:%S'),
                         })
+                        print(f"  ❌ {title} @ {company}: {reason}")
                 else:
+                    reason = 'No Easy Apply button found'
                     failed.append({
                         'url': url,
                         'title': title,
                         'company': company,
-                        'reason': 'No Easy Apply button found',
+                        'reason': reason,
                         'platform': 'indeed',
                         'timestamp': time.strftime('%Y-%m-%dT%H:%M:%S'),
                     })
+                    print(f"  ⏭️ {title} @ {company}: {reason}")
 
             except Exception as e:
                 error_msg = str(e)[:100]
@@ -322,6 +326,7 @@ def main():
                     'platform': 'indeed',
                     'timestamp': time.strftime('%Y-%m-%dT%H:%M:%S'),
                 })
+                print(f"  ❌ {title} @ {company}: {error_msg[:60]}")
 
             # Human-like delay between applications
             time.sleep(random.uniform(3, 6))
