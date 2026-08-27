@@ -1,112 +1,118 @@
 #!/bin/bash
 # =============================================================
-# start.sh — One command to keep the job-finder runner alive
-# 
-# Usage: ./runner/start.sh
-# 
-# What it does:
-#   1. Pulls latest code from GitHub
-#   2. Prevents laptop from sleeping (caffeinate)
-#   3. Stops any old runner process
-#   4. Starts the runner as a service (survives screen lock)
-#   5. Installs a LaunchAgent to auto-start on boot
+# start.sh — One command: pull + register + start + keep alive
+#
+# Usage: cd ~/job-finder && ./runner/start.sh
+#
+# Does EVERYTHING automatically:
+#   - Pulls latest code
+#   - Stops old runner
+#   - Re-registers with fresh token (fixes expired token)
+#   - Starts runner service
+#   - Prevents sleep
+#   - Installs auto-start on reboot
 # =============================================================
 
 set -e
 
 REPO_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 RUNNER_DIR="$HOME/actions-runner"
+REPO_URL="https://github.com/BOBRIKH75/job-finder"
 LAUNCH_AGENT_LABEL="com.bobrikh.job-finder-runner"
 LAUNCH_AGENT_PLIST="$HOME/Library/LaunchAgents/${LAUNCH_AGENT_LABEL}.plist"
 
-echo "🚀 Job Finder Runner — Starting..."
+echo "🚀 Job Finder Runner — Full Setup"
+echo "========================================="
 echo ""
 
 # --- 1. Pull latest code ---
-echo "📥 Pulling latest code..."
+echo "📥 [1/7] Pulling latest code..."
 cd "$REPO_DIR"
-git pull origin master --ff-only || git pull origin master
-echo "✅ Code updated"
+git pull origin master || true
 echo ""
 
-# --- 2. Prevent sleep (background caffeinate) ---
-# Kill any existing caffeinate from us
-pkill -f "caffeinate.*job-finder" 2>/dev/null || true
-caffeinate -dims -w $$ &
-CAFFEINE_PID=$!
-echo "☕ Sleep prevention active (PID: $CAFFEINE_PID)"
-echo ""
-
-# --- 3. Stop old runner ---
-echo "🔄 Stopping old runner..."
+# --- 2. Stop everything ---
+echo "🛑 [2/7] Stopping old runner..."
 cd "$RUNNER_DIR"
 sudo ./svc.sh stop 2>/dev/null || true
-# Also kill any lingering run.sh
+sudo ./svc.sh uninstall 2>/dev/null || true
 pkill -f "Runner.Listener" 2>/dev/null || true
+pkill -f "Runner.Worker" 2>/dev/null || true
 sleep 2
-echo "✅ Old runner stopped"
+echo "✅ Stopped"
 echo ""
 
-# --- 4. Start runner service ---
-echo "▶️  Starting runner service..."
-sudo ./svc.sh install 2>/dev/null || true
+# --- 3. Get fresh token and re-register ---
+echo "🔑 [3/7] Getting fresh registration token..."
+TOKEN=$(gh api repos/BOBRIKH75/job-finder/actions/runners/registration-token --jq .token 2>/dev/null)
+
+if [ -z "$TOKEN" ]; then
+    echo "❌ Failed to get token. Make sure 'gh auth login' is done on this machine."
+    exit 1
+fi
+
+echo "✅ Got token"
+echo ""
+
+echo "📝 [4/7] Registering runner..."
+# Remove old config if exists
+./config.sh remove --token "$TOKEN" 2>/dev/null || true
+
+# Register fresh
+./config.sh --url "$REPO_URL" --token "$TOKEN" --unattended --replace --name "bob-laptop" --labels "self-hosted,macOS"
+echo "✅ Registered"
+echo ""
+
+# --- 5. Install and start service ---
+echo "▶️  [5/7] Installing and starting service..."
+sudo ./svc.sh install
 sudo ./svc.sh start
-echo "✅ Runner service started"
+echo "✅ Service running"
 echo ""
 
-# --- 5. Install LaunchAgent for auto-start on boot ---
-echo "📌 Installing auto-start on boot..."
+# --- 6. Prevent sleep ---
+echo "☕ [6/7] Preventing sleep..."
+pkill -f caffeinate 2>/dev/null || true
+caffeinate -dims &
+sudo pmset -a displaysleep 0 sleep 0 disablesleep 1 2>/dev/null || true
+echo "✅ Laptop will never sleep"
+echo ""
+
+# --- 7. Auto-start on reboot ---
+echo "📌 [7/7] Installing auto-start on reboot..."
 mkdir -p "$HOME/Library/LaunchAgents"
 cat > "$LAUNCH_AGENT_PLIST" << PLIST
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-    <key>Label</key>
-    <string>${LAUNCH_AGENT_LABEL}</string>
+    <key>Label</key><string>${LAUNCH_AGENT_LABEL}</string>
     <key>ProgramArguments</key>
     <array>
         <string>/bin/bash</string>
         <string>-c</string>
         <string>cd ${RUNNER_DIR} &amp;&amp; ./run.sh</string>
     </array>
-    <key>RunAtLoad</key>
-    <true/>
-    <key>KeepAlive</key>
-    <true/>
-    <key>StandardOutPath</key>
-    <string>${HOME}/actions-runner/runner-stdout.log</string>
-    <key>StandardErrorPath</key>
-    <string>${HOME}/actions-runner/runner-stderr.log</string>
-    <key>EnvironmentVariables</key>
-    <dict>
-        <key>PATH</key>
-        <string>/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
-    </dict>
+    <key>RunAtLoad</key><true/>
+    <key>KeepAlive</key><true/>
+    <key>StandardOutPath</key><string>${RUNNER_DIR}/runner-stdout.log</string>
+    <key>StandardErrorPath</key><string>${RUNNER_DIR}/runner-stderr.log</string>
 </dict>
 </plist>
 PLIST
-
 launchctl unload "$LAUNCH_AGENT_PLIST" 2>/dev/null || true
 launchctl load "$LAUNCH_AGENT_PLIST"
-echo "✅ Auto-start installed (survives reboot)"
+echo "✅ Auto-start installed"
 echo ""
 
-# --- 6. Disable screen sleep ---
-echo "🖥️  Disabling display sleep..."
-sudo pmset -a displaysleep 0 2>/dev/null || true
-sudo pmset -a sleep 0 2>/dev/null || true
-sudo pmset -a disablesleep 1 2>/dev/null || true
-echo "✅ Laptop will never sleep"
-echo ""
-
-# --- 7. Verify ---
+# --- Done ---
 echo "========================================="
-echo "✅ ALL DONE — Runner is alive and will stay alive"
+echo "✅ ALL DONE"
 echo "========================================="
 echo ""
 sudo ./svc.sh status
 echo ""
-echo "📊 Queued jobs will be picked up automatically."
-echo "🔋 Keep laptop plugged in + open. That's it."
+echo "Runner registered, running, will survive reboot + screen lock."
+echo "Keep laptop plugged in. That's it. 🎉"
 echo ""
