@@ -67,16 +67,20 @@ def main():
         time.sleep(0.3)
 
     print(f"Found {len(all_jobs)} Greenhouse jobs matching skills")
+    # Shuffle so one company's 100+ jobs can't consume all 30 attempt slots
+    random.shuffle(all_jobs)
 
     applied = 0
     failed = []
     skipped = 0
     MAX_APPS = 30
+    # Per-company failure counter — skip a company after 3 consecutive API failures
+    company_failures: dict = {}
 
     for job in all_jobs:
         if applied >= MAX_APPS:
             break
-        
+
         # Don't waste time on API attempts that always fail — limit to 30 attempts total
         # so browser batch gets time to run within the 35-min timeout
         if len(failed) >= MAX_APPS:
@@ -94,6 +98,11 @@ def main():
         title = job.get('title', '')
         company_name = job.get('company', '')
 
+        # Skip companies whose API consistently fails — prevents one company
+        # with 100+ jobs from consuming all 30 failure slots
+        if company_failures.get(company_name, 0) >= 3:
+            continue
+
         # Strategy 1: Try direct API POST (no browser, fastest)
         # Resume must work on both: local dev AND self-hosted runner (different users/paths)
         # The ONLY reliable path is relative to this script or GITHUB_WORKSPACE
@@ -109,7 +118,7 @@ def main():
         resume = profile.get('resume_path', '')
         if not resume or not os.path.exists(resume):
             resume = next((r for r in resume_candidates if os.path.exists(r)), 'agent/resume.pdf')
-        
+
         # Debug: show which resume path was resolved
         if applied == 0 and len(failed) == 0 and skipped == 0:
             print(f"  📁 Resume resolved to: {resume} (exists: {os.path.exists(resume)})")
@@ -135,9 +144,11 @@ def main():
 
         # If API failed, collect for browser batch (don't open browser for each job!)
         error = result.get('error', 'unknown')
-        
-        if 'HTTP 4' in error or 'Bad Request' in error or 'captcha' in error.lower():
-            # Save for browser batch below
+
+        # Route to browser batch: 4xx errors, captcha, AND remixContext parse failures
+        # (remixContext can fail on API but succeed in a real browser that runs JS)
+        if ('HTTP 4' in error or 'Bad Request' in error or 'captcha' in error.lower()
+                or 'remixContext' in error or 'Cannot fetch' in error):
             failed.append({
                 'url': url,
                 'title': title,
@@ -147,7 +158,7 @@ def main():
                 'strategy_tried': 'api_only',
                 'timestamp': time.strftime('%Y-%m-%dT%H:%M:%S'),
             })
-            print(f"  ⏳ {title} @ {company_name}: API 400 → queued for browser")
+            print(f"  ⏳ {title} @ {company_name}: API failed → queued for browser")
         else:
             failed.append({
                 'url': url,
@@ -158,22 +169,28 @@ def main():
                 'strategy_tried': 'api_only',
                 'timestamp': time.strftime('%Y-%m-%dT%H:%M:%S'),
             })
+            company_failures[company_name] = company_failures.get(company_name, 0) + 1
             print(f"  ❌ {title} @ {company_name}: {error[:80]}")
 
         time.sleep(0.5)
 
     # === STRATEGY 2: Browser batch (open Playwright ONCE for all API-failed jobs) ===
-    browser_queue = [j for j in failed if 'HTTP 4' in j.get('reason', '') or 'captcha' in j.get('reason', '').lower()]
-    
+    browser_queue = [j for j in failed if (
+        'HTTP 4' in j.get('reason', '')
+        or 'captcha' in j.get('reason', '').lower()
+        or 'remixContext' in j.get('reason', '')
+        or 'Cannot fetch' in j.get('reason', '')
+    )]
+
     if browser_queue and applied < MAX_APPS:
         remaining = MAX_APPS - applied
         browser_jobs = [{'url': j['url'], 'title': j['title'], 'company': j['company']} for j in browser_queue[:remaining]]
-        
+
         print(f"\n🌐 Browser Strategy: {len(browser_jobs)} jobs (Playwright, one browser session)...")
         try:
             from src.applier import run_applications
             browser_results = run_applications(browser_jobs, dry_run=False, max_apps=remaining, db=db)
-            
+
             browser_applied = 0
             for res in (browser_results or []):
                 if res.get('submitted'):
@@ -189,11 +206,11 @@ def main():
                     )
             applied += browser_applied
             print(f"  🌐 Browser results: {browser_applied} submitted")
-            
+
             # Remove successfully submitted from failed list
             submitted_urls = {r['url'] for r in (browser_results or []) if r.get('submitted')}
             failed = [f for f in failed if f['url'] not in submitted_urls]
-            
+
         except Exception as browser_err:
             print(f"  ❌ Browser strategy error: {str(browser_err)[:100]}")
 
