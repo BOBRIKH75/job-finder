@@ -1,14 +1,13 @@
 #!/usr/bin/env python3
 """Dedicated Greenhouse applicator — handles email verification + reCAPTCHA.
 
-Strategy per job:
-1. Try direct API POST first (greenhouse_api.py) — fastest, no browser
-2. If API fails → classify error via self_heal.py:
-   - "already_applied" / "not_found" → skip (genuine dedup / job gone)
-   - "otp_timeout" / "captcha" / "network" → retry submit_greenhouse_api with delay
-   - "api_400" / "remix_context" / "form_field" → queue for Playwright browser batch
-3. Browser batch: run_applications once for all queued jobs
-4. Anything still failing → save to data/failed_jobs.json for next run
+Healing levels:
+  Level 1 (per-job): classify error → skip / retry_api / use_browser
+  Level 2 (DeepHeal): after all retries exhausted →
+    - mark company as browser_only if API always fails
+    - patch missing form field answers into DB so Playwright fills them next attempt
+    - re-queue job with patch applied for one final browser attempt
+  Level 3: if still failing → save to failed_jobs.json with full diagnostic
 """
 import json
 import os
@@ -24,7 +23,7 @@ sys.path.insert(0, 'agent')
 from src.portal_scanner import scan_greenhouse, load_companies
 from src.greenhouse_api import submit_greenhouse_api
 from src.form_filler import load_profile
-from src.self_heal import classify_error, get_retry_config, STRATEGY
+from src.self_heal import classify_error, get_retry_config, STRATEGY, DeepHeal
 from src.memory import get_db, init_db, application_exists, upsert_application
 
 
@@ -77,6 +76,9 @@ def main():
     MAX_APPS = 30
     company_failures: dict = {}
     browser_queue: list = []
+
+    companies_file = 'agent/data/companies.json'
+    healer = DeepHeal(db, companies_file, browser_queue)
 
     # Resolve resume path once
     script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -181,9 +183,14 @@ def main():
                 break
 
         if not retry_success:
-            failed.append(job_entry)
-            company_failures[company_name] = company_failures.get(company_name, 0) + 1
-            print(f"  ❌ {title} @ {company_name}: all retries exhausted ({error_type})")
+            # ── Level 2: DeepHeal — try to patch and re-queue ────────────────
+            deep_fixed = healer.attempt(job_entry, error_type, error)
+            if not deep_fixed:
+                # Level 3: truly unresolvable — save with full diagnostic
+                job_entry["deep_investigated"] = True
+                failed.append(job_entry)
+                company_failures[company_name] = company_failures.get(company_name, 0) + 1
+                print(f"  ❌ {title} @ {company_name}: all levels exhausted ({error_type})")
 
         time.sleep(0.5)
 
