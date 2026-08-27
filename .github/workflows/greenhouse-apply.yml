@@ -23,6 +23,8 @@ jobs:
   greenhouse-apply:
     runs-on: ${{ vars.PREFER_SELF_HOSTED == 'true' && 'self-hosted' || 'ubuntu-latest' }}
     timeout-minutes: 50
+    permissions:
+      contents: write   # needed to push failed_jobs.json for retry
 
     steps:
       - uses: actions/checkout@v4
