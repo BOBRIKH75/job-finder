@@ -476,16 +476,20 @@ def handle_email_verification(page, skip_detection: bool = False) -> bool:
     print("      📧 Email verification detected — reading code from Gmail...")
     
     # Try multiple ATS senders dynamically (Greenhouse, Lever, Ashby, Workday, generic)
+    # In CI (ubuntu-hosted Linux), OTP email delivery from cloud IPs takes longer.
+    # Self-hosted Mac runner (residential IP) gets emails in ~20s; CI can take 2+ minutes.
+    _ci_mode = (os.environ.get('GITHUB_ACTIONS') == 'true'
+                and os.environ.get('RUNNER_OS', '').lower() == 'linux')
     senders_to_try = [
-        ("greenhouse", 45),
-        ("lever", 20),
-        ("ashby", 15),
-        ("workday", 15),
-        ("no-reply", 15),
-        ("noreply", 10),
-        ("verify", 10),
-        ("confirm", 10),
-        ("", 10),  # Last resort: any recent email
+        ("greenhouse", 120 if _ci_mode else 45),
+        ("lever", 40 if _ci_mode else 20),
+        ("ashby", 20 if _ci_mode else 15),
+        ("workday", 20 if _ci_mode else 15),
+        ("no-reply", 20 if _ci_mode else 15),
+        ("noreply", 15 if _ci_mode else 10),
+        ("verify", 15 if _ci_mode else 10),
+        ("confirm", 15 if _ci_mode else 10),
+        ("", 15 if _ci_mode else 10),  # Last resort: any recent email
     ]
     code = None
     for sender, wait_sec in senders_to_try:
