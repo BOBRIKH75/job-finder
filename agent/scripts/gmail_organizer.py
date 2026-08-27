@@ -2,17 +2,9 @@
 """
 Gmail Auto-Organizer — Labels/folders for job search emails.
 
-Creates labels and auto-sorts incoming emails:
-  📁 Jobs/ACTION-Interviews  — interview invites, scheduling links  (CHECK DAILY)
-  📁 Jobs/ACTION-Inbound     — recruiters who found YOU             (CHECK DAILY)
-  📁 Jobs/Recruiters         — replies from your outreach
-  📁 Jobs/Applications       — application confirmations
-  📁 Jobs/Acknowledged       — "got your resume, reviewing"
-  📁 Jobs/Info-Requests      — rate/availability questions
-  📁 Jobs/Rejections         — position filled / not a match
-  📁 Jobs/Auto-Replies       — OOO responses
-  📁 Jobs/Failed             — bounced emails
-  📁 Jobs/Spam               — ads, fake jobs
+MOVE semantics: emails are copied to the correct label AND removed from inbox
+(archived). In Gmail IMAP, marking \Deleted in INBOX removes the Inbox label
+while keeping the message in All Mail + the destination label.
 
 Run modes:
   python gmail_organizer.py             # last 7 days (daily use)
@@ -98,27 +90,23 @@ STAFFING_SIGNALS = ["staffing", "recruit", "consult", "talent", "hiring", "hr",
 
 
 def load_known_data() -> tuple[set, set]:
-    """Load known recruiter emails and applied company domains from SQLite DB."""
     recruiter_emails: set = set()
     applied_companies: set = set()
-
     if not DB_PATH.exists():
         return recruiter_emails, applied_companies
-
     try:
         db = sqlite3.connect(str(DB_PATH))
-        # All recruiter emails we've ever contacted
         for row in db.execute("SELECT email FROM recruiters").fetchall():
             if row[0]:
                 recruiter_emails.add(row[0].lower().strip())
-        # Companies we've applied to (extract domain if email address available)
-        for row in db.execute("SELECT company FROM applications WHERE status IN ('applied','submitted')").fetchall():
+        for row in db.execute(
+            "SELECT company FROM applications WHERE status IN ('applied','submitted')"
+        ).fetchall():
             if row[0]:
                 applied_companies.add(row[0].lower().strip())
         db.close()
     except Exception as exc:
         print(f"  ⚠️ DB load warning: {exc}")
-
     return recruiter_emails, applied_companies
 
 
@@ -138,7 +126,6 @@ def ensure_labels(conn):
             match = re.search(rb'"/" "?([^"]*)"?$', item)
             if match:
                 existing_names.add(match.group(1).decode())
-
     for label in LABELS:
         if label not in existing_names:
             try:
@@ -157,23 +144,22 @@ def classify_email(
 ) -> str | None:
     text = f"{subject} {body}"
     from_lower = from_addr.lower()
-    # Extract clean email address
     m = re.search(r'[\w.+-]+@[\w.-]+', from_lower)
     from_email = m.group(0) if m else from_lower
     from_domain = from_email.split("@")[-1] if "@" in from_email else from_lower
     is_reply = subject.strip().lower().startswith("re:")
     mentions_bob = bool(re.search(r"bob|rikh|c2c|java.*backend", text, re.I))
 
-    # 1. BOUNCE
+    # 1. Bounce
     if any(s in from_lower for s in BOUNCE_SENDERS) or BOUNCE_KW.search(text):
         return "Jobs/Failed"
 
-    # 2. SPAM (never tag replies or emails mentioning us)
+    # 2. Spam (never tag replies or emails that mention us)
     if not is_reply and not mentions_bob:
         if SPAM_KW.search(text) or any(s in from_lower for s in SPAM_DOMAINS):
             return "Jobs/Spam"
 
-    # 3. INTERVIEW — highest value, always surface
+    # 3. Interview — highest value, always surface first
     if INTERVIEW_KW.search(text):
         return "Jobs/ACTION-Interviews"
 
@@ -191,7 +177,7 @@ def classify_email(
             return "Jobs/Acknowledged"
         return "Jobs/Recruiters"
 
-    # 5. INBOUND — recruiter found YOU
+    # 5. Inbound — recruiter found YOU
     if INBOUND_KW.search(text) and not is_reply:
         return "Jobs/ACTION-Inbound"
 
@@ -211,7 +197,7 @@ def classify_email(
             return "Jobs/Acknowledged"
         return "Jobs/Recruiters"
 
-    # 8. Content-based fallback for unknown senders
+    # 8. Content fallback for unknown senders
     if AUTO_REPLY_KW.search(text):
         return "Jobs/Auto-Replies"
     if REJECTION_KW.search(text):
@@ -223,7 +209,7 @@ def classify_email(
     if INFO_REQUEST_KW.search(text):
         return "Jobs/Info-Requests"
 
-    # 9. Safety net — reply to our outreach mentioning our keywords
+    # 9. Safety net — reply to our outreach
     if is_reply and (mentions_bob or "C2C" in subject or "Java" in subject):
         return "Jobs/Recruiters"
 
@@ -236,18 +222,23 @@ def classify_email(
 
 def organize_inbox(conn, recruiter_emails: set, applied_companies: set,
                    days_back: int = 7, batch_limit: int = 200):
+    """Scan INBOX, classify each email, MOVE it to the correct label folder.
+
+    MOVE = copy to label + mark \Deleted in INBOX + expunge.
+    In Gmail IMAP this removes the Inbox label while keeping the message
+    in All Mail and the destination label — same as Gmail's archive+label.
+    """
     conn.select("INBOX")
 
     import datetime
     since = (datetime.datetime.now() - datetime.timedelta(days=days_back)).strftime("%d-%b-%Y")
     _, data = conn.search(None, f'(SINCE "{since}")')
     msg_ids = data[0].split() if data[0] else []
-
-    # Process most-recent first, up to batch_limit
     msg_ids = msg_ids[-batch_limit:]
     print(f"  Scanning {len(msg_ids)} emails (last {days_back} days, limit {batch_limit})...")
 
     labeled: dict = {}
+    moved_ids: list = []
 
     for msg_id in reversed(msg_ids):
         try:
@@ -259,7 +250,6 @@ def organize_inbox(conn, recruiter_emails: set, applied_companies: set,
 
             from_addr = msg.get("From", "")
             subject_raw = msg.get("Subject", "")
-
             decoded = decode_header(subject_raw)
             subject = "".join(
                 part.decode(charset or "utf-8", errors="ignore")
@@ -270,18 +260,30 @@ def organize_inbox(conn, recruiter_emails: set, applied_companies: set,
             label = classify_email(from_addr, subject, "", recruiter_emails, applied_companies)
 
             if label:
+                copied = False
                 try:
                     conn.copy(msg_id, f'"{label}"')
-                    labeled[label] = labeled.get(label, 0) + 1
+                    copied = True
                 except Exception:
-                    # Label might need quotes escaped differently
                     try:
                         conn.copy(msg_id, label)
-                        labeled[label] = labeled.get(label, 0) + 1
+                        copied = True
                     except Exception:
                         pass
+
+                if copied:
+                    # Mark for removal from INBOX (archive in Gmail)
+                    conn.store(msg_id, '+FLAGS', '(\\Deleted)')
+                    moved_ids.append(msg_id)
+                    labeled[label] = labeled.get(label, 0) + 1
+
         except Exception:
             continue
+
+    # Finalize all moves in one shot
+    if moved_ids:
+        conn.expunge()
+        print(f"  📦 Moved {len(moved_ids)} emails out of inbox")
 
     return labeled
 
@@ -299,7 +301,6 @@ def main():
     print("📁 Gmail Auto-Organizer")
     print("═" * 40)
 
-    # Load known data from SQLite
     recruiter_emails, applied_companies = load_known_data()
     print(f"  📊 Loaded {len(recruiter_emails)} known recruiters, "
           f"{len(applied_companies)} applied companies from DB")
@@ -319,7 +320,7 @@ def main():
 
     conn.logout()
 
-    print(f"\n📊 Organized:")
+    print(f"\n📊 Moved to folders:")
     total = 0
     for label, count in sorted(results.items()):
         if count > 0:
@@ -329,7 +330,7 @@ def main():
     if total == 0:
         print("   No new job emails to organize")
     else:
-        print(f"   Total: {total} emails labeled")
+        print(f"   Total: {total} emails moved out of inbox")
 
 
 if __name__ == "__main__":
