@@ -2,8 +2,10 @@ name: Indeed Easy Apply
 
 on:
   schedule:
-    - cron: '0 14 * * 1-5'   # 8:00 AM MT, weekdays (10 min, done before Greenhouse 8:30)
-    - cron: '30 20 * * 1-5'  # 2:00 PM MT, weekdays
+    - cron: '0 14 * * 1-5'   # 8:00 AM MT (before Greenhouse 8:30)
+    - cron: '0 16 * * 1-5'   # 10:00 AM MT (gap between Greenhouse 9:15 done and 11:30 start)
+    - cron: '0 20 * * 1-5'   # 2:00 PM MT (before Greenhouse 2:30)
+    - cron: '0 0 * * 1-5'    # 6:00 PM MT (gap after Greenhouse 6:15 done)
   workflow_dispatch: {}
 
 concurrency:

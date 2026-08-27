@@ -2,7 +2,9 @@ name: Dice Easy Apply
 
 on:
   schedule:
-    - cron: '30 16 * * 1-5'  # 10:30 AM MT, weekdays
+    - cron: '30 13 * * 1-5'  # 7:30 AM MT, weekdays (morning — fresh overnight postings)
+    - cron: '30 16 * * 1-5'  # 10:30 AM MT, weekdays (mid-morning)
+    - cron: '30 21 * * 1-5'  # 3:30 PM MT, weekdays (afternoon — new postings)
   workflow_dispatch: {}
 
 concurrency:
