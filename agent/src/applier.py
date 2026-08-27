@@ -84,6 +84,9 @@ KNOWN_ANSWERS = {
     # Misc
     "background check": "Yes", "consent": "Yes", "agree": "Yes",
     "remote": "Yes", "work remotely": "Yes", "open to remote": "Yes",
+    # In-person / hybrid (answer Yes to pass form validation, negotiate after interview)
+    "in-person": "Yes", "in person": "Yes", "25% of the time": "Yes",
+    "open to working in": "Yes", "work in our office": "Yes",
     "employment type": "Contract", "contract type": "Corp-to-Corp (C2C)",
     "years of experience": "10+",
 }
@@ -593,8 +596,12 @@ def _fill_remaining_required(page, profile: dict) -> int:
         "years of experience": "10", "experience": "10",
         # Education
         "degree": "Bachelor", "highest education": "Bachelor",
-        # Remote
+        # Remote / in-person (answer Yes to pass form, negotiate terms after interview)
         "remote": "Yes", "work remotely": "Yes", "hybrid": "Yes",
+        "in-person": "Yes", "in person": "Yes",
+        "25% of the time": "Yes", "25 percent": "Yes",
+        "open to working in": "Yes", "work in our office": "Yes",
+        "office hours": "Yes", "office days": "Yes",
         # Clearance
         "security clearance": "No", "clearance": "No",
         # Non-compete
@@ -2006,8 +2013,10 @@ def run_applications(jobs: list[dict], dry_run: bool = True, max_apps: int = 10,
                 continue
             print(f"    ⚠️ GH API failed ({_api.get('error','?')[:80]}) — browser fallback")
 
-        # Per-job timeout: max 3 minutes per application attempt
-        PER_JOB_TIMEOUT = 180  # seconds
+        # Per-job timeout: max 8 minutes — OTP emails legitimately take 10-14 min
+        # to arrive on some SMTP paths. 180s was too tight and caused OTP jobs to
+        # show as "warning" even when they eventually succeeded.
+        PER_JOB_TIMEOUT = 480  # seconds (optional: set env AGENT_PER_JOB_TIMEOUT to override)
         _job_start = time.monotonic()
         try:
             r = apply_to_job(page, profile, job, learned, dry_run, db=db, site_needs_cf_solve=site_needs_cf_solve)
