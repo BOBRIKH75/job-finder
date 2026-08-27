@@ -1432,16 +1432,59 @@ def fix_errors_and_retry(page, profile: dict, errors: list[str]) -> int:
                 except Exception:
                     pass
 
-        # "Location is required" / "City is required"
-        if ("location" in lower or "city" in lower) and "required" in lower:
+        # "Location is required" / "City is required" / "In what cities are you available"
+        if ("location" in lower or "city" in lower or "cities" in lower or "available to work" in lower) and ("required" in lower or "?" in lower):
             try:
                 for sel in ['input[name*="location"]', 'input[name*="city"]', '#location', '#city',
-                            'input[placeholder*="city"]', 'input[placeholder*="location"]']:
+                            'input[placeholder*="city"]', 'input[placeholder*="location"]',
+                            'input[placeholder*="Cities"]', 'input[aria-label*="city"]',
+                            'textarea[name*="city"]', 'textarea[placeholder*="city"]']:
                     el = page.locator(sel).first
                     if el.is_visible(timeout=500):
-                        el.fill(profile.get("location", profile.get("city", "Parker, CO")))
+                        el.fill(profile.get("location", "Parker, CO"))
                         fixed += 1
                         break
+            except Exception:
+                pass
+
+        # "Start year is required" / "Start date year" / "End date year" — Greenhouse work history
+        if "year" in lower or "start date" in lower or "end date" in lower:
+            import datetime
+            current_year = str(datetime.datetime.now().year)
+            try:
+                for sel in [
+                    'select[name*="start_year"]', 'select[id*="start_year"]',
+                    'select[name*="from_year"]', 'select[id*="from_year"]',
+                    'select[name*="end_year"]', 'select[id*="end_year"]',
+                    'select[name*="to_year"]', 'select[id*="to_year"]',
+                    'select[aria-label*="year" i]', 'input[placeholder*="year" i]',
+                ]:
+                    for el in page.locator(sel).all():
+                        try:
+                            if el.is_visible(timeout=300):
+                                tag = el.evaluate("e => e.tagName.toLowerCase()")
+                                if tag == "select":
+                                    cur = el.input_value(timeout=300)
+                                    if not cur or cur == "0":
+                                        # pick current year option, or 2023, or first non-blank
+                                        opts = [o.get_attribute("value") for o in el.locator("option").all()]
+                                        for y in [current_year, "2024", "2023", "2022"]:
+                                            if y in opts:
+                                                el.select_option(value=y)
+                                                fixed += 1
+                                                break
+                                        else:
+                                            non_blank = [v for v in opts if v and v != "0"]
+                                            if non_blank:
+                                                el.select_option(value=non_blank[-1])
+                                                fixed += 1
+                                else:
+                                    val = el.input_value(timeout=300)
+                                    if not val:
+                                        el.fill(current_year)
+                                        fixed += 1
+                        except Exception:
+                            continue
             except Exception:
                 pass
 
