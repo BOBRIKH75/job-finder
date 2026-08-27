@@ -229,6 +229,7 @@ def match_answer(label_text):
 
 def fill_form(page, page_data, profile, learned, domain) -> dict:
     """Fill every field we can. Returns what we filled and what we couldn't."""
+    from src.human_behavior import smart_fill
     filled = []
     unfilled = []
 
@@ -277,13 +278,9 @@ def fill_form(page, page_data, profile, learned, domain) -> dict:
             profile_key = known[sel]
             value = profile.get(profile_key, "")
             if value:
-                try:
-                    page.locator(sel).fill(str(value))
+                if smart_fill(page, sel, str(value), domain):
                     filled.append((profile_key, sel))
-                    wait(0.2, 0.5)
                     continue
-                except Exception:
-                    pass
 
         # Match by label/name/placeholder/aria
         profile_key = match_field(inp["label"], inp["name"], inp["placeholder"], inp["ariaLabel"])
@@ -293,27 +290,20 @@ def fill_form(page, page_data, profile, learned, domain) -> dict:
                 # Fix format based on field type
                 from src.page_doctor import fix_field_format
                 value = fix_field_format(inp["label"] or inp["name"], str(value))
-                try:
-                    page.locator(sel).fill(str(value))
+                if smart_fill(page, sel, str(value), domain):
                     filled.append((profile_key, sel))
-                    # Learn this selector
                     learned.setdefault("winning_selectors", {}).setdefault(domain, {})[sel] = profile_key
-                    wait(0.2, 0.5)
                     continue
-                except Exception as e:
-                    unfilled.append((profile_key, f"{sel}: {e}"))
+                else:
+                    unfilled.append((profile_key, f"{sel}: fill failed"))
                     continue
 
         # Check if it's a question we know the answer to
         answer = match_answer(inp["label"] or inp["placeholder"] or inp["ariaLabel"])
         if answer:
-            try:
-                page.locator(sel).fill(answer)
+            if smart_fill(page, sel, answer, domain):
                 filled.append(("answer:" + inp["label"][:30], sel))
-                wait(0.2, 0.5)
                 continue
-            except Exception:
-                pass
 
         # Unknown field — ask AI for help
         if inp["label"] or inp["placeholder"]:
@@ -323,14 +313,10 @@ def fill_form(page, page_data, profile, learned, domain) -> dict:
                 inp["type"],
             )
             if ai_answer:
-                try:
-                    page.locator(sel).fill(ai_answer)
+                if smart_fill(page, sel, ai_answer, domain):
                     filled.append(("ai:" + (inp["label"] or inp["name"])[:30], sel))
                     learned.setdefault("winning_selectors", {}).setdefault(domain, {})[sel] = "ai:" + ai_answer[:50]
-                    wait(0.2, 0.5)
                     continue
-                except Exception:
-                    pass
 
         if inp["required"]:
             unfilled.append(("unknown_required", f"{sel} label='{inp['label'][:50]}'"))
@@ -366,36 +352,28 @@ def fill_form(page, page_data, profile, learned, domain) -> dict:
                 profile.get("company", ""),
                 page_data.get("pageText", "")[:500],
             )
-            try:
-                page.locator(sel).fill(cover)
+            if smart_fill(page, sel, cover, domain):
                 filled.append(("cover_letter", sel))
-            except Exception:
-                pass
         elif "additional" in label or "comment" in label or "note" in label:
-            try:
-                page.locator(sel).fill("Available immediately for C2C contract. Green Card holder, no sponsorship needed.")
+            if smart_fill(page, sel, "Available immediately for C2C contract. Green Card holder, no sponsorship needed.", domain):
                 filled.append(("additional_info", sel))
-            except Exception:
-                pass
         else:
-            # ANY other textarea question — use Gemini AI to generate answer
+            # ANY other textarea — AI generates answer dynamically
             try:
                 from src.ai_fallback import ask_ai_about_field
                 ai_answer = ask_ai_about_field(label, "textarea")
-                if ai_answer:
-                    page.locator(sel).fill(ai_answer)
+                if ai_answer and smart_fill(page, sel, ai_answer, domain):
                     filled.append(("ai:" + label[:30], sel))
+                    continue
             except Exception:
-                # Fallback: generic answer
-                try:
-                    page.locator(sel).fill(
-                        "10+ years of Java/Spring Boot development. "
-                        "Expert in microservices, Kafka, Kubernetes, AWS. "
-                        "Available immediately for C2C contract. Green Card holder."
-                    )
-                    filled.append(("generic_answer", sel))
-                except Exception:
-                    pass
+                pass
+            # Fallback: known-good generic answer — factually correct, not guessed
+            if smart_fill(page, sel,
+                          "10+ years of Java/Spring Boot development. "
+                          "Expert in microservices, Kafka, Kubernetes, AWS. "
+                          "Available immediately for C2C contract. Green Card holder.",
+                          domain):
+                filled.append(("generic_answer", sel))
 
     # 5. Handle checkboxes (consent, agree, etc.)
     for inp in page_data["inputs"]:
