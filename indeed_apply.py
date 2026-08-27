@@ -208,6 +208,7 @@ def main():
         print("❌ Playwright not installed — run: pip install playwright && playwright install chromium")
         return
 
+    state_file = 'agent/data/indeed_state.json'
     with sync_playwright() as pw:
         browser = pw.chromium.launch(headless=True)
         context = browser.new_context(
