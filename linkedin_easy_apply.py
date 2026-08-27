@@ -167,7 +167,28 @@ def load_linkedin_cookies() -> list[dict]:
     if not encoded:
         return []
     try:
-        return json.loads(base64.b64decode(encoded).decode())
+        data = json.loads(base64.b64decode(encoded).decode())
+        # Normalize: accept list[dict], list[str "name=value"], or bare "n=v; n2=v2" string
+        if isinstance(data, list):
+            result = []
+            for item in data:
+                if isinstance(item, dict):
+                    result.append(item)
+                elif isinstance(item, str) and '=' in item:
+                    name, _, value = item.partition('=')
+                    result.append({"name": name.strip(), "value": value.strip(),
+                                   "domain": ".linkedin.com", "path": "/"})
+            return result
+        elif isinstance(data, str):
+            result = []
+            for part in data.split(';'):
+                part = part.strip()
+                if '=' in part:
+                    name, _, value = part.partition('=')
+                    result.append({"name": name.strip(), "value": value.strip(),
+                                   "domain": ".linkedin.com", "path": "/"})
+            return result
+        return []
     except Exception as e:
         print(f"  ⚠️  Could not decode LINKEDIN_COOKIES: {e}")
         return []
@@ -216,11 +237,16 @@ def inject_cookies(driver, cookies: list[dict]):
     time.sleep(2)
     for cookie in cookies:
         try:
+            if isinstance(cookie, str):
+                name, _, value = cookie.partition('=')
+                cookie = {"name": name.strip(), "value": value.strip(),
+                          "domain": ".linkedin.com", "path": "/"}
             # Selenium requires domain without leading dot for some cookies
             c = {k: v for k, v in cookie.items() if k in ("name", "value", "domain", "path", "secure", "httpOnly")}
             driver.add_cookie(c)
         except Exception as e:
-            print(f"    ⚠️  Could not inject cookie {cookie.get('name')}: {e}")
+            cookie_name = cookie.get('name') if isinstance(cookie, dict) else str(cookie)[:30]
+            print(f"    ⚠️  Could not inject cookie {cookie_name}: {e}")
 
 
 def _fill_form_fields_with_ai(driver):
