@@ -100,14 +100,52 @@ def human_scroll(page, steps: int = None):
         time.sleep(random.uniform(0.3, 1.0))
 
 
-def between_applications_delay():
-    """Wait 3–8 minutes between job applications.
+# Platforms with behavioral typing analysis — need char-by-char input.
+# ATS platforms (Greenhouse, Lever, Ashby) only have reCAPTCHA, not typing analysis.
+_SLOW_PLATFORMS = {"linkedin.com", "indeed.com", "dice.com", "ziprecruiter.com"}
+_ATS_PLATFORMS  = {"greenhouse.io", "lever.co", "ashbyhq.com", "workable.com",
+                   "jobvite.com", "icims.com", "myworkdayjobs.com"}
 
-    Applying every 30 seconds is a clear bot signal — humans read the job description,
-    fill the form, and review before submitting. 3-8 min is realistic.
+
+def smart_fill(page, selector: str, text: str, domain: str = "") -> bool:
+    """Fill a form field — human_type for watched platforms, fast fill for ATS.
+
+    Performance rationale:
+      - LinkedIn/Indeed analyze typing speed — char-by-char needed (50-180ms/char)
+      - Greenhouse/Lever only have reCAPTCHA — instant fill is fine, saves ~5s per field
+      - A 50-char field on LinkedIn: ~5s  |  on Greenhouse: ~0.1s
+      - With 10 fields per form × 30 jobs: saves up to 25 minutes per run
+
+    Returns True on success, False on error (never raises).
     """
-    delay = random.uniform(180, 480)  # 3–8 minutes
-    print(f"  ⏳ Human delay between applications: {int(delay)}s...")
+    try:
+        if any(p in domain for p in _SLOW_PLATFORMS):
+            human_type(page, selector, str(text))
+        else:
+            page.locator(selector).fill(str(text))
+            time.sleep(random.uniform(0.08, 0.20))  # tiny pause — looks natural
+        return True
+    except Exception:
+        return False
+
+
+def between_applications_delay(domain: str = ""):
+    """Platform-aware delay between job applications.
+
+    LinkedIn/Indeed have behavioral analysis — need 3-8 min gap.
+    Greenhouse/Lever only check reCAPTCHA — 15-45s is enough and maximizes throughput.
+    """
+    if "linkedin" in domain:
+        delay = random.uniform(180, 480)   # 3–8 min
+    elif "indeed" in domain:
+        delay = random.uniform(60, 180)    # 1–3 min
+    elif "dice" in domain:
+        delay = random.uniform(45, 120)    # 45s–2 min
+    elif any(p in domain for p in _ATS_PLATFORMS):
+        delay = random.uniform(15, 45)     # 15–45s — reCAPTCHA is the only gate
+    else:
+        delay = random.uniform(20, 60)     # safe default for unknown platforms
+    print(f"  ⏳ Inter-app delay ({domain or 'default'}): {int(delay)}s")
     time.sleep(delay)
 
 
