@@ -19,7 +19,7 @@ defaults:
 jobs:
   greenhouse-apply:
     runs-on: ${{ vars.PREFER_SELF_HOSTED == 'true' && 'self-hosted' || 'ubuntu-latest' }}
-    timeout-minutes: 30
+    timeout-minutes: 50
 
     steps:
       - uses: actions/checkout@v4
@@ -55,7 +55,7 @@ jobs:
         run: python3 -c "from src.memory import get_db, init_db; db = get_db(); init_db(db)"
 
       - name: Run Greenhouse applicator
-        timeout-minutes: 35
+        timeout-minutes: 45
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
