@@ -193,7 +193,8 @@ def main():
 
             browser_applied = 0
             for res in (browser_results or []):
-                if res.get('submitted'):
+                # run_applications uses status="submitted" (not submitted=True)
+                if res.get('status') == 'submitted' or res.get('submitted'):
                     browser_applied += 1
                     upsert_application(
                         db,
@@ -208,7 +209,8 @@ def main():
             print(f"  🌐 Browser results: {browser_applied} submitted")
 
             # Remove successfully submitted from failed list
-            submitted_urls = {r['url'] for r in (browser_results or []) if r.get('submitted')}
+            submitted_urls = {r['url'] for r in (browser_results or [])
+                              if r.get('status') == 'submitted' or r.get('submitted')}
             failed = [f for f in failed if f['url'] not in submitted_urls]
 
         except Exception as browser_err:
