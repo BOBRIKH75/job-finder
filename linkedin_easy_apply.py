@@ -162,36 +162,93 @@ def warmup_session(driver):
 
 
 def load_linkedin_cookies() -> list[dict]:
-    """Load LinkedIn session cookies from LINKEDIN_COOKIES env var (base64 JSON)."""
+    """Load LinkedIn session cookies from LINKEDIN_COOKIES env var.
+    
+    Accepts multiple formats:
+    - base64(JSON array of cookie dicts)  ← standard format
+    - base64(JSON string "name=val; name2=val2")
+    - Raw JSON array (not base64)
+    - Raw cookie string "li_at=xxx; JSESSIONID=yyy"
+    """
     encoded = os.environ.get("LINKEDIN_COOKIES", "")
     if not encoded:
         return []
+    
+    # Log diagnostic info (redacted)
+    print(f"  🔍 LINKEDIN_COOKIES: {len(encoded)} chars, starts with '{encoded[:10]}...'")
+    
+    data = None
+    
+    # Try 1: base64 decode → JSON
     try:
-        data = json.loads(base64.b64decode(encoded).decode())
-        # Normalize: accept list[dict], list[str "name=value"], or bare "n=v; n2=v2" string
-        if isinstance(data, list):
-            result = []
-            for item in data:
-                if isinstance(item, dict):
-                    result.append(item)
-                elif isinstance(item, str) and '=' in item:
-                    name, _, value = item.partition('=')
-                    result.append({"name": name.strip(), "value": value.strip(),
-                                   "domain": ".linkedin.com", "path": "/"})
-            return result
-        elif isinstance(data, str):
-            result = []
-            for part in data.split(';'):
-                part = part.strip()
-                if '=' in part:
-                    name, _, value = part.partition('=')
-                    result.append({"name": name.strip(), "value": value.strip(),
-                                   "domain": ".linkedin.com", "path": "/"})
-            return result
+        decoded = base64.b64decode(encoded).decode()
+        data = json.loads(decoded)
+        print(f"  ✅ Decoded as base64 → JSON ({type(data).__name__})")
+    except Exception:
+        pass
+    
+    # Try 2: raw JSON (not base64 encoded)
+    if data is None:
+        try:
+            data = json.loads(encoded)
+            print(f"  ✅ Parsed as raw JSON ({type(data).__name__})")
+        except Exception:
+            pass
+    
+    # Try 3: raw cookie string "li_at=xxx; JSESSIONID=yyy"
+    if data is None and "=" in encoded:
+        print("  ✅ Parsing as raw cookie string")
+        result = []
+        for part in encoded.split(';'):
+            part = part.strip()
+            if '=' in part:
+                name, _, value = part.partition('=')
+                result.append({"name": name.strip(), "value": value.strip(),
+                               "domain": ".linkedin.com", "path": "/"})
+        if result:
+            # Check for essential cookies
+            names = {c["name"] for c in result}
+            if "li_at" in names:
+                print(f"  ✅ Found {len(result)} cookies (has li_at)")
+                return result
+            print(f"  ⚠️ Found {len(result)} cookies but missing li_at")
+        return result if result else []
+    
+    if data is None:
+        print(f"  ❌ Could not decode LINKEDIN_COOKIES in any format")
         return []
-    except Exception as e:
-        print(f"  ⚠️  Could not decode LINKEDIN_COOKIES: {e}")
-        return []
+    
+    # Normalize parsed data
+    if isinstance(data, list):
+        result = []
+        for item in data:
+            if isinstance(item, dict):
+                result.append(item)
+            elif isinstance(item, str) and '=' in item:
+                name, _, value = item.partition('=')
+                result.append({"name": name.strip(), "value": value.strip(),
+                               "domain": ".linkedin.com", "path": "/"})
+        # Validate essential cookies exist
+        names = {c.get("name", "") for c in result}
+        if "li_at" not in names:
+            print(f"  ⚠️ Cookies decoded ({len(result)}) but li_at NOT found — session likely expired")
+            print(f"  📋 Cookie names found: {sorted(names)[:10]}")
+            # Still return them — maybe they work with different auth
+        else:
+            print(f"  ✅ {len(result)} cookies loaded (li_at present)")
+        return result
+    elif isinstance(data, str):
+        result = []
+        for part in data.split(';'):
+            part = part.strip()
+            if '=' in part:
+                name, _, value = part.partition('=')
+                result.append({"name": name.strip(), "value": value.strip(),
+                               "domain": ".linkedin.com", "path": "/"})
+        return result
+    
+    print(f"  ❌ Unexpected data type: {type(data).__name__}")
+    return []
 
 
 def alert_cookie_expired():

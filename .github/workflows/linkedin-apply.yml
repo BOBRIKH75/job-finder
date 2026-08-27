@@ -5,6 +5,9 @@ on:
     - cron: '0 15 * * 1-5'  # 9:00 AM MT, weekdays only (one session — 20h cooldown enforced in script)
   workflow_dispatch: {}
 
+permissions:
+  contents: write
+
 concurrency:
   group: linkedin-apply
   cancel-in-progress: false

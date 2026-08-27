@@ -1,0 +1,97 @@
+name: Refresh LinkedIn Cookies (Auto)
+
+on:
+  schedule:
+    # Run every 3 days at 5 AM MT — keeps cookies fresh before they expire (7-14 day TTL)
+    - cron: "0 11 */3 * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    runs-on: [self-hosted, macOS, linkedin]
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Extract LinkedIn cookies from local Chrome and update secret
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
+        run: |
+          python3 << 'EOF'
+          import json, os, base64, subprocess, sys
+
+          print("🔄 Extracting LinkedIn cookies from local Chrome...")
+
+          cookies = []
+
+          # Method 1: browser-cookie3 (reads Chrome's cookie DB directly)
+          try:
+              import browser_cookie3
+              cj = browser_cookie3.chrome(domain_name='.linkedin.com')
+              for c in cj:
+                  cookies.append({
+                      "name": c.name,
+                      "value": c.value,
+                      "domain": c.domain,
+                      "path": c.path,
+                      "secure": c.secure,
+                  })
+              print(f"✅ Extracted {len(cookies)} LinkedIn cookies from Chrome")
+          except ImportError:
+              print("⚠️ browser-cookie3 not installed — installing...")
+              subprocess.run([sys.executable, "-m", "pip", "install", "browser-cookie3"], 
+                          capture_output=True)
+              try:
+                  import browser_cookie3
+                  cj = browser_cookie3.chrome(domain_name='.linkedin.com')
+                  for c in cj:
+                      cookies.append({
+                          "name": c.name, "value": c.value,
+                          "domain": c.domain, "path": c.path, "secure": c.secure,
+                      })
+                  print(f"✅ Extracted {len(cookies)} LinkedIn cookies from Chrome")
+              except Exception as e:
+                  print(f"❌ browser-cookie3 failed: {e}")
+          except Exception as e:
+              print(f"❌ Chrome cookie extraction failed: {e}")
+
+          if not cookies:
+              print("❌ No LinkedIn cookies found — make sure you're logged into LinkedIn in Chrome")
+              print("   Open Chrome → linkedin.com → login → then re-run this workflow")
+              exit(1)
+
+          # Validate essential cookies
+          names = {c["name"] for c in cookies}
+          if "li_at" not in names:
+              print(f"⚠️ Missing li_at cookie — found: {sorted(names)[:15]}")
+              print("   You may not be logged in to LinkedIn in Chrome")
+              exit(1)
+
+          print(f"✅ Essential cookies present: li_at={'li_at' in names}, JSESSIONID={'JSESSIONID' in names}")
+
+          # Encode and update GitHub secret
+          encoded = base64.b64encode(json.dumps(cookies).encode()).decode()
+          result = subprocess.run(
+              ["gh", "secret", "set", "LINKEDIN_COOKIES", "--body", encoded,
+               "--repo", "BOBRIKH75/job-finder"],
+              capture_output=True, text=True
+          )
+
+          if result.returncode == 0:
+              print(f"✅ LINKEDIN_COOKIES secret updated! ({len(cookies)} cookies, {len(encoded)} bytes)")
+              print(f"   Next expiry: ~7-14 days from now")
+              print(f"   Auto-refresh runs every 3 days — you'll never need to do this manually")
+          else:
+              print(f"❌ Failed to update secret: {result.stderr[:200]}")
+              # Save to file as fallback
+              os.makedirs("data", exist_ok=True)
+              with open("data/linkedin_cookies_latest.json", "w") as f:
+                  json.dump(cookies, f)
+              print("   Saved to data/linkedin_cookies_latest.json — update manually:")
+              print(f"   gh secret set LINKEDIN_COOKIES --body '{encoded[:50]}...'")
+              exit(1)
+          EOF
