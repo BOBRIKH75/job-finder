@@ -6,6 +6,9 @@ on:
     - cron: '30 17 * * *'   # 11:30 AM MT
     - cron: '30 20 * * *'   # 2:30 PM MT
     - cron: '30 23 * * *'   # 5:30 PM MT
+    - cron: '30 4 * * *'    # 10:30 PM MT (late night)
+    - cron: '30 7 * * *'    # 1:30 AM MT  (overnight)
+    - cron: '30 11 * * *'   # 5:30 AM MT  (early morning)
   workflow_dispatch: {}
 
 concurrency:
