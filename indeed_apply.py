@@ -169,30 +169,61 @@ def main():
         
         all_jobs = []
         for q in queries:
+            # Strategy: run TWO searches per query for best coverage.
+            # 1. easy_apply=True — gets Indeed Easy Apply jobs (can't combine with hours_old)
+            # 2. hours_old=48 + job_type=contract — gets recent contract jobs (may include external)
+            # The post-search filter will remove external-redirect jobs from both.
             try:
-                batch = scrape_jobs(
+                batch1 = scrape_jobs(
                     site_name=['indeed'],
                     search_term=q,
                     location='USA',
-                    results_wanted=20,
+                    results_wanted=25,
+                    easy_apply=True,
+                )
+                all_jobs.append(batch1)
+                count1 = len(batch1)
+            except Exception:
+                count1 = 0
+
+            try:
+                batch2 = scrape_jobs(
+                    site_name=['indeed'],
+                    search_term=q,
+                    location='USA',
+                    results_wanted=15,
                     hours_old=48,
                     job_type='contract',
                     is_remote=True,
                 )
-                all_jobs.append(batch)
-                print(f"  🔍 '{q}' → {len(batch)} jobs")
-            except Exception as e:
-                print(f"  ⚠️ '{q}' failed: {str(e)[:40]}")
+                all_jobs.append(batch2)
+                count2 = len(batch2)
+            except Exception:
+                count2 = 0
+
+            print(f"  🔍 '{q}' → {count1} (easy_apply) + {count2} (recent contract) = {count1+count2} jobs")
+            if count1 == 0 and count2 == 0:
+                print(f"  ⚠️ '{q}' returned 0 results from both searches")
         
         jobs = pd.concat(all_jobs, ignore_index=True).drop_duplicates(subset=['job_url']) if all_jobs else pd.DataFrame()
-        print(f"🔍 Found {len(jobs)} Indeed contract jobs (from {len(queries)} searches)")
-        # Filter to Easy Apply only (if jobspy provides the field)
-        if 'is_remote' in jobs.columns:
-            pass  # jobspy doesn't reliably filter easy apply
-        # We'll detect Easy Apply at runtime — if no Apply button found, save for manual
-        # Separate Easy Apply vs External Apply
-        if 'is_remote' in jobs.columns:
-            pass  # just for structure
+        print(f"🔍 Found {len(jobs)} Indeed jobs total (from {len(queries)} searches)")
+
+        # CRITICAL: Filter to REAL Easy Apply jobs only.
+        # Indeed's API 'easy_apply' filter is unreliable (returns 90%+ external redirect jobs).
+        # True Easy Apply = job_url_direct is empty/NaN (no external redirect).
+        # External = job_url_direct points to greenhouse, lever, workday, etc.
+        if not jobs.empty and 'job_url_direct' in jobs.columns:
+            before_count = len(jobs)
+            jobs = jobs[
+                jobs['job_url_direct'].isna() |
+                (jobs['job_url_direct'] == '') |
+                (jobs['job_url_direct'].astype(str) == 'nan') |
+                jobs['job_url_direct'].astype(str).str.contains('indeed.com', na=False)
+            ]
+            filtered_out = before_count - len(jobs)
+            print(f"  ✅ Filtered to {len(jobs)} Easy Apply jobs ({filtered_out} external-redirect removed)")
+        else:
+            print(f"  ⚠️ No job_url_direct column — will detect Easy Apply at runtime")
     except Exception as e:
         print(f"⚠️ JobSpy search failed: {e}")
         return
