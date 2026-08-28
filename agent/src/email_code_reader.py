@@ -57,31 +57,12 @@ def get_verification_code(
     if _USED_CODES:
         print(f"      📧 Already used codes this session: {_USED_CODES}")
     
-    # STEP 0: Mark ALL today's emails from this sender as SEEN before waiting.
-    # The fresh code hasn't arrived yet (Greenhouse sends AFTER submit).
-    # Use SINCE (same as main loop) so we're consistent — mark today's old codes as SEEN.
-    try:
-        from datetime import datetime as _dt
-        _today = _dt.now().strftime("%d-%b-%Y")
-        mail = imaplib.IMAP4_SSL("imap.gmail.com")
-        mail.login(gmail_user, gmail_pass)
-        mail.select('"[Gmail]/All Mail"')
-        if sender_filter:
-            search_criteria = f'(SINCE {_today} FROM "{sender_filter}")'
-        else:
-            search_criteria = f'(SINCE {_today})'
-        status, messages = mail.search(None, search_criteria)
-        if status == "OK" and messages[0]:
-            msg_ids = messages[0].split()
-            for msg_id in msg_ids:
-                mail.store(msg_id, '+FLAGS', '\\Seen')
-            print(f"      📧 Cleared {len(msg_ids)} old email(s) from today — waiting for fresh code only")
-        mail.logout()
-    except Exception as e:
-        print(f"      ⚠️ Could not clear old emails: {str(e)[:40]}")
-    
-    # Small delay to allow Greenhouse to send the new code
-    time.sleep(8)  # Greenhouse typically takes 5-15 seconds to send
+    # NOTE: We do NOT mark old emails as SEEN anymore.
+    # That was KILLING fresh codes — the code arrives within 5-10s of Submit,
+    # and marking-all-seen was destroying it before we could read it.
+    # Instead we rely on _USED_CODES set to skip already-used codes.
+    # Wait for Greenhouse to send the new code (5-20s typical).
+    time.sleep(12)
     
     start_time = time.time()
     while time.time() - start_time < max_wait_seconds:
