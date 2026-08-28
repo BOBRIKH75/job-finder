@@ -25,7 +25,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install selenium undetected-chromedriver webdriver-manager
+          pip install setuptools selenium undetected-chromedriver webdriver-manager
 
       - name: Run Dice Easy Apply
         env:
@@ -54,10 +54,9 @@ jobs:
           options.add_argument('--window-size=1920,1080')
 
           # Detect Chrome version
-          import subprocess, platform
+          import subprocess, platform, re
           try:
               out = subprocess.check_output(['google-chrome', '--version']).decode()
-              import re
               version_main = int(re.search(r'(\d+)\.', out).group(1))
               print(f'Chrome version: {version_main}')
           except Exception:
@@ -70,21 +69,18 @@ jobs:
           already_applied = 0
           failed = 0
           no_button = 0
-          results = []
 
           try:
               # === LOGIN ===
               driver.get('https://www.dice.com/dashboard/login')
               time.sleep(3)
 
-              # Try login
               try:
                   email_input = wait.until(EC.presence_of_element_located(
                       (By.CSS_SELECTOR, '[name="email"], #email, input[type="email"]')))
                   email_input.send_keys(email)
                   time.sleep(1)
 
-                  # Click "Continue with email"
                   for btn in driver.find_elements(By.TAG_NAME, 'button'):
                       if 'continue' in btn.text.lower():
                           btn.click()
@@ -108,21 +104,20 @@ jobs:
 
               # === VERIFY LOGIN ===
               page_text = driver.page_source.lower()
-              if 'dashboard' in driver.current_url or 'profile' in page_text or 'job seeker' in page_text:
+              current_url = driver.current_url.lower()
+              if 'dashboard' in current_url or 'profile' in page_text or 'job seeker' in page_text:
                   print('✅ Login verified — on dashboard')
               elif 'captcha' in page_text or 'verify' in page_text or 'robot' in page_text:
                   print('❌ Login blocked by CAPTCHA/verification — aborting')
                   print(f'   URL: {driver.current_url}')
                   driver.quit()
                   exit(1)
+              elif 'login' in current_url:
+                  print('❌ Login failed — still on login page')
+                  driver.quit()
+                  exit(1)
               else:
-                  # Check if still on login page
-                  if 'login' in driver.current_url.lower():
-                      print('❌ Login failed — still on login page (wrong credentials?)')
-                      driver.quit()
-                      exit(1)
-                  print(f'⚠️ Login status unclear — URL: {driver.current_url}')
-                  # Continue but be cautious
+                  print(f'⚠️ Login status unclear — URL: {driver.current_url} — continuing')
 
               # === SEARCH & APPLY ===
               searches = [
@@ -142,7 +137,6 @@ jobs:
                   driver.get(url)
                   time.sleep(5)
 
-                  # Find job cards
                   cards = driver.find_elements(By.CSS_SELECTOR, 'a[data-cy="card-title-link"]')
                   if not cards:
                       cards = driver.find_elements(By.CSS_SELECTOR, 'a[href*="/job-detail/"]')
@@ -158,8 +152,9 @@ jobs:
                           card.click()
                           time.sleep(3)
 
-                          # CHECK: Already applied?
                           page_text = driver.page_source.lower()
+
+                          # Already applied?
                           if 'already applied' in page_text or 'you applied' in page_text or 'applied on' in page_text:
                               already_applied += 1
                               print(f'    ⏭️ Already applied: {job_title}')
@@ -174,25 +169,21 @@ jobs:
                               if btns:
                                   apply_btn = btns[0]
                                   break
-
                           if not apply_btn:
-                              # Fallback: button containing "Easy Apply" text specifically
                               for btn in driver.find_elements(By.TAG_NAME, 'button'):
                                   if 'easy apply' in btn.text.lower():
                                       apply_btn = btn
                                       break
-
                           if not apply_btn:
                               no_button += 1
                               driver.back()
                               time.sleep(2)
                               continue
 
-                          # Click Easy Apply
                           apply_btn.click()
                           time.sleep(3)
 
-                          # Find and click Submit/Next
+                          # Submit
                           submitted = False
                           for selector in ['button[data-cy="submit-btn"]', 'button.btn-submit']:
                               btns = driver.find_elements(By.CSS_SELECTOR, selector)
@@ -200,15 +191,13 @@ jobs:
                                   btns[0].click()
                                   submitted = True
                                   break
-
                           if not submitted:
                               for btn in driver.find_elements(By.TAG_NAME, 'button'):
-                                  txt = btn.text.lower()
+                                  txt = btn.text.lower().strip()
                                   if txt in ['submit', 'submit application', 'apply now']:
                                       btn.click()
                                       submitted = True
                                       break
-
                           if not submitted:
                               failed += 1
                               print(f'    ❌ No submit button: {job_title}')
@@ -216,7 +205,7 @@ jobs:
                               time.sleep(2)
                               continue
 
-                          # === VERIFY SUBMISSION ===
+                          # === VERIFY ===
                           time.sleep(3)
                           post_page = driver.page_source.lower()
 
@@ -227,38 +216,34 @@ jobs:
                               'congratulations'
                           ]
                           failure_signals = [
-                              'error', 'required field', 'please fill', 'invalid',
+                              'required field', 'please fill', 'invalid',
                               'something went wrong', 'try again', 'captcha'
                           ]
 
                           if any(sig in post_page for sig in success_signals):
                               verified_applied += 1
-                              results.append({"title": job_title, "status": "applied"})
-                              print(f'    ✅ VERIFIED Applied ({verified_applied}/{MAX_APPS}): {job_title}')
+                              print(f'    ✅ VERIFIED ({verified_applied}/{MAX_APPS}): {job_title}')
                           elif any(sig in post_page for sig in failure_signals):
                               failed += 1
-                              results.append({"title": job_title, "status": "failed"})
-                              print(f'    ❌ Submit failed (form error): {job_title}')
+                              print(f'    ❌ Failed (form error): {job_title}')
                           elif 'already applied' in post_page:
                               already_applied += 1
                               print(f'    ⏭️ Already applied (post-submit): {job_title}')
                           else:
-                              # Ambiguous — DON'T count it
                               failed += 1
-                              results.append({"title": job_title, "status": "unverified"})
                               print(f'    ⚠️ Unverified (no confirmation): {job_title}')
 
                           time.sleep(random.uniform(5, 12))
                           driver.back()
                           time.sleep(2)
 
-                      except Exception as e:
+                      except Exception:
                           failed += 1
                           driver.back()
                           time.sleep(2)
                           continue
 
-              # === FINAL REPORT ===
+              # === REPORT ===
               print(f'\n{"="*50}')
               print(f'📊 Dice Results (VERIFIED):')
               print(f'  ✅ Applied (confirmed): {verified_applied}')
@@ -268,8 +253,7 @@ jobs:
               print(f'{"="*50}')
 
               if verified_applied == 0 and failed > 5:
-                  print('\n⚠️ WARNING: 0 verified applications — Dice may be blocking automation')
-                  print(f'   Check if CAPTCHA or login issues are occurring')
+                  print('\n⚠️ WARNING: 0 verified — Dice may be blocking automation')
 
           finally:
               driver.quit()
