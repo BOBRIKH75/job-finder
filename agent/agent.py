@@ -200,9 +200,9 @@ def run_filter(db, jobs):
         description = job.get("description", "")
         job["is_staffing_firm"] = is_staffing_firm(company, description)
 
-        # For direct employers (not staffing firms), require explicit C2C/contract signals.
-        # EXCEPTION: If job is on a CAPTCHA-free ATS (Lever/Greenhouse/Ashby), allow it through
-        # because auto-apply is FREE (no risk, no cost). Even FTE roles may accept contractors.
+        # For direct employers (not staffing firms), require C2C/contract signals.
+        # For CAPTCHA-free ATS (Lever/Greenhouse), we CAN auto-apply but still need
+        # relevance checks to avoid wasting applications on wrong jobs.
         CAPTCHA_FREE_ATS_TYPES = {"lever", "greenhouse", "ashby", "workable"}
         if not job["is_staffing_firm"]:
             desc_lower = description.lower()
@@ -222,7 +222,48 @@ def run_filter(db, jobs):
                 print(f"  🚫 SKIP (no C2C signals) [DIRECT FTE]: {job.get('title', '')} @ {company}")
                 continue
 
+            # CAPTCHA-free ATS jobs WITHOUT C2C signals need extra relevance checks.
+            # These come from portal scanner (bulk-scraped company pages).
+            # Without checks, we apply to DevOps, Data, LATAM, on-site, FTE jobs.
             if is_captcha_free_ats and not has_c2c_desc and not has_contract_title:
+                # CHECK 1: Title must contain core Java/backend keywords (not just any tech)
+                java_core_title = ["java", "spring", "backend", "back-end", "j2ee",
+                                   "jvm", "microservice"]
+                if not any(kw in title_lower for kw in java_core_title):
+                    print(f"  🚫 SKIP (not Java/backend title) [DIRECT+AUTO-ATS]: {job.get('title', '')} @ {company}")
+                    continue
+
+                # CHECK 2: Location — skip on-site roles outside USA or specific-city-only
+                location = job.get("location", "").lower()
+                skip_locations = ["latam", "latin america", "india", "uk", "europe",
+                                  "canada", "toronto", "london", "berlin", "australia",
+                                  "singapore", "japan", "brazil", "mexico", "argentina",
+                                  "colombia", "chile", "peru"]
+                if any(loc in location for loc in skip_locations):
+                    print(f"  🚫 SKIP (wrong location: {location[:30]}) [DIRECT+AUTO-ATS]: {job.get('title', '')} @ {company}")
+                    continue
+                # Also skip if title contains location markers for non-US
+                title_loc_skip = ["latam", "- uk", "- eu", "- india", "miami",
+                                  "- brazil", "(emea)", "(apac)"]
+                if any(loc in title_lower for loc in title_loc_skip):
+                    print(f"  🚫 SKIP (location in title) [DIRECT+AUTO-ATS]: {job.get('title', '')} @ {company}")
+                    continue
+
+                # CHECK 3: Match score must be >= 50% for direct auto-apply
+                if match["score"] < 50:
+                    print(f"  🚫 SKIP (low match {match['score']}%) [DIRECT+AUTO-ATS]: {job.get('title', '')} @ {company}")
+                    continue
+
+                # CHECK 4: Skip if description shows it's clearly NOT contract-friendly
+                fte_only_signals = ["no contractors", "no c2c", "no corp-to-corp",
+                                    "permanent only", "w2 only", "no third party",
+                                    "must be direct employee", "no agencies",
+                                    "clearance required", "ts/sci", "top secret",
+                                    "polygraph"]
+                if any(sig in desc_lower for sig in fte_only_signals):
+                    print(f"  🚫 SKIP (FTE/clearance only) [DIRECT+AUTO-ATS]: {job.get('title', '')} @ {company}")
+                    continue
+
                 print(f"  ✅ PASS ({match['score']}% match) [DIRECT+AUTO-ATS]: {job.get('title', '')} @ {company}")
             elif has_c2c_desc or has_contract_title:
                 print(f"  ✅ PASS ({match['score']}% match) [DIRECT+C2C]: {job.get('title', '')} @ {company}")
