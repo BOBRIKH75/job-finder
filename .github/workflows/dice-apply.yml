@@ -2,9 +2,9 @@ name: Dice Easy Apply
 
 on:
   schedule:
-    - cron: '30 13 * * 1-5'  # 7:30 AM MT, weekdays (morning — fresh overnight postings)
-    - cron: '30 16 * * 1-5'  # 10:30 AM MT, weekdays (mid-morning)
-    - cron: '30 21 * * 1-5'  # 3:30 PM MT, weekdays (afternoon — new postings)
+    - cron: '30 13 * * 1-5'  # 7:30 AM MT, weekdays
+    - cron: '30 16 * * 1-5'  # 10:30 AM MT, weekdays
+    - cron: '30 21 * * 1-5'  # 3:30 PM MT, weekdays
   workflow_dispatch: {}
 
 concurrency:
@@ -13,26 +13,19 @@ concurrency:
 
 jobs:
   dice-apply:
-    # Dice works BETTER on GitHub cloud (ubuntu) - confirmed getting email confirmations.
-    # Self-hosted Mac: Dice detects headless Chrome 151 and silently rejects.
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
 
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-python@v5
-        if: runner.environment == 'github-hosted'
         with:
           python-version: '3.12'
 
       - name: Install dependencies
         run: |
-          python3 -m venv $GITHUB_WORKSPACE/.venv || true
-          echo "$GITHUB_WORKSPACE/.venv/bin" >> $GITHUB_PATH
-          source $GITHUB_WORKSPACE/.venv/bin/activate || true
-          python3 -m pip install setuptools dice-apply selenium undetected-chromedriver webdriver-manager
-          python3 -c "from webdriver_manager.chrome import ChromeDriverManager; ChromeDriverManager().install()" || true
+          pip install selenium undetected-chromedriver webdriver-manager
 
       - name: Run Dice Easy Apply
         env:
@@ -43,83 +36,95 @@ jobs:
             echo "⏭️ DICE_EMAIL not set — skipping"
             exit 0
           fi
-          python3 -c "
-          import os, time, random, subprocess, re
+          python3 << 'PYTHON'
+          import os, time, random, json
           import undetected_chromedriver as uc
           from selenium.webdriver.common.by import By
-
-          # Detect installed Chrome version to avoid mismatch
-          import subprocess, re, platform
-          try:
-              if platform.system() == 'Darwin':
-                  out = subprocess.check_output(['/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', '--version']).decode()
-              else:
-                  out = subprocess.check_output(['google-chrome', '--version']).decode()
-              version_main = int(re.search(r'(\d+)\.', out).group(1))
-              print(f'Chrome version detected: {version_main}')
-          except Exception:
-              version_main = None
-              print('Could not detect Chrome version')
+          from selenium.webdriver.support.ui import WebDriverWait
+          from selenium.webdriver.support import expected_conditions as EC
 
           email = os.environ['DICE_EMAIL']
           password = os.environ['DICE_PASSWORD']
-          MAX_APPS = 75  # matches cookie_agent.py dice limit
+          MAX_APPS = 75
 
           options = uc.ChromeOptions()
           options.add_argument('--headless=new')
           options.add_argument('--no-sandbox')
           options.add_argument('--disable-dev-shm-usage')
+          options.add_argument('--window-size=1920,1080')
+
+          # Detect Chrome version
+          import subprocess, platform
+          try:
+              out = subprocess.check_output(['google-chrome', '--version']).decode()
+              import re
+              version_main = int(re.search(r'(\d+)\.', out).group(1))
+              print(f'Chrome version: {version_main}')
+          except Exception:
+              version_main = None
+
           driver = uc.Chrome(options=options, version_main=version_main)
-          applied = 0
+          wait = WebDriverWait(driver, 15)
+
+          verified_applied = 0
+          already_applied = 0
+          failed = 0
+          no_button = 0
+          results = []
 
           try:
-              # Login — try multiple selectors with explicit waits
+              # === LOGIN ===
               driver.get('https://www.dice.com/dashboard/login')
-              from selenium.webdriver.support.ui import WebDriverWait
-              from selenium.webdriver.support import expected_conditions as EC
-              wait = WebDriverWait(driver, 20)
-              logged_in = False
+              time.sleep(3)
 
-              # Try NEW flow: name='email' → Continue → name='password' → Sign In
+              # Try login
               try:
-                  email_input = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, '[name=\"email\"], #email, input[type=\"email\"]')))
+                  email_input = wait.until(EC.presence_of_element_located(
+                      (By.CSS_SELECTOR, '[name="email"], #email, input[type="email"]')))
                   email_input.send_keys(email)
                   time.sleep(1)
+
+                  # Click "Continue with email"
                   for btn in driver.find_elements(By.TAG_NAME, 'button'):
-                      if 'continue with email' in btn.text.lower():
+                      if 'continue' in btn.text.lower():
                           btn.click()
                           break
                   time.sleep(3)
-                  pwd_input = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, '[name=\"password\"], #password, input[type=\"password\"]')))
+
+                  pwd_input = wait.until(EC.presence_of_element_located(
+                      (By.CSS_SELECTOR, '[name="password"], #password, input[type="password"]')))
                   pwd_input.send_keys(password)
                   time.sleep(1)
+
                   for btn in driver.find_elements(By.TAG_NAME, 'button'):
-                      if 'sign in' in btn.text.lower() or 'submit' in btn.get_attribute('type').lower():
+                      if 'sign in' in btn.text.lower():
                           btn.click()
                           break
-                  logged_in = True
-                  print('✅ Logged in to Dice (new flow)')
-              except Exception:
-                  pass
+                  time.sleep(5)
+              except Exception as e:
+                  print(f'❌ Login failed: {e}')
+                  driver.quit()
+                  exit(1)
 
-              # Fallback: reload and try old flow
-              if not logged_in:
-                  try:
-                      driver.get('https://www.dice.com/dashboard/login')
-                      email_input = wait.until(EC.presence_of_element_located((By.ID, 'email')))
-                      email_input.send_keys(email)
-                      pwd_input = wait.until(EC.presence_of_element_located((By.ID, 'password')))
-                      pwd_input.send_keys(password)
-                      driver.find_element(By.CSS_SELECTOR, 'button[type=submit]').click()
-                      logged_in = True
-                      print('✅ Logged in to Dice (old flow)')
-                  except Exception as e:
-                      print(f'❌ Both login flows failed: {e}')
-                      raise
+              # === VERIFY LOGIN ===
+              page_text = driver.page_source.lower()
+              if 'dashboard' in driver.current_url or 'profile' in page_text or 'job seeker' in page_text:
+                  print('✅ Login verified — on dashboard')
+              elif 'captcha' in page_text or 'verify' in page_text or 'robot' in page_text:
+                  print('❌ Login blocked by CAPTCHA/verification — aborting')
+                  print(f'   URL: {driver.current_url}')
+                  driver.quit()
+                  exit(1)
+              else:
+                  # Check if still on login page
+                  if 'login' in driver.current_url.lower():
+                      print('❌ Login failed — still on login page (wrong credentials?)')
+                      driver.quit()
+                      exit(1)
+                  print(f'⚠️ Login status unclear — URL: {driver.current_url}')
+                  # Continue but be cautious
 
-              time.sleep(5)
-
-              # Search for Java contract jobs
+              # === SEARCH & APPLY ===
               searches = [
                   'Java Developer contract remote',
                   'Java Spring Boot microservices contract',
@@ -128,55 +133,144 @@ jobs:
                   'Spring Boot Kubernetes developer remote',
                   'Java API developer C2C contract',
               ]
-              for i, query in enumerate(searches):
-                  if applied >= MAX_APPS: break
-                  driver.get(f'https://www.dice.com/jobs?q={query.replace(\" \", \"+\")}&filters.easyApply=true&filters.postedDate=ONE')
-                  time.sleep(6)
 
-                  # Try multiple selectors for job cards
-                  cards = driver.find_elements(By.CSS_SELECTOR, 'a[data-cy=\"card-title-link\"]')
+              for query in searches:
+                  if verified_applied >= MAX_APPS:
+                      break
+
+                  url = f'https://www.dice.com/jobs?q={query.replace(" ", "+")}&filters.easyApply=true&filters.postedDate=ONE'
+                  driver.get(url)
+                  time.sleep(5)
+
+                  # Find job cards
+                  cards = driver.find_elements(By.CSS_SELECTOR, 'a[data-cy="card-title-link"]')
                   if not cards:
-                      cards = driver.find_elements(By.CSS_SELECTOR, 'a[data-testid*=\"card-title\"], .card-title-link, a.job-card-title')
-                  if not cards:
-                      cards = driver.find_elements(By.CSS_SELECTOR, 'a[href*=\"/job-detail/\"]')
-                  print(f'  🔍 \"{query}\" → {len(cards)} Easy Apply jobs')
+                      cards = driver.find_elements(By.CSS_SELECTOR, 'a[href*="/job-detail/"]')
+
+                  print(f'\n🔍 "{query}" → {len(cards)} jobs listed')
 
                   for card in cards[:10]:
-                      if applied >= MAX_APPS: break
+                      if verified_applied >= MAX_APPS:
+                          break
+                      job_title = card.text[:60] if card.text else "unknown"
+
                       try:
                           card.click()
                           time.sleep(3)
-                          # Try multiple apply button selectors
-                          apply_selectors = 'button[data-cy=\"apply-btn-wm\"], .btn-easy-apply, button.apply-button, button[data-testid*=\"apply\"], a[data-cy=\"apply-btn-wm\"]'
-                          btns = driver.find_elements(By.CSS_SELECTOR, apply_selectors)
-                          if not btns:
-                              all_btns = driver.find_elements(By.TAG_NAME, 'button')
-                              btns = [b for b in all_btns if 'apply' in b.text.lower()]
-                          if not btns:
+
+                          # CHECK: Already applied?
+                          page_text = driver.page_source.lower()
+                          if 'already applied' in page_text or 'you applied' in page_text or 'applied on' in page_text:
+                              already_applied += 1
+                              print(f'    ⏭️ Already applied: {job_title}')
                               driver.back()
                               time.sleep(2)
                               continue
-                          btns[0].click()
+
+                          # Find Easy Apply button
+                          apply_btn = None
+                          for selector in ['button[data-cy="apply-btn-wm"]', 'button.btn-easy-apply']:
+                              btns = driver.find_elements(By.CSS_SELECTOR, selector)
+                              if btns:
+                                  apply_btn = btns[0]
+                                  break
+
+                          if not apply_btn:
+                              # Fallback: button containing "Easy Apply" text specifically
+                              for btn in driver.find_elements(By.TAG_NAME, 'button'):
+                                  if 'easy apply' in btn.text.lower():
+                                      apply_btn = btn
+                                      break
+
+                          if not apply_btn:
+                              no_button += 1
+                              driver.back()
+                              time.sleep(2)
+                              continue
+
+                          # Click Easy Apply
+                          apply_btn.click()
                           time.sleep(3)
-                          # Try to confirm
-                          confirm_selectors = 'button[data-cy=\"submit-btn\"], button.submit-application, button[data-testid*=\"submit\"], button[type=\"submit\"]'
-                          confirms = driver.find_elements(By.CSS_SELECTOR, confirm_selectors)
-                          if not confirms:
-                              all_btns2 = driver.find_elements(By.TAG_NAME, 'button')
-                              confirms = [b for b in all_btns2 if 'submit' in b.text.lower() or 'apply' in b.text.lower()]
-                          if confirms:
-                              confirms[0].click()
-                              applied += 1
-                              print(f'    ✅ Applied ({applied}/{MAX_APPS})')
-                          time.sleep(random.uniform(5, 15))
+
+                          # Find and click Submit/Next
+                          submitted = False
+                          for selector in ['button[data-cy="submit-btn"]', 'button.btn-submit']:
+                              btns = driver.find_elements(By.CSS_SELECTOR, selector)
+                              if btns:
+                                  btns[0].click()
+                                  submitted = True
+                                  break
+
+                          if not submitted:
+                              for btn in driver.find_elements(By.TAG_NAME, 'button'):
+                                  txt = btn.text.lower()
+                                  if txt in ['submit', 'submit application', 'apply now']:
+                                      btn.click()
+                                      submitted = True
+                                      break
+
+                          if not submitted:
+                              failed += 1
+                              print(f'    ❌ No submit button: {job_title}')
+                              driver.back()
+                              time.sleep(2)
+                              continue
+
+                          # === VERIFY SUBMISSION ===
+                          time.sleep(3)
+                          post_page = driver.page_source.lower()
+
+                          success_signals = [
+                              'thank you', 'application received', 'successfully submitted',
+                              'we received your application', 'application has been submitted',
+                              'you have applied', 'thanks for applying', 'application sent',
+                              'congratulations'
+                          ]
+                          failure_signals = [
+                              'error', 'required field', 'please fill', 'invalid',
+                              'something went wrong', 'try again', 'captcha'
+                          ]
+
+                          if any(sig in post_page for sig in success_signals):
+                              verified_applied += 1
+                              results.append({"title": job_title, "status": "applied"})
+                              print(f'    ✅ VERIFIED Applied ({verified_applied}/{MAX_APPS}): {job_title}')
+                          elif any(sig in post_page for sig in failure_signals):
+                              failed += 1
+                              results.append({"title": job_title, "status": "failed"})
+                              print(f'    ❌ Submit failed (form error): {job_title}')
+                          elif 'already applied' in post_page:
+                              already_applied += 1
+                              print(f'    ⏭️ Already applied (post-submit): {job_title}')
+                          else:
+                              # Ambiguous — DON'T count it
+                              failed += 1
+                              results.append({"title": job_title, "status": "unverified"})
+                              print(f'    ⚠️ Unverified (no confirmation): {job_title}')
+
+                          time.sleep(random.uniform(5, 12))
                           driver.back()
                           time.sleep(2)
+
                       except Exception as e:
+                          failed += 1
                           driver.back()
                           time.sleep(2)
                           continue
 
-              print(f'📊 Dice: {applied} applications submitted')
+              # === FINAL REPORT ===
+              print(f'\n{"="*50}')
+              print(f'📊 Dice Results (VERIFIED):')
+              print(f'  ✅ Applied (confirmed): {verified_applied}')
+              print(f'  ⏭️ Already applied:     {already_applied}')
+              print(f'  ❌ Failed:              {failed}')
+              print(f'  ⚪ No apply button:     {no_button}')
+              print(f'{"="*50}')
+
+              if verified_applied == 0 and failed > 5:
+                  print('\n⚠️ WARNING: 0 verified applications — Dice may be blocking automation')
+                  print(f'   Check if CAPTCHA or login issues are occurring')
+
           finally:
               driver.quit()
-          "
+          PYTHON
