@@ -1621,6 +1621,62 @@ def apply_to_job(page, profile, job, learned, dry_run=False, db=None, site_needs
                 save_learned(learned)
                 return result
 
+            # PRE-SUBMIT CHECK: Is submit button actually enabled?
+            # If disabled (aria-disabled=true), form has validation errors.
+            # Submitting will redirect to OTP page but code will always be rejected
+            # because the form is incomplete. Don't waste verification codes.
+            submit_btn_disabled = False
+            try:
+                submit_btns = page.locator('button[type="submit"]:visible, button:has-text("Submit application"):visible, button:has-text("Submit Application"):visible')
+                if submit_btns.count() > 0:
+                    btn_el = submit_btns.first
+                    is_disabled = btn_el.get_attribute("disabled")
+                    is_aria_disabled = btn_el.get_attribute("aria-disabled")
+                    if is_disabled is not None or is_aria_disabled == "true":
+                        submit_btn_disabled = True
+                        print(f"      ⚠️ Submit button is DISABLED — form has unfilled required fields")
+                        # Try to identify which fields are missing
+                        try:
+                            required_empty = page.locator('[aria-required="true"]:visible, [required]:visible').filter(has_not_text=".")
+                            empty_count = 0
+                            for idx in range(min(required_empty.count(), 10)):
+                                try:
+                                    el = required_empty.nth(idx)
+                                    val = el.input_value(timeout=500) if el.evaluate("e => 'value' in e") else el.inner_text(timeout=500)
+                                    if not val or not val.strip():
+                                        name = el.get_attribute("name") or el.get_attribute("id") or el.get_attribute("aria-label") or f"field_{idx}"
+                                        print(f"         → Empty required: {name}")
+                                        empty_count += 1
+                                except Exception:
+                                    pass
+                            if empty_count > 0:
+                                print(f"      🔧 {empty_count} required fields still empty — attempting fill...")
+                                from src.page_doctor import fill_all_remaining_required
+                                extra_filled = fill_all_remaining_required(page, profile)
+                                if extra_filled:
+                                    print(f"      ✅ Filled {extra_filled} more fields — re-checking submit button")
+                                    # Re-check if button is now enabled
+                                    is_disabled = btn_el.get_attribute("disabled")
+                                    is_aria_disabled = btn_el.get_attribute("aria-disabled")
+                                    if is_disabled is None and is_aria_disabled != "true":
+                                        submit_btn_disabled = False
+                                        print(f"      ✅ Submit button now ENABLED — proceeding")
+                                    else:
+                                        print(f"      ❌ Submit still disabled after fill attempt")
+                        except Exception as field_err:
+                            print(f"      ⚠️ Could not identify empty fields: {str(field_err)[:60]}")
+            except Exception:
+                pass  # Can't determine button state — proceed normally
+
+            if submit_btn_disabled:
+                # Don't submit — form is broken, would waste verification code
+                result["status"] = "form_incomplete"
+                result["fields_filled"] = attempt_result["filled"]
+                print(f"      ⏭️ Skipping submit — button disabled, form incomplete (saves verification code)")
+                result["attempts"].append(attempt_result)
+                save_learned(learned)
+                return result
+
             # SUBMIT
             submit_result = submit_and_verify(page, page_data, url)
             snap(page, f"submit_{attempt}")
