@@ -1730,13 +1730,14 @@ def apply_to_job(page, profile, job, learned, dry_run=False, db=None, site_needs
                 attempt_result["error"] = submit_result["reason"]
                 print(f"      ❌ Submit failed: {submit_result['reason']}")
 
-                # EMAIL VERIFICATION REQUIRED: don't retry submit — the page is waiting for a code.
-                # handle_email_verification was already attempted above. If it failed, retrying
-                # the form won't help — break out and mark as needing manual email verification.
-                if submit_result.get("reason") == "email_verification_required":
+                # EMAIL VERIFICATION REQUIRED or REJECTED: don't retry submit.
+                # Retrying after code rejection burns more codes without fixing anything.
+                # The form has unfixed validation errors that keep the submit button disabled.
+                if submit_result.get("reason") in ("email_verification_required", "verification_code_rejected", "no_confirmation_after_code"):
                     result["status"] = "email_verification_failed"
                     result["fields_filled"] = attempt_result.get("filled", 0)
-                    print(f"      📧 Email verification required but code not obtained — stopping retries")
+                    reason = submit_result.get("reason", "unknown")
+                    print(f"      📧 {reason} — stopping retries (won't burn more codes)")
                     result["attempts"].append(attempt_result)
                     save_learned(learned)
                     return result
