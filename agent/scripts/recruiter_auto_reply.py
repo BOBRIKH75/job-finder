@@ -84,6 +84,109 @@ SCHEDULING_SIGNALS = [
 
 TRACKER_FILE = 'agent/data/auto_reply_tracker.json'
 
+# Safe personal-Gmail daily auto-reply cap (research: 10-30/day for personal Gmail)
+MAX_REPLIES_PER_RUN = int(os.environ.get('MAX_AUTO_REPLIES', '15'))
+
+# --- Deliverability protection: ONLY reply to real humans writing to Bob ---
+# Research-backed (Gmail sender guidelines + cold-outreach deliverability):
+# auto-replying to job-board alerts / newsletters / no-reply addresses trashes
+# sender reputation, which sends REAL recruiter emails to spam = fewer people
+# reached. So we reply only when it's genuinely a person contacting Bob.
+
+# Job-board / aggregator / platform DOMAINS — their mail is automated, not a person.
+# Matched against the email DOMAIN (endswith), so it won't false-hit company names
+# like "apexsystems.com".
+_DENY_DOMAINS = [
+    'linkedin.com', 'indeed.com', 'indeedemail.com', 'dice.com', 'ziprecruiter.com',
+    'glassdoor.com', 'monster.com', 'careerbuilder.com', 'simplyhired.com',
+    'lensa.com', 'jobcase.com', 'talent.com', 'wellfound.com', 'angel.co',
+    'greenhouse.io', 'lever.co', 'ashbyhq.com', 'myworkday.com', 'smartrecruiters.com',
+    'google.com', 'calendar.google.com', 'meet.google.com', 'facebookmail.com',
+    'medium.com', 'substack.com', 'github.com', 'atlassian.com', 'slack.com', 'zoom.us',
+]
+
+# Automated-sender words — matched against the LOCAL-PART tokens only (before @),
+# so "system" won't match "apexsystems.com".
+_DENY_LOCAL_WORDS = {
+    'noreply', 'no-reply', 'donotreply', 'do-not-reply', 'mailer-daemon', 'mailer',
+    'notifications', 'notification', 'alert', 'alerts', 'jobalert', 'jobalerts',
+    'bounce', 'bounces', 'updates', 'digest', 'newsletter', 'postmaster',
+    'automated', 'auto', 'system', 'noreply-jobs', 'no-reply-jobs',
+}
+
+
+def _looks_like_person_email(local: str) -> bool:
+    """Return True only if the email local part looks like a human name."""
+    _NON_PERSON = {
+        'noreply', 'no-reply', 'donotreply', 'admin', 'info', 'support',
+        'help', 'hello', 'contact', 'team', 'mail', 'jobs', 'careers', 'hr',
+        'hiring', 'talent', 'dev', 'test',
+        'api', 'system', 'bot', 'auto', 'mailer', 'notification', 'notifications',
+        'alert', 'alerts', 'security', 'privacy', 'abuse', 'webmaster',
+        'postmaster', 'billing', 'sales', 'marketing', 'press', 'legal',
+        'finance', 'apply', 'application', 'response', 'inmail',
+    }
+    ll = local.lower()
+    if ll in _NON_PERSON or ll.replace('-', '').replace('.', '') in _NON_PERSON:
+        return False
+    parts = re.split(r'[._\-]', ll)
+    if any(p in _NON_PERSON for p in parts):
+        return False
+    if re.match(r'^\d', local) or len(local) < 3 or len(local) > 40:
+        return False
+    return bool(re.search(r'[a-z]', ll))
+
+
+def _is_reply_to_bob(msg) -> bool:
+    """True if this email is a REPLY to something Bob sent.
+
+    A recruiter replying to Bob's outreach will have In-Reply-To / References
+    headers, or 'Re:' in the subject. That is a real human conversation.
+    """
+    if msg.get('In-Reply-To') or msg.get('References'):
+        return True
+    subj = str(msg.get('Subject', '') or '').lower()
+    return subj.startswith('re:') or ' re:' in subj
+
+
+def _should_reply_to(from_addr: str, msg, contacted_emails: set) -> tuple:
+    """Decide if we may auto-reply. Returns (ok: bool, reason: str).
+
+    Reply ONLY when ALL are true:
+      1. Domain is not a job board / platform
+      2. Local-part is not an automated sender (noreply/alerts/...)
+      3. Local-part looks like a human name (not jobs@/hr@/talent@)
+      4. It is EITHER a reply to Bob's outreach OR from a recruiter Bob contacted
+    """
+    from_lower = (from_addr or '').lower()
+    m = re.search(r'[\w.+-]+@[\w.-]+', from_lower)
+    sender_email = m.group(0) if m else ''
+    if not sender_email:
+        return False, 'no parseable sender'
+
+    local, _, domain = sender_email.partition('@')
+
+    # 1. Job-board / platform domain (exact or subdomain)
+    if any(domain == d or domain.endswith('.' + d) for d in _DENY_DOMAINS):
+        return False, f'job-board/platform domain ({domain})'
+
+    # 2. Automated sender local-part
+    local_tokens = set(re.split(r'[._\-]', local))
+    if local in _DENY_LOCAL_WORDS or local_tokens & _DENY_LOCAL_WORDS:
+        return False, f'automated sender ({local}@)'
+
+    # 3. Human-looking address
+    if not _looks_like_person_email(local):
+        return False, f'not a person address ({local}@...)'
+
+    # 4. Must be a real conversation
+    if _is_reply_to_bob(msg):
+        return True, 'reply to Bob'
+    if sender_email in contacted_emails:
+        return True, 'known contacted recruiter'
+
+    return False, 'cold inbound (not a reply, not a known recruiter)'
+
 
 def load_tracker():
     if os.path.exists(TRACKER_FILE):
@@ -247,6 +350,23 @@ def main():
     tracker = load_tracker()
     replied_ids = set(tracker.get('replied', []))
 
+    # Recruiters Bob has contacted — used to allow replies from known recruiters
+    # even if the email isn't a threaded 'Re:'. Sourced from the vendor list +
+    # anyone Bob previously emailed.
+    contacted_emails = set()
+    try:
+        vendor_file = os.path.join(os.path.dirname(TRACKER_FILE), 'vendor_list.json')
+        if os.path.exists(vendor_file):
+            for v in json.loads(open(vendor_file).read()):
+                e = (v.get('email') or '').lower().strip()
+                if e:
+                    contacted_emails.add(e)
+    except Exception:
+        pass
+    for e in tracker.get('contacted', []):
+        if isinstance(e, str):
+            contacted_emails.add(e.lower().strip())
+
     # Connect to Gmail
     try:
         mail = imaplib.IMAP4_SSL('imap.gmail.com')
@@ -282,9 +402,12 @@ def main():
         if message_id in replied_ids:
             continue
 
-        # Skip automated/noreply emails
-        from_lower = from_addr.lower()
-        if any(skip in from_lower for skip in ['noreply', 'no-reply', 'mailer-daemon', 'notifications', 'alert']):
+        # DELIVERABILITY GUARD: only reply to real humans writing to Bob.
+        # Blocks job-board alerts, newsletters, no-reply, and cold inbound blasts
+        # that would trash Gmail sender reputation and send real recruiter mail to spam.
+        ok, reason = _should_reply_to(from_addr, msg, contacted_emails)
+        if not ok:
+            print(f'    ⏭️ skip ({reason}): {from_addr[:50]}')
             continue
 
         # Get body
@@ -335,6 +458,12 @@ def main():
 
         if classification == 'ignore':
             continue
+
+        # DELIVERABILITY CAP: never exceed the safe personal-Gmail zone (research:
+        # 10-30/day for a personal account). Stop replying once the cap is hit.
+        if replied_count >= MAX_REPLIES_PER_RUN:
+            print(f'    ⏸️ Daily reply cap ({MAX_REPLIES_PER_RUN}) reached — stopping')
+            break
 
         # Generate and send reply
         reply = generate_reply_with_gemini(subject, body, classification)

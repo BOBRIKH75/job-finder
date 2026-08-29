@@ -1,12 +1,15 @@
 name: Recruiter Auto-Reply (Every 2 Hours)
 
 on:
-  schedule:
-    - cron: '30 14 * * *'   # 8:30 AM MT
-    - cron: '30 16 * * *'   # 10:30 AM MT
-    - cron: '30 18 * * *'   # 12:30 PM MT
-    - cron: '30 20 * * *'   # 2:30 PM MT
-    - cron: '30 22 * * *'   # 4:30 PM MT
+  # SCHEDULE DISABLED — was auto-replying to wrong emails (job alerts, newsletters)
+  # and hurting Gmail sender reputation. Re-enable after the sender-filter fix is
+  # verified. Manual trigger still available via workflow_dispatch.
+  # schedule:
+  #   - cron: '30 14 * * *'   # 8:30 AM MT
+  #   - cron: '30 16 * * *'   # 10:30 AM MT
+  #   - cron: '30 18 * * *'   # 12:30 PM MT
+  #   - cron: '30 20 * * *'   # 2:30 PM MT
+  #   - cron: '30 22 * * *'   # 4:30 PM MT
   workflow_dispatch: {}
 
 concurrency:
