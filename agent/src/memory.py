@@ -1,5 +1,5 @@
 """Agent memory — SQLite storage for applications, recruiters, patterns, audit log."""
-import hashlib, json, os, sqlite3, time
+import hashlib, json, os, re, sqlite3, time
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -9,6 +9,81 @@ SCHEMA_PATH = Path(__file__).parent.parent / "data" / "schema.sql"
 # Stripping these lets dedup recognize a re-scraped job as already-applied.
 _TRACKING_PREFIXES = ("utm_", "gh_", "gclid", "fbclid", "ref", "source", "src",
                        "trk", "trackingid", "recommend", "eblid", "sponsored")
+
+# --- Title normalization (so reworded reposts of the SAME role dedup) ---
+# Seniority abbreviations -> canonical word (spell out, per ATS best practice)
+_TITLE_SYNONYMS = {
+    r"\bsr\.?\b": "senior",
+    r"\bjr\.?\b": "junior",
+    r"\bmid[- ]?level\b": "mid",
+    r"\bback[- ]?end\b": "backend",
+    r"\bfront[- ]?end\b": "frontend",
+    r"\bfull[- ]?stack\b": "fullstack",
+    r"\bsoftware development engineer\b": "software engineer",
+    r"\bsde\b": "software engineer",
+    r"\bswe\b": "software engineer",
+    r"\bdev\b": "developer",
+    r"\beng\.?\b": "engineer",
+    r"\bengr\.?\b": "engineer",
+    r"\bapp\b": "application",
+    r"\bqa\b": "quality",
+}
+
+
+def normalize_title(title: str) -> str:
+    """Canonicalize a job title so reworded variants of the SAME role match.
+
+    Examples (all map to the same key):
+      "Sr. Java Developer"            -> "java senior developer"* (sorted core)
+      "Senior Java Developer (Remote)"
+      "Java Developer - W2 ONLY - USC/GC - 100% REMOTE"
+      "Back End Developer / Engineer II- #26-21402"
+
+    Strategy (grounded in real scraped titles + ATS normalization best practice):
+      1. lowercase
+      2. cut everything after the first separator ( -, |, /, ( ) — these carry
+         location / rate / ticket-number / "W2 ONLY" noise, not the role
+      3. drop parenthetical / bracketed chunks and ticket numbers (#26-21402)
+      4. expand seniority + role abbreviations (sr->senior, eng->engineer...)
+      5. drop pure level markers (i, ii, iii, 1, 2, 3) and filler stopwords
+      6. keep only alphanumerics, collapse whitespace, sort remaining tokens so
+         word order ("Java Backend" == "Backend Java") does not matter
+
+    Safe to call on anything; returns "" for empty input.
+    """
+    if not title:
+        return ""
+    t = title.lower().strip()
+
+    # 2. Keep only the part before the first noisy separator.
+    #    Only spaced separators — " / " is noise ("Java Dev / W2") but a bare
+    #    slash ("AWS/Java") is part of the role, so it is NOT a split point here.
+    for sep in (" - ", " | ", " – ", " / "):
+        if sep in t:
+            t = t.split(sep)[0]
+    # Turn any remaining bare slashes into spaces (AWS/Java -> AWS Java)
+    t = t.replace("/", " ")
+
+    # 3. Remove parenthetical / bracketed noise and ticket numbers
+    t = re.sub(r"\([^)]*\)", " ", t)
+    t = re.sub(r"\[[^\]]*\]", " ", t)
+    t = re.sub(r"#\S+", " ", t)
+    t = re.sub(r"\b\d{2,}[- ]?\d*\b", " ", t)  # ticket / req numbers
+
+    # 4. Expand abbreviations
+    for pat, repl in _TITLE_SYNONYMS.items():
+        t = re.sub(pat, repl, t)
+
+    # 5. Strip level markers + filler
+    _STOP = {"i", "ii", "iii", "iv", "1", "2", "3", "4",
+             "the", "a", "an", "of", "for", "with", "and", "&",
+             "remote", "hybrid", "onsite", "contract", "w2", "c2c",
+             "usc", "gc", "only", "role", "position", "immediate"}
+    t = re.sub(r"[^a-z0-9 ]", " ", t)
+    tokens = [w for w in t.split() if w and w not in _STOP]
+
+    # 6. Sort tokens so word order does not create false uniqueness
+    return " ".join(sorted(tokens))
 
 
 def normalize_job_url(job_url: str) -> str:
@@ -41,7 +116,7 @@ def normalize_job_url(job_url: str) -> str:
 
 def _role_key(company: str, title: str) -> str:
     """Stable key for the same role at the same company (URL-independent)."""
-    return f"{(company or '').strip().lower()}|{(title or '').strip().lower()}"
+    return f"{(company or '').strip().lower()}|{normalize_title(title)}"
 
 
 def get_db(db_path: str = "data/agent_memory.db") -> sqlite3.Connection:
@@ -118,15 +193,21 @@ def application_exists(db: sqlite3.Connection, job_url: str,
     if row is not None and row[0] in _APPLIED:
         return True
 
-    # Fallback: same role at same company already applied under a different URL
+    # Fallback: same role at same company already applied under a different URL.
+    # Compare NORMALIZED titles so reworded reposts match, e.g.
+    #   "Sr. Java Developer" == "Senior Java Developer (Remote)" == "Java Developer - W2"
     if company and title:
-        row = db.execute(
-            "SELECT status FROM applications "
-            "WHERE lower(trim(company))=? AND lower(trim(job_title))=?",
-            ((company or "").strip().lower(), (title or "").strip().lower()),
-        ).fetchone()
-        if row is not None and row[0] in _APPLIED:
-            return True
+        want = normalize_title(title)
+        if want:
+            rows = db.execute(
+                "SELECT job_title, status FROM applications "
+                "WHERE lower(trim(company))=? AND status IN "
+                "('applied','submitted','dry_run','applied_via_email')",
+                ((company or "").strip().lower(),),
+            ).fetchall()
+            for r in rows:
+                if normalize_title(r[0]) == want:
+                    return True
 
     return False
 

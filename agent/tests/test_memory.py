@@ -128,3 +128,53 @@ def test_applied_via_email_also_blocks(db):
     upsert_application(db, company="X", job_title="Dev", job_url="https://x.com/e/1")
     update_application_status(db, "https://x.com/e/1", "applied_via_email")
     assert application_exists(db, "https://x.com/e/1") is True
+
+
+# --- Title normalization (reworded reposts of the SAME role should dedup) ---
+
+def test_title_seniority_and_suffix_variants_match():
+    from src.memory import normalize_title as nt
+    base = nt("Senior Java Developer")
+    assert nt("Sr. Java Developer") == base
+    assert nt("Senior Java Developer (Remote)") == base
+    assert nt("Sr Java Developer - W2 ONLY - USC/GC - 100% REMOTE") == base
+    assert nt("Senior Java Developer (Remote)  ") == base
+
+
+def test_title_word_order_and_backend_variants_match():
+    from src.memory import normalize_title as nt
+    assert nt("Java Backend Engineer") == nt("Backend Java Engineer")
+    assert nt("Back End Developer") == nt("Backend Developer")
+    assert nt("AWS/Java Developer") == nt("AWS Java Developer")
+
+
+def test_title_level_markers_stripped():
+    from src.memory import normalize_title as nt
+    assert nt("Back End Developer / Engineer II- #26-21402") == nt("Backend Developer")
+
+
+def test_title_different_roles_do_not_match():
+    from src.memory import normalize_title as nt
+    assert nt("Senior Java Developer") != nt("Senior Java Architect")
+    assert nt("Java Developer") != nt("DevOps Engineer")
+    assert nt("Backend Engineer") != nt("Frontend Engineer")
+
+
+def test_reworded_repost_same_company_deduped(db):
+    # Applied to "Sr. Java Developer" at Acme
+    upsert_application(db, company="Acme", job_title="Sr. Java Developer",
+                       job_url="https://acme.com/jobs/1")
+    update_application_status(db, "https://acme.com/jobs/1", "applied")
+    # Repost with reworded title + noise, DIFFERENT url -> must be deduped
+    assert application_exists(db, "https://acme.com/jobs/2",
+                              company="Acme",
+                              title="Senior Java Developer (Remote) - W2 ONLY") is True
+
+
+def test_different_role_same_company_still_applies(db):
+    upsert_application(db, company="Acme", job_title="Senior Java Developer",
+                       job_url="https://acme.com/jobs/1")
+    update_application_status(db, "https://acme.com/jobs/1", "applied")
+    # A genuinely different role at the same company must NOT be blocked
+    assert application_exists(db, "https://acme.com/jobs/9",
+                              company="Acme", title="Senior Python Developer") is False
