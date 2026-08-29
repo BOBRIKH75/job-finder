@@ -1,15 +1,13 @@
 name: Recruiter Auto-Reply (Every 2 Hours)
 
 on:
-  # SCHEDULE DISABLED — was auto-replying to wrong emails (job alerts, newsletters)
-  # and hurting Gmail sender reputation. Re-enable after the sender-filter fix is
-  # verified. Manual trigger still available via workflow_dispatch.
-  # schedule:
-  #   - cron: '30 14 * * *'   # 8:30 AM MT
-  #   - cron: '30 16 * * *'   # 10:30 AM MT
-  #   - cron: '30 18 * * *'   # 12:30 PM MT
-  #   - cron: '30 20 * * *'   # 2:30 PM MT
-  #   - cron: '30 22 * * *'   # 4:30 PM MT
+  # Only replies to REAL recruiters (reply-to-Bob or known contacted recruiter);
+  # job-board alerts / newsletters / no-reply / cold inbound are filtered out.
+  # 3x/day keeps within the safe personal-Gmail deliverability zone.
+  schedule:
+    - cron: '30 15 * * *'   # 9:30 AM MT
+    - cron: '30 19 * * *'   # 1:30 PM MT
+    - cron: '30 23 * * *'   # 5:30 PM MT
   workflow_dispatch: {}
 
 concurrency:
