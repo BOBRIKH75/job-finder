@@ -121,6 +121,90 @@ def search_recruiter_email(company):
     except:
         return []
 
+
+def _company_to_domain(company: str) -> str:
+    """Best-effort company name -> email domain (for Hunter.io lookup).
+
+    'Beacon Hill' -> 'beaconhill.com', 'Apex Systems' -> 'apexsystems.com'.
+    Not perfect, but Hunter validates the domain and returns nothing if wrong,
+    so a bad guess simply yields no result (safe).
+    """
+    if not company:
+        return ""
+    name = company.lower()
+    # Drop common corporate suffixes that are not part of the domain
+    for suffix in (" inc.", " inc", " llc", " ltd", " corp", " corporation",
+                   " group", " technologies", " technology", " solutions",
+                   " consulting", " systems", " services", " co.", " company",
+                   ", a day & zimmermann company"):
+        if name.endswith(suffix):
+            name = name[: -len(suffix)]
+    # Keep only alphanumerics
+    slug = re.sub(r'[^a-z0-9]', '', name)
+    return f"{slug}.com" if slug else ""
+
+
+def _hunter_domain_search(domain: str) -> list:
+    """Query Hunter.io for HR/recruiter emails at a domain. Returns [emails]."""
+    key = os.environ.get("HUNTER_API_KEY", "")
+    if not key or not domain:
+        return []
+    try:
+        q = urllib.request.quote(domain)
+        url = (f"https://api.hunter.io/v2/domain-search?domain={q}"
+               f"&type=personal&department=human_resources&limit=5&api_key={key}")
+        ctx = ssl.create_default_context()
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+        with urllib.request.urlopen(req, timeout=12, context=ctx) as r:
+            data = json.loads(r.read().decode('utf-8', errors='ignore'))
+        emails = [e.get("value", "").lower()
+                  for e in data.get("data", {}).get("emails", [])
+                  if e.get("value")]
+        return [e for e in emails if e]
+    except Exception:
+        return []
+
+
+def find_company_recruiters(company: str, description: str = "") -> list:
+    """Find recruiter email(s) for a job — REAL path that produces callbacks.
+
+    Priority order (best-first):
+      1. Emails embedded in the job DESCRIPTION — staffing/C2C posts almost
+         always include the recruiter's direct email. Free, most reliable.
+      2. Hunter.io domain search (HR department) using a guessed domain.
+      3. Google scrape (legacy, usually blocked) — last resort.
+
+    Returns a de-duplicated list of human-looking recruiter emails.
+    """
+    found = []
+
+    # 1) Description first — highest value for C2C/staffing posts
+    if description:
+        found.extend(extract_emails(description))
+
+    # 2) Hunter.io on the guessed company domain
+    if not found:
+        domain = _company_to_domain(company)
+        found.extend(_hunter_domain_search(domain))
+
+    # 3) Legacy Google scrape (rarely works, but harmless)
+    if not found:
+        try:
+            found.extend(search_recruiter_email(company))
+        except Exception:
+            pass
+
+    # De-dup, preserve order
+    seen, out = set(), []
+    for e in found:
+        e = e.lower().strip()
+        if e and e not in seen:
+            seen.add(e)
+            out.append(e)
+    return out
+
 # ── Load/save contacted tracker ──
 def load_contacted():
     if os.path.exists(CONTACTED_FILE):

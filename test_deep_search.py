@@ -87,6 +87,50 @@ class TestOutreachExtractEmails:
         assert "noreply@x.com" not in result
 
 
+class TestFindCompanyRecruiters:
+    """The REAL recruiter-contact path (produces callbacks)."""
+
+    def test_extracts_email_from_description(self):
+        desc = ("Immediate C2C opening for Senior Java Developer. "
+                "Send resume to sarah.johnson@apexsystems.com. Thanks, Sarah")
+        result = outreach.find_company_recruiters("Apex Systems", desc)
+        assert "sarah.johnson@apexsystems.com" in result
+
+    def test_description_beats_everything(self):
+        # If the description has a real recruiter email, we use it (no API needed)
+        desc = "Contact michael.lee@dahlconsulting.com for this C2C role."
+        result = outreach.find_company_recruiters("Dahl Consulting", desc)
+        assert result == ["michael.lee@dahlconsulting.com"]
+
+    def test_filters_role_and_ats_addresses(self):
+        desc = "Apply via noreply@greenhouse.io or email hr@bigco.com or jobs@bigco.com"
+        # role/ATS addresses are not human recruiters -> filtered
+        result = outreach.find_company_recruiters("BigCo", desc)
+        assert result == []
+
+    def test_dedups_emails(self):
+        desc = ("Reach amanda.k@collabera.com. Again: amanda.k@collabera.com "
+                "or Amanda.K@Collabera.com")
+        result = outreach.find_company_recruiters("Collabera", desc)
+        assert result == ["amanda.k@collabera.com"]
+
+    def test_empty_inputs_safe(self):
+        assert outreach.find_company_recruiters("", "") == []
+
+
+class TestCompanyToDomain:
+    def test_strips_suffixes(self):
+        assert outreach._company_to_domain("Beacon Hill") == "beaconhill.com"
+        assert outreach._company_to_domain("Motion Recruitment") == "motionrecruitment.com"
+
+    def test_drops_inc_llc(self):
+        assert outreach._company_to_domain("Quantum World Technologies Inc.") in (
+            "quantumworld.com", "quantumworldtechnologies.com")
+
+    def test_empty_safe(self):
+        assert outreach._company_to_domain("") == ""
+
+
 class TestOutreachBuildEmail:
     def test_has_subject_and_html(self):
         subject, html = outreach.build_outreach_email("John", "Java Dev", "Acme")

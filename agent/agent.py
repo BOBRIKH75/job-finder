@@ -405,12 +405,23 @@ def run_apply(db, jobs, dry_run=False):
                 company = job.get("company", "")
                 title = job.get("title", "")
                 url = job.get("url", "")
+                description = job.get("description", "")
                 if not company:
                     continue
-                # Try to find recruiter email and send CV
+                # Try to find recruiter email and send CV.
+                # Description-first (free, inline recruiter emails) → Hunter/Apollo cascade.
                 try:
-                    from recruiter_search import find_recruiter_email
-                    emails = find_recruiter_email(company)
+                    emails = []
+                    try:
+                        import sys as _sys
+                        _sys.path.insert(0, str(Path(__file__).parent.parent))
+                        from outreach import find_company_recruiters
+                        emails = find_company_recruiters(company, description)
+                    except Exception:
+                        emails = []
+                    if not emails:
+                        from recruiter_search import find_recruiter_email
+                        emails = find_recruiter_email(company)
                     if emails and throttle.can_send():
                         # Mark as applied via email
                         update_application_status(db, url, "applied_via_email")
@@ -452,7 +463,8 @@ def run_apply(db, jobs, dry_run=False):
         try:
             import sys
             sys.path.insert(0, str(Path(__file__).parent.parent))
-            from outreach import search_recruiter_email, build_outreach_email, send_outreach
+            from outreach import (find_company_recruiters, build_outreach_email,
+                                  send_outreach, extract_recruiter_name)
             
             emailed_count = 0
             max_outreach = 15  # Max emails per run (don't spam)
@@ -461,16 +473,18 @@ def run_apply(db, jobs, dry_run=False):
                 company = job.get("company", "")
                 url = job.get("url", "")
                 title = job.get("title", "")
+                description = job.get("description", "")
                 
                 if not company or application_exists(db, url, company=company, title=title):
                     continue
                 
-                # Find recruiter email for this company
-                emails = search_recruiter_email(company)
+                # Find recruiter email: description first, then Hunter.io
+                emails = find_company_recruiters(company, description)
                 if emails:
                     # Build and send outreach email with CV
                     try:
-                        subject, html = build_outreach_email("Recruiting Team", title, company)
+                        recruiter_name = extract_recruiter_name(description) or "Recruiting Team"
+                        subject, html = build_outreach_email(recruiter_name, title, company)
                         send_outreach(emails[0], subject, html)
                         update_application_status(db, url, "applied_via_email")
                         audit(db, "EMAIL_OUTREACH", {"url": url, "company": company, "to": emails[0]})
