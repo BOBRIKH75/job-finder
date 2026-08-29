@@ -14,7 +14,38 @@ from pathlib import Path
 import httpx
 
 COMPANIES_FILE = Path(__file__).parent.parent / "data" / "companies.json"
+_SCAN_STATE_FILE = Path(__file__).parent.parent / "data" / "scan_offset.json"
 _PROFILE_FILE = Path(__file__).parent.parent / "config" / "profile.json"
+
+
+def _load_scan_offset() -> int:
+    """Where in the company list to START scanning this run (round-robin)."""
+    try:
+        return int(json.loads(_SCAN_STATE_FILE.read_text()).get("offset", 0))
+    except Exception:
+        return 0
+
+
+def _save_scan_offset(offset: int) -> None:
+    try:
+        _SCAN_STATE_FILE.parent.mkdir(parents=True, exist_ok=True)
+        _SCAN_STATE_FILE.write_text(json.dumps({"offset": offset}))
+    except Exception:
+        pass
+
+
+def _rotate(items: list, offset: int, count: int) -> list:
+    """Return `count` items starting at `offset`, wrapping around the end.
+
+    This makes each run scan a DIFFERENT slice of companies so we cover the
+    whole list over several runs instead of the same first N every time.
+    """
+    if not items:
+        return []
+    n = len(items)
+    count = min(count, n)
+    offset %= n
+    return [items[(offset + i) % n] for i in range(count)]
 
 # Load skills dynamically from profile.json so changes to CV auto-reflect here
 try:
@@ -535,7 +566,14 @@ def scan_all_companies(max_companies: int = 30, found_jobs: list = None) -> list
     print(f"  Scanning {len(companies['lever'])} Lever + {len(companies['greenhouse'])} Greenhouse companies...")
     print(f"  Skills filter: {len(SKILLS_FILTER)} keywords from profile.json")
 
-    for company in companies["lever"][:max_companies]:
+    # Round-robin: start where the last run left off so we cover the WHOLE list
+    # over several runs instead of scanning the same first N companies every time.
+    offset = _load_scan_offset()
+    lever_batch = _rotate(companies["lever"], offset, max_companies)
+    gh_batch = _rotate(companies["greenhouse"], offset, max_companies)
+    print(f"  🔄 Rotation offset {offset} — scanning a fresh slice this run")
+
+    for company in lever_batch:
         jobs = scan_lever(company)
         if jobs:
             all_jobs.extend(jobs)
@@ -543,13 +581,17 @@ def scan_all_companies(max_companies: int = 30, found_jobs: list = None) -> list
         scanned += 1
         time.sleep(0.3)
 
-    for company in companies["greenhouse"][:max_companies]:
+    for company in gh_batch:
         jobs = scan_greenhouse(company)
         if jobs:
             all_jobs.extend(jobs)
             print(f"    ✅ Greenhouse/{company}: {len(jobs)} Java jobs")
         scanned += 1
         time.sleep(0.3)
+
+    # Advance the offset for the next run (wrap on the larger of the two lists)
+    _list_len = max(len(companies["lever"]), len(companies["greenhouse"]), 1)
+    _save_scan_offset((offset + max_companies) % _list_len)
 
     for company in SEED_ASHBY[:max_companies]:
         jobs = scan_ashby(company)

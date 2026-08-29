@@ -66,6 +66,15 @@ jobs:
           key: rate-limits
           restore-keys: rate-limits
 
+      - name: Restore scan rotation offset
+        continue-on-error: true
+        uses: actions/cache/restore@v4
+        with:
+          path: agent/data/scan_offset.json
+          key: scan-offset-${{ github.run_number }}
+          restore-keys: |
+            scan-offset-
+
       - name: Initialize database
         run: python3 -c "from src.memory import get_db, init_db; db = get_db(); init_db(db)"
 
@@ -156,6 +165,14 @@ jobs:
         with:
           path: agent/data/rate_limits.json
           key: rate-limits-${{ github.run_number }}
+
+      - name: Save scan rotation offset
+        if: always()
+        continue-on-error: true
+        uses: actions/cache/save@v4
+        with:
+          path: agent/data/scan_offset.json
+          key: scan-offset-${{ github.run_number }}
 
       - name: Cleanup old screenshots (keep last 20)
         if: always()

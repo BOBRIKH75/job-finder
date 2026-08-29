@@ -3,6 +3,7 @@
 agent/.venv/
 agent/__pycache__/
 agent/data/agent_memory.db
+agent/data/scan_offset.json
 agent/*.pyc
 agent/__pycache__/
 agent/src/__pycache__/
