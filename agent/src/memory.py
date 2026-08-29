@@ -1,8 +1,47 @@
 """Agent memory — SQLite storage for applications, recruiters, patterns, audit log."""
 import hashlib, json, os, sqlite3, time
 from pathlib import Path
+from urllib.parse import urlparse
 
 SCHEMA_PATH = Path(__file__).parent.parent / "data" / "schema.sql"
+
+# Tracking / cache-busting query params that make the SAME job look like a NEW url.
+# Stripping these lets dedup recognize a re-scraped job as already-applied.
+_TRACKING_PREFIXES = ("utm_", "gh_", "gclid", "fbclid", "ref", "source", "src",
+                       "trk", "trackingid", "recommend", "eblid", "sponsored")
+
+
+def normalize_job_url(job_url: str) -> str:
+    """Normalize a job URL so the SAME job maps to the SAME key across runs.
+
+    - Lowercases host + path
+    - Drops the query string (tracking params) and fragment
+    - Collapses known host prefixes (job-boards.greenhouse.io -> boards.greenhouse.io)
+    - Strips www. and trailing slash
+
+    Falls back to the raw (lowercased, trimmed) url if parsing fails, so it is
+    always safe to call.
+    """
+    if not job_url:
+        return ""
+    try:
+        p = urlparse(job_url.strip())
+        # No scheme (bare string) -> just normalize the raw text
+        if not p.netloc:
+            return job_url.strip().rstrip("/").lower()
+        host = p.netloc.lower()
+        host = host.replace("job-boards.greenhouse.io", "boards.greenhouse.io")
+        if host.startswith("www."):
+            host = host[4:]
+        path = p.path.rstrip("/").lower()
+        return f"{host}{path}"
+    except Exception:
+        return job_url.strip().rstrip("/").lower()
+
+
+def _role_key(company: str, title: str) -> str:
+    """Stable key for the same role at the same company (URL-independent)."""
+    return f"{(company or '').strip().lower()}|{(title or '').strip().lower()}"
 
 
 def get_db(db_path: str = "data/agent_memory.db") -> sqlite3.Connection:
@@ -27,6 +66,10 @@ def init_db(db: sqlite3.Connection) -> None:
 # --- Applications ---
 
 def upsert_application(db: sqlite3.Connection, **kw) -> int:
+    # Normalize the URL so the same job (with different tracking params) maps
+    # to the same row. The UNIQUE(job_url) constraint then dedups automatically.
+    if kw.get("job_url"):
+        kw["job_url"] = normalize_job_url(kw["job_url"])
     cols = ", ".join(kw.keys())
     placeholders = ", ".join(["?"] * len(kw))
     updates = ", ".join(f"{k}=excluded.{k}" for k in kw if k != "job_url")
@@ -50,17 +93,42 @@ def get_applications(db: sqlite3.Connection, status: str = None, limit: int = 50
 def update_application_status(db: sqlite3.Connection, job_url: str, status: str) -> None:
     db.execute(
         "UPDATE applications SET status=?, status_updated_at=datetime('now') WHERE job_url=?",
-        (status, job_url),
+        (status, normalize_job_url(job_url)),
     )
     db.commit()
 
 
-def application_exists(db: sqlite3.Connection, job_url: str) -> bool:
-    row = db.execute("SELECT status FROM applications WHERE job_url=?", (job_url,)).fetchone()
-    if row is None:
-        return False
-    # Only skip if already applied/submitted — allow re-processing of scored-only jobs
-    return row[0] in ("applied", "submitted", "dry_run")
+def application_exists(db: sqlite3.Connection, job_url: str,
+                       company: str = None, title: str = None) -> bool:
+    """True if this job was already applied/submitted (so we should skip it).
+
+    Matches in two ways:
+      1. Normalized URL (drops tracking params so re-scraped jobs are recognized)
+      2. company + title fallback (same role, genuinely different URL)
+
+    `company`/`title` are optional and backward compatible — old callers that
+    pass only the url keep working exactly as before (just with URL normalized).
+    """
+    _APPLIED = ("applied", "submitted", "dry_run", "applied_via_email")
+
+    row = db.execute(
+        "SELECT status FROM applications WHERE job_url=?",
+        (normalize_job_url(job_url),),
+    ).fetchone()
+    if row is not None and row[0] in _APPLIED:
+        return True
+
+    # Fallback: same role at same company already applied under a different URL
+    if company and title:
+        row = db.execute(
+            "SELECT status FROM applications "
+            "WHERE lower(trim(company))=? AND lower(trim(job_title))=?",
+            ((company or "").strip().lower(), (title or "").strip().lower()),
+        ).fetchone()
+        if row is not None and row[0] in _APPLIED:
+            return True
+
+    return False
 
 
 # --- Recruiters ---

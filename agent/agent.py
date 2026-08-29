@@ -138,7 +138,7 @@ def run_filter(db, jobs):
     passed = []
     for job in jobs:
         url = job.get("url", "")
-        if not url or application_exists(db, url):
+        if not url or application_exists(db, url, company=job.get("company", ""), title=job.get("title", "")):
             continue
 
         # Title filter — only apply to engineering/developer roles
@@ -462,7 +462,7 @@ def run_apply(db, jobs, dry_run=False):
                 url = job.get("url", "")
                 title = job.get("title", "")
                 
-                if not company or application_exists(db, url):
+                if not company or application_exists(db, url, company=company, title=title):
                     continue
                 
                 # Find recruiter email for this company

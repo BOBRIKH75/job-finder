@@ -72,3 +72,59 @@ def test_stats(db):
     assert s["applied"] == 1
     assert s["found"] == 1
     assert s["total"] == 2
+
+
+# --- URL normalization + cross-run dedup (fixes "applies to same job repeatedly") ---
+
+def test_normalize_strips_tracking_params():
+    from src.memory import normalize_job_url
+    a = normalize_job_url("https://boards.greenhouse.io/affirm/jobs/123?gh_jid=456&utm_source=x")
+    b = normalize_job_url("https://boards.greenhouse.io/affirm/jobs/123")
+    assert a == b
+
+
+def test_normalize_collapses_host_prefix():
+    from src.memory import normalize_job_url
+    a = normalize_job_url("https://job-boards.greenhouse.io/affirm/jobs/123")
+    b = normalize_job_url("https://boards.greenhouse.io/affirm/jobs/123")
+    assert a == b
+
+
+def test_normalize_strips_www_and_trailing_slash():
+    from src.memory import normalize_job_url
+    a = normalize_job_url("https://www.dice.com/job/abc/")
+    b = normalize_job_url("https://dice.com/job/abc")
+    assert a == b
+
+
+def test_same_job_different_tracking_url_is_deduped(db):
+    # Applied once with tracking params
+    upsert_application(db, company="Affirm", job_title="Java Dev",
+                       job_url="https://boards.greenhouse.io/affirm/jobs/123?gh_jid=456")
+    update_application_status(db, "https://boards.greenhouse.io/affirm/jobs/123?gh_jid=456", "applied")
+    # Re-scraped later with DIFFERENT tracking params — must be recognized as applied
+    assert application_exists(db, "https://boards.greenhouse.io/affirm/jobs/123?utm_source=google") is True
+
+
+def test_role_fallback_dedup_when_url_differs(db):
+    upsert_application(db, company="Acme", job_title="Senior Java Engineer",
+                       job_url="https://acme.com/apply/1")
+    update_application_status(db, "https://acme.com/apply/1", "applied")
+    # Totally different URL but SAME company + title -> should be deduped via fallback
+    assert application_exists(db, "https://linkedin.com/jobs/view/999",
+                              company="Acme", title="Senior Java Engineer") is True
+
+
+def test_role_fallback_does_not_overblock_different_role(db):
+    upsert_application(db, company="Acme", job_title="Senior Java Engineer",
+                       job_url="https://acme.com/apply/1")
+    update_application_status(db, "https://acme.com/apply/1", "applied")
+    # Different title at same company -> NOT deduped
+    assert application_exists(db, "https://acme.com/apply/2",
+                              company="Acme", title="DevOps Engineer") is False
+
+
+def test_applied_via_email_also_blocks(db):
+    upsert_application(db, company="X", job_title="Dev", job_url="https://x.com/e/1")
+    update_application_status(db, "https://x.com/e/1", "applied_via_email")
+    assert application_exists(db, "https://x.com/e/1") is True
