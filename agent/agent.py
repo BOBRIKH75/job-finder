@@ -302,14 +302,17 @@ def run_apply(db, jobs, dry_run=False):
                 j["can_automate"] = True  # override — it's a direct URL
                 automatable.append(j)
     
-    # Sort: staffing firms first (they do C2C), then CAPTCHA-free ATS, then by match score
-    # Sort: Lever first (proven 100%), then other ATS, then protected sites
+    # Sort priority (Part B): STAFFING FIRST.
+    # Staffing/consulting firms actively place C2C contractors — a human recruiter
+    # calls back. Big-company direct ATS reqs (greenhouse/lever) are often evergreen
+    # pipeline postings (mostly FTE, no callback), so they go LAST.
+    # Order: 1) staffing firm  2) proven/reliable ATS  3) CAPTCHA-free  4) match score
     PROVEN_ATS = {"lever", "greenhouse", "ashby", "workable"}  # Direct API or CAPTCHA-free
     automatable = sorted(
         automatable,
         key=lambda j: (
-            0 if j.get("ats_type") in PROVEN_ATS else 1,
             0 if j.get("is_staffing_firm") else 1,
+            0 if j.get("ats_type") in PROVEN_ATS else 1,
             0 if j.get("ats_type") in CAPTCHA_FREE_ATS else 1,
             -j.get("match_score", 0),
         ),
