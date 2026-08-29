@@ -47,6 +47,42 @@ def _rotate(items: list, offset: int, count: int) -> list:
     offset %= n
     return [items[(offset + i) % n] for i in range(count)]
 
+
+# Skip postings older than this — evergreen/pipeline reqs that never call back.
+# Lenient default (30d) so we don't starve the pipeline; staffing reposts stay in.
+import os as _os
+from datetime import datetime, timezone
+
+MAX_POSTING_AGE_DAYS = int(_os.environ.get("MAX_POSTING_AGE_DAYS", "30"))
+
+
+def _is_fresh(posted_iso_or_ms, max_age_days: int = MAX_POSTING_AGE_DAYS) -> bool:
+    """True if a posting is recent enough to be worth applying to.
+
+    Accepts:
+      - ISO 8601 string (Greenhouse `updated_at`, e.g. '2026-08-19T16:06:53-04:00')
+      - epoch milliseconds as int/str (Lever `createdAt`, e.g. '1381340626859')
+      - None / unparseable -> treated as FRESH (never drop a job just because we
+        could not read its date — safe default, avoids over-filtering).
+    """
+    if posted_iso_or_ms in (None, "", 0):
+        return True
+    try:
+        now = datetime.now(timezone.utc)
+        # Epoch milliseconds (Lever)
+        s = str(posted_iso_or_ms)
+        if s.isdigit():
+            posted = datetime.fromtimestamp(int(s) / 1000, tz=timezone.utc)
+        else:
+            # ISO 8601 (Greenhouse). Handle trailing 'Z'.
+            posted = datetime.fromisoformat(s.replace("Z", "+00:00"))
+            if posted.tzinfo is None:
+                posted = posted.replace(tzinfo=timezone.utc)
+        age_days = (now - posted).total_seconds() / 86400
+        return age_days <= max_age_days
+    except Exception:
+        return True  # unparseable -> don't drop it
+
 # Load skills dynamically from profile.json so changes to CV auto-reflect here
 try:
     _PROFILE_SKILLS = json.loads(_PROFILE_FILE.read_text()).get("skills", [])
@@ -218,6 +254,9 @@ def scan_lever(company: str) -> list[dict]:
         for posting in resp.json():
             title = posting.get("text", "")
             desc = posting.get("descriptionPlain", "") or posting.get("description", "")
+            # Skip stale/evergreen reqs (no callback) — use createdAt (epoch ms)
+            if not _is_fresh(posting.get("createdAt")):
+                continue
             if matches_skills(title, desc) and not is_disqualified(title, desc):
                 jobs.append({
                     "title": title,
@@ -244,6 +283,10 @@ def scan_greenhouse(company: str) -> list[dict]:
         for posting in resp.json().get("jobs", []):
             title = posting.get("title", "")
             desc = posting.get("content", "")
+            # Skip stale/evergreen reqs. Greenhouse bumps updated_at constantly,
+            # so use first_published (TRUE original post date) when available.
+            if not _is_fresh(posting.get("first_published") or posting.get("updated_at")):
+                continue
             if matches_skills(title, desc) and not is_disqualified(title, desc):
                 url = posting.get("absolute_url", "")
                 job_id = posting.get("id", "")

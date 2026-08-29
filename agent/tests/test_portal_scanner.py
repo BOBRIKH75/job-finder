@@ -99,3 +99,47 @@ def test_scan_offset_persist(tmp_path):
         assert ps._load_scan_offset() == 30
     finally:
         ps._SCAN_STATE_FILE = original
+
+
+# --- Freshness filter (skip evergreen / stale reqs) ---
+
+def test_fresh_recent_iso_is_fresh():
+    from src.portal_scanner import _is_fresh
+    from datetime import datetime, timezone, timedelta
+    recent = (datetime.now(timezone.utc) - timedelta(days=3)).isoformat()
+    assert _is_fresh(recent) is True
+
+
+def test_fresh_old_iso_is_stale():
+    from src.portal_scanner import _is_fresh
+    from datetime import datetime, timezone, timedelta
+    old = (datetime.now(timezone.utc) - timedelta(days=200)).isoformat()
+    assert _is_fresh(old) is False
+
+
+def test_fresh_greenhouse_zulu_format():
+    from src.portal_scanner import _is_fresh
+    from datetime import datetime, timezone, timedelta
+    recent = (datetime.now(timezone.utc) - timedelta(days=1)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    assert _is_fresh(recent) is True
+
+
+def test_fresh_lever_epoch_ms_recent():
+    from src.portal_scanner import _is_fresh
+    from datetime import datetime, timezone, timedelta
+    ms = int((datetime.now(timezone.utc) - timedelta(days=2)).timestamp() * 1000)
+    assert _is_fresh(str(ms)) is True
+    assert _is_fresh(ms) is True
+
+
+def test_fresh_lever_epoch_ms_old():
+    from src.portal_scanner import _is_fresh
+    assert _is_fresh("1381340626859") is False  # 2013 -> stale
+
+
+def test_fresh_none_or_unparseable_is_fresh():
+    # Never drop a job just because we can't read its date
+    from src.portal_scanner import _is_fresh
+    assert _is_fresh(None) is True
+    assert _is_fresh("") is True
+    assert _is_fresh("not-a-date") is True
