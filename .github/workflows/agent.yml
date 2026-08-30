@@ -54,8 +54,9 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: agent/data/agent_memory.db
-          key: agent-memory-${{ github.run_number }}
+          key: agent-memory-v2
           restore-keys: |
+            agent-memory-v2
             agent-memory-
 
       - name: Restore rate limits
@@ -76,7 +77,22 @@ jobs:
             scan-offset-
 
       - name: Initialize database
-        run: python3 -c "from src.memory import get_db, init_db; db = get_db(); init_db(db)"
+        working-directory: agent
+        run: |
+          # Persistence priority: cache-restored DB > runner-home copy > fresh.
+          # The runner-home copy ($HOME/.job-finder-data) is the durable source
+          # of truth so dedup history survives even when the Actions cache
+          # misses (e.g. self-hosted <-> ubuntu-latest runner swap). The DB is
+          # NEVER committed — it holds PII and this is a public repo.
+          if [ -s data/agent_memory.db ]; then
+            echo "Using cache-restored agent_memory.db ($(du -h data/agent_memory.db | cut -f1))"
+          elif [ -s "$HOME/.job-finder-data/agent_memory.db" ]; then
+            echo "Cache miss — seeding DB from runner-home persistent copy"
+            cp -f "$HOME/.job-finder-data/agent_memory.db" data/agent_memory.db
+          else
+            echo "No prior DB found — starting fresh"
+          fi
+          python3 -c "from src.memory import get_db, init_db; db = get_db(); init_db(db); print('Applications on record:', db.execute('SELECT COUNT(*) FROM applications').fetchone()[0])"
 
       - name: Get found_jobs.json
         working-directory: .
@@ -156,7 +172,21 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: agent/data/agent_memory.db
-          key: agent-memory-${{ github.run_number }}
+          key: agent-memory-v2
+
+      - name: Persist agent memory to runner home (durable dedup history)
+        if: always()
+        continue-on-error: true
+        run: |
+          # DB holds PII (recruiter emails, approved answers) and this is a
+          # PUBLIC repo, so it must NEVER be committed. Instead persist it on
+          # the always-on self-hosted runner outside the ephemeral _work
+          # checkout. Survives every run on this machine and needs no cache.
+          if [ -s agent/data/agent_memory.db ]; then
+            mkdir -p "$HOME/.job-finder-data"
+            cp -f agent/data/agent_memory.db "$HOME/.job-finder-data/agent_memory.db"
+            echo "Persisted DB to $HOME/.job-finder-data/agent_memory.db"
+          fi
 
       - name: Save rate limits
         if: always()
