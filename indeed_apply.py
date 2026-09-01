@@ -12,10 +12,13 @@ import base64
 import json
 import os
 import random
+import subprocess
 import sys
 import time
 
 sys.path.insert(0, 'agent')
+
+import indeed_learner
 
 from src.memory import get_db, init_db, application_exists, upsert_application
 from src.form_filler import load_profile
@@ -125,6 +128,124 @@ def save_failed_jobs(failed_file: str, jobs: list) -> None:
         json.dump({'jobs': jobs, 'count': len(jobs)}, f, indent=2)
 
 
+# 5-second human-like pause before EVERY click (requested behavior:
+# wait so the page fully renders and we don't look like a bot).
+PRE_CLICK_WAIT = float(os.environ.get('PRE_CLICK_WAIT', '5'))
+
+
+def handle_robot_check(page) -> bool:
+    """Detect and click an 'I'm not a robot' / verification checkbox.
+
+    Handles the common variants:
+      - reCAPTCHA checkbox (inside an iframe titled 'reCAPTCHA')
+      - Cloudflare Turnstile ('Verify you are human')
+      - Indeed's own 'Verify' / 'I'm not a robot' buttons
+    Waits 5s first (page must settle), clicks, then waits again.
+    Returns True if it clicked something.
+    """
+    clicked = False
+    try:
+        body = page.locator('body').inner_text(timeout=2500).lower()
+    except Exception:
+        body = ''
+    signals = ['not a robot', 'verify you are human', 'are you a human',
+               'unusual activity', 'recaptcha', 'verify you']
+    looks_gated = any(s in body for s in signals)
+
+    # Always try the reCAPTCHA / Turnstile iframe checkbox (it may not be in body text).
+    try:
+        for frame in page.frames:
+            fname = (frame.name or '').lower()
+            furl = (frame.url or '').lower()
+            if 'recaptcha' in furl or 'turnstile' in furl or 'challenge' in furl or 'recaptcha' in fname:
+                # Wait 5s before clicking so the widget is interactable.
+                time.sleep(PRE_CLICK_WAIT)
+                for sel in ['#recaptcha-anchor', 'div.recaptcha-checkbox-border',
+                            'input[type="checkbox"]', 'label:has-text("not a robot")',
+                            '.cb-c', 'span[role="checkbox"]']:
+                    try:
+                        el = frame.locator(sel)
+                        if el.count() > 0 and el.first.is_visible(timeout=1500):
+                            el.first.click()
+                            clicked = True
+                            print("  🤖 Clicked 'I'm not a robot' checkbox — waiting 5s...")
+                            time.sleep(PRE_CLICK_WAIT)
+                            break
+                    except Exception:
+                        continue
+            if clicked:
+                break
+    except Exception:
+        pass
+
+    # Fallback: a plain 'Verify' / 'I'm not a robot' button on the main page.
+    if not clicked and looks_gated:
+        for sel in ['button:has-text("Verify")', 'button:has-text("I\'m not a robot")',
+                    'button:has-text("I am not a robot")', 'input[type="checkbox"]']:
+            try:
+                el = page.locator(sel)
+                if el.count() > 0 and el.first.is_visible(timeout=1500):
+                    time.sleep(PRE_CLICK_WAIT)
+                    el.first.click()
+                    clicked = True
+                    print("  🤖 Clicked verification control — waiting 5s...")
+                    time.sleep(PRE_CLICK_WAIT)
+                    break
+            except Exception:
+                continue
+    return clicked
+
+
+def safe_click(locator) -> bool:
+    """Wait 5s (page settle / anti-bot) then click. Returns True on success."""
+    try:
+        time.sleep(PRE_CLICK_WAIT)
+        locator.click()
+        return True
+    except Exception:
+        return False
+
+
+def _is_cloudflare(page) -> bool:
+    """True if the current page is a Cloudflare challenge, not the real job."""
+    try:
+        if '__cf_chl' in (page.url or ''):
+            return True
+        for fr in page.frames:
+            if 'cloudflare.com' in (fr.url or '') or 'challenges.cloudflare' in (fr.url or ''):
+                return True
+        body = page.locator('body').inner_text(timeout=2000).lower()
+        return ('verify you are human' in body or 'checking your browser' in body
+                or 'needs to review the security' in body)
+    except Exception:
+        return False
+
+
+def wait_out_cloudflare(page, url: str, attempts: int = 3) -> bool:
+    """DYNAMIC self-heal for Cloudflare challenges.
+
+    Headed Chrome clears Cloudflare's JS challenge on its own, but it takes a
+    few seconds. We poll for up to ~15s per attempt, and reload if stuck.
+    Returns True once the real job page is showing (no CF challenge).
+    """
+    for attempt in range(1, attempts + 1):
+        if not _is_cloudflare(page):
+            return True
+        print(f"  🛡️ Cloudflare challenge (attempt {attempt}/{attempts}) — waiting for auto-clear...")
+        for _ in range(15):
+            time.sleep(1)
+            if not _is_cloudflare(page):
+                print("  ✅ Cloudflare cleared")
+                return True
+        # Still stuck — reload and try again.
+        try:
+            page.goto(url, wait_until='domcontentloaded', timeout=15000)
+            time.sleep(3)
+        except Exception:
+            pass
+    return not _is_cloudflare(page)
+
+
 def main():
     db = get_db()
     init_db(db)
@@ -163,9 +284,10 @@ def main():
                 'Java developer remote contract "easy apply"',
             ]
         
-        # Pick 3 queries per run (rotate daily)
-        day_offset = datetime.now().timetuple().tm_yday % max(len(SEARCHES), 1)
-        queries = SEARCHES[day_offset:day_offset+3] if day_offset+3 <= len(SEARCHES) else SEARCHES[day_offset:] + SEARCHES[:3-(len(SEARCHES)-day_offset)]
+        # MAXIMIZE VOLUME: use ALL queries every run (was: only 3/day).
+        # Verified live 2026-09-01 that only ~1 in 6 "easy apply" jobs is actually
+        # applyable, so we must cast the widest net to find enough real ones.
+        queries = SEARCHES
         
         all_jobs = []
         for q in queries:
@@ -178,7 +300,7 @@ def main():
                     site_name=['indeed'],
                     search_term=q,
                     location='USA',
-                    results_wanted=25,
+                    results_wanted=50,
                     easy_apply=True,
                 )
                 all_jobs.append(batch1)
@@ -191,7 +313,7 @@ def main():
                     site_name=['indeed'],
                     search_term=q,
                     location='USA',
-                    results_wanted=15,
+                    results_wanted=40,
                     hours_old=48,
                     job_type='contract',
                     is_remote=True,
@@ -214,14 +336,18 @@ def main():
         # External = job_url_direct points to greenhouse, lever, workday, etc.
         if not jobs.empty and 'job_url_direct' in jobs.columns:
             before_count = len(jobs)
-            jobs = jobs[
-                jobs['job_url_direct'].isna() |
-                (jobs['job_url_direct'] == '') |
-                (jobs['job_url_direct'].astype(str) == 'nan') |
-                jobs['job_url_direct'].astype(str).str.contains('indeed.com', na=False)
-            ]
-            filtered_out = before_count - len(jobs)
-            print(f"  ✅ Filtered to {len(jobs)} Easy Apply jobs ({filtered_out} external-redirect removed)")
+            # NOTE (verified live 2026-09-01): jobspy now populates job_url_direct
+            # on ~100% of jobs, so the old "empty = Easy Apply" filter removed
+            # EVERYTHING (0 jobs processed). We can no longer pre-filter reliably.
+            # Instead: keep ALL jobs and let the runtime button-detection decide.
+            # Rank likely-Easy-Apply first (indeed.com direct or empty) so the
+            # MAX_APPS budget is spent on the best candidates before the rest.
+            dd = jobs['job_url_direct'].astype(str)
+            likely = jobs[dd.isin(['nan', '', 'None']) | dd.str.contains('indeed.com', na=False)]
+            rest = jobs[~jobs.index.isin(likely.index)]
+            jobs = pd.concat([likely, rest], ignore_index=True)
+            print(f"  ℹ️ Kept {len(jobs)} jobs ({len(likely)} likely Easy Apply first, "
+                  f"{len(rest)} checked at runtime). No pre-filter drop.")
         else:
             print(f"  ⚠️ No job_url_direct column — will detect Easy Apply at runtime")
     except Exception as e:
@@ -230,8 +356,11 @@ def main():
 
     applied = 0
     failed = []
+    # Load the self-learning selector store (grows every run).
+    selectors_store = indeed_learner.load_store()
+    indeed_learner.bump_runs(selectors_store)
     skipped = 0
-    MAX_APPS = 20
+    MAX_APPS = int(os.environ.get('MAX_APPS', '60'))
 
     try:
         from playwright.sync_api import sync_playwright
@@ -241,7 +370,17 @@ def main():
 
     state_file = 'agent/data/indeed_state.json'
     with sync_playwright() as pw:
-        browser = pw.chromium.launch(headless=True)
+        # VERIFIED LIVE (2026-09-01): headless=True triggers Cloudflare on ~83%
+        # of Indeed job pages (5/6 blocked). Headed mode passes 100% (6/6 reach
+        # the apply button). This workflow runs on the self-hosted runner (your
+        # laptop) which has a real display, so we default to HEADED. Override
+        # with INDEED_HEADLESS=1 only for debugging on a headless box.
+        headless = os.environ.get('INDEED_HEADLESS', '0') == '1'
+        browser = pw.chromium.launch(
+            headless=headless,
+            args=['--disable-blink-features=AutomationControlled'],
+        )
+        print(f"🌐 Browser launched (headless={headless})")
         context = browser.new_context(
             user_agent=(
                 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) '
@@ -255,12 +394,16 @@ def main():
         context.add_cookies(cookies)
         page = context.new_page()
 
-        # Quick cookie validity check
+        # Quick cookie validity check.
+        # VERIFIED LIVE (2026-09-01): valid session redirects to
+        # secure.indeed.com/settings and shows "sign out" (never "sign in").
         try:
-            page.goto('https://www.indeed.com/account/view', wait_until='domcontentloaded', timeout=10000)
+            page.goto('https://www.indeed.com/account/view', wait_until='domcontentloaded', timeout=15000)
             time.sleep(2)
             page_text = page.locator('body').inner_text(timeout=3000).lower()
-            if 'sign in' in page_text or 'log in' in page_text:
+            logged_in = ('sign out' in page_text or 'log out' in page_text
+                         or 'settings' in page.url or 'account' in page.url)
+            if not logged_in:
                 print("❌ Indeed cookies expired — skipping. Run refresh-cookies workflow.")
                 browser.close()
                 return
@@ -287,29 +430,91 @@ def main():
                 page.goto(url, wait_until='domcontentloaded', timeout=15000)
                 time.sleep(random.uniform(2, 4))
 
-                # Look for Indeed Easy Apply button
-                apply_btn = page.locator(
-                    'button:has-text("Apply now"), '
-                    'button:has-text("Easy Apply"), '
-                    '#indeedApplyButton'
-                )
-                if apply_btn.count() > 0 and apply_btn.first.is_visible(timeout=3000):
-                    apply_btn.first.click()
+                # DYNAMIC self-heal: if Cloudflare challenged the page load,
+                # wait for it to auto-clear (headed Chrome passes the JS
+                # challenge on its own). Retry up to 3 times before giving up.
+                cf_cleared = wait_out_cloudflare(page, url)
+                if not cf_cleared:
+                    reason = 'Cloudflare challenge did not clear'
+                    failed.append({
+                        'url': url, 'title': title, 'company': company,
+                        'reason': reason, 'platform': 'indeed',
+                        'timestamp': time.strftime('%Y-%m-%dT%H:%M:%S'),
+                    })
+                    print(f"  🛡️ {title} @ {company}: {reason}")
+                    time.sleep(random.uniform(3, 6))
+                    continue
+
+                # Anti-bot: if the page shows a robot/verification check, click it
+                # and wait 5s so the real apply content renders.
+                handle_robot_check(page)
+
+                # SELF-LEARNING apply-button detection.
+                # 1. Try every KNOWN selector, best-first (ranked by past wins).
+                # 2. If none match, LEARN new selectors from the live page and
+                #    retry them — so next run covers this variation too.
+                # Every click waits 5s first (safe_click) to look human.
+                clicked_selector = None
+                for sel in indeed_learner.ranked_selectors(selectors_store):
+                    try:
+                        loc = page.locator(sel)
+                        if loc.count() > 0 and loc.first.is_visible(timeout=1500):
+                            if safe_click(loc.first):
+                                clicked_selector = sel
+                                indeed_learner.record_seen(selectors_store, sel)
+                                break
+                    except Exception:
+                        continue
+
+                if not clicked_selector:
+                    # Nothing known worked — maybe a robot check is still up; retry it.
+                    handle_robot_check(page)
+                    # Scrape the page and learn any apply-like elements.
+                    newly = indeed_learner.learn_from_page(selectors_store, page)
+                    if newly:
+                        print(f"  🧠 Learned {len(newly)} new selector(s) from: {title[:40]}")
+                    for sel in newly:
+                        try:
+                            loc = page.locator(sel)
+                            if loc.count() > 0 and loc.first.is_visible(timeout=1500):
+                                if safe_click(loc.first):
+                                    clicked_selector = sel
+                                    indeed_learner.record_seen(selectors_store, sel)
+                                    print(f"  🧠 New selector worked: {sel[:50]}")
+                                    break
+                        except Exception:
+                            continue
+
+                if clicked_selector:
                     time.sleep(random.uniform(2, 4))
 
-                    # Look for Continue/Submit in the apply modal
+                    # DRY_RUN: prove we reached the apply flow WITHOUT submitting
+                    # a real application (safe for local testing).
+                    if os.environ.get('DRY_RUN', '0') == '1':
+                        indeed_learner.record_win(selectors_store, clicked_selector)
+                        print(f"  🧪 DRY_RUN reached apply form via '{clicked_selector[:45]}' — "
+                              f"NOT submitting: {title[:40]} @ {company}")
+                        applied += 1
+                        time.sleep(random.uniform(2, 4))
+                        continue
+
+                    # Look for Continue/Submit in the apply modal.
+                    # Each step: handle any robot check, then wait 5s before click.
                     submitted = False
                     for btn_text in ['Continue', 'Submit your application', 'Apply', 'Submit']:
+                        handle_robot_check(page)
                         btn = page.locator(f'button:has-text("{btn_text}")')
                         if btn.count() > 0 and btn.first.is_visible(timeout=2000):
-                            btn.first.click()
-                            time.sleep(2)
-                            submitted = True
+                            if safe_click(btn.first):
+                                time.sleep(2)
+                                submitted = True
 
                     # Check success
                     page_text = page.locator('body').inner_text(timeout=3000).lower()
                     if any(s in page_text for s in ['application submitted', 'applied', 'thank you']):
                         applied += 1
+                        # LEARN: this selector reached a real application — rank it up.
+                        indeed_learner.record_win(selectors_store, clicked_selector)
                         upsert_application(
                             db,
                             company=company,
@@ -332,7 +537,7 @@ def main():
                         })
                         print(f"  ❌ {title} @ {company}: {reason}")
                 else:
-                    reason = 'No Easy Apply button found'
+                    reason = 'No Easy Apply button found (learned page, will retry variants next run)'
                     failed.append({
                         'url': url,
                         'title': title,
@@ -341,7 +546,7 @@ def main():
                         'platform': 'indeed',
                         'timestamp': time.strftime('%Y-%m-%dT%H:%M:%S'),
                     })
-                    print(f"  ⏭️ {title} @ {company}: {reason}")
+                    print(f"  ⏭️ {title} @ {company}: no apply button (page learned)")
 
             except Exception as e:
                 error_msg = str(e)[:100]
@@ -379,6 +584,12 @@ def main():
             print(f"⚠️ Cookie refresh failed (non-fatal): {str(e)[:60]}")
 
         browser.close()
+
+    # Persist what we learned this run so next run is smarter.
+    indeed_learner.save_store(selectors_store)
+    _learned = [s for s in selectors_store['selectors'] if s.get('source') == 'learned']
+    print(f"🧠 Selector store: {len(selectors_store['selectors'])} total "
+          f"({len(_learned)} learned), run #{selectors_store.get('runs', 0)}")
 
     # Save failed for solve-unsolved retry
     failed_file = 'agent/data/failed_jobs.json'

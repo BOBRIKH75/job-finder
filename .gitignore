@@ -27,3 +27,11 @@ contacted.json
 **/credentials.json
 **/secrets.json
 agent/data/agent_memory.db
+
+# Session state (contains live cookies — PUBLIC REPO, never commit)
+agent/data/indeed_state.json
+agent/data/*_state.json
+# Runtime run artifacts
+agent/screenshots/
+agent/data/failed_jobs.json
+agent/data/*_manual_jobs.json
