@@ -62,6 +62,15 @@ def get_verification_code(
     # and marking-all-seen was destroying it before we could read it.
     # Instead we rely on _USED_CODES set to skip already-used codes.
     # Wait for Greenhouse to send the new code (5-20s typical).
+    #
+    # FRESHNESS CUTOFF: capture the time this OTP wait began. A legitimate code
+    # email arrives within seconds of clicking submit. We reject any email whose
+    # Date header is older than (cutoff - 5 min buffer) so a stale code from a
+    # PREVIOUS run/session (e.g. cb164f12) can never be reused across processes —
+    # _USED_CODES only dedups within one process, this guards across processes.
+    from email.utils import parsedate_to_datetime
+    from datetime import timezone
+    _freshness_cutoff = datetime.now(timezone.utc) - timedelta(minutes=5)
     time.sleep(12)
     
     start_time = time.time()
@@ -73,7 +82,8 @@ def get_verification_code(
             mail.select('"[Gmail]/All Mail"')  # Search ALL mail, not just Primary tab
             
             # Search for RECENT emails from the sender (today only)
-            from datetime import datetime, timedelta
+            # (datetime/timedelta come from the module-level import — do NOT
+            # re-import locally or the freshness-cutoff use above becomes UnboundLocal)
             today = datetime.now().strftime("%d-%b-%Y")
             if sender_filter:
                 search_criteria = f'(SINCE {today} FROM "{sender_filter}")'
@@ -91,7 +101,22 @@ def get_verification_code(
                     
                     raw_email = msg_data[0][1]
                     msg = email.message_from_bytes(raw_email)
-                    
+
+                    # FRESHNESS GUARD: reject emails that arrived before this OTP
+                    # attempt began (minus a 5-min buffer). A real Greenhouse code
+                    # arrives seconds after submit; an older email is a stale code
+                    # from a previous run/session and would be rejected by the ATS.
+                    try:
+                        _msg_date = parsedate_to_datetime(msg.get("Date", ""))
+                        if _msg_date is not None:
+                            if _msg_date.tzinfo is None:
+                                _msg_date = _msg_date.replace(tzinfo=timezone.utc)
+                            if _msg_date < _freshness_cutoff:
+                                mail.store(msg_id, '+FLAGS', '\\Seen')
+                                continue  # stale email — skip, keep waiting for fresh
+                    except Exception:
+                        pass  # unparseable date — fall through and try the code
+
                     # Extract body text — prefer text/plain; fall back to text/html
                     plain_body = ""
                     html_body = ""

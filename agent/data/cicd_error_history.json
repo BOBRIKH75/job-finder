@@ -354,6 +354,14 @@
       "root_cause": "all-letter branch accepted 8-char tokens with >=2 uppercase; CamelCase words (LinkedIn/YourName/JobAlert) have exactly 2 uppercase at word boundaries and slipped through",
       "fix": "Raised all-alpha threshold to >=3 uppercase (real Greenhouse codes EEtMwNKJ=6/XWHfrfdC=4/OhbuBMBU=5 keep; CamelCase words drop). Added 3 regression tests. 27 pass.",
       "verified": "pytest=27 passed; live run 33532232428 showed verification_code_rejected=0"
+    },
+    {
+      "date": "2026-09-01",
+      "workflow": "AI Job Agent",
+      "error": "verification_code_rejected x6 in run 33535697789 despite correct code extraction",
+      "root_cause": "TWO real bugs: (1) fallback email-verify branch in applier.py read page text IMMEDIATELY after code submit, before the Greenhouse React app navigated away \u2014 still saw \"verification code\" text -> FALSE rejection (primary branch had a wait_for_function, fallback did not). (2) get_verification_code reused STALE codes from prior sessions (cb164f12) because _USED_CODES only dedups within one process and there was no email-date freshness check.",
+      "fix": "(1) Added the same wait_for_function to the fallback branch so it waits for thank-you/error text before deciding. (2) Added a 5-min freshness cutoff on the email Date header in get_verification_code \u2014 emails older than the OTP attempt are skipped. Added 2 freshness tests + kept 27 existing = 29 pass.",
+      "verified": "pytest tests/test_email_code_reader.py = 29 passed; applier.py compiles; AST check confirms no UnboundLocal from local datetime import"
     }
   ],
   "patterns": {
@@ -396,7 +404,9 @@
     "verify_before_push": "MANDATORY before EVERY git push: (1) python syntax check, (2) YAML valid, (3) verify file paths EXIST on disk, (4) check working-directory in workflow, (5) no duplicate keys. NEVER push without verification. One bad push = 5 min wasted waiting for failure.",
     "working_directory_paths": "If workflow has working-directory: X/ then ALL paths in run: are RELATIVE to X/. Writing X/scripts/foo.py becomes X/X/scripts/foo.py = file not found. Check FIRST.",
     "recruiter_pipeline_tracking": "Every recruiter conversation is tracked through stages. Pipeline auto-advances based on email keywords. Silent recruiters get follow-up after 3 days. Never lose a conversation.",
-    "otp_code_extraction": "ATS codes are ALPHANUMERIC 4-8 chars. digit-only regex truncates (15372C->15372). For all-letter tokens require >=3 uppercase (random codes) to exclude CamelCase words like LinkedIn. Anchor on context word; skip #-prefixed CSS colours."
+    "otp_code_extraction": "ATS codes are ALPHANUMERIC 4-8 chars. digit-only regex truncates (15372C->15372). For all-letter tokens require >=3 uppercase (random codes) to exclude CamelCase words like LinkedIn. Anchor on context word; skip #-prefixed CSS colours.",
+    "otp_fallback_timing": "Both email-verify branches (primary AND fallback) MUST wait_for_function for thank-you/error text before reading page \u2014 React navigates 3-8s after OTP submit; reading early = false verification_code_rejected.",
+    "otp_stale_code": "_USED_CODES only dedups within one process. Across runs, an old Greenhouse email code (e.g. cb164f12) looks fresh. Guard with an email Date freshness cutoff (reject > 5 min old)."
   },
   "rules_for_new_workflows": [
     "Use venv (python3 -m venv) \u2014 never bare pip install",

@@ -154,6 +154,56 @@ class TestGetVerificationCode:
         assert result is None
 
 
+class TestFreshnessGuard:
+    """The freshness cutoff must reject stale codes from previous sessions."""
+
+    @patch("src.email_code_reader.imaplib.IMAP4_SSL")
+    @patch.dict("os.environ", {"GMAIL_USER": "test@gmail.com", "GMAIL_APP_PASSWORD": "pass123"})
+    def test_stale_dated_email_is_skipped(self, mock_imap_cls):
+        """An email dated 2 days ago (old code like cb164f12) must NOT be used."""
+        import src.email_code_reader as ecr
+        ecr._USED_CODES.clear()
+        from email.mime.text import MIMEText
+        from email.utils import format_datetime
+        from datetime import datetime, timezone, timedelta
+        mock_mail = MagicMock()
+        mock_imap_cls.return_value = mock_mail
+        mock_mail.login.return_value = ("OK", [])
+        mock_mail.select.return_value = ("OK", [b"1"])
+        mock_mail.search.return_value = ("OK", [b"1"])
+        msg = MIMEText("Your verification code is: cb164f12")
+        msg["From"] = "no-reply@us.greenhouse-mail.io"
+        msg["Date"] = format_datetime(datetime.now(timezone.utc) - timedelta(days=2))
+        mock_mail.fetch.return_value = ("OK", [(b"1", msg.as_bytes())])
+        mock_mail.store.return_value = ("OK", [])
+        mock_mail.logout.return_value = ("OK", [])
+        result = get_verification_code(sender_filter="greenhouse", max_wait_seconds=3, poll_interval=1)
+        assert result is None, "stale-dated code was wrongly accepted"
+
+    @patch("src.email_code_reader.imaplib.IMAP4_SSL")
+    @patch.dict("os.environ", {"GMAIL_USER": "test@gmail.com", "GMAIL_APP_PASSWORD": "pass123"})
+    def test_fresh_dated_email_is_accepted(self, mock_imap_cls):
+        """An email dated just now must be used."""
+        import src.email_code_reader as ecr
+        ecr._USED_CODES.clear()
+        from email.mime.text import MIMEText
+        from email.utils import format_datetime
+        from datetime import datetime, timezone
+        mock_mail = MagicMock()
+        mock_imap_cls.return_value = mock_mail
+        mock_mail.login.return_value = ("OK", [])
+        mock_mail.select.return_value = ("OK", [b"1"])
+        mock_mail.search.return_value = ("OK", [b"1"])
+        msg = MIMEText("Your verification code is: PwsRIyOD")
+        msg["From"] = "no-reply@us.greenhouse-mail.io"
+        msg["Date"] = format_datetime(datetime.now(timezone.utc))
+        mock_mail.fetch.return_value = ("OK", [(b"1", msg.as_bytes())])
+        mock_mail.store.return_value = ("OK", [])
+        mock_mail.logout.return_value = ("OK", [])
+        result = get_verification_code(sender_filter="greenhouse", max_wait_seconds=3, poll_interval=1)
+        assert result == "PwsRIyOD", "fresh code was wrongly rejected"
+
+
 class TestHandleEmailVerification:
     """Test the full handle flow (page detection + code entry)."""
 

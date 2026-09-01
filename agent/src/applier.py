@@ -1744,6 +1744,24 @@ def apply_to_job(page, profile, job, learned, dry_run=False, db=None, site_needs
                     if handle_email_verification(page):
                         print("      ✅ Email verification completed (fallback) — rechecking submit status")
                         snap(page, f"email_verified_{attempt}")
+                        # SAME wait as the primary branch: the Greenhouse React app takes
+                        # 3-8s in headless CI to navigate away from the OTP form after the
+                        # code is accepted. Without this wait we read the page too early,
+                        # still see "verification code" text, and FALSELY report
+                        # verification_code_rejected. Wait for success/error text first.
+                        try:
+                            page.wait_for_function(
+                                """() => {
+                                    const t = (document.body.innerText || '').toLowerCase();
+                                    return t.includes('thank you') || t.includes('application received')
+                                        || t.includes('successfully applied')
+                                        || t.includes('invalid') || t.includes('expired')
+                                        || t.includes('incorrect') || t.includes('try again');
+                                }""",
+                                timeout=12000,
+                            )
+                        except Exception:
+                            page.wait_for_timeout(4000)  # fallback: just wait 4s
                         try:
                             post_verify_text = page.locator("body").inner_text(timeout=5000).lower()
                         except Exception:
