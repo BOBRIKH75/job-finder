@@ -199,9 +199,13 @@ def main():
     # Find Chrome cookies
     cookie_db = get_chrome_cookie_path()
     if not cookie_db:
-        print("❌ Chrome cookie database not found")
-        print("   Make sure Chrome is installed and you've logged into Apollo.io")
-        sys.exit(1)
+        # Apollo is an OPTIONAL recruiter-email source. When this runner has no
+        # Chrome profile with a live Apollo login, we simply skip — the pipeline
+        # falls through to Hunter.io / Snov.io / job-description extraction.
+        # Exit 0 (not 1) so the workflow stays green instead of a false red-X.
+        print("⏭️  Chrome cookie database not found — skipping Apollo refresh (optional source).")
+        print("   To enable Apollo: log into Apollo.io in Chrome on this runner, then re-run.")
+        sys.exit(0)
     
     print(f"   Chrome DB: {cookie_db}")
     
@@ -219,13 +223,15 @@ def main():
         cookies = extract_apollo_cookies(cookie_db)
     
     if not cookies:
+        # Expected when the runner's Chrome has no live Apollo session or the
+        # cookies are Keychain-encrypted and unreadable from the runner process.
+        # Apollo is OPTIONAL — skip gracefully (exit 0) so the workflow stays
+        # green; recruiter_finder falls through to Hunter/Snov/job-desc sources.
         print("")
-        print("❌ No Apollo cookies found (or all encrypted)")
-        print("   Options:")
-        print("   1. Open Apollo.io in Chrome and log in")
-        print("   2. Install 'cryptography' package: pip install cryptography")
-        print("   3. Or manually: EditThisCookie extension → export → base64 → gh secret set")
-        sys.exit(1)
+        print("⏭️  No readable Apollo cookies — skipping (optional source, pipeline uses Hunter/Snov instead).")
+        print("   To enable Apollo: (1) log into Apollo.io in Chrome on this runner,")
+        print("   (2) install 'cryptography', or (3) set APOLLO_COOKIES_B64 manually.")
+        sys.exit(0)
     
     print(f"   ✅ Found {len(cookies)} Apollo cookies")
     
