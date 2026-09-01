@@ -168,10 +168,12 @@ def _extract_code(body: str) -> Optional[str]:
         # Mixed digit+letter: always a code (15372C, 4SSHR6aH, cb164f12)
         if has_digit and has_letter:
             return True
-        # All letters: only accept the Greenhouse 8-char mixed-case token
-        # (>=2 uppercase, >=1 lowercase) — blocks words like "Security"/"Colorado".
+        # All letters: only accept a RANDOM-looking Greenhouse 8-char token.
+        # Real codes (EEtMwNKJ, XWHfrfdC, OhbuBMBU) have >=3 uppercase scattered
+        # irregularly. CamelCase words (LinkedIn, YourName, JobAlert) have exactly
+        # 1-2 uppercase at word boundaries — require >=3 uppercase to exclude them.
         if has_letter and not has_digit and len(candidate) == 8:
-            return (sum(1 for c in candidate if c.isupper()) >= 2
+            return (sum(1 for c in candidate if c.isupper()) >= 3
                     and sum(1 for c in candidate if c.islower()) >= 1)
         return False
 

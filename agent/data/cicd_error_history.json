@@ -346,6 +346,14 @@
       "root_cause": "_extract_code digit-only patterns ran first and truncated alphanumeric codes (15372C -> 15372); fallback also grabbed CSS colour #15372C and 4-digit fragments",
       "fix": "Rewrote _extract_code: context-anchored PASS1 matches FULL alphanumeric token; PASS2 fallback skips #-prefixed CSS colours; added 6 regression tests (24 pass). Verified against real codes 15372C/EEtMwNKJ/4SSHR6aH/cb164f12",
       "verified": "pytest tests/test_email_code_reader.py = 24 passed"
+    },
+    {
+      "date": "2026-09-01",
+      "workflow": "AI Job Agent",
+      "error": "OTP _extract_code false positive \u2014 matched the word LinkedIn as a code (live run 33532232428)",
+      "root_cause": "all-letter branch accepted 8-char tokens with >=2 uppercase; CamelCase words (LinkedIn/YourName/JobAlert) have exactly 2 uppercase at word boundaries and slipped through",
+      "fix": "Raised all-alpha threshold to >=3 uppercase (real Greenhouse codes EEtMwNKJ=6/XWHfrfdC=4/OhbuBMBU=5 keep; CamelCase words drop). Added 3 regression tests. 27 pass.",
+      "verified": "pytest=27 passed; live run 33532232428 showed verification_code_rejected=0"
     }
   ],
   "patterns": {
@@ -388,7 +396,7 @@
     "verify_before_push": "MANDATORY before EVERY git push: (1) python syntax check, (2) YAML valid, (3) verify file paths EXIST on disk, (4) check working-directory in workflow, (5) no duplicate keys. NEVER push without verification. One bad push = 5 min wasted waiting for failure.",
     "working_directory_paths": "If workflow has working-directory: X/ then ALL paths in run: are RELATIVE to X/. Writing X/scripts/foo.py becomes X/X/scripts/foo.py = file not found. Check FIRST.",
     "recruiter_pipeline_tracking": "Every recruiter conversation is tracked through stages. Pipeline auto-advances based on email keywords. Silent recruiters get follow-up after 3 days. Never lose a conversation.",
-    "otp_code_extraction": "ATS codes are ALPHANUMERIC 4-8 chars. Never use digit-only regex first (truncates 15372C->15372). Anchor on context word; skip #-prefixed CSS colours."
+    "otp_code_extraction": "ATS codes are ALPHANUMERIC 4-8 chars. digit-only regex truncates (15372C->15372). For all-letter tokens require >=3 uppercase (random codes) to exclude CamelCase words like LinkedIn. Anchor on context word; skip #-prefixed CSS colours."
   },
   "rules_for_new_workflows": [
     "Use venv (python3 -m venv) \u2014 never bare pip install",

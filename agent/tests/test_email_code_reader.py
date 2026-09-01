@@ -88,6 +88,23 @@ class TestExtractCode:
         body = "Security Please Colorado enter code below XWHfrfdC thanks"
         assert _extract_code(body) == "XWHfrfdC"
 
+    # ── Regression for the 2026-09-01 live-run false positive ──────────────
+    # A real run matched the word "LinkedIn" (8-char CamelCase) as a code.
+    def test_camelcase_words_not_matched_as_code(self):
+        for word in ("LinkedIn", "YourName", "JobAlert", "TeamName"):
+            assert _extract_code(word) is None, f"{word} wrongly matched as code"
+
+    def test_linkedin_in_body_picks_real_code(self):
+        """'LinkedIn' in the signature must not beat the real code in the body."""
+        body = ("Connect with us on LinkedIn. Your security code is bd316sx4. "
+                "Paste it to resubmit your application.")
+        assert _extract_code(body) == "bd316sx4"
+
+    def test_real_greenhouse_alpha_codes_still_work(self):
+        """Random >=3-uppercase Greenhouse tokens must still extract."""
+        assert _extract_code("code EEtMwNKJ") == "EEtMwNKJ"
+        assert _extract_code("code XWHfrfdC") == "XWHfrfdC"
+
 
 class TestGetVerificationCode:
     """Test IMAP polling behavior (mocked)."""
