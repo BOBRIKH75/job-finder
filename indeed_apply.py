@@ -128,9 +128,10 @@ def save_failed_jobs(failed_file: str, jobs: list) -> None:
         json.dump({'jobs': jobs, 'count': len(jobs)}, f, indent=2)
 
 
-# 5-second human-like pause before EVERY click (requested behavior:
-# wait so the page fully renders and we don't look like a bot).
-PRE_CLICK_WAIT = float(os.environ.get('PRE_CLICK_WAIT', '5'))
+# Human-like pause before clicks. 5s was too slow for volume (only a few
+# jobs fit the CI budget). 1.5s default keeps it human-ish but lets us apply
+# to many more jobs per run. Override with PRE_CLICK_WAIT.
+PRE_CLICK_WAIT = float(os.environ.get('PRE_CLICK_WAIT', '1.5'))
 
 
 def handle_robot_check(page) -> bool:
@@ -284,17 +285,22 @@ def main():
                 'Java developer remote contract "easy apply"',
             ]
         
-        # MAXIMIZE VOLUME: use ALL queries every run (was: only 3/day).
-        # Verified live 2026-09-01 that only ~1 in 6 "easy apply" jobs is actually
-        # applyable, so we must cast the widest net to find enough real ones.
-        queries = SEARCHES
-        
+        # VOLUME vs TIME: searching too many queries (28 x 2 scrapes) ate the
+        # entire 25-min CI budget on 2026-09-01 and the browser never launched.
+        # Cap the query count and put a hard time budget on the whole search
+        # phase, so most of the runtime is spent APPLYING (the real goal).
+        max_queries = int(os.environ.get('MAX_QUERIES', '6'))
+        search_budget_s = int(os.environ.get('SEARCH_BUDGET_S', '300'))  # 5 min
+        queries = SEARCHES[:max_queries]
+        search_start = time.time()
+
         all_jobs = []
         for q in queries:
-            # Strategy: run TWO searches per query for best coverage.
-            # 1. easy_apply=True — gets Indeed Easy Apply jobs (can't combine with hours_old)
-            # 2. hours_old=48 + job_type=contract — gets recent contract jobs (may include external)
-            # The post-search filter will remove external-redirect jobs from both.
+            if time.time() - search_start > search_budget_s:
+                print(f"  ⏱️ Search budget ({search_budget_s}s) reached — stopping search, moving to apply")
+                break
+            # One search per query (easy_apply=True) keeps it fast. The runtime
+            # button-detection still catches applyable jobs the API mislabels.
             try:
                 batch1 = scrape_jobs(
                     site_name=['indeed'],
@@ -308,20 +314,22 @@ def main():
             except Exception:
                 count1 = 0
 
-            try:
-                batch2 = scrape_jobs(
-                    site_name=['indeed'],
-                    search_term=q,
-                    location='USA',
-                    results_wanted=40,
-                    hours_old=48,
-                    job_type='contract',
-                    is_remote=True,
-                )
-                all_jobs.append(batch2)
-                count2 = len(batch2)
-            except Exception:
-                count2 = 0
+            count2 = 0
+            if os.environ.get('DEEP_SEARCH', '0') == '1':
+                try:
+                    batch2 = scrape_jobs(
+                        site_name=['indeed'],
+                        search_term=q,
+                        location='USA',
+                        results_wanted=40,
+                        hours_old=48,
+                        job_type='contract',
+                        is_remote=True,
+                    )
+                    all_jobs.append(batch2)
+                    count2 = len(batch2)
+                except Exception:
+                    count2 = 0
 
             print(f"  🔍 '{q}' → {count1} (easy_apply) + {count2} (recent contract) = {count1+count2} jobs")
             if count1 == 0 and count2 == 0:
@@ -361,6 +369,9 @@ def main():
     indeed_learner.bump_runs(selectors_store)
     skipped = 0
     MAX_APPS = int(os.environ.get('MAX_APPS', '60'))
+    # Apply-phase deadline: the CI step caps at 25 min. Leave a margin so we
+    # always print results and save memory instead of being killed mid-loop.
+    apply_deadline = time.time() + int(os.environ.get('APPLY_BUDGET_S', '1080'))  # 18 min
 
     try:
         from playwright.sync_api import sync_playwright
@@ -413,6 +424,9 @@ def main():
 
         for _, row in jobs.iterrows():
             if applied >= MAX_APPS:
+                break
+            if time.time() > apply_deadline:
+                print("  ⏱️ Apply budget reached — stopping loop to save results")
                 break
 
             url = str(row.get('job_url', ''))
