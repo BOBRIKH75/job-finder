@@ -63,6 +63,31 @@ class TestExtractCode:
         body = "Verification code - 192847"
         assert _extract_code(body) == "192847"
 
+    # ── Regression tests for the 2026-09-01 OTP-rejection fix ──────────────
+    # Real codes seen in production Greenhouse emails (from cicd_error_history).
+    def test_alphanumeric_not_truncated(self):
+        """15372C must NOT be truncated to 15372 (caused verification_code_rejected)."""
+        assert _extract_code("security code: 15372C please enter") == "15372C"
+
+    def test_greenhouse_8char_alpha_token(self):
+        assert _extract_code("Copy and paste this code: EEtMwNKJ to resubmit") == "EEtMwNKJ"
+
+    def test_greenhouse_8char_alnum_token(self):
+        assert _extract_code("Your code: 4SSHR6aH — enter to verify") == "4SSHR6aH"
+
+    def test_greenhouse_8char_hex_lower(self):
+        assert _extract_code("code cb164f12 confirm your email") == "cb164f12"
+
+    def test_css_colour_not_matched_as_code(self):
+        """A CSS colour like #15372C must be ignored; the real code wins."""
+        body = "color #15372C font enter your security code 7391Q2 now"
+        assert _extract_code(body) == "7391Q2"
+
+    def test_capitalized_words_not_matched(self):
+        """Sentence words like 'Security'/'Colorado' must not be picked as the code."""
+        body = "Security Please Colorado enter code below XWHfrfdC thanks"
+        assert _extract_code(body) == "XWHfrfdC"
+
 
 class TestGetVerificationCode:
     """Test IMAP polling behavior (mocked)."""

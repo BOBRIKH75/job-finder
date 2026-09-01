@@ -145,38 +145,67 @@ def get_verification_code(
 
 
 def _extract_code(body: str) -> Optional[str]:
-    """Extract verification code from email body."""
-    # Common patterns for verification codes
-    patterns = [
-        r'(?:verification|security|confirm)\s*(?:code|number|pin)\s*(?:is)?\s*[:\-]?\s*(\d{4,8})',
-        r'(?:code|pin|OTP)\s*(?:is)?\s*[:\-]?\s*(\d{4,8})',
-        r'<strong>(\d{4,8})</strong>',
-        r'<b>(\d{4,8})</b>',
-        r'\b(\d{6})\b',  # 6-digit code (most common)
-    ]
-    
-    for pattern in patterns:
-        match = re.search(pattern, body, re.IGNORECASE)
-        if match:
-            return match.group(1)
-    
-    # Alphanumeric codes — two sub-cases:
-    #   1. Standard: mix of digits + letters (e.g., A1B2C3D4)
-    #   2. Greenhouse OTP: exactly 8 all-alpha mixed-case (e.g., EEtMwNKJ — NO digits)
-    #      Greenhouse tokens are mixed-case with multiple uppercase letters.
-    #      Requiring ≥2 uppercase prevents matching sentence-initial capitalized words
-    #      like "Security" (1 uppercase) or "Colorado" (1 uppercase).
-    for match in re.finditer(r'(?<![A-Za-z0-9])([A-Za-z0-9]{6,8})(?![A-Za-z0-9])', body):
-        candidate = match.group(1)
+    """Extract verification code from email body.
+
+    Greenhouse (and most ATS) codes are ALPHANUMERIC, 6-8 chars, e.g. 15372C,
+    EEtMwNKJ, 4SSHR6aH, cb164f12. The previous digit-only patterns truncated
+    mixed codes (15372C -> 15372) which Greenhouse then rejected. This version
+    matches the FULL token and anchors on the surrounding context word so it
+    never grabs a CSS colour (#15372C) or a stray 4-digit fragment.
+    """
+    # A code token: 4-8 alphanumerics, not glued to other word chars.
+    _CODE = r'([A-Za-z0-9]{4,8})'
+
+    def _valid(candidate: str) -> bool:
+        """Reject obvious non-codes (pure short words, all-lowercase words)."""
+        if not candidate:
+            return False
         has_digit = any(c.isdigit() for c in candidate)
         has_letter = any(c.isalpha() for c in candidate)
+        # Pure digits: accept only 4-8 length (OTP numeric codes)
+        if has_digit and not has_letter:
+            return 4 <= len(candidate) <= 8
+        # Mixed digit+letter: always a code (15372C, 4SSHR6aH, cb164f12)
         if has_digit and has_letter:
-            return candidate
+            return True
+        # All letters: only accept the Greenhouse 8-char mixed-case token
+        # (>=2 uppercase, >=1 lowercase) — blocks words like "Security"/"Colorado".
         if has_letter and not has_digit and len(candidate) == 8:
-            count_upper = sum(1 for c in candidate if c.isupper())
-            count_lower = sum(1 for c in candidate if c.islower())
-            if count_upper >= 2 and count_lower >= 1:
+            return (sum(1 for c in candidate if c.isupper()) >= 2
+                    and sum(1 for c in candidate if c.islower()) >= 1)
+        return False
+
+    # PASS 1 — context-anchored: the code that follows a verification keyword.
+    # This is the highest-confidence match and wins over anything elsewhere.
+    context_patterns = [
+        r'(?:verification|security|confirm(?:ation)?)\s*(?:code|number|pin|token)?\s*(?:is)?\s*[:\-]?\s*' + _CODE,
+        r'(?:code|pin|otp)\s*(?:is)?\s*[:\-]?\s*' + _CODE,
+        r'(?:paste|enter|use)\s*(?:this)?\s*(?:code)?\s*[:\-]?\s*' + _CODE,
+        r'<(?:strong|b)>\s*' + _CODE + r'\s*</(?:strong|b)>',
+    ]
+    for pattern in context_patterns:
+        for m in re.finditer(pattern, body, re.IGNORECASE):
+            candidate = m.group(1)
+            if _valid(candidate):
                 return candidate
+
+    # PASS 2 — standalone token fallback (no context word nearby).
+    # Skip anything immediately preceded by '#' (CSS colour like #15372C).
+    for m in re.finditer(r'(?<![A-Za-z0-9])' + _CODE + r'(?![A-Za-z0-9])', body):
+        start = m.start(1)
+        if start > 0 and body[start - 1] == '#':
+            continue  # CSS colour, not a code
+        candidate = m.group(1)
+        has_digit = any(c.isdigit() for c in candidate)
+        has_letter = any(c.isalpha() for c in candidate)
+        # digit+letter mix (15372C), OR a standalone 6-8 digit OTP (291847),
+        # OR the 8-char Greenhouse alpha token (EEtMwNKJ).
+        if has_digit and has_letter and _valid(candidate):
+            return candidate
+        if has_digit and not has_letter and 6 <= len(candidate) <= 8:
+            return candidate
+        if has_letter and not has_digit and len(candidate) == 8 and _valid(candidate):
+            return candidate
 
     return None
 

@@ -338,6 +338,14 @@
       "commit": "76e29df",
       "permanent": true,
       "note": "Rule: ALWAYS check working-directory in workflow BEFORE writing paths. If working-directory: agent/ then paths are RELATIVE to agent/."
+    },
+    {
+      "date": "2026-09-01",
+      "workflow": "AI Job Agent",
+      "error": "verification_code_rejected \u2014 half of Greenhouse OTP submits rejected",
+      "root_cause": "_extract_code digit-only patterns ran first and truncated alphanumeric codes (15372C -> 15372); fallback also grabbed CSS colour #15372C and 4-digit fragments",
+      "fix": "Rewrote _extract_code: context-anchored PASS1 matches FULL alphanumeric token; PASS2 fallback skips #-prefixed CSS colours; added 6 regression tests (24 pass). Verified against real codes 15372C/EEtMwNKJ/4SSHR6aH/cb164f12",
+      "verified": "pytest tests/test_email_code_reader.py = 24 passed"
     }
   ],
   "patterns": {
@@ -379,7 +387,8 @@
     "vendor_is_automated": "Vendor outreach is AUTOMATED: monthly email blast + weekly portal upload + auto-discovery from job scraping. Do NOT manually manage vendor list \u2014 it grows from find_jobs.py.",
     "verify_before_push": "MANDATORY before EVERY git push: (1) python syntax check, (2) YAML valid, (3) verify file paths EXIST on disk, (4) check working-directory in workflow, (5) no duplicate keys. NEVER push without verification. One bad push = 5 min wasted waiting for failure.",
     "working_directory_paths": "If workflow has working-directory: X/ then ALL paths in run: are RELATIVE to X/. Writing X/scripts/foo.py becomes X/X/scripts/foo.py = file not found. Check FIRST.",
-    "recruiter_pipeline_tracking": "Every recruiter conversation is tracked through stages. Pipeline auto-advances based on email keywords. Silent recruiters get follow-up after 3 days. Never lose a conversation."
+    "recruiter_pipeline_tracking": "Every recruiter conversation is tracked through stages. Pipeline auto-advances based on email keywords. Silent recruiters get follow-up after 3 days. Never lose a conversation.",
+    "otp_code_extraction": "ATS codes are ALPHANUMERIC 4-8 chars. Never use digit-only regex first (truncates 15372C->15372). Anchor on context word; skip #-prefixed CSS colours."
   },
   "rules_for_new_workflows": [
     "Use venv (python3 -m venv) \u2014 never bare pip install",
@@ -408,7 +417,7 @@
     }
   },
   "status": {
-    "last_updated": "2026-08-24",
+    "last_updated": "2026-09-01",
     "dice": {
       "runner": "ubuntu-latest (cloud)",
       "schedule": "10:30 AM MT weekdays",
