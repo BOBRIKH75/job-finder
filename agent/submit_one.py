@@ -330,7 +330,25 @@ def wait_for_human_captcha(page, max_wait=180):
         print("   ⚠️ CAPTCHA still present after wait")
         return False
 
-    # 1) Try the existing auto-solver chain (NopeCHA/audio/Gemini/hCaptcha/enterprise).
+    # 1) FREE ClickSolver (playwright-captcha) — clicks the reCAPTCHA using the browser's
+    #    stealth; works best with Patchright/Camoufox fingerprint. No API key. (2026 best free.)
+    try:
+        from playwright_captcha import ClickSolver, CaptchaType, FrameworkType
+        fw = FrameworkType.PATCHRIGHT if _STEALTH == 'patchright' else FrameworkType.PLAYWRIGHT
+        with ClickSolver(framework=fw, page=page, max_attempts=3, attempt_delay=3) as _cs:
+            for _ct in (CaptchaType.RECAPTCHA_V2, CaptchaType.RECAPTCHA_V3):
+                try:
+                    _cs.solve_captcha(captcha_container=page, captcha_type=_ct)
+                except Exception:
+                    continue
+        if not has_recaptcha(page):
+            print("   ✅ free ClickSolver cleared the reCAPTCHA")
+            snap(page, "CAPTCHA_clicksolved")
+            return True
+    except Exception as _e:
+        print(f"   ⚠️ ClickSolver n/a: {str(_e)[:50]}")
+
+    # 2) Existing auto-solver chain (NopeCHA/audio/Gemini/hCaptcha/enterprise token).
     if _try_auto_captcha_solve is not None:
         try:
             print("   🔓 trying auto-captcha solver chain...")
@@ -341,7 +359,7 @@ def wait_for_human_captcha(page, max_wait=180):
         except Exception as _e:
             print(f"   ⚠️ auto-solver error: {str(_e)[:60]}")
 
-    # 2) Reload to clear (LEARNED: reloading often removes the checkbox).
+    # 3) Reload to clear (LEARNED: reloading often removes the checkbox).
     for rl in range(2):
         if has_recaptcha(page):
             print(f"   🔄 reloading to clear CAPTCHA ({rl+1}/2)")
