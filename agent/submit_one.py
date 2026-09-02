@@ -532,10 +532,25 @@ def submit_one(pg, url, db, profile):
     # STEP 4: screenshot after redirect
     snap(pg, "after_apply_click")
 
+    # FIRST-PAGE FAST-SKIP (Bobur): if Apply-with-Indeed did NOT reach the SmartApply
+    # flow (still on the job view, no apply form), skip fast — don't waste time.
+    try:
+        _u = (pg.url or '').lower()
+        _reached = ('smartapply' in _u or 'indeedapply' in _u or 'resume-selection' in _u
+                    or is_questions_page(pg) or has_submit(pg))
+        if not _reached and not is_cloudflare(pg):
+            print("  ⏭️  Apply did not open the SmartApply flow — skipping fast")
+            snap(pg, "SKIP_apply_no_flow")
+            return 'no_apply_button'
+    except Exception:
+        pass
+
     # STEP 5-10: loop each page
     _no_progress = 0
     _last_pct = None
     _force_tries = 0
+    _submit_attempts = 0
+    _reached_submit_once = False
     for step in range(MAX_STEPS):
         # LEARNED (Bobur screenshot 2026-09-01): SmartApply sometimes throws
         # "Something went wrong — please try again later" (a SERVER error, often from
@@ -579,6 +594,27 @@ def submit_one(pg, url, db, profile):
         print(f"  --- STEP {step} | pct={p} | url ...{pg.url.split('/')[-1][:24]}")
         print(f"      head={heading(pg)}")
 
+        # LOOP DETECTION (Bobur): if we already hit the submit page once and the flow
+        # BOUNCED BACK to resume-selection/38% (submit didn't take), stop — don't re-do
+        # the same job and burn time. Record jk so it's skipped pre-open next time.
+        if _reached_submit_once and ('resume-selection' in pg.url.lower() or p == '38%'):
+            print("  🛑 flow bounced back to start after submit — submit didn't take, skipping job")
+            snap(pg, f"SUBMIT_BOUNCE_step{step}")
+            try:
+                import re as _re, json as _json
+                m = _re.search(r'jk=([0-9a-f]+)', url or '')
+                if m:
+                    jkf = 'data/failed_jks.json'
+                    try:
+                        fs = set(_json.load(open(jkf)))
+                    except Exception:
+                        fs = set()
+                    fs.add(m.group(1)); _json.dump(sorted(fs), open(jkf, 'w'))
+            except Exception:
+                pass
+            record_lesson('submit_click_failed', step, p)
+            return 'submit_click_failed'
+
         # human-like pause between steps (short — perf)
         time.sleep(random.uniform(0.4, 1.0))
 
@@ -604,6 +640,13 @@ def submit_one(pg, url, db, profile):
         if has_submit(pg):
             print(f"  >>> SUBMIT PAGE (pct={p}) — clicking Submit for REAL")
             snap(pg, f"before_submit_step{step}")
+            _reached_submit_once = True
+            _submit_attempts += 1
+            if _submit_attempts > 3:
+                print("  🛑 reached submit page 3x without confirming — skipping job (anti-loop)")
+                snap(pg, f"SUBMIT_LOOP_step{step}")
+                record_lesson('submit_click_failed', step, p)
+                return 'submit_click_failed'
             # Try auto-solver / reload to clear any CAPTCHA. This MAY reload the page.
             wait_for_human_captcha(pg)
             # If a CAPTCHA is still present, re-loop (don't submit into a challenge).
@@ -629,9 +672,14 @@ def submit_one(pg, url, db, profile):
                     pg.wait_for_load_state('domcontentloaded', timeout=10000)
                 except Exception:
                     pass
-                time.sleep(5)
+                # Wait longer + re-check twice (confirmation can lag after CAPTCHA/reload).
+                conf = None
+                for _c in range(3):
+                    time.sleep(4)
+                    conf = is_confirmation(pg)
+                    if conf:
+                        break
                 scroll_and_snap(pg, f"after_submit_step{step}")
-                conf = is_confirmation(pg)
                 if conf:
                     print(f"  🎉 CONFIRMATION: matched '{conf}'")
                     snap(pg, "CONFIRMED_final")
