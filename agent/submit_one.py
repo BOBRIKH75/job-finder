@@ -774,9 +774,15 @@ def main():
         _headful = os.environ.get('HEADFUL', '0') == '1'
         b = pw.chromium.launch(headless=not _headful,
                                args=['--disable-blink-features=AutomationControlled'])
-        ctx = b.new_context(viewport={'width': 1000, 'height': 1300}, user_agent=(
-            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) '
-            'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36'))
+        # Human-like context: rotating UA/viewport + Denver timezone (matches IP).
+        try:
+            from human_behavior import random_context_args
+            ctx = b.new_context(**random_context_args())
+            print("  🧑 human-like context (rotating UA/viewport/timezone)")
+        except Exception:
+            ctx = b.new_context(viewport={'width': 1000, 'height': 1300}, user_agent=(
+                'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) '
+                'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36'))
         ctx.add_cookies(cookies)
         pg = ctx.new_page()
 
@@ -805,6 +811,24 @@ def main():
                 pass
 
         applied_jks = _load_jks()
+
+        # Also pull jk ids from the applications DB (jobs applied in PRIOR sessions),
+        # so we skip them WITHOUT opening the link (Bobur: don't waste time loading).
+        try:
+            for r in db.execute("SELECT job_url FROM applications "
+                                "WHERE status IN ('applied','submitted','dry_run','applied_via_email')").fetchall():
+                ju = r[0] if not hasattr(r, 'keys') else r['job_url']
+                j = _jk(ju)
+                if j:
+                    applied_jks.add(j)
+        except Exception:
+            pass
+        # Persist the enriched set so it's available immediately next run too.
+        try:
+            json.dump(sorted(applied_jks), open(JK_FILE, 'w'))
+        except Exception:
+            pass
+        print(f"  🗂️  {len(applied_jks)} jobs pre-marked applied (skipped without opening)")
 
         # Failed/stalled jobs — skip them too so we don't waste time re-trying.
         FAILED_FILE = 'data/failed_jks.json'

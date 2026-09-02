@@ -232,8 +232,8 @@ def answer_question(db, question: str, field_type: str = "text",
                     company: str = "") -> str | None:
     """Return the best answer for a question, learning + remembering as it goes.
 
-    Order: memory -> profile rules -> ask user (interactive only). Any answer
-    from profile/user is saved to memory for reuse.
+    Order: memory -> profile rules -> GEMINI AI (dynamic, from CV) -> ask user.
+    Any answer is saved to memory for instant reuse next time.
     """
     question = (question or "").strip()
     if not question:
@@ -251,7 +251,28 @@ def answer_question(db, question: str, field_type: str = "text",
         save_approved_answer(db, question, str(ans), source="profile")
         return str(ans)
 
-    # 3. ASK USER (interactive local only)
+    # 3. GEMINI AI FALLBACK (dynamic) — ask AI what Bob should answer, from his CV.
+    #    This handles NEW question wordings we haven't hard-coded. Saved to memory.
+    try:
+        try:
+            from src.ai_fallback import ask_ai_about_field
+        except Exception:
+            from ai_fallback import ask_ai_about_field
+        ai = ask_ai_about_field(question, field_type, options)
+        if ai:
+            # If options exist, snap the AI answer to the closest real option.
+            if options:
+                opts = [str(o) for o in options]
+                match = next((o for o in opts if o.lower() == ai.lower()), None) \
+                    or next((o for o in opts if ai.lower() in o.lower() or o.lower() in ai.lower()), None)
+                ai = match or ai
+            save_approved_answer(db, question, str(ai), source="gemini")
+            print(f"      🤖 AI answered: {question[:40]!r} -> {str(ai)[:30]!r}")
+            return str(ai)
+    except Exception as _e:
+        print(f"      ⚠️ AI fallback error: {str(_e)[:50]}")
+
+    # 4. ASK USER (interactive local only)
     if _can_ask_user():
         ans = _ask_user(question, field_type, options)
         if ans:
