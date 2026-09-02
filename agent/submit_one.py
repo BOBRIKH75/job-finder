@@ -45,7 +45,14 @@ def _load_env():
 
 _load_env()
 
-from playwright.sync_api import sync_playwright
+# Patchright = stealth-patched Playwright that passes Cloudflare Turnstile naturally
+# (2026 best practice). Drop-in: same API. Falls back to plain Playwright if absent.
+try:
+    from patchright.sync_api import sync_playwright
+    _STEALTH = 'patchright'
+except Exception:
+    from playwright.sync_api import sync_playwright
+    _STEALTH = 'playwright'
 from memory import init_db, application_exists, upsert_application
 from questions_filler import is_questions_page, fill_questions_page
 
