@@ -224,6 +224,7 @@ def click_continue(page):
     # Use PRECISE matches only — loose 'Review'/'Next' caused repeated mis-clicks/looping.
     for sel in ['[data-testid="continue-button"]',
                 'button:has-text("Review your application")',
+                'button:has-text("Review details")',
                 'button:has-text("Continue")']:
         loc = page.locator(sel)
         for i in range(min(loc.count(), 8)):
@@ -628,29 +629,41 @@ def submit_one(pg, url, db, profile):
             snap(pg, f"CONFIRMED_step{step}")
             return 'submitted'
 
-        # If at a 100%/review page, let the below-fold Submit button render before checking.
-        if p == '100%' or 'review' in pg.url.lower():
+        # If at the FINAL review page (review-module) only — NOT structured-data-review.
+        if p == '100%' or 'review-module' in pg.url.lower():
             snap(pg, f"review_page_step{step}")  # learn: capture the review page
+            # 1) give the review page + its reCAPTCHA time to load
+            time.sleep(2)
             try:
                 pg.evaluate("() => window.scrollTo(0, document.body.scrollHeight)")
             except Exception:
                 pass
-            time.sleep(2)
-            # Submit button can load ASYNC and be missing on first render (Oracle variant).
-            # If not present, reload the review page once + wait, then re-check.
+            time.sleep(1.5)
+            # 2) if no Submit yet, the reCAPTCHA likely hasn't validated — solve it first.
             if not has_submit(pg):
-                print("  ↻ review page but no Submit yet — reloading to render it")
-                try:
-                    pg.reload(wait_until='domcontentloaded', timeout=20000)
-                except Exception:
-                    pass
-                time.sleep(4)
+                print("  🔐 review page — solving reCAPTCHA first (Submit appears after it)")
+                wait_for_human_captcha(pg)   # solver chain + reload-to-clear
+                time.sleep(2)
                 try:
                     pg.evaluate("() => window.scrollTo(0, document.body.scrollHeight)")
                 except Exception:
                     pass
-                time.sleep(2)
-                snap(pg, f"review_after_reload_step{step}")
+                # poll for Submit to render after CAPTCHA cleared
+                for _w in range(6):
+                    if has_submit(pg):
+                        break
+                    time.sleep(2)
+                if not has_submit(pg):
+                    # last resort: reload the review page to force Submit to render
+                    print("  ↻ still no Submit — reloading review page once")
+                    try:
+                        pg.reload(wait_until='domcontentloaded', timeout=20000)
+                    except Exception:
+                        pass
+                    time.sleep(4)
+                    wait_for_human_captcha(pg)
+                    time.sleep(2)
+                snap(pg, f"review_after_captcha_step{step}")
 
         # final submit page?
         if has_submit(pg):
