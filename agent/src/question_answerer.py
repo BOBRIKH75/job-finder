@@ -46,6 +46,12 @@ def _profile_answer(question: str, field_type: str, options, profile: dict):
     q = question.lower()
     opts = [str(o) for o in (options or [])]
 
+    # E-SIGNATURE box: "type your name to electronically sign" -> full name.
+    if any(k in q for k in ["signature", "type your name", "typing your name",
+                            "electronically sign", "sign this form", "e-sign", "your full name"]):
+        name = profile.get("name") or f"{profile.get('first_name','')} {profile.get('last_name','')}".strip()
+        return name or "Bob Rikh"
+
     def pick_option(*preferred):
         """Pick the first option matching any preferred keyword."""
         for want in preferred:

@@ -436,6 +436,19 @@ def submit_one(pg, url, db, profile):
                 if core and len(core) >= 15 and (core in rt or rt in core):
                     print(f"  ⏭️  already applied/confirmed by title — skipping ({real_title[:40]})")
                     snap(pg, "SKIP_title_confirmed")
+                    # Record this jk so NEXT time it's skipped BEFORE opening the link.
+                    try:
+                        m = _re.search(r'jk=([0-9a-f]+)', url or '')
+                        if m:
+                            jkf = 'data/applied_jks.json'
+                            try:
+                                js = set(_json.load(open(jkf)))
+                            except Exception:
+                                js = set()
+                            js.add(m.group(1))
+                            _json.dump(sorted(js), open(jkf, 'w'))
+                    except Exception:
+                        pass
                     return 'email_confirmed_skip'
     except Exception:
         pass
@@ -511,6 +524,9 @@ def submit_one(pg, url, db, profile):
     snap(pg, "after_apply_click")
 
     # STEP 5-10: loop each page
+    _no_progress = 0
+    _last_pct = None
+    _force_tries = 0
     for step in range(MAX_STEPS):
         # LEARNED (Bobur screenshot 2026-09-01): SmartApply sometimes throws
         # "Something went wrong — please try again later" (a SERVER error, often from
@@ -553,17 +569,6 @@ def submit_one(pg, url, db, profile):
         p = pct(pg)
         print(f"  --- STEP {step} | pct={p} | url ...{pg.url.split('/')[-1][:24]}")
         print(f"      head={heading(pg)}")
-
-        # SELF-HEAL: if we've learned this pct is a trouble spot, pre-apply the fix.
-        _lessons = load_lessons()
-        _lk = f"stuck@pct{p}"
-        if _lessons.get(_lk, {}).get('fix') == 'extra_reload_and_wait':
-            print(f"  🧠 applying learned fix at {p}: extra reload + settle")
-            try:
-                pg.reload(wait_until='domcontentloaded', timeout=20000)
-            except Exception:
-                pass
-            time.sleep(random.uniform(4, 6))
 
         # human-like pause between steps
         time.sleep(random.uniform(0.8, 2.0))
@@ -646,12 +651,95 @@ def submit_one(pg, url, db, profile):
         # questions page? FILL first (do NOT skip)
         if is_questions_page(pg):
             print(f"  📝 questions page at step {step} — filling")
-            fill_questions_page(pg, db, profile, company='Employer')
+            _nfilled = fill_questions_page(pg, db, profile, company='Employer')
             scroll_and_snap(pg, f"step{step}_after_fill")
+            _pnow = pct(pg)
+            # On 0-fill, check if required fields are actually EMPTY. If none empty,
+            # the page is READY — try hard to advance (Review/Continue) rather than
+            # counting it as stuck (fixes false stall when everything is already filled).
+            if (_nfilled or 0) == 0 and _pnow == _last_pct:
+                _empty_now = 0
+                try:
+                    _empty_now = pg.evaluate(r"""() => {
+                        let n=0; const names=new Set();
+                        document.querySelectorAll('input[type=radio]').forEach(r=>r.name&&names.add(r.name));
+                        names.forEach(nm=>{const rs=[...document.querySelectorAll(`input[type=radio][name="${nm}"]`)];
+                          if(rs.length&&!rs.some(r=>r.checked)&&rs[0].offsetParent)n++;});
+                        document.querySelectorAll('[role=combobox]').forEach(c=>{if(c.offsetParent&&/select an option/i.test(c.textContent))n++;});
+                        document.querySelectorAll('textarea[required],input[required]').forEach(t=>{if(t.offsetParent&&!(t.value||'').trim())n++;});
+                        return n;
+                    }""")
+                except Exception:
+                    _empty_now = 1
+                if _empty_now == 0:
+                    # Everything my filler sees is filled. But a hidden required control
+                    # (e.g. "Agree" privacy consent) may remain. Try consent + advance,
+                    # cap at 3 tries, then screenshot + skip (NOT infinite loop).
+                    _force_tries += 1
+                    print(f"  ✅ all visible filled — force-advance try {_force_tries}/3")
+                    try:
+                        pg.evaluate(r"""() => {
+                            // click any 'Agree'/single consent option first
+                            [...document.querySelectorAll('label,button,[role=option],[role=radio],input')].forEach(e=>{
+                                const t=(e.textContent||e.value||'').trim().toLowerCase();
+                                if(t==='agree'||t==='i agree'){ e.click(); }
+                            });
+                            // open + pick the first non-placeholder option in any 'select an option' consent dropdown
+                            const cb=[...document.querySelectorAll('[role=combobox]')].find(c=>c.offsetParent&&/select an option|agree/i.test(c.textContent));
+                            if(cb){cb.click();}
+                        }""")
+                        time.sleep(1)
+                        pg.evaluate(r"""() => {
+                            const o=[...document.querySelectorAll('[role=option]')].find(e=>e.offsetParent&&/agree/i.test(e.textContent));
+                            if(o)o.click();
+                            const b=[...document.querySelectorAll('button')].find(x=>!x.disabled&&/review your application|^continue$/i.test(x.textContent.trim()));
+                            if(b){b.scrollIntoView({block:'center'});b.click();}
+                        }""")
+                    except Exception:
+                        pass
+                    time.sleep(3)
+                    if _force_tries >= 3 and pct(pg) == _pnow:
+                        print(f"  🛑 3 force-advance tries failed at {_pnow} — screenshot + skip")
+                        snap(pg, f"NOPROGRESS_step{step}")
+                        record_lesson('stuck', step, _pnow)
+                        return 'stuck'
+                    _no_progress = 0
+                    _last_pct = _pnow
+                    continue
+                _no_progress += 1
+            else:
+                _no_progress = 0
+            _last_pct = _pnow
+            if _no_progress >= 2:
+                print(f"  🛑 no progress 2x at {_pnow} — screenshot + capture + skip (learn for next run)")
+                snap(pg, f"NOPROGRESS_step{step}")
+                try:
+                    qtexts = pg.evaluate(r"""() => {
+                        const out=[]; const names=new Set();
+                        document.querySelectorAll('input[type=radio]').forEach(r=>r.name&&names.add(r.name));
+                        names.forEach(n=>{const rs=[...document.querySelectorAll(`input[type=radio][name="${n}"]`)];
+                          if(!rs.length||rs.some(r=>r.checked)||!rs[0].offsetParent)return;
+                          let q='',d=rs[0].closest('div');
+                          for(let k=0;k<6&&d;k++){for(const t of d.querySelectorAll('legend,h2,h3,h4,label,p,span')){const tx=(t.textContent||'').trim();if(tx.length>q.length&&tx.length>12&&tx.length<400&&!/^(yes|no)\b/i.test(tx)&&(tx.includes('?')||tx.includes('*')||tx.split(' ').length>4))q=tx;}if(q)break;d=d.parentElement;}
+                          const opts=rs.map(r=>{let l='';if(r.id){const e=document.querySelector(`label[for="${r.id}"]`);if(e)l=e.textContent.trim();}return l;}).filter(Boolean);
+                          if(q)out.push({q,opts,type:'radio'});});
+                        return out.slice(0,20);
+                    }""")
+                    if qtexts:
+                        nrf='data/needs_resolution.json'
+                        try: existing=json.load(open(nrf))
+                        except Exception: existing=[]
+                        seen={e['q'] for e in existing}
+                        for qt in qtexts:
+                            if qt['q'] not in seen: existing.append(qt)
+                        os.makedirs('data',exist_ok=True); json.dump(existing,open(nrf,'w'),indent=2)
+                        print(f"  🧠 saved {len(qtexts)} unresolved → next run AI-resolves")
+                except Exception:
+                    pass
+                record_lesson('stuck', step, _pnow)
+                return 'stuck'
             # LEARNED (Bobur): when the "I'm not a robot" checkbox appears here,
             # RELOAD the page and it goes away — then Continue works.
-            # Reloading does NOT lose the filled answers (Indeed keeps them server-side),
-            # but if it does, the loop will re-fill on the next pass.
             for rl in range(3):
                 if has_recaptcha(pg):
                     print(f"  🔄 robot checkbox on questions page — reloading to clear ({rl+1}/3)")
@@ -706,6 +794,48 @@ def submit_one(pg, url, db, profile):
             except Exception as _e:
                 empties = ['?']
                 print(f"  🔎 diagnose failed: {str(_e)[:50]}")
+            # DYNAMIC SELF-HEAL (Bobur's design): if fields remain empty, capture the
+            # actual QUESTION TEXTS + options and save them so NEXT run pre-resolves
+            # them via AI into memory → passes cleanly next time.
+            if empties and empties != ['?']:
+                try:
+                    qtexts = pg.evaluate(r"""() => {
+                        const out = [];
+                        // radio groups not answered -> capture question text + options
+                        const names = new Set();
+                        document.querySelectorAll('input[type=radio]').forEach(r => r.name && names.add(r.name));
+                        names.forEach(n => {
+                            const rs = [...document.querySelectorAll(`input[type=radio][name="${n}"]`)];
+                            if (!rs.length || rs.some(r => r.checked) || !rs[0].offsetParent) return;
+                            let q = '', d = rs[0].closest('div');
+                            for (let k=0; k<6 && d; k++) {
+                                for (const t of d.querySelectorAll('legend,h2,h3,h4,label,p,span')) {
+                                    const tx=(t.textContent||'').trim();
+                                    if (tx.length>q.length && tx.length>12 && tx.length<400 &&
+                                        !/^(yes|no)\b/i.test(tx) && (tx.includes('?')||tx.includes('*')||tx.split(' ').length>4)) q=tx;
+                                }
+                                if (q) break; d = d.parentElement;
+                            }
+                            const opts = rs.map(r => { let l=''; if(r.id){const e=document.querySelector(`label[for="${r.id}"]`); if(e)l=e.textContent.trim();} return l; }).filter(Boolean);
+                            if (q) out.push({q, opts, type:'radio'});
+                        });
+                        return out.slice(0, 20);
+                    }""")
+                    if qtexts:
+                        nrf = 'data/needs_resolution.json'
+                        try:
+                            existing = json.load(open(nrf))
+                        except Exception:
+                            existing = []
+                        seen = {e['q'] for e in existing}
+                        for qt in qtexts:
+                            if qt['q'] not in seen:
+                                existing.append(qt)
+                        os.makedirs('data', exist_ok=True)
+                        json.dump(existing, open(nrf, 'w'), indent=2)
+                        print(f"  🧠 saved {len(qtexts)} unresolved question(s) → next run AI-resolves them")
+                except Exception as _e:
+                    print(f"  🧠 capture failed: {str(_e)[:50]}")
             # LAST RESORT: all fields filled but Continue not clicked → JS-click any
             # enabled 'Continue' button directly (handles sticky/footer buttons).
             if not empties:
@@ -760,10 +890,30 @@ def main():
     db.row_factory = sqlite3.Row
     init_db(db)
 
+    # DYNAMIC SELF-HEAL: pre-resolve questions that stalled us before, via AI, into
+    # memory — so this run answers them instantly (Bobur: next run comes with the fix).
+    try:
+        from question_answerer import answer_question as _aq
+        nrf = 'data/needs_resolution.json'
+        pending = json.load(open(nrf))
+        if pending:
+            resolved = 0
+            for item in pending:
+                a = _aq(db, item['q'], field_type=item.get('type', 'radio'),
+                        options=item.get('opts'), profile=profile)
+                if a:
+                    resolved += 1
+            print(f"  🧠 self-heal: pre-resolved {resolved}/{len(pending)} previously-stuck questions via AI")
+            # clear the ones now in memory (keep file small)
+            json.dump([], open(nrf, 'w'))
+    except Exception:
+        pass
+
     print("Searching Indeed easy-apply jobs...")
     jobs = scrape_jobs(site_name=['indeed'],
-                       search_term='Java Spring Boot developer contract remote',
-                       location='USA', results_wanted=20, easy_apply=True)
+                       search_term=os.environ.get('SEARCH_TERM', 'Java Spring Boot developer contract remote'),
+                       location=os.environ.get('SEARCH_LOCATION', 'USA'),
+                       results_wanted=int(os.environ.get('RESULTS_WANTED', '20')), easy_apply=True)
     urls = [str(u) for u in jobs['job_url'].tolist() if str(u) != 'nan']
     print(f"Got {len(urls)} urls")
     cookies = load_cookies()

@@ -133,12 +133,23 @@ def _fill_radios(page, db, profile, company):
                 let p = radios[0].closest('fieldset');
                 if (p) { const lg = p.querySelector('legend'); if (lg) q = lg.textContent.trim(); }
                 if (!q) {
+                    // climb ancestors; pick the LONGEST question-like text block above the radios
                     let d = radios[0].closest('div');
-                    for (let k=0; k<5 && d; k++) {
-                        const t = d.querySelector('legend, h2, h3, span');
-                        if (t && t.textContent.trim().length > 10) { q = t.textContent.trim(); break; }
+                    let best = '';
+                    for (let k=0; k<6 && d; k++) {
+                        for (const t of d.querySelectorAll('legend, h2, h3, h4, label, p, span, div')) {
+                            const txt = (t.textContent || '').trim();
+                            // question-like: has a '?' or '*' or is a long sentence, not an option label
+                            if (txt.length > best.length && txt.length > 12 && txt.length < 400
+                                && !/^(yes|no)\b/i.test(txt)
+                                && (txt.includes('?') || txt.includes('*') || txt.split(' ').length > 4)) {
+                                best = txt;
+                            }
+                        }
+                        if (best) break;
                         d = d.parentElement;
                     }
+                    q = best;
                 }
                 const anyChecked = radios.some(r => r.checked);
                 const opts = radios.map(r => {
@@ -194,17 +205,51 @@ def _fill_radios(page, db, profile, company):
                                "don't wish", "self-identify"])), None) or opts[-1]
         clicked = False
         if target:
-            for attempt in (
-                lambda: page.get_by_text(target, exact=True).first.click(timeout=2000),
-                lambda: page.get_by_text(target[:40], exact=False).first.click(timeout=2000),
-                lambda: page.get_by_role("radio", name=target).first.check(timeout=2000),
-            ):
-                try:
-                    attempt()
-                    clicked = True
-                    break
-                except Exception:
-                    continue
+            # Click the SPECIFIC radio in THIS group (by name + matching label), via JS,
+            # and VERIFY it becomes checked. Page-wide get_by_text('Yes') clicks the WRONG
+            # question's radio (many 'Yes'/'No' on the page) → infinite stuck loop.
+            try:
+                clicked = page.evaluate(
+                    """(args) => {
+                        const {name, target} = args;
+                        const radios = [...document.querySelectorAll(`input[type=radio][name="${name}"]`)];
+                        for (const r of radios) {
+                            let lab = '';
+                            if (r.id) { const l = document.querySelector(`label[for="${r.id}"]`); if (l) lab = l.textContent.trim(); }
+                            if (!lab && r.closest('label')) lab = r.closest('label').textContent.trim();
+                            if (lab && (lab.toLowerCase() === target.toLowerCase()
+                                        || lab.toLowerCase().includes(target.toLowerCase())
+                                        || target.toLowerCase().includes(lab.toLowerCase()))) {
+                                r.scrollIntoView({block:'center'});
+                                r.click();
+                                if (!r.checked) {  // fire events for custom widgets
+                                    r.checked = true;
+                                    r.dispatchEvent(new Event('input', {bubbles:true}));
+                                    r.dispatchEvent(new Event('change', {bubbles:true}));
+                                }
+                                // also click its label (custom UIs listen on label)
+                                const l = r.id ? document.querySelector(`label[for="${r.id}"]`) : r.closest('label');
+                                if (l) l.click();
+                                return r.checked;
+                            }
+                        }
+                        return false;
+                    }""",
+                    {"name": g['name'], "target": target})
+            except Exception:
+                clicked = False
+            # Fallback: Playwright role/text click if JS didn't register
+            if not clicked:
+                for attempt in (
+                    lambda: page.get_by_role("radio", name=target).first.check(timeout=2000),
+                    lambda: page.get_by_text(target, exact=True).first.click(timeout=2000),
+                ):
+                    try:
+                        attempt()
+                        clicked = True
+                        break
+                    except Exception:
+                        continue
         if clicked:
             filled += 1
             print(f"      🔘 radio: {q[:45]!r} -> {target!r}")
@@ -404,4 +449,4 @@ def fill_questions_page(page, db, profile, company: str = "") -> bool:
     total += _fill_selects(page, db, profile, company)
     print(f"    📝 filled {total} field(s)")
     time.sleep(1)
-    return total > 0
+    return total
