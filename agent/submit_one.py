@@ -1153,10 +1153,13 @@ def main():
                 print(f"  ⏭️  previously failed (jk={jk}) — skipping to save time")
                 continue
             try:
+                _job_start = time.time()
                 result = submit_one(pg, url, db, profile)
+                _job_elapsed = time.time() - _job_start
             except Exception as e:
                 print(f"  ERR {str(e)[:120]}")
                 result = 'error'
+                _job_elapsed = time.time() - _job_start if '_job_start' in dir() else 0
             if result in ('submitted', 'submitted_no_conf') and jk:
                 _save_jk(jk)
                 applied_jks.add(jk)
@@ -1166,14 +1169,14 @@ def main():
                 failed_jks.add(jk)
             if result in ('submitted', 'submitted_no_conf'):
                 submitted_jobs.append(url)
-                print(f"\n✅ SUBMITTED #{len(submitted_jobs)} — {url[-45:]}")
+                print(f"\n✅ SUBMITTED #{len(submitted_jobs)} — {url[-45:]} (took {_job_elapsed:.0f}s)")
                 if len(submitted_jobs) >= target:
                     break
             else:
                 print(f"  -> {result}; trying next job")
-                # FAILURE REPORT for debugging (per Bobur: screenshot + report so we fix).
+                # FAILURE REPORT for debugging (per Bobur: screenshot + report + TIME).
                 if result in ('stuck', 'submit_click_failed', 'max_steps', 'error'):
-                    print(f"  ❌ FAILURE REPORT: job jk={jk} result={result}")
+                    print(f"  ❌ FAILURE REPORT: job jk={jk} result={result} time={_job_elapsed:.0f}s")
                     print(f"     latest screenshots: run `ls -t screenshots/submit_*stuck* | head`")
 
             # FOCUS_ONE: stop after the FIRST real attempt (skips don't count), so we
