@@ -630,11 +630,27 @@ def submit_one(pg, url, db, profile):
 
         # If at a 100%/review page, let the below-fold Submit button render before checking.
         if p == '100%' or 'review' in pg.url.lower():
+            snap(pg, f"review_page_step{step}")  # learn: capture the review page
             try:
                 pg.evaluate("() => window.scrollTo(0, document.body.scrollHeight)")
             except Exception:
                 pass
             time.sleep(2)
+            # Submit button can load ASYNC and be missing on first render (Oracle variant).
+            # If not present, reload the review page once + wait, then re-check.
+            if not has_submit(pg):
+                print("  ↻ review page but no Submit yet — reloading to render it")
+                try:
+                    pg.reload(wait_until='domcontentloaded', timeout=20000)
+                except Exception:
+                    pass
+                time.sleep(4)
+                try:
+                    pg.evaluate("() => window.scrollTo(0, document.body.scrollHeight)")
+                except Exception:
+                    pass
+                time.sleep(2)
+                snap(pg, f"review_after_reload_step{step}")
 
         # final submit page?
         if has_submit(pg):
