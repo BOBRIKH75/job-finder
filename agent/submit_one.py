@@ -92,7 +92,10 @@ def snap(page, tag):
 
 
 def scroll_and_snap(page, tag):
-    """Scroll top -> mid -> bottom, screenshot each; return to top."""
+    """Screenshot the page. FAST mode (default) = one quick shot; FAST=0 = top/mid/bot."""
+    if os.environ.get('FAST', '1') == '1':
+        snap(page, tag)
+        return
     for name, frac in [('top', 0.0), ('mid', 0.5), ('bot', 1.0)]:
         try:
             page.evaluate(f"() => window.scrollTo(0, document.body.scrollHeight * {frac})")
@@ -136,9 +139,15 @@ def heading(page):
 
 def has_submit(page):
     try:
+        # Submit is below a long resume preview — scroll to bottom so it's in the DOM/visible.
+        try:
+            page.evaluate("() => window.scrollTo(0, document.body.scrollHeight)")
+        except Exception:
+            pass
         return page.locator(
             '[data-testid="submit-application-button"], '
-            'button:has-text("Submit your application")').count() > 0
+            'button:has-text("Submit your application"), '
+            'button:has-text("Submit application")').count() > 0
     except Exception:
         return False
 
@@ -570,8 +579,8 @@ def submit_one(pg, url, db, profile):
         print(f"  --- STEP {step} | pct={p} | url ...{pg.url.split('/')[-1][:24]}")
         print(f"      head={heading(pg)}")
 
-        # human-like pause between steps
-        time.sleep(random.uniform(0.8, 2.0))
+        # human-like pause between steps (short — perf)
+        time.sleep(random.uniform(0.4, 1.0))
 
         # scroll + full screenshots to see the WHOLE page
         scroll_and_snap(pg, f"step{step}")
