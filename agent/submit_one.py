@@ -592,6 +592,14 @@ def submit_one(pg, url, db, profile):
             snap(pg, f"CONFIRMED_step{step}")
             return 'submitted'
 
+        # If at a 100%/review page, let the below-fold Submit button render before checking.
+        if p == '100%' or 'review' in pg.url.lower():
+            try:
+                pg.evaluate("() => window.scrollTo(0, document.body.scrollHeight)")
+            except Exception:
+                pass
+            time.sleep(2)
+
         # final submit page?
         if has_submit(pg):
             print(f"  >>> SUBMIT PAGE (pct={p}) — clicking Submit for REAL")
