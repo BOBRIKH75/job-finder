@@ -298,9 +298,37 @@ def has_recaptcha(page):
 
 
 def wait_for_human_captcha(page, max_wait=180):
-    """Try Bobur's auto-solver chain first; reload to clear; human handoff last."""
+    """Solve reCAPTCHA. In HEADFUL mode, prefer HUMAN solve (real click = high-trust
+    token that actually passes reCAPTCHA Enterprise). The free auto token-injection
+    produces a LOW-trust token that the employer form silently rejects -> submit bounces.
+    So: HEADFUL -> human first; headless CI -> auto solver chain."""
     if not has_recaptcha(page):
         return True
+
+    _headful = os.environ.get('HEADFUL', '0') == '1'
+
+    if _headful:
+        # Human solve — real click gives a high-trust token that truly passes.
+        snap(page, "CAPTCHA_solve_human")
+        print("\n" + "=" * 60)
+        print("🧑  reCAPTCHA — please solve it in the browser window NOW")
+        print("   (check 'I'm not a robot' + any picture challenge).")
+        print(f"   Waiting up to {max_wait}s...")
+        print("=" * 60)
+        try:
+            os.system('afplay /System/Library/Sounds/Glass.aiff >/dev/null 2>&1 &')
+        except Exception:
+            pass
+        waited = 0
+        while waited < max_wait:
+            time.sleep(3)
+            waited += 3
+            if not has_recaptcha(page):
+                print(f"   ✅ CAPTCHA cleared (human) after ~{waited}s")
+                snap(page, "CAPTCHA_cleared")
+                return True
+        print("   ⚠️ CAPTCHA still present after wait")
+        return False
 
     # 1) Try the existing auto-solver chain (NopeCHA/audio/Gemini/hCaptcha/enterprise).
     if _try_auto_captcha_solve is not None:
@@ -683,13 +711,22 @@ def submit_one(pg, url, db, profile):
                 print("  ↻ CAPTCHA still present after solve attempt — re-looping")
                 time.sleep(2)
                 continue
-            # The page may have reloaded during CAPTCHA clearing. Poll IN-PLACE for the
-            # submit button to reappear (up to ~15s) instead of re-looping + re-solving.
+            # CAPTCHA cleared — scroll to bottom (75s human solve may have moved view),
+            # then poll for the Submit button to be present before clicking.
+            try:
+                pg.evaluate("() => window.scrollTo(0, document.body.scrollHeight)")
+            except Exception:
+                pass
+            time.sleep(1.5)
             ready = has_submit(pg)
-            for _w in range(8):
+            for _w in range(10):
                 if ready:
                     break
-                time.sleep(2)
+                time.sleep(1.5)
+                try:
+                    pg.evaluate("() => window.scrollTo(0, document.body.scrollHeight)")
+                except Exception:
+                    pass
                 ready = has_submit(pg)
             if not ready:
                 print("  ↻ submit button still not ready — re-looping once")
