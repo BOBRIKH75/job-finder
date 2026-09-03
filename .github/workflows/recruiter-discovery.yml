@@ -31,6 +31,8 @@ jobs:
           HUNTER_API_KEY: ${{ secrets.HUNTER_API_KEY }}
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          SNOV_USER_ID: ${{ secrets.SNOV_USER_ID }}
+          SNOV_API_SECRET: ${{ secrets.SNOV_API_SECRET }}
         run: python scripts/recruiter_from_applications.py
 
       - name: Commit new vendors

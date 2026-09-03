@@ -93,6 +93,45 @@ def hunter_recruiters(company, existing):
     return found
 
 
+def _snov_token():
+    uid, sec = os.environ.get('SNOV_USER_ID', ''), os.environ.get('SNOV_API_SECRET', '')
+    if not uid or not sec:
+        return None
+    import urllib.request, json as _j
+    try:
+        body = _j.dumps({'grant_type': 'client_credentials', 'client_id': uid,
+                         'client_secret': sec}).encode()
+        req = urllib.request.Request('https://api.snov.io/v1/oauth/access_token', data=body,
+                                     headers={'Content-Type': 'application/json'})
+        with urllib.request.urlopen(req, timeout=15) as r:
+            return _j.loads(r.read()).get('access_token')
+    except Exception as e:
+        print(f"    snov token err: {str(e)[:50]}")
+        return None
+
+
+def snov_recruiters(domain, token, existing):
+    import urllib.request, urllib.parse, json as _j
+    found = []
+    try:
+        params = urllib.parse.urlencode({'domain': domain, 'type': 'personal', 'limit': 10,
+                                         'access_token': token})
+        with urllib.request.urlopen(f"https://api.snov.io/v2/domain-emails-with-info?{params}",
+                                    timeout=20) as r:
+            data = _j.loads(r.read())
+        for e in data.get('emails', []):
+            addr = (e.get('email') or '').lower()
+            pos = (e.get('position', '') or '').lower()
+            if addr and addr not in existing and (not pos or any(
+                    k in pos for k in ('recruit', 'talent', 'staffing', 'hr', 'hiring', 'sourc', 'lead'))):
+                found.append({'name': f"{e.get('firstName','')} {e.get('lastName','')}".strip(),
+                              'company': domain, 'email': addr, 'position': e.get('position', ''),
+                              'source': f'snov/{domain}', 'verified': datetime.now().strftime('%Y-%m-%d')})
+    except Exception as ex:
+        print(f"    snov {domain[:20]} err: {str(ex)[:50]}")
+    return found
+
+
 def main():
     print("🔍 Recruiter finder from OUR APPLICATIONS...")
     try:
@@ -110,22 +149,33 @@ def main():
         already_searched = set(json.load(open(searched_file)))
     except Exception:
         already_searched = set()
-    if os.environ.get('HUNTER_API_KEY'):
-        # only search companies we haven't searched before (Hunter free = ~50/mo; don't re-burn)
-        todo = [c for c in sorted(companies) if c not in already_searched]
-        print(f"  🔎 {len(todo)} NEW companies to Hunter-search ({len(already_searched)} already done)")
-        for c in todo[:int(os.environ.get('HUNTER_MAX_PER_RUN', '15'))]:
-            recs = hunter_recruiters(c, existing)
-            already_searched.add(c)
-            for rec in recs:
-                if rec['email'] not in existing:
-                    existing.add(rec['email']); new.append(rec)
-        try:
-            json.dump(sorted(already_searched), open(searched_file, 'w'), indent=2)
-        except Exception:
-            pass
-    else:
-        print("  ⚠️ HUNTER_API_KEY not set — company list gathered but no email lookup this run")
+    todo = [c for c in sorted(companies) if c not in already_searched]
+    cap = int(os.environ.get('HUNTER_MAX_PER_RUN', '15'))
+    print(f"  🔎 {len(todo)} NEW companies to search ({len(already_searched)} already done)")
+
+    # PRIMARY: Snov.io (separate free quota; Hunter's is exhausted). FALLBACK: Hunter.
+    snov_tok = _snov_token()
+    if snov_tok:
+        print("  📡 using Snov.io (fresh quota)")
+    have_hunter = bool(os.environ.get('HUNTER_API_KEY'))
+
+    for c in todo[:cap]:
+        recs = []
+        dom = company_to_domain(c) + '.com'   # best-effort domain
+        if snov_tok:
+            recs = snov_recruiters(dom, snov_tok, existing)
+        if not recs and have_hunter:
+            recs = hunter_recruiters(c, existing)   # fallback (may 429 if exhausted)
+        already_searched.add(c)
+        for rec in recs:
+            if rec['email'] not in existing:
+                existing.add(rec['email']); new.append(rec)
+    try:
+        json.dump(sorted(already_searched), open(searched_file, 'w'), indent=2)
+    except Exception:
+        pass
+    if not snov_tok and not have_hunter:
+        print("  ⚠️ no Snov token + no Hunter key — company list gathered only")
 
     if new:
         vendors.extend(new)
