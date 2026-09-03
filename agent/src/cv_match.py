@@ -36,6 +36,7 @@ C2C_BONUS = ("c2c", "corp to corp", "corp-to-corp", "contract", "contractor", "1
 # --- Hard negatives: if the TITLE is clearly a different field, skip regardless ---
 TITLE_NEGATIVES = (
     ".net", "c#", "dotnet", "php", "ruby on rails", "salesforce", "sap ", "workday",
+    "c++", "c/c++", " golang", "golang ", "rust ", " rust", "scala ", "elixir", "perl",
     "frontend only", "front-end only", "ui/ux", "designer", "sales ", "account executive",
     "recruiter", "nurse", "nursing", "driver", "warehouse", "cashier", "data entry",
     "qa manual", "manual tester", "servicenow", "sharepoint", "cobol", "mainframe",
@@ -81,6 +82,16 @@ def score_job(title, description="", location=""):
     if any(k in blob for k in C2C_BONUS):
         score += 1
         reasons.append("contract/c2c")
+    # REQUIRE a real Java/backend skill signal — remote/C2C are BONUSES, not qualifiers.
+    # A generic "Software Engineer" with NO java/spring/backend/microservice skill (score
+    # coming only from remote/contract) is NOT a confirmed CV fit → force a skip. This is
+    # why Greenhouse was disabled (Figma "Software Engineer, C++", Toast Ruby/React passed
+    # on the generic title). Now they don't.
+    _real_skill = any(k in blob for k in (
+        "java", "spring", "spring boot", "microservice", "microservices",
+        "backend", "back-end", "back end", "j2ee", "jakarta"))
+    if not _real_skill:
+        return (-5, ["no real Java/Spring/backend skill (generic title only)"])
     return (score, reasons)
 
 

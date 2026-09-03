@@ -696,3 +696,35 @@ _claim_key to strip location/work-type noise.
 1. company list sorted(set) · 2. discover slug-guard · 3. git-synced _gh_applied (past runs) ·
 4. in-memory set (same run) · 5. DB atomic claim (concurrent runs). Order: discover(append,future)
 → rotate(cover all) → cv-fit → claim → apply → dedup-record.
+
+
+---
+## Session: 2026-09-02 night — SCHEDULING coverage: Greenhouse RE-ENABLED + filter hardened
+
+### Bobur's ask
+After the Indeed/Greenhouse logic updates, make sure scheduling is covered to apply to as many
+(CV-fit) jobs as possible during CI.
+
+### Key finding — Greenhouse schedule was DISABLED
+Comment said: "DISABLED: applying to irrelevant jobs (Figma C++, DoorDash iOS, Toast) without
+Java/C2C filter. Re-enable after adding filter logic." → that filter is EXACTLY what we built
+today. So it was safe to re-enable — after one more filter hardening.
+
+### Filter hardening (cv_match.py) — needed before re-enable
+Test exposed 2 gaps: "Software Engineer, C++" @ Figma and generic "Software Engineer" @ Toast
+(Ruby/React) still passed (generic core title + remote bonus = score 2 >= min 2).
+- Added non-Java language TITLE_NEGATIVES: c++, c/c++, golang, rust, scala, elixir, perl.
+- REQUIRE a real Java/Spring/backend/microservice skill signal (remote/C2C are BONUSES, not
+  qualifiers). Generic "Software Engineer" with no Java skill → score -5 → skip.
+- Verified: C++/iOS/Toast/generic = SKIP; Java/Spring/backend = APPLY (6-9).
+
+### Greenhouse schedule RE-ENABLED (greenhouse-apply.yml)
+- 3x/day weekdays: 15:30 / 19:30 / 23:30 UTC (was 7x/day spamming; now moderate + CV-filtered).
+- Staggered around Indeed (14/16/20/00 UTC) and LinkedIn (15 UTC). Single self-hosted runner
+  serializes via concurrency groups → queue safely, no overlap failures.
+
+### DAILY APPLY CAPACITY (weekdays, all CV-filtered + deduped)
+- Indeed: 4 runs × TARGET_SUBMITS=10 = up to 40/day (self-paces on rate-limit).
+- Greenhouse: 3 runs × MAX_APPS=30 = up to 90/day (rotates all 95 companies, CV-fit only).
+- LinkedIn: 1 run/day (20h cooldown in script). Dice: disabled (blocks headless).
+- Every apply is now: CV-fit + non-duplicate (5-layer dedup + DB lock) + real submit.

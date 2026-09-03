@@ -1,17 +1,15 @@
 name: Greenhouse Apply
 
-# DISABLED: Applying to irrelevant jobs (Figma C++, DoorDash iOS, Toast, etc.)
-# without Java/C2C filter. AI Agent already covers Greenhouse with proper
-# relevance filtering. Re-enable after adding filter logic from agent.py.
+# RE-ENABLED 2026-09-02: the reason it was disabled (applying to irrelevant jobs like
+# Figma C++, DoorDash iOS, Toast Ruby) is now FIXED — greenhouse_apply.py has the
+# cv_match CV-fit gate (Java/Spring/backend/remote/C2C, hard-negatives incl. C++/iOS/
+# generic), round-robin company rotation, persistent+DB-lock dedup, and CV-driven
+# discovery. Moderate cadence maximizes CV-fit applies without spamming.
 on:
-  # schedule DISABLED — was running 7x/day applying to wrong jobs:
-  #   - cron: '30 14 * * *'
-  #   - cron: '30 17 * * *'
-  #   - cron: '30 20 * * *'
-  #   - cron: '30 23 * * *'
-  #   - cron: '30 4 * * *'
-  #   - cron: '30 7 * * *'
-  #   - cron: '30 11 * * *'
+  schedule:
+    - cron: '30 15 * * 1-5'   # 9:30 AM MT (after Indeed 8:00, staggered)
+    - cron: '30 19 * * 1-5'   # 1:30 PM MT
+    - cron: '30 23 * * 1-5'   # 5:30 PM MT
   workflow_dispatch: {}
 
 concurrency:
