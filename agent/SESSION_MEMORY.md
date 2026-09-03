@@ -1036,3 +1036,31 @@ Is real recruiter-finding working in CI?
 - agent/scripts/recruiter_from_applications.py (new), data/applied_companies.json (32),
   data/recruiter_searched_companies.json (quota tracker). recruiter-discovery.yml uses only
   the new reliable finder now + token'd push.
+
+
+---
+## Session: 2026-09-02 night — RECRUITER: all API keys dead/exhausted (need working keys)
+
+### Tested every email-finding source (CI, real creds)
+- Hunter.io → HTTP 429 (free ~50/mo quota EXHAUSTED).
+- Snov.io → HTTP 401 (SNOV_USER_ID/SNOV_API_SECRET secrets EXPIRED/invalid).
+- Apollo.io → creds present (APOLLO_COOKIES_B64/API_KEY, 10K free/mo) but needs Selenium browser;
+  apollo-recruiter-discovery weekly workflow output was boilerplate-only (unverified).
+
+### VERDICT: code is CORRECT + tested (extracts 32 real companies from our application emails),
+### blocked purely by ACCOUNT/QUOTA. Need a WORKING key.
+
+### Options (told Bobur)
+A) Regenerate Snov.io API key (snov.io → Settings → API) → update SNOV_USER_ID + SNOV_API_SECRET
+   secrets → re-run → finds recruiters for the 32 companies (fresh Snov quota). FASTEST.
+B) Apollo.io (10K free/mo, best volume) — needs fresh cookies + a browser workflow + Apollo
+   cookie-refresh (like the Dice launchd one).
+C) Wait for Hunter monthly reset.
+
+### Already-working recruiter pieces (not blocked)
+- vendor_list.json = 68 existing contacts.
+- recruiter-auto-reply workflow (every 2h) works.
+- recruiter_from_applications.py: extracts companies (32) + Snov-primary/Hunter-fallback lookup,
+  quota-guarded (skip already-searched, HUNTER_MAX_PER_RUN cap). Ready the moment a key works.
+
+### DO NOT re-run CI against the dead keys (wastes time). Fix a key first, then verify once.
