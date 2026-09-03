@@ -1686,29 +1686,58 @@ def main():
 
         # Failed/stalled jobs — skip them too so we don't waste time re-trying.
         FAILED_FILE = 'data/failed_jks.json'
+        DEAD_FILE = 'data/dead_jks.json'   # jk -> fail count; >=3 = permanently retired
+        MAX_FAILS = int(os.environ.get('MAX_FAILS_PER_JOB', '3'))
         def _load_failed():
             try:
                 return set(json.load(open(FAILED_FILE)))
             except Exception:
                 return set()
+        def _load_dead():
+            """jk -> fail count. A job that failed the SAME way MAX_FAILS times is
+            permanently retired (skipped even under RETRY_FAILED) so we never loop a
+            genuinely-broken/expired job forever (Bobur: no looping the same job)."""
+            try:
+                return json.load(open(DEAD_FILE))
+            except Exception:
+                return {}
         def _save_failed(j):
             s = _load_failed(); s.add(j)
             try:
                 json.dump(sorted(s), open(FAILED_FILE, 'w'))
             except Exception:
                 pass
+            # increment the per-job fail counter
+            try:
+                dead = _load_dead()
+                dead[j] = int(dead.get(j, 0)) + 1
+                json.dump(dead, open(DEAD_FILE, 'w'), indent=0)
+                if dead[j] >= MAX_FAILS:
+                    print(f"  ⚰️  jk={j} failed {dead[j]}x — permanently retired (won't retry even with RETRY_FAILED)")
+            except Exception:
+                pass
+        def _dead_set():
+            return {j for j, c in _load_dead().items() if int(c) >= MAX_FAILS}
         failed_jks = _load_failed()
+        dead_jks = _dead_set()
         # TEST/RETRY mode: when RETRY_FAILED=1, do NOT skip previously-failed jobs.
         # After a filler/answer bug fix we WANT to re-attempt the jobs that stalled
         # before, so the fix is proven on a real submit (Bobur: loop until confirmed).
+        # BUT permanently-retired jobs (failed MAX_FAILS times) are STILL skipped —
+        # retrying a genuinely-broken/expired job forever is pure waste.
         if os.environ.get('RETRY_FAILED', '0') == '1':
-            print(f"  ♻️  RETRY_FAILED=1 — will re-attempt {len(failed_jks)} previously-failed job(s)")
-            failed_jks = set()
+            retryable = len(failed_jks) - len(dead_jks & failed_jks)
+            print(f"  ♻️  RETRY_FAILED=1 — will re-attempt {retryable} previously-failed job(s) "
+                  f"({len(dead_jks)} permanently retired, still skipped)")
+            failed_jks = set(dead_jks)   # keep only the dead ones in the skip set
 
         for url in urls:
             jk = _jk(url)
             if jk and jk in applied_jks:
                 print(f"  ⏭️  already applied (jk={jk}) — skipping")
+                continue
+            if jk and jk in dead_jks:
+                print(f"  ⚰️  permanently retired (jk={jk}, failed {MAX_FAILS}x+) — skipping")
                 continue
             if jk and jk in failed_jks:
                 print(f"  ⏭️  previously failed (jk={jk}) — skipping to save time")

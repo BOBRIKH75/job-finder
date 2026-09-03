@@ -97,6 +97,7 @@ jobs:
           git config user.name "Indeed Bot"
           git add agent/data/applied_jks.json agent/data/applied_titles.json \
                   agent/data/email_confirmed_titles.json agent/data/failed_jks.json \
+                  agent/data/dead_jks.json \
                   agent/data/failed_jobs.json agent/data/indeed_manual_jobs.json \
                   agent/data/dice_manual_jobs.json 2>/dev/null || true
           git diff --staged --quiet || git commit -m "indeed: sync applied/dedup state [skip ci]"

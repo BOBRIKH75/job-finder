@@ -456,3 +456,41 @@ duplicate title in same batch · off-CV title. All skipped WITHOUT opening the b
 ### Testing discipline note
 - Did this WITHOUT live Indeed runs (IP still cooling from earlier over-testing). Used unit
   tests on synthetic HTML — the right way to harden edge cases without re-flagging the IP.
+
+
+---
+## Session: 2026-09-02 night — ANTI-LOOP guarantee (never repeat/loop the same job)
+
+### Bobur's ask
+"Save everything so next session + self-learning don't do the same job / loop."
+
+### Persistence — next session will NOT rebuild (all saved)
+- SESSION_MEMORY.md (this file) header says "Read this FIRST. Do NOT rebuild." — 458 lines,
+  every fix documented. KB `job-finder-indeed-autoapply` re-indexed each session.
+- FLOW_LOCK.md + in-code LOCKED FIX markers freeze the 4 proven fixes.
+
+### Anti-loop — the FULL chain (so the bot never loops the same job)
+WITHIN a run:
+- MAX_STEPS=20 cap per job · force-advance cap 3x · _submit_attempts>3 → skip (anti-loop) ·
+  rate_limited → STOP the whole run (protect IP).
+ACROSS runs (persistent):
+- applied_jks.json → applied jobs skipped before opening.
+- failed_jks.json → stuck/submit_click_failed/error/max_steps skipped before opening.
+- applied_titles + email_confirmed_titles → re-posted (new jk) same-title jobs skipped before opening.
+- NEW dead_jks.json (jk→fail count): a job that fails MAX_FAILS (default 3, env MAX_FAILS_PER_JOB)
+  times is PERMANENTLY RETIRED — skipped even under RETRY_FAILED=1. This is the key anti-loop
+  guarantee: a genuinely-broken/expired job can NEVER be retried forever. Verified (unit test):
+  run1 fail=1, run2 fail=2, run3 fail=3→retired, run4 stays retired.
+- RETRY_FAILED=1 now re-attempts only NON-dead failed jobs (dead ones stay skipped).
+- dead_jks.json added to CI commit step → shared local+CI (won't loop on either).
+
+### Self-learning — improves, does NOT loop
+- record_lesson → flow_lessons.json; load_lessons/learned_rate_limit_plan applies escalating
+  cooldown+pace (capped) — bounded, never infinite.
+- needs_resolution.json → next-run AI pre-resolves stuck questions (each resolved once).
+- All counters are capped; all failure paths terminate (skip/retire/stop). No infinite retry path.
+
+### Answer to Bobur: YES.
+Everything learned is in memory + code markers (no rebuild next session). Every failure path
+is capped or persisted-and-skipped, and repeated failures permanently retire the job (dead_jks)
+— so neither the bot nor the self-learning loops the same job.
