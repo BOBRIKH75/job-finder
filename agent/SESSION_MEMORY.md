@@ -552,3 +552,27 @@ So DevOps/SRE/Data/Platform/anything mentioning "aws" or "api" passed → wasted
 ### Both ATS now consistent
 Indeed + Greenhouse: (1) CV-fit gate before applying, (2) persistent git-synced dedup
 (company+normalized-title), (3) skip-before-open where possible. Every submit = new + CV-fit.
+
+
+---
+## Session: 2026-09-02 night — GREENHOUSE same-companies (not rotating) root cause + fix
+
+### Bobur's report
+Feels like applying to the SAME companies again and again; not finding others.
+
+### Root cause (deep-checked)
+- 95 Greenhouse companies in companies.json, but greenhouse_apply.py did
+  `random.shuffle(companies)[:15]` each run → re-picked the same popular ~15 by CHANCE,
+  never systematically covering the full 95.
+- A proper round-robin rotation (_load_scan_offset/_save_scan_offset/_rotate + scan_offset.json)
+  EXISTS in portal_scanner.py but was DEAD CODE — greenhouse_apply.py never used it. scan_offset.json
+  didn't even exist (never written) AND was gitignored (so CI would reset to 0 every run anyway).
+
+### FIX
+- greenhouse_apply.py: replaced shuffle+[:15] with round-robin: sort companies (stable order),
+  `_rotate(companies, offset, GH_SCAN_COUNT=15)`, then advance+persist offset `(offset+count)%total`.
+  Each run scans the NEXT slice → covers all 95 in ~7 runs, then wraps for fresh postings.
+- .gitignore: UN-ignored agent/data/scan_offset.json (was ignored → CI reset offset every run →
+  always scanned companies 0-14). Now git-tracked.
+- greenhouse-apply.yml: commit scan_offset.json too (offset persists across CI runs).
+- Verified (unit test): run1=0-14, run2=15-29 ... run7=95/95 covered, run8 wraps. All new each run.

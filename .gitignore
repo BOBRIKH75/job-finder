@@ -3,7 +3,8 @@
 agent/.venv/
 agent/__pycache__/
 agent/data/agent_memory.db
-agent/data/scan_offset.json
+# scan_offset.json is GIT-TRACKED on purpose: it's the round-robin company-scan
+# cursor. If ignored, CI resets to 0 each run and re-scans the same first companies.
 agent/*.pyc
 agent/__pycache__/
 agent/src/__pycache__/

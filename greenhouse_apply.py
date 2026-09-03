@@ -93,9 +93,23 @@ def main():
     print(f"🗂️  {len(_gh_applied)} Greenhouse company+title already applied (persistent dedup)")
 
     greenhouse_companies = companies.get('greenhouse', [])
-    random.shuffle(greenhouse_companies)
-    greenhouse_companies = greenhouse_companies[:15]
-    print(f"🔍 Scanning {len(greenhouse_companies)} Greenhouse companies...")
+    # ROTATE through ALL companies (Bobur: kept hitting the SAME companies). random.shuffle
+    # + [:15] re-picked the same popular ~15 by chance and never covered the full list.
+    # Use round-robin: each run scans the NEXT slice (offset advances + persists), so over
+    # several runs we cover all 95. Slice size via GH_SCAN_COUNT (default 15).
+    from src.portal_scanner import _load_scan_offset, _save_scan_offset, _rotate
+    _scan_count = int(os.environ.get('GH_SCAN_COUNT', '15'))
+    _total = len(greenhouse_companies)
+    _offset = _load_scan_offset()
+    # sort for a STABLE order (so the offset means the same slice every time), then rotate
+    greenhouse_companies = sorted(set(greenhouse_companies))
+    picked = _rotate(greenhouse_companies, _offset, _scan_count)
+    # advance offset for next run (wraps around the full list)
+    if _total:
+        _save_scan_offset((_offset + _scan_count) % _total)
+    greenhouse_companies = picked
+    print(f"🔍 Scanning {len(greenhouse_companies)} of {_total} Greenhouse companies "
+          f"(offset {_offset} → {( _offset + _scan_count) % max(_total,1)}, round-robin covers all)")
 
     all_jobs = []
     for company in greenhouse_companies:
