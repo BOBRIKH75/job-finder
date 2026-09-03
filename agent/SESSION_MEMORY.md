@@ -336,3 +336,65 @@ Extended the existing record_lesson/load_lessons self-heal:
   recover on its own. Don't loop-test submits (that re-flags the IP).
 - If you need to force-clear NOW: phone hotspot (manual) or wait ~1-2h. cds-rotate-ip script
   exists (~/bin) for hotspot switching when the phone is present.
+
+
+---
+## Session: 2026-09-02 night (cont.) — CV-relevance job matching + TODAY'S FULL SUMMARY
+
+### NEW FEATURE — apply ONLY to jobs that fit Bob's CV (not random)
+Bobur's ask: while rate-limited especially, every submit must COUNT — only Java/Spring/
+backend/remote/C2C roles, never off-target (.NET, nursing, sales, frontend-only, etc.).
+- NEW `src/cv_match.py`: `score_job()` + `should_apply()`. CORE_MUST (java/spring/backend/
+  microservice/software engineer), POSITIVE skills (kafka/k8s/aws/rest/graphql/...), REMOTE +
+  C2C bonuses, TITLE_NEGATIVES hard-skip (.net/c#/salesforce/nurse/android/data entry/...).
+  Threshold `CV_MATCH_MIN` (default 2). `CV_MATCH_OFF=1` disables. Unit-tested: Java+Spring+
+  remote=score 11 apply; .NET/Nurse/Salesforce/Android = -100 skip; QA-only = skip.
+- TWO gates in submit_one.py:
+  1. Search-time: `_extract_cv_matched_urls(df)` scores jobspy title+description+location,
+     drops off-target BEFORE opening (prints "skip off-CV" + "CV filter: kept N, skipped M").
+  2. Job-page: after capturing the real h1 title (+1500 chars of description), re-check
+     should_apply(); if off-CV → return 'off_cv_skip' (added to FOCUS_ONE skip-list, keeps
+     scanning). Belt-and-suspenders.
+- Search terms upgraded to CV-focused: "Java Spring Boot developer remote contract", "Senior
+  Java backend developer remote", "Java microservices Spring Boot remote contract", "Java Spring
+  Kafka developer remote", "Java backend engineer corp to corp remote".
+- Verified: "Java Spring Boot developer remote" → 20 CV-matched urls (all on-target).
+
+### ===== TODAY'S COMPLETE LEARNINGS (2026-09-02) — one place =====
+Started from 2 screenshots: Indeed reCAPTCHA "Try again later". Ended with a fully self-healing,
+CV-targeted auto-apply flow. Bugs found + fixed (all verified, 6+ real submits):
+1. LOCKED FIX #1 — persistent real-Chrome launch (channel=chrome, no fake UA/args) beats the
+   trust-block. Fresh chromium + fake UA was near-zero trust.
+2. LOCKED FIX #2 — Gemini model gemini-flash-latest (old preview 404'd; AI solver silently failed).
+3. LOCKED FIX #3 — single-option consent/acknowledge auto-click (was stuck at 50%).
+4. LOCKED FIX #4 — trust injected reCAPTCHA TOKEN, never reload-after-solve (was bouncing to step0).
+5. TTL guard — re-solve if token >110s old before Submit (reCAPTCHA ~120s expiry).
+6. DB upsert auto-defaults any NOT NULL column (company/job_title no longer break the record).
+7. distance "job is far from you" warning auto-dismissed (remote-preferred).
+8. CI unified to submit_one.py (was running legacy indeed_apply.py with the OLD buggy launch) +
+   dedup git-synced (applied_jks/titles/email_confirmed/failed_jks committed; CI pulls before,
+   commits after) → CI no longer re-applies to done jobs. load_cookies reads INDEED_COOKIES secret.
+9. pick_option word-boundary fix — "no" matched inside "now" → WRONG sponsorship answer (said Bob
+   needs sponsorship; he's a Green Card holder). SERIOUS. Now exact>starts-with>word-boundary.
+10. image-challenge fallback when audio rate-limited (library image_challenge=True via CapSolver;
+    else free Gemini grid). Chain: click→ClickSolver→audio→(rate-limited)→image/CapSolver→
+    OhMyCaptcha→hCaptcha→Enterprise→Gemini grid.
+11. SELF-LEARNING rate-limit: record_lesson('rate_limited') → next run learned_rate_limit_plan()
+    auto-cooldown (2min*count cap15min) + pacing (1min*count cap5min) + PREFER_NO_AUDIO. On
+    rate_limited → stop run to protect IP. VERIFIED run1 learns, run2 auto-applies cooldown.
+12. CV-relevance job matching (this entry).
+13. _launch clears stale Chrome SingletonLock (crash-recovery / CI rerun safety).
+14. click_submit more patient (7 tries, growing settle) for the Enterprise path.
+
+### DEEP IP RESEARCH VERDICT (do NOT re-chase — confirmed 6 ways)
+"Try again later" = IP/audio rate-limit from VOLUME (32 submits + 7 audio solves today). No LOCAL
+trick makes a new clean IP: Wi-Fi cycle (same lease, tested), Fios reboot (sticky IP to MAC),
+socket/proxy (same exit), Docker (NAT→same host IP), Tor (blacklisted shared exit → blocked
+HARDER). Proxy works but solve-IP must==submit-IP + costs money. Real cures: WAIT ~1-2h, phone
+hotspot (cds-rotate-ip when phone present), or self-pacing (built). Manual users also hit it via
+VPN/shared-IP/extensions/"another device automating" (= our bot). IP test: plain Google HTTP 200
+(light flag). Indeed apply-page reCAPTCHA = employer OPTIONAL bot-mitigation (not always required).
+
+### FLOW LOCK still in force
+The 4 LOCKED fixes are frozen (markers in-code + FLOW_LOCK.md). All new work (TTL, distance, DB,
+rate-limit self-heal, CV match, IP rotate) is ADDITIVE / env-gated. Never edit locked blocks.

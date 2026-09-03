@@ -810,6 +810,34 @@ def submit_one(pg, url, db, profile):
     except Exception:
         job_title = ''
 
+    # CV-RELEVANCE GATE (Bobur's ask): re-check the REAL page title against the CV
+    # before spending an apply. The search filter already ran, but a title can differ
+    # on the job page. Skip off-target roles so every submit fits Bob's CV. Also grab
+    # a bit of the job description for a stronger score. CV_MATCH_OFF=1 disables.
+    if os.environ.get('CV_MATCH_OFF') != '1' and job_title:
+        try:
+            from cv_match import should_apply
+        except Exception:
+            try:
+                from src.cv_match import should_apply
+            except Exception:
+                should_apply = None
+        if should_apply is not None:
+            _jd = ''
+            try:
+                _jd = pg.evaluate(
+                    """() => {
+                        const el = document.querySelector('#jobDescriptionText, [data-testid*="jobDescription" i], .jobsearch-JobComponent-description');
+                        return el ? el.textContent.slice(0, 1500) : '';
+                    }""") or ''
+            except Exception:
+                _jd = ''
+            _ok, _score, _why = should_apply(job_title, _jd, '')
+            if not _ok:
+                print(f"  ⏭️ off-CV job — skipping before apply: '{job_title[:45]}' "
+                      f"(score={_score} {','.join(_why)})")
+                return 'off_cv_skip'
+
     # Already applied? The greyed "Applied" button is the RELIABLE signal
     # (Bobur screenshot: KeyData Cyber showed 'Applied'). Detect it, record the jk
     # so this job is NEVER opened again, and skip.
@@ -1431,6 +1459,45 @@ def main():
         except Exception:
             return []
 
+    def _extract_cv_matched_urls(df):
+        """CV-RELEVANCE FILTER (Bobur's ask): only apply to jobs that FIT the CV
+        (Java/Spring/backend, remote, C2C). Reads title + description + location
+        from the jobspy frame and scores each with src/cv_match. Off-target roles
+        (.NET, sales, nursing, frontend-only, etc.) are skipped so every submit
+        counts — especially important while rate-limited. CV_MATCH_OFF=1 disables."""
+        try:
+            from cv_match import should_apply
+        except Exception:
+            try:
+                from src.cv_match import should_apply
+            except Exception:
+                return _extract_urls(df)  # matcher missing -> old behavior
+        try:
+            if df is None or getattr(df, 'empty', True) or 'job_url' not in df.columns:
+                return []
+            cols = df.columns
+            kept, skipped = [], 0
+            for _, row in df.iterrows():
+                u = str(row.get('job_url', ''))
+                if u in ('nan', '', 'None'):
+                    continue
+                title = str(row.get('title', '')) if 'title' in cols else ''
+                desc = str(row.get('description', '')) if 'description' in cols else ''
+                locn = str(row.get('location', '')) if 'location' in cols else ''
+                ok, score, reasons = should_apply(title, desc, locn)
+                if ok:
+                    kept.append(u)
+                else:
+                    skipped += 1
+                    if title:
+                        print(f"    ⏭️ skip off-CV: '{title[:45]}' (score={score} {','.join(reasons)})")
+            if skipped:
+                print(f"    🎯 CV filter: kept {len(kept)}, skipped {skipped} off-target")
+            return kept
+        except Exception as _fe:
+            print(f"    ⚠️ CV filter error: {str(_fe)[:50]} — using unfiltered")
+            return _extract_urls(df)
+
     # Allow forcing ONE specific job by URL (test loop: prove a real submit).
     forced = os.environ.get('TARGET_URL', '').strip()
     if forced:
@@ -1441,11 +1508,12 @@ def main():
         # returns nothing (rate-limit / block) so the run never crashes on an
         # empty result set. VERIFIED BUG 2026-09-02: an empty frame raised
         # KeyError: 'job_url' and killed the whole run.
-        _terms = [os.environ.get('SEARCH_TERM', 'Java Spring Boot developer contract remote')]
+        _terms = [os.environ.get('SEARCH_TERM', 'Java Spring Boot developer remote contract')]
         _terms += [
-            'Java developer remote contract',
             'Senior Java backend developer remote',
-            'Spring Boot developer remote',
+            'Java microservices Spring Boot remote contract',
+            'Java Spring Kafka developer remote',
+            'Java backend engineer corp to corp remote',
         ]
         _loc = os.environ.get('SEARCH_LOCATION', 'USA')
         _rw = int(os.environ.get('RESULTS_WANTED', '20'))
@@ -1457,8 +1525,8 @@ def main():
             except Exception as _e:
                 print(f"  ⚠️ search '{_t[:40]}' errored: {str(_e)[:60]}")
                 continue
-            urls = _extract_urls(jobs)
-            print(f"  🔍 '{_t[:45]}' → {len(urls)} urls")
+            urls = _extract_cv_matched_urls(jobs)
+            print(f"  🔍 '{_t[:45]}' → {len(urls)} CV-matched urls")
             if urls:
                 break
             time.sleep(2)  # brief backoff before the next term
@@ -1688,7 +1756,7 @@ def main():
             # debug one application deeply before moving on.
             if os.environ.get('FOCUS_ONE') == '1' and result not in (
                     'email_confirmed_skip', 'no_apply_button', 'already_applied',
-                    'cloudflare_stuck'):
+                    'off_cv_skip', 'cloudflare_stuck'):
                 print(f"\n🎯 FOCUS_ONE: stopping after first real attempt (result={result})")
                 break
         b.close()
