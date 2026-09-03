@@ -519,6 +519,25 @@ def _try_auto_captcha_solve(page, captured_sitekey: str = "") -> bool:
                 print(f"      ⚠️ NopeCHA error: {str(e)[:50]} — trying next...")
     
     # === SOLVER 2: playwright-recaptcha (FREE, unlimited, audio-based) ===
+    # SELF-LEARNING: if a prior run got audio-rate-limited, PREFER_NO_AUDIO=1 is set.
+    # Try the IMAGE path FIRST (CapSolver) to avoid the rate-limited audio endpoint;
+    # if it solves, return. Otherwise fall through to the normal audio attempt below
+    # (which itself falls back to image/Gemini). Set by learned_rate_limit_plan().
+    if os.environ.get('PREFER_NO_AUDIO') == '1':
+        _cap0 = os.environ.get("CAPSOLVER_API_KEY") or os.environ.get("CAPSOLVER_KEY", "")
+        if _cap0:
+            try:
+                from playwright_recaptcha import recaptchav2 as _rc2p
+                with _rc2p.SyncSolver(page, capsolver_api_key=_cap0) as _isp:
+                    _t = _isp.solve_recaptcha(wait=True, image_challenge=True)
+                    if _t and len(_t) > 20:
+                        print("      ✅ Solved via IMAGE/CapSolver (audio skipped by learned lesson)")
+                        return True
+            except Exception as _pe:
+                print(f"      ⚠️ no-audio image solve failed: {str(_pe)[:50]}")
+        else:
+            print("      ⏭️ PREFER_NO_AUDIO set but no CapSolver key — Gemini grid will handle it downstream")
+
     try:
         from playwright_recaptcha import recaptchav2
         with recaptchav2.SyncSolver(page) as solver:

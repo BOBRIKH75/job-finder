@@ -289,3 +289,50 @@ Plus: rate-limit backoff (20s cooldown+reload, skip if still blocked) at the top
   To enable the paid CapSolver image path locally too, add `CAPSOLVER_API_KEY=<value>` to
   agent/.env (the value is in the GitHub secret CAPSOLVER_KEY — secrets are write-only so copy it
   from wherever it was originally saved). Not required — Gemini covers the free path.
+
+
+---
+## Session: 2026-09-02 night — SELF-LEARNING rate-limit recovery (fail once → next run auto-fixes)
+
+### What Bobur asked
+"When it fails, next run should already know how to fix it and run." + deep IP research.
+
+### Deep IP research conclusion (verified from 6 angles — do NOT re-chase)
+- "Try again later / automated queries" = IP/audio-endpoint rate-limit, triggered by VOLUME
+  (we did 32 submits + 7 audio solves → flagged). Verified cures: WAIT (clears in ~1-2h) or a
+  genuinely different IP (phone hotspot / residential proxy).
+- CANNOT be beaten locally: Wi-Fi cycle (same DHCP lease — tested), Fios router reboot (sticky
+  IP to router MAC), self-hosted socket/proxy (same exit IP), Docker (NATs to same host IP —
+  fundamental), Tor (different IP but BLACKLISTED shared exit → Google blocks it HARDER, per
+  Tor's own docs + Tor forum: Tor users get the exact "automated queries" message).
+- Proxy would work but Scrapfly: "solve-IP must == submit-IP or token rejected" + costs money.
+- Manual users ALSO hit it when: on VPN/proxy/Tor, shared/CGNAT IP, bad extensions, malware, OR
+  "another device on the network doing automation" = OUR BOT. So the bot's burst can flag the
+  whole IP (incl. Bobur's own browser) temporarily. IP test: plain Google = HTTP 200 (light flag).
+- Indeed docs: the apply-page reCAPTCHA is an employer "bot mitigation check" — OPTIONAL, not
+  always required. Explains why some jobs submit with no CAPTCHA.
+
+### THE FIX (self-learning, the real answer for a single home IP)
+Extended the existing record_lesson/load_lessons self-heal:
+1. `record_lesson('rate_limited', ...)` → fix `cooldown_and_pace` + `last_ts` timestamp.
+2. NEW `learned_rate_limit_plan()` (submit_one.py): reads lessons, returns
+   (cooldown_seconds, pace_seconds, prefer_no_audio). Escalating backoff: 2min*count (cap 15min)
+   cooldown + 1min*count (cap 5min) pacing. If last rate-limit >2h ago → light plan (IP cooled).
+3. main() at run start: applies cooldown (sleep before first submit), sets pacing between
+   submits, and sets `PREFER_NO_AUDIO=1`.
+4. On `rate_limited` result → STOP the run (protect IP); lesson already recorded for next run.
+5. applier.py: when `PREFER_NO_AUDIO=1` → try IMAGE/CapSolver FIRST (skip the rate-limited audio
+   endpoint); if no CapSolver key, Gemini grid handles it downstream.
+
+### VERIFIED (2 runs)
+- Run 1: hit "Try again later" → `🧠 learned: rate_limited@pct100% -> cooldown_and_pace (1x)` →
+  `🛑 stopping run to protect the IP` → lesson written to data/flow_lessons.json with last_ts.
+- Run 2: `🧠 learned rate-limit lesson → cooling down 120s before starting (pace 60s between
+  submits, avoid audio=True)` — auto-applied at startup. Self-fix CONFIRMED.
+
+### For Bobur — the honest operating guidance
+- One home Fios IP, sticky. No local trick makes a new clean IP. To keep the bot running
+  UNATTENDED: let it self-pace (this fix). It will cool down + slow down after a rate-limit and
+  recover on its own. Don't loop-test submits (that re-flags the IP).
+- If you need to force-clear NOW: phone hotspot (manual) or wait ~1-2h. cds-rotate-ip script
+  exists (~/bin) for hotspot switching when the phone is present.

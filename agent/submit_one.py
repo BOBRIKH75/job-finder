@@ -392,15 +392,22 @@ def is_recaptcha_rate_limited(page) -> bool:
     solvable puzzle — it means the IP/session is temporarily rate-limited (usually
     from too many audio-solve attempts). Fighting it with more solves makes it worse;
     the caller should back off + skip the job so the cooldown can clear."""
+    # Signals that (individually) indicate the rate-limit block. The popup lives in a
+    # reCAPTCHA IFRAME, so we scan the main page AND every frame, and match if EITHER
+    # the 'try again later' button OR the 'automated queries' body text is present.
+    phrases = ('try again later', 'automated queries', 'automated requests',
+               "can't process your request", 'cannot process your request',
+               'sending automated')
     try:
         for fr in [page] + list(page.frames):
             try:
-                txt = (fr.locator('body').inner_text(timeout=1000) or '').lower()
+                txt = (fr.locator('body').inner_text(timeout=800) or '').lower()
             except Exception:
-                continue
-            if 'try again later' in txt and (
-                    'automated queries' in txt or 'automated requests' in txt
-                    or "can't process your request" in txt or 'cannot process your request' in txt):
+                try:
+                    txt = (fr.content() or '').lower()
+                except Exception:
+                    continue
+            if any(p in txt for p in phrases):
                 return True
     except Exception:
         pass
@@ -542,6 +549,23 @@ def wait_for_human_captcha(page, max_wait=180):
     # return False so the caller skips this job (don't burn Enterprise reloads that fail).
     if is_recaptcha_rate_limited(page):
         print("   ⏳ reCAPTCHA 'Try again later' (IP rate-limited) — cooling down 20s + reload")
+        # OPTIONAL recovery (default OFF — set EXPERIMENTAL_RL_RECOVER=1 to enable).
+        # Google FAQ: reCAPTCHA stores its risk analysis in the _GRECAPTCHA cookie.
+        # Clearing it resets the session's risk fingerprint; a reload then starts fresh.
+        # Free, no proxy (a proxy would break token validity — solve IP must == submit IP).
+        # Gated so the proven default flow is untouched until this is CI-approved.
+        if os.environ.get('EXPERIMENTAL_RL_RECOVER') == '1':
+            try:
+                ctx = page.context
+                _kept = [c for c in ctx.cookies()
+                         if '_grecaptcha' not in (c.get('name', '').lower())
+                         and 'recaptcha' not in (c.get('domain', '').lower())]
+                ctx.clear_cookies()
+                if _kept:
+                    ctx.add_cookies(_kept)   # keep Indeed login cookies, drop only reCAPTCHA
+                print("   🧪 EXPERIMENTAL_RL_RECOVER: cleared _GRECAPTCHA risk cookie")
+            except Exception as _ce:
+                print(f"   ⚠️ cookie-recover n/a: {str(_ce)[:50]}")
         time.sleep(20)
         try:
             page.reload(wait_until='domcontentloaded', timeout=20000)
@@ -661,6 +685,12 @@ def record_lesson(reason, step, pct, detail=''):
         entry['fix'] = 'longer_submit_poll'
     elif reason == 'error':
         entry['fix'] = 'reload_and_retry'
+    elif reason == 'rate_limited':
+        # IP/audio rate-limited ("Try again later") -> next run: cool down before
+        # starting, pace submits, prefer non-audio solver. Record WHEN it happened
+        # so the next run knows how long to wait.
+        entry['fix'] = 'cooldown_and_pace'
+        entry['last_ts'] = time.time()
     lessons[key] = entry
     try:
         os.makedirs('data', exist_ok=True)
@@ -668,6 +698,32 @@ def record_lesson(reason, step, pct, detail=''):
         print(f"  🧠 learned: {key} -> fix='{entry['fix']}' (seen {entry['count']}x)")
     except Exception:
         pass
+
+
+def learned_rate_limit_plan():
+    """SELF-LEARNING: read flow_lessons and decide how to protect THIS run based on
+    past 'rate_limited' failures. Returns (cooldown_seconds, pace_seconds, prefer_no_audio).
+    - If we hit rate_limited recently, cool down before starting + pace submits so we
+      don't re-trigger 'Try again later'. The more times it happened, the longer we wait.
+    - Escalating backoff: 1st time -> short, repeated -> longer (capped)."""
+    lessons = load_lessons()
+    rl = None
+    for key, entry in lessons.items():
+        if key.startswith('rate_limited@') and (entry or {}).get('fix') == 'cooldown_and_pace':
+            if rl is None or entry.get('count', 0) > rl.get('count', 0):
+                rl = entry
+    if not rl:
+        return (0, 0, False)
+    count = int(rl.get('count', 1))
+    last_ts = float(rl.get('last_ts', 0) or 0)
+    since = time.time() - last_ts if last_ts else 1e9
+    # If the last rate-limit was long ago (>2h), the IP likely cooled — light plan.
+    if since > 7200:
+        return (0, 45, True)          # no cooldown, gentle pace, avoid audio
+    # Recent rate-limit: escalating cooldown (cap 15 min) + pacing (cap 5 min).
+    cooldown = min(120 * count, 900)  # 2min * count, cap 15min
+    pace = min(60 * count, 300)       # 1min * count, cap 5min
+    return (cooldown, pace, True)
 
 
 def submit_one(pg, url, db, profile):
@@ -984,6 +1040,47 @@ def submit_one(pg, url, db, profile):
                 time.sleep(2)
                 continue
             # <<< LOCKED FIX #4b
+            # POST-SOLVE rate-limit guard (additive): a token may be injected but the
+            # page can STILL show "Try again later" (IP rate-limited) — Submit will fail.
+            # Detect it here and, if EXPERIMENTAL_RL_RECOVER=1, clear the _GRECAPTCHA
+            # risk cookie + reload + re-solve once; else skip so we don't loop.
+            if is_recaptcha_rate_limited(pg):
+                print("  ⏳ 'Try again later' still on submit page (IP rate-limited)")
+                # OPTIONAL: rotate the public IP (EXPERIMENTAL_IP_ROTATE=1). Runs the
+                # cds-rotate-ip script (Wi-Fi cycle / hotspot switch) — a NEW IP is the
+                # real cure for the block (research-confirmed). Default OFF.
+                if os.environ.get('EXPERIMENTAL_IP_ROTATE') == '1':
+                    try:
+                        import subprocess as _sp
+                        print("  🔁 IP_ROTATE: running cds-rotate-ip to get a fresh IP...")
+                        _r = _sp.run(['cds-rotate-ip'], capture_output=True, text=True, timeout=90)
+                        print("   " + (_r.stdout or _r.stderr or '').strip().replace('\n', '\n   '))
+                        if _r.returncode == 0:
+                            time.sleep(4)
+                            pg.reload(wait_until='domcontentloaded', timeout=25000)
+                            time.sleep(5)
+                            wait_for_human_captcha(pg)
+                    except Exception as _ir:
+                        print(f"  ⚠️ IP_ROTATE n/a: {str(_ir)[:60]}")
+                if os.environ.get('EXPERIMENTAL_RL_RECOVER') == '1' and is_recaptcha_rate_limited(pg):
+                    try:
+                        _ctx = pg.context
+                        _keep = [c for c in _ctx.cookies()
+                                 if '_grecaptcha' not in (c.get('name', '').lower())
+                                 and 'recaptcha' not in (c.get('domain', '').lower())]
+                        _ctx.clear_cookies()
+                        if _keep:
+                            _ctx.add_cookies(_keep)
+                        print("  🧪 RL_RECOVER: cleared _GRECAPTCHA + reloading to reset risk")
+                        pg.reload(wait_until='domcontentloaded', timeout=20000)
+                        time.sleep(5)
+                        wait_for_human_captcha(pg)   # re-solve on the fresh session
+                    except Exception as _re:
+                        print(f"  ⚠️ RL_RECOVER n/a: {str(_re)[:50]}")
+                if is_recaptcha_rate_limited(pg):
+                    print("  ⛔ still rate-limited — skipping job (let the IP cool)")
+                    record_lesson('rate_limited', step, p)
+                    return 'rate_limited'
             # CAPTCHA cleared — scroll to bottom (75s human solve may have moved view),
             # then poll for the Submit button to be present before clicking.
             try:
@@ -1439,6 +1536,18 @@ def main():
         target = int(os.environ.get('TARGET_SUBMITS', '2'))
         submitted_jobs = []
 
+        # SELF-LEARNING rate-limit protection: if a PREVIOUS run hit 'Try again later',
+        # cool down before starting + pace submits so we don't re-trigger it this run.
+        _rl_cooldown, _rl_pace, _rl_no_audio = learned_rate_limit_plan()
+        if _rl_no_audio:
+            os.environ['PREFER_NO_AUDIO'] = '1'   # solver chain skips the rate-limited audio path
+        if _rl_cooldown > 0:
+            print(f"  🧠 learned rate-limit lesson → cooling down {_rl_cooldown}s before starting "
+                  f"(pace {_rl_pace}s between submits, avoid audio={_rl_no_audio})")
+            time.sleep(_rl_cooldown)
+        elif _rl_pace > 0:
+            print(f"  🧠 learned lesson → pacing {_rl_pace}s between submits (avoid audio={_rl_no_audio})")
+
         import re
         JK_FILE = 'data/applied_jks.json'
 
@@ -1557,12 +1666,23 @@ def main():
                 print(f"\n✅ SUBMITTED #{len(submitted_jobs)} — {url[-45:]} (took {_job_elapsed:.0f}s)")
                 if len(submitted_jobs) >= target:
                     break
+                # PACING: wait between submits so we don't burst-trigger the IP rate-limit.
+                if _rl_pace > 0:
+                    print(f"  ⏸️  pacing {_rl_pace}s before next submit (learned protection)")
+                    time.sleep(_rl_pace)
             else:
                 print(f"  -> {result}; trying next job")
                 # FAILURE REPORT for debugging (per Bobur: screenshot + report + TIME).
                 if result in ('stuck', 'submit_click_failed', 'max_steps', 'error'):
                     print(f"  ❌ FAILURE REPORT: job jk={jk} result={result} time={_job_elapsed:.0f}s")
                     print(f"     latest screenshots: run `ls -t screenshots/submit_*stuck* | head`")
+                # RATE-LIMIT: stop the run to protect the IP. The lesson is already
+                # recorded (record_lesson in submit_one), so the NEXT run auto-cools
+                # down + paces + avoids audio. Fighting it now only digs deeper.
+                if result == 'rate_limited':
+                    print("  🛑 rate-limited — stopping run to protect the IP. Next run will "
+                          "auto-cooldown + pace (self-learned). Let the IP rest ~1-2h.")
+                    break
 
             # FOCUS_ONE: stop after the FIRST real attempt (skips don't count), so we
             # debug one application deeply before moving on.
