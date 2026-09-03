@@ -1464,7 +1464,12 @@ def main():
         (Java/Spring/backend, remote, C2C). Reads title + description + location
         from the jobspy frame and scores each with src/cv_match. Off-target roles
         (.NET, sales, nursing, frontend-only, etc.) are skipped so every submit
-        counts — especially important while rate-limited. CV_MATCH_OFF=1 disables."""
+        counts — especially important while rate-limited. CV_MATCH_OFF=1 disables.
+
+        ALSO dedups by TITLE before opening (Bobur's ask): Indeed re-posts the SAME
+        role under a NEW jk — a jk-only check would re-open it and waste time in CI.
+        We skip any title already in applied_titles/email_confirmed_titles here, so
+        the page is NEVER opened for an already-applied role."""
         try:
             from cv_match import should_apply
         except Exception:
@@ -1472,11 +1477,24 @@ def main():
                 from src.cv_match import should_apply
             except Exception:
                 return _extract_urls(df)  # matcher missing -> old behavior
+        # Load already-applied/confirmed titles for pre-open dedup.
+        def _norm(s):
+            return ' '.join((s or '').lower().split())
+        _done_titles = set()
+        for _tf in ('data/applied_titles.json', 'data/email_confirmed_titles.json'):
+            try:
+                for _t in json.load(open(_tf)):
+                    n = _norm(_t)
+                    if len(n) >= 12:
+                        _done_titles.add(n)
+            except Exception:
+                pass
+        _seen_titles = set()
         try:
             if df is None or getattr(df, 'empty', True) or 'job_url' not in df.columns:
                 return []
             cols = df.columns
-            kept, skipped = [], 0
+            kept, skipped, dupe = [], 0, 0
             for _, row in df.iterrows():
                 u = str(row.get('job_url', ''))
                 if u in ('nan', '', 'None'):
@@ -1484,15 +1502,24 @@ def main():
                 title = str(row.get('title', '')) if 'title' in cols else ''
                 desc = str(row.get('description', '')) if 'description' in cols else ''
                 locn = str(row.get('location', '')) if 'location' in cols else ''
+                nt = _norm(title)
+                # PRE-OPEN title dedup: already applied/confirmed (any jk) OR duplicate
+                # within this same search result set -> skip WITHOUT opening.
+                if len(nt) >= 12 and (nt in _done_titles or nt in _seen_titles):
+                    dupe += 1
+                    continue
                 ok, score, reasons = should_apply(title, desc, locn)
                 if ok:
                     kept.append(u)
+                    if len(nt) >= 12:
+                        _seen_titles.add(nt)
                 else:
                     skipped += 1
                     if title:
                         print(f"    ⏭️ skip off-CV: '{title[:45]}' (score={score} {','.join(reasons)})")
-            if skipped:
-                print(f"    🎯 CV filter: kept {len(kept)}, skipped {skipped} off-target")
+            if skipped or dupe:
+                print(f"    🎯 CV filter: kept {len(kept)}, skipped {skipped} off-target, "
+                      f"{dupe} already-applied/duplicate (not opened)")
             return kept
         except Exception as _fe:
             print(f"    ⚠️ CV filter error: {str(_fe)[:50]} — using unfiltered")

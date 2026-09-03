@@ -398,3 +398,33 @@ VPN/shared-IP/extensions/"another device automating" (= our bot). IP test: plain
 ### FLOW LOCK still in force
 The 4 LOCKED fixes are frozen (markers in-code + FLOW_LOCK.md). All new work (TTL, distance, DB,
 rate-limit self-heal, CV match, IP rotate) is ADDITIVE / env-gated. Never edit locked blocks.
+
+
+---
+## Session: 2026-09-02 night — PRE-OPEN title dedup (don't waste CI time re-opening applied jobs)
+
+### Bobur's ask
+During CI, don't OPEN (waste time/effort on) jobs already applied — including Indeed re-posts
+of the same role under a NEW jk.
+
+### The gap found
+Dedup order before this fix:
+- jk in applied_jks / failed_jks → skip BEFORE opening ✅ (already good)
+- BUT title-based dedup (for re-posts with a new jk) was INSIDE submit_one at line ~762 —
+  AFTER pg.goto opened the page. So a re-posted job with a new jk got fully opened
+  (page load + resume-selection) before being skipped by title. Wasted time in CI.
+
+### The fix (pre-open, in _extract_cv_matched_urls)
+Now, at SEARCH time (before any page open), the CV filter ALSO dedups by TITLE:
+- Loads applied_titles.json + email_confirmed_titles.json into a set.
+- Skips any job whose title (len>=12, normalized) is already applied/confirmed → NOT opened.
+- Also dedups duplicate titles WITHIN the same search result set.
+- Prints: "CV filter: kept N, skipped M off-target, K already-applied/duplicate (not opened)".
+- Local `_norm` defined inside the func (submit_one's _norm is inner-scope, not visible here).
+Verified (unit test): "Blockchain Developer (Java)" [in applied_titles] + a dup title → both
+"DUP/APPLIED (not opened)"; Nurse → off-CV; only genuinely-new CV jobs kept.
+
+### Full skip-before-open list now (CI-efficient)
+jk already applied · jk previously failed · title already applied/confirmed (any jk) ·
+duplicate title in same batch · off-CV title. All skipped WITHOUT opening the browser page.
+(The in-submit_one jk/title/Applied-button checks remain as a second safety net.)
