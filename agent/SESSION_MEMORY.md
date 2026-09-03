@@ -928,3 +928,38 @@ run; applicator uses the SAME dice_apply.py proven locally (42 email-confirmed s
 cookie secret. WATCH: confirm DICE_COOKIES auth works on the runner (cookies may be short-lived
 → may need a dice cookie-refresh workflow like LinkedIn's if the session expires). If CI shows
 login_redirect, refresh DICE_COOKIES from a fresh local login.
+
+
+---
+## Session: 2026-09-02 night — DICE cookie-refresh made DYNAMIC (local launchd)
+
+### Bobur's ask
+Make the Dice cookie refresh dynamic/automatic (never manually re-set DICE_COOKIES).
+
+### Key learning — CI runner CANNOT do it
+Tried a CI refresh workflow (self-hosted) 4 ways: read committed file (gitignored, absent),
+home-path file, hardcoded /Users/P3260288 path, and launch the .dice-profile. ALL failed
+".dice-profile not found" — the GitHub Actions self-hosted runner runs in an isolated
+checkout/user context and CANNOT access the logged-in .dice-profile on the local machine.
+=> CI-based cookie refresh is IMPOSSIBLE for a profile-login source.
+
+### SOLUTION — local launchd job (runs where the login lives)
+- NEW ~/bin/cds-dice-refresh: opens the persistent .dice-profile with patchright (headless),
+  hits dice.com/dashboard/applications to refresh the LIVE session, exports fresh dice.com
+  cookies, and `gh secret set DICE_COOKIES` (dice-only; trims to essential if >48KB).
+  Detects expired session (login redirect) → tells you to re-login once.
+- NEW ~/Library/LaunchAgents/com.cds.dice-refresh.plist: StartInterval 259200 (every 3 days).
+  Loaded via launchctl (registered: com.cds.dice-refresh). Fully automatic, no manual step.
+- VERIFIED: ran cds-dice-refresh → "✅ DICE_COOKIES refreshed (38 cookies)"; secret timestamp
+  updated to 04:11:49Z. Logs: /tmp/cds-dice-refresh.log.
+- refresh-dice-cookies.yml schedule DISABLED (kept for manual dispatch only) — local launchd
+  does the real work.
+
+### dice_apply also self-maintains
+- Saves FRESH cookies after every run (browsing refreshes the session).
+- On login_redirect mid-run → writes data/dice_needs_login.json marker + clear message.
+
+### If Dice session ever fully expires (rare)
+One manual step: `cd agent && DICE_MANUAL_LOGIN=1 HEADFUL=1 python3 dice_apply.py` (log in once).
+Then cds-dice-refresh keeps it fresh forever. To force a refresh now: `cds-dice-refresh`.
+launchctl: load/unload ~/Library/LaunchAgents/com.cds.dice-refresh.plist.

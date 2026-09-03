@@ -1,12 +1,11 @@
 name: Refresh Dice Cookies (Auto)
 
-# Keeps DICE_COOKIES fresh so the Dice apply flow never hits login_redirect.
-# Opens the SAME persistent .dice-profile that dice_apply uses, refreshes the live Dice
-# session, and exports fresh cookies to the DICE_COOKIES secret. Self-hosted (the profile
-# with the login lives on that machine). No manual step ever.
+# NOTE: the actual auto-refresh runs LOCALLY via launchd (com.cds.dice-refresh, every 3 days)
+# because the CI runner cannot access the logged-in .dice-profile on your machine.
+# This workflow is kept for manual dispatch only (schedule disabled).
 on:
-  schedule:
-    - cron: "0 12 */3 * *"   # every 3 days, 6 AM MT (before the apply schedules)
+  # schedule DISABLED — CI runner can't read the local login profile; local launchd does it:
+  #   - cron: "0 12 */3 * *"
   workflow_dispatch: {}
 
 permissions:
