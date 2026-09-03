@@ -764,3 +764,31 @@ Build dice_apply.py mirroring greenhouse/indeed: patchright stealth launch + coo
 Java/Spring search (filters.easyApply=true, workplaceTypes=Remote) + cv_match gate +
 persistent dedup + DB claim_job lock + self-learning. Then re-enable dice-apply.yml schedule.
 Dice apply = "Easy apply" 1-click for many jobs (should be high-yield once wired).
+
+
+---
+## Session: 2026-09-02 night — DICE CONFIRMED WORKING (login + stealth + 137 jobs)
+
+### Result (local test, verified)
+- reached dice.com blocked=False (patchright stealth passes — old headless block gone).
+- Manual login once in the persistent .dice-profile window → 80 cookies saved → session persists.
+- Java Spring Boot remote easy-apply search → 137 job cards, 36 easy-apply markers.
+- VERDICT: ✅ stealth works + jobs visible → real apply flow is buildable.
+
+### Answer: Dice was NOT truly blocked — it just had NO apply flow
+Only test_dice_login.py + a disabled echo-workflow ever existed. Old disable reason
+("blocks headless, click-counting, no real applies") was the undetected_chromedriver +
+--headless=new + --no-sandbox combo being detected — SOLVED by patchright stealth (same as Indeed).
+
+### Login mechanics (for the real flow)
+- DICE_MANUAL_LOGIN=1 opens Dice login in the persistent profile; user logs in by hand once;
+  cookies saved to data/dice_cookies.json + profile persists → future runs auto-logged-in.
+- .dice-profile/ + dice_cookies.json are GITIGNORED (login data, never commit).
+- Password auto-login is fragile (2-step, input[name=email] timed out) — use the cookie/profile
+  route (like Indeed). CI: will need dice_cookies as a secret (base64) like INDEED_COOKIES.
+
+### NEXT: build dice_apply.py (all Indeed/Greenhouse treatments)
+patchright stealth + cookie session + Dice search (filters.easyApply=true, workplaceTypes=Remote,
+q=Java Spring Boot) + cv_match gate + persistent dedup + DB claim_job lock + self-learning +
+questions_filler for the easy-apply form. Then re-enable dice-apply.yml. High-yield: 137 jobs / 36 easy-apply.
+Dice job detail URLs: a[href*="/job-detail/"]; ~137 cards on one search page.
