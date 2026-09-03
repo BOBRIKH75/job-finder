@@ -1125,3 +1125,42 @@ better than guessed careers@ inboxes. Harvest them from Gmail = free, real names
 ### Still optional (not blocking)
 Refresh Snov key (401) / Apollo cookies for MORE named recruiters. The inbox harvest already
 gives real people for free — the main gap (dead API keys) is worked around.
+
+
+---
+## Session: 2026-09-03 AM — MACHINE TOPOLOGY + anti-mistake lessons (READ THIS)
+
+### CRITICAL: two machines — don't confuse them
+- THIS machine (where Kiro/local tests run): hostname CHTRMAC04Y5FK, user P3260288.
+- The CI SELF-HOSTED RUNNER: named "bobur-laptop" — a DIFFERENT laptop. VERIFIED online
+  (gh api runners: status=online, busy=False) and successfully running jobs (Recruiter Discovery,
+  Runner Health Check every ~1.5h, Solve Unsolved). "Other laptop is working" = YES.
+- IMPLICATION (was almost missed): Dice .dice-profile + ~/bin/cds-dice-refresh + the launchd
+  com.cds.dice-refresh I set up are on THIS machine (CHTRMAC04Y5FK). The Dice APPLY workflow
+  runs on bobur-laptop (the runner). For Dice CI to work, the .dice-profile / DICE_COOKIES must
+  be valid ON THE RUNNER. If Dice CI shows login_redirect, the cookie refresh must run on
+  bobur-laptop (or DICE_COOKIES secret must be kept fresh from wherever the login lives).
+  → TODO: put cds-dice-refresh + launchd on bobur-laptop, OR ensure DICE_COOKIES secret is the
+  single source (runner reads the secret, which we do). The secret approach already works since
+  dice_apply reads DICE_COOKIES env. Just keep the secret fresh.
+
+### ANTI-MISTAKE checklist for future sessions (do NOT repeat)
+1. FLOW-LOCK: Indeed submit flow has 4 LOCKED FIXES (markers in submit_one.py + FLOW_LOCK.md).
+   Do NOT rebuild/reorder. New fixes = optional/env-gated.
+2. IP block ("Try again later"): NO local trick works (Docker/Tor/proxy/router — confirmed 6 ways).
+   Self-pacing + self-learning cooldown is the fix. Don't re-chase.
+3. CI runner CANNOT read local login profiles (Dice/Apollo) — cookie refresh must be local
+   (launchd) OR via the git-committed secret. Don't try a CI workflow that reads ~/.dice-profile.
+4. Recruiter API keys: Hunter=429 (quota), Snov=401 (expired). FREE solution built:
+   inbox-harvest (real recruiters) + MX-role inboxes. Don't burn time on dead keys; refresh a key
+   only if MORE named recruiters wanted.
+5. Two vendor_list.json existed (data/ vs agent/data/) — outreach read the WRONG one. FIXED to
+   agent/data. If recruiter counts look wrong, check the path.
+6. Dedup everywhere is 5-layer + DB claim-lock (concurrent-safe). CV-fit gate before every apply.
+7. Every submit is email-confirmed (check_dice_confirmations / check_email_confirmations).
+8. Always: git-sync dedup files (pull before, commit after) with GH_PAT token (plain push = 403).
+
+### Current working state (2026-09-03)
+- Indeed + Greenhouse + Dice apply: working, scheduled, CV-matched, deduped, email-confirmed.
+- Recruiter: 89 in vendor_list (7 real from inbox), 7 job leads mined; outreach sends CV (weekly).
+- Runner bobur-laptop online + healthy. All apply/recruiter workflows green.
