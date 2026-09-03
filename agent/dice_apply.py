@@ -1,0 +1,351 @@
+#!/usr/bin/env python3
+"""Dice Easy-Apply — same proven pattern as Indeed/Greenhouse.
+
+Flow: patchright stealth (persistent real Chrome + cookie session) → search Java/Spring
+remote easy-apply jobs → CV-fit gate (cv_match) → 5-layer dedup (job-id + persistent
+title JSON + in-memory + DB claim-lock) → open job → click Easy Apply → fill questions
+(questions_filler) → submit → record. Self-learning failed/dead tracking (no re-loop).
+
+Login: uses data/dice_cookies.json + the .dice-profile persistent session (log in once via
+dice_probe.py DICE_MANUAL_LOGIN=1). CI: provide DICE_COOKIES secret (base64 of the cookies).
+
+Run locally:
+  cd ~/Downloads/CV/job-finder/agent
+  HEADFUL=1 DICE_TARGET=5 python3 dice_apply.py
+"""
+import base64
+import json
+import os
+import re
+import sys
+import time
+
+sys.path.insert(0, '.')
+sys.path.insert(0, 'src')
+
+
+def _load_env():
+    for path in ('.env', 'agent/.env'):
+        try:
+            for line in open(path):
+                line = line.strip()
+                if line and not line.startswith('#') and '=' in line:
+                    k, v = line.split('=', 1)
+                    os.environ.setdefault(k.strip(), v.strip().strip('"').strip("'"))
+        except Exception:
+            pass
+
+
+_load_env()
+
+try:
+    from patchright.sync_api import sync_playwright
+    _STEALTH = 'patchright'
+except Exception:
+    from playwright.sync_api import sync_playwright
+    _STEALTH = 'playwright'
+
+from src.memory import get_db, init_db, application_exists, upsert_application, claim_job, release_claim
+from src.form_filler import load_profile
+try:
+    from src.cv_match import should_apply
+except Exception:
+    should_apply = None
+try:
+    from questions_filler import fill_questions_page, is_questions_page
+except Exception:
+    try:
+        from src.questions_filler import fill_questions_page, is_questions_page
+    except Exception:
+        fill_questions_page = is_questions_page = None
+
+PROFILE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), '.dice-profile')
+COOKIE_FILE = 'data/dice_cookies.json'
+APPLIED_FILE = 'agent/data/dice_applied.json' if os.path.isdir('agent') else 'data/dice_applied.json'
+JK_FILE = 'data/dice_applied_ids.json'
+FAILED_FILE = 'data/dice_failed_ids.json'
+DEAD_FILE = 'data/dice_dead_ids.json'
+MAX_FAILS = int(os.environ.get('MAX_FAILS_PER_JOB', '3'))
+
+
+# ---- dedup helpers (same pattern as greenhouse) ----
+def _norm_title(t):
+    t = (t or '').lower()
+    t = re.sub(r'\(.*?\)', ' ', t)
+    t = re.sub(r'\b(sr|senior|jr|junior|lead|staff|principal|remote|w2|c2c|contract|us|usa)\b', ' ', t)
+    return ' '.join(re.sub(r'[^a-z0-9 ]', ' ', t).split())
+
+
+def _title_key(company, title):
+    c = ' '.join((company or '').lower().split())
+    t = _norm_title(title)
+    return f"{c}|{t}" if t else ''
+
+
+def _load_json_set(path):
+    try:
+        return set(json.load(open(path)))
+    except Exception:
+        return set()
+
+
+def _save_json_set(path, s):
+    try:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        json.dump(sorted(s), open(path, 'w'), indent=0)
+    except Exception:
+        pass
+
+
+def _load_dead():
+    try:
+        return json.load(open(DEAD_FILE))
+    except Exception:
+        return {}
+
+
+def _job_id(url):
+    m = re.search(r'/job-detail/([0-9a-f-]+)', url or '')
+    return m.group(1) if m else ''
+
+
+# ---- browser ----
+def _launch(pw, headful):
+    os.makedirs(PROFILE_DIR, exist_ok=True)
+    for lock in ('SingletonLock', 'SingletonCookie', 'SingletonSocket'):
+        try:
+            os.unlink(os.path.join(PROFILE_DIR, lock))
+        except OSError:
+            pass
+    kw = dict(user_data_dir=PROFILE_DIR, headless=not headful, no_viewport=True)
+    if _STEALTH == 'patchright':
+        kw['channel'] = 'chrome'
+    try:
+        ctx = pw.chromium.launch_persistent_context(**kw)
+    except Exception:
+        kw.pop('channel', None)
+        ctx = pw.chromium.launch_persistent_context(**kw)
+    # cookies: env secret (CI) or file (local)
+    cookies = None
+    env = os.environ.get('DICE_COOKIES', '').strip()
+    if env:
+        try:
+            cookies = json.loads(base64.b64decode(env).decode() if not env.startswith('[') else env)
+        except Exception:
+            cookies = None
+    if cookies is None:
+        try:
+            cookies = json.load(open(COOKIE_FILE))
+        except Exception:
+            cookies = []
+    if cookies:
+        try:
+            ctx.add_cookies(cookies)
+        except Exception:
+            pass
+    return ctx
+
+
+def _search_urls(page, term, want=25):
+    """Return [(url, title)] of easy-apply jobs from a Dice search."""
+    q = term.replace(' ', '%20')
+    page.goto(f'https://www.dice.com/jobs?q={q}&countryCode=US&page=1&pageSize={want}'
+              f'&filters.easyApply=true&filters.workplaceTypes=Remote',
+              wait_until='domcontentloaded', timeout=30000)
+    time.sleep(5)
+    try:
+        rows = page.evaluate(r"""() => {
+            const out = [];
+            for (const a of document.querySelectorAll('a[data-testid="job-search-job-card-link"]')) {
+                const label = a.getAttribute('aria-label') || '';
+                const title = label.replace(/^View Details for /, '').replace(/\s*\([0-9a-f]+\)\s*$/, '');
+                const href = a.getAttribute('href') || '';
+                if (href.includes('/job-detail/')) out.push({title: title.trim(), href});
+            }
+            return out;
+        }""") or []
+    except Exception:
+        rows = []
+    base = 'https://www.dice.com'
+    return [(base + r['href'] if r['href'].startswith('/') else r['href'], r['title']) for r in rows]
+
+
+def _apply_one(page, url, title):
+    """Open a Dice job, click Easy Apply, fill questions, submit. Returns result str."""
+    page.goto(url, wait_until='domcontentloaded', timeout=30000)
+    time.sleep(3)
+    # company from the detail page (for dedup/record)
+    company = ''
+    try:
+        company = page.evaluate(
+            """() => {
+                const el = document.querySelector('a[href*="/company/"], [data-cy="companyNameLink"], [data-testid*="company" i]');
+                return el ? el.textContent.trim().slice(0,60) : '';
+            }""") or ''
+    except Exception:
+        company = ''
+    # find + click Apply (Dice uses <a data-testid="apply-button">Apply Now</a>)
+    clicked = False
+    # wait for the apply control to render
+    try:
+        page.wait_for_selector('[data-testid="apply-button"], a:has-text("Apply Now"), '
+                               'button:has-text("Easy apply")', timeout=8000)
+    except Exception:
+        pass
+    for sel in ['[data-testid="apply-button"]',
+                'a:has-text("Apply Now")',
+                'button:has-text("Easy apply")',
+                'button:has-text("Easy Apply")',
+                'a:has-text("Apply")',
+                'button:has-text("Apply")']:
+        try:
+            loc = page.locator(sel)
+            if loc.count() and loc.first.is_visible(timeout=2000):
+                loc.first.scroll_into_view_if_needed(timeout=2000)
+                try:
+                    loc.first.click(timeout=4000)
+                except Exception:
+                    loc.first.evaluate("(b) => b.click()")
+                clicked = True
+                break
+        except Exception:
+            continue
+    if not clicked:
+        return 'no_apply_button', company
+    time.sleep(4)
+    # multi-step easy-apply modal: fill questions + click Next/Submit up to N steps
+    for _step in range(8):
+        try:
+            if is_questions_page and is_questions_page(page):
+                fill_questions_page(page, None, {}, company or 'Employer')
+        except Exception:
+            pass
+        # confirmation?
+        try:
+            body = (page.locator('body').inner_text(timeout=2500) or '').lower()
+        except Exception:
+            body = ''
+        if any(p in body for p in ('application submitted', 'applied', 'thank you for applying',
+                                   'your application has been submitted')):
+            return 'submitted', company
+        # click Next / Submit / Review
+        advanced = False
+        for sel in ['button:has-text("Submit")', 'button:has-text("Next")',
+                    'button:has-text("Review")', 'button:has-text("Continue")']:
+            try:
+                loc = page.locator(sel)
+                if loc.count() and loc.first.is_visible(timeout=1500):
+                    loc.first.click(timeout=3000)
+                    advanced = True
+                    time.sleep(2)
+                    break
+            except Exception:
+                continue
+        if not advanced:
+            break
+    # final confirmation check
+    try:
+        body = (page.locator('body').inner_text(timeout=2500) or '').lower()
+        if 'submitted' in body or 'thank you for applying' in body:
+            return 'submitted', company
+    except Exception:
+        pass
+    return 'incomplete', company
+
+
+def main():
+    headful = os.environ.get('HEADFUL', '0') == '1'
+    target = int(os.environ.get('DICE_TARGET', '10'))
+    db = get_db()
+    init_db(db)
+    _ = load_profile()
+
+    applied_ids = _load_json_set(JK_FILE)
+    failed_ids = _load_json_set(FAILED_FILE)
+    dead = {k for k, c in _load_dead().items() if int(c) >= MAX_FAILS}
+    applied_titles = _load_json_set(APPLIED_FILE)
+    print(f"🗂️  Dice dedup: {len(applied_ids)} ids applied, {len(applied_titles)} titles, "
+          f"{len(dead)} retired")
+
+    def _save_failed(jid):
+        s = _load_json_set(FAILED_FILE); s.add(jid); _save_json_set(FAILED_FILE, s)
+        d = _load_dead(); d[jid] = int(d.get(jid, 0)) + 1
+        try:
+            json.dump(d, open(DEAD_FILE, 'w'))
+        except Exception:
+            pass
+
+    print(f"🚀 Dice apply — stealth={_STEALTH}, headful={headful}, target={target}")
+    with sync_playwright() as pw:
+        ctx = _launch(pw, headful)
+        page = ctx.pages[0] if ctx.pages else ctx.new_page()
+
+        terms = [os.environ.get('DICE_TERM', 'Java Spring Boot'),
+                 'Java backend developer', 'Java microservices']
+        jobs = []
+        seen = set()
+        for term in terms:
+            for url, title in _search_urls(page, term):
+                jid = _job_id(url)
+                if jid and jid not in seen:
+                    seen.add(jid)
+                    jobs.append((url, title, jid))
+            if len(jobs) >= 40:
+                break
+        print(f"🔍 {len(jobs)} unique Dice easy-apply jobs found")
+
+        submitted = 0
+        _seen_titles = set()
+        for url, title, jid in jobs:
+            if submitted >= target:
+                break
+            # ---- 5-layer dedup, all BEFORE opening ----
+            if jid and jid in dead:
+                continue
+            if jid and jid in applied_ids:
+                print(f"  ⏭️ already applied (id={jid[:8]}) — skip"); continue
+            if jid and jid in failed_ids and os.environ.get('RETRY_FAILED') != '1':
+                print(f"  ⏭️ previously failed (id={jid[:8]}) — skip"); continue
+            nt = _title_key('', title)
+            if nt and (nt in applied_titles or nt in _seen_titles):
+                print(f"  ⏭️ dup/applied title — skip: {title[:40]}"); continue
+            # ---- CV-fit gate ----
+            if should_apply and os.environ.get('CV_MATCH_OFF') != '1':
+                ok, score, why = should_apply(title, '', 'Remote')
+                if not ok:
+                    print(f"  ⏭️ off-CV: '{title[:40]}' (score={score} {','.join(why)})")
+                    continue
+            # ---- DB atomic claim (concurrent-safe) ----
+            if not claim_job(db, 'dice:' + (title or ''), title):
+                print(f"  🔒 claimed by another run — skip: {title[:35]}"); continue
+
+            print(f"  ▶ applying: {title[:50]}")
+            try:
+                result, company = _apply_one(page, url, title)
+            except Exception as e:
+                result, company = 'error', ''
+                print(f"    ERR {str(e)[:70]}")
+            if result == 'submitted':
+                submitted += 1
+                applied_ids.add(jid); _save_json_set(JK_FILE, applied_ids)
+                if nt:
+                    applied_titles.add(nt); _save_json_set(APPLIED_FILE, applied_titles); _seen_titles.add(nt)
+                try:
+                    upsert_application(db, company=company or 'Dice Employer', job_title=title or 'Dice Job',
+                                       job_url=url, ats_type='dice', status='applied', match_score=75)
+                except Exception:
+                    pass
+                print(f"  ✅ SUBMITTED #{submitted}: {title[:45]} @ {company[:20]}")
+            else:
+                release_claim(db, 'dice:' + (title or ''), title)   # not applied → free claim
+                if jid:
+                    _save_failed(jid)
+                print(f"  -> {result}: {title[:40]}")
+            time.sleep(2)
+
+        print(f"\n=== Dice: SUBMITTED {submitted} application(s) ===")
+        ctx.close()
+
+
+if __name__ == '__main__':
+    main()

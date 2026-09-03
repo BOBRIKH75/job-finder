@@ -792,3 +792,38 @@ patchright stealth + cookie session + Dice search (filters.easyApply=true, workp
 q=Java Spring Boot) + cv_match gate + persistent dedup + DB claim_job lock + self-learning +
 questions_filler for the easy-apply form. Then re-enable dice-apply.yml. High-yield: 137 jobs / 36 easy-apply.
 Dice job detail URLs: a[href*="/job-detail/"]; ~137 cards on one search page.
+
+
+---
+## Session: 2026-09-02 night — dice_apply.py BUILT (same pattern) — 1 login step remains
+
+### Built: agent/dice_apply.py — full Indeed/Greenhouse pattern
+- patchright stealth (persistent .dice-profile + cookie/DICE_COOKIES secret) launch.
+- Search: dice.com/jobs?q=...&filters.easyApply=true&filters.workplaceTypes=Remote;
+  job cards = a[data-testid="job-search-job-card-link"], title in aria-label
+  ("View Details for {TITLE} ({id})"), url /job-detail/{id} → {id} is the dedup key.
+- Apply button = <a data-testid="apply-button">Apply Now</a> (NOT a <button>; found via DOM probe).
+- CV-fit gate (cv_match should_apply) · 5-LAYER DEDUP all before opening: dead ids, applied ids,
+  failed ids (skip unless RETRY_FAILED=1), title JSON + same-run set, DB claim_job lock.
+- self-learning: _save_failed increments dice_dead_ids.json; >=MAX_FAILS retired.
+- questions_filler for the easy-apply wizard; multi-step Next/Submit loop; confirmation check.
+
+### VERIFIED working (local)
+- stealth OK, 56 unique jobs found, CV-fit correctly skipping (Python/Test-Automation/generic
+  "Software Engineer"), dedup firing (previously-failed skip, claim-lock skip, dup-title skip),
+  Apply Now button clicks.
+
+### THE remaining blocker (honest)
+Clicking Apply Now redirects to /dashboard/login?redirectUrl=/job-applications/{id}/wizard —
+"Create an account or sign in to continue". The exported cookies / older profile session is NOT
+complete enough for Dice's APPLY WIZARD (search works with partial session; apply needs full auth).
+Persistent-profile session was partially valid (/dashboard/applications didn't redirect) but the
+wizard still asked for login.
+
+### FIX PATH (next)
+Add DICE_MANUAL_LOGIN=1 to dice_apply.py (like dice_probe): open Chrome → user logs in FRESH →
+apply in that SAME authenticated session (wizard then works). For CI: capture a FULL fresh cookie
+set (incl httpOnly session tokens) right after login as the DICE_COOKIES secret; session cookies
+may be short-lived so CI may need periodic cookie refresh (a refresh-cookies workflow like LinkedIn's).
+Files: dice_applied.json / dice_applied_ids.json / dice_failed_ids.json / dice_dead_ids.json (dedup,
+to be git-synced + CI-committed like Indeed/Greenhouse once submits confirmed).
