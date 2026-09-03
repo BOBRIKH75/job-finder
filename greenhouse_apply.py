@@ -24,7 +24,7 @@ from src.portal_scanner import scan_greenhouse, load_companies
 from src.greenhouse_api import submit_greenhouse_api
 from src.form_filler import load_profile
 from src.self_heal import classify_error, get_retry_config, STRATEGY, DeepHeal
-from src.memory import get_db, init_db, application_exists, upsert_application
+from src.memory import get_db, init_db, application_exists, upsert_application, claim_job, release_claim
 
 # Git-tracked persistent dedup (Bobur: same company+title kept repeating). The DB is
 # cache-only in CI (lossy) and near-empty locally, so we ALSO keep a JSON keyed by
@@ -231,12 +231,22 @@ def main():
         if company_failures.get(company_name, 0) >= 3:
             continue
 
+        # DB-LEVEL ATOMIC CLAIM (Bobur's idea): claim this company+title before applying.
+        # If a concurrent run (local + CI overlap) already claimed it, skip — only ONE
+        # run can win the claim (UNIQUE + INSERT OR IGNORE). Prevents concurrent double-apply
+        # that the in-memory set alone can't (different processes). Released on hard failure.
+        if not claim_job(db, company_name, title):
+            skipped += 1
+            print(f"  🔒 already claimed by another run — skipping ({title[:35]} @ {company_name[:20]})")
+            continue
+
         # ── Strategy 1: Direct API POST ──────────────────────────────────────
         result = submit_greenhouse_api(url, profile, resume)
 
         if result.get('submitted'):
             applied += 1
             _record_applied(db, company_name, title, url)
+            _gh_applied.add(_gh_key(company_name, title))   # update in-memory set → catch SAME-RUN duplicates
             print(f"  ✅ {title} @ {company_name} (API)")
             time.sleep(1)
             continue
@@ -256,6 +266,7 @@ def main():
         # Case 1: Not fixable — skip immediately
         if cfg["strategy"] == STRATEGY.SKIP:
             skipped += 1
+            release_claim(db, company_name, title)   # not applied → free the claim
             print(f"  ⏭️ {title}: {error_type} — skip")
             continue
 
@@ -277,6 +288,7 @@ def main():
             if result2.get('submitted'):
                 applied += 1
                 _record_applied(db, company_name, title, url)
+                _gh_applied.add(_gh_key(company_name, title))   # catch same-run duplicates
                 print(f"  ✅ {title} @ {company_name} (retry {attempt})")
                 retry_success = True
                 break
@@ -332,6 +344,7 @@ def main():
                     browser_applied += 1
                     submitted_urls.add(res['url'])
                     _record_applied(db, res.get('company', ''), res.get('title', ''), res['url'])
+                    _gh_applied.add(_gh_key(res.get('company', ''), res.get('title', '')))   # catch same-run dup
 
             applied += browser_applied
             print(f"  🌐 Browser results: {browser_applied} submitted")
@@ -341,6 +354,7 @@ def main():
                 if j['url'] not in submitted_urls:
                     j['strategy_tried'] = 'api_and_browser'
                     failed.append(j)
+                    release_claim(db, j.get('company', ''), j.get('title', ''))   # not applied → free claim
 
             # Jobs we didn't even attempt in browser (exceeded remaining quota)
             failed.extend(browser_queue[remaining:])

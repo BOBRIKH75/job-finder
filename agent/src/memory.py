@@ -135,8 +135,71 @@ def get_db(db_path: str = "data/agent_memory.db") -> sqlite3.Connection:
 def init_db(db: sqlite3.Connection) -> None:
     schema = SCHEMA_PATH.read_text()
     db.executescript(schema)
+    # DB-LEVEL LOCK for dedup (Bobur's idea): an atomic claim table so that even if
+    # two runs (local + CI) execute concurrently, only ONE can claim a given
+    # company+normalized-title and apply — the other's INSERT OR IGNORE is a no-op.
+    # UNIQUE(claim_key) makes the claim atomic at the SQLite level (no race window).
+    db.execute(
+        """CREATE TABLE IF NOT EXISTS job_claims (
+               claim_key TEXT UNIQUE NOT NULL,
+               company   TEXT,
+               title     TEXT,
+               status    TEXT DEFAULT 'claimed',
+               claimed_at TEXT DEFAULT (datetime('now'))
+           )"""
+    )
     db.commit()
     _purge_poisoned_answers(db)
+
+
+def _claim_key(company: str, title: str) -> str:
+    """Normalized company+title key for atomic dedup (matches greenhouse _gh_key intent
+    but centralized in the DB layer). Empty if either part missing. Strips location /
+    work-type qualifiers (us/usa/remote/w2/c2c/contract/onsite/hybrid) so reposts of the
+    SAME role with those suffixes collapse to one key."""
+    c = " ".join((company or "").lower().split())
+    t = normalize_title(title or "")
+    # drop trailing location/work-type noise that normalize_title keeps
+    t = re.sub(r"\b(us|usa|remote|onsite|on-site|hybrid|w2|c2c|contract|contractor|"
+               r"1099|fulltime|full-time|parttime|part-time)\b", " ", t)
+    t = " ".join(t.split())
+    return f"{c}|{t}" if c and t else ""
+
+
+def claim_job(db: sqlite3.Connection, company: str, title: str) -> bool:
+    """Atomically CLAIM a job (company+title) before applying. Returns True if THIS
+    run won the claim (safe to apply) or already applied by us; False if another
+    run/attempt already claimed it (skip — prevents concurrent double-apply).
+
+    Uses INSERT OR IGNORE on a UNIQUE claim_key: the DB serializes the insert, so
+    exactly one caller succeeds even under concurrency. If the key is unclaimable
+    (missing company/title), returns True (fall back to the other dedup layers)."""
+    key = _claim_key(company, title)
+    if not key:
+        return True
+    try:
+        cur = db.execute(
+            "INSERT OR IGNORE INTO job_claims (claim_key, company, title) VALUES (?, ?, ?)",
+            (key, company, title),
+        )
+        db.commit()
+        # rowcount == 1 → we inserted (won the claim). 0 → row already existed (claimed).
+        return cur.rowcount == 1
+    except Exception:
+        return True   # never block applying on a claim error; other dedup layers still apply
+
+
+def release_claim(db: sqlite3.Connection, company: str, title: str) -> None:
+    """Release a claim if the apply did NOT actually go through (so a later run can
+    retry). Only call on a genuine failure, not on success."""
+    key = _claim_key(company, title)
+    if not key:
+        return
+    try:
+        db.execute("DELETE FROM job_claims WHERE claim_key=? AND status='claimed'", (key,))
+        db.commit()
+    except Exception:
+        pass
 
 
 def _purge_poisoned_answers(db: sqlite3.Connection) -> None:

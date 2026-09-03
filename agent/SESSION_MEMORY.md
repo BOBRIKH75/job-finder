@@ -633,3 +633,66 @@ became MISALIGNED every time a company was discovered → could skip/repeat comp
 - CV-fit + dedup are per-job and run regardless of discovery → discovery can NEVER push an
   off-CV or duplicate job through. Three concerns cleanly separated: discover(grow) →
   rotate(cover all) → cv-fit+dedup(gate each job). No override.
+
+
+---
+## Session: 2026-09-02 night — FIX: same-run DUPLICATE apply (Bobur caught it again)
+
+### Bobur's concern
+"Sure no overriding AND no duplicates?"
+
+### Real gap found (he was right)
+Dedup layers that WERE fine: company list sorted(set), discover_company slug guard,
+already-applied (git-synced _gh_applied loaded at start). MISSING: same-run duplicate.
+_gh_applied was loaded ONCE at start; on apply only the FILE (_save_gh_applied) + DB were
+updated, NOT the in-memory set. So if the SAME role appeared twice in one run's all_jobs pool
+(2 locations / 2 scanned companies sharing a board / exact dup title), the 2nd one checked the
+STALE in-memory set → not found → applied AGAIN (same-run double-apply).
+
+### FIX
+All 3 success paths now update the in-memory set immediately after apply:
+  `_gh_applied.add(_gh_key(company, title))` at API-success, retry-success, browser/DeepHeal-success.
+Verified (unit test): Stripe "Senior Java Developer (Remote)" applied; "Sr. Java Developer, US"
+(same normalized key, diff URL) SKIPPED; exact-dup Databricks title SKIPPED. Only unique applied.
+
+### Full dedup coverage now (no override + no dup)
+- company list: sorted(set) · discovery: slug-guard (no re-add) · past-run: git-synced _gh_applied
+- SAME-RUN: in-memory _gh_applied updated on every apply (this fix)
+- order: discover(append, future) → rotate(cover all) → cv-fit+dedup(per job). Independent, no override.
+
+
+---
+## Session: 2026-09-02 night — DB LOCK mechanism (Bobur's idea) — concurrent-safe dedup
+
+### Bobur's idea
+"Create a lock mechanism in DB so all will work as expected." (concurrent runs safe)
+
+### Why needed
+In-memory _gh_applied catches same-run dups but NOT concurrent processes (local + a CI run,
+or overlapping). Two processes could both pass dedup and apply the same job before either commits.
+
+### FIX — atomic DB claim (src/memory.py)
+- init_db creates `job_claims (claim_key UNIQUE, company, title, status, claimed_at)`.
+- `claim_job(db, company, title)`: INSERT OR IGNORE on UNIQUE claim_key → SQLite serializes it;
+  exactly ONE caller gets rowcount==1 (wins → apply), others get 0 (skip). Concurrent-safe, no
+  race window. Empty key (missing co/title) → True (fall back to other dedup layers).
+- `release_claim(...)`: DELETE the claim if the job did NOT apply (SKIP / browser-failed) so a
+  future run can retry.
+- `_claim_key` = company | normalize_title MINUS location/work-type noise
+  (us/usa/remote/onsite/hybrid/w2/c2c/contract/1099/fulltime/parttime) so reposts collapse.
+- WAL mode already on (get_db) → supports concurrent readers/writers.
+
+### Wired into greenhouse_apply.py
+- claim_job AFTER cv-fit gate, BEFORE submit_greenhouse_api. If already claimed → 🔒 skip.
+- release_claim on STRATEGY.SKIP (unfixable) + on browser-queue jobs that never submitted.
+
+### Verified (unit test)
+Two variants "Senior Java Developer (Remote)" / "Sr. Java Developer, US" → SAME key
+stripe|developer java senior. run1=True(won), run2=False(concurrent-safe), other job=True,
+after release re-claim=True(retry). BUG caught during test: normalize_title kept "us" → fixed
+_claim_key to strip location/work-type noise.
+
+### Complete dedup stack (5 layers, all verified — no override, no dup, concurrent-safe)
+1. company list sorted(set) · 2. discover slug-guard · 3. git-synced _gh_applied (past runs) ·
+4. in-memory set (same run) · 5. DB atomic claim (concurrent runs). Order: discover(append,future)
+→ rotate(cover all) → cv-fit → claim → apply → dedup-record.
