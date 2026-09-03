@@ -452,6 +452,67 @@ def _fill_selects(page, db, profile, company):
     return filled
 
 
+def _fill_checkboxes(page, db, profile, company):
+    """Check required consent/agreement checkboxes (NOT radios). A required, unchecked
+    checkbox like 'I certify...', 'I agree to...', 'I acknowledge...', 'I consent...' is
+    a very common cause of a stuck-at-N%/'filled 0 fields' stall. We tick ONLY affirmative
+    consent-type checkboxes (never opt-in marketing/text-message ones unless they gate
+    submission). Returns count checked."""
+    filled = 0
+    try:
+        boxes = page.locator('input[type="checkbox"]')
+        n = min(boxes.count(), 15)
+    except Exception:
+        return 0
+    _consent = ("certify", "agree", "acknowledg", "consent", "understand", "accept",
+                "confirm", "authorize", "i have read", "true and complete",
+                "true and accurate", "terms", "privacy")
+    # marketing/optional opt-ins we should NOT auto-check unless they block submit
+    _optional = ("marketing", "promotional", "newsletter", "subscribe", "text me",
+                 "sms", "receive calls", "receive texts", "offers")
+    for i in range(n):
+        try:
+            cb = boxes.nth(i)
+            if not cb.is_visible(timeout=600):
+                continue
+            if cb.is_checked():
+                continue
+            # Find the checkbox's label text (for/id, wrapping label, or aria-label).
+            label = ''
+            try:
+                label = cb.evaluate(
+                    """(el) => {
+                        let t = '';
+                        if (el.id) { const l = document.querySelector(`label[for="${el.id}"]`); if (l) t = l.textContent; }
+                        if (!t) { const p = el.closest('label'); if (p) t = p.textContent; }
+                        if (!t) t = el.getAttribute('aria-label') || '';
+                        if (!t && el.parentElement) t = el.parentElement.textContent || '';
+                        return (t || '').trim().slice(0, 200);
+                    }""") or ''
+            except Exception:
+                label = ''
+            ll = label.lower()
+            required = False
+            try:
+                required = bool(cb.evaluate("(el)=> el.required || el.getAttribute('aria-required')==='true'"))
+            except Exception:
+                required = False
+            is_consent = any(k in ll for k in _consent)
+            is_optional = any(k in ll for k in _optional)
+            # Check it if it's a consent box, OR it's required (and not a marketing opt-in).
+            if (is_consent or required) and not (is_optional and not required):
+                try:
+                    cb.check(timeout=2500)
+                except Exception:
+                    cb.click(timeout=2500, force=True)
+                if cb.is_checked():
+                    filled += 1
+                    print(f"      ☑️ checkbox: {label[:50]!r}")
+        except Exception:
+            continue
+    return filled
+
+
 def fill_questions_page(page, db, profile, company: str = "") -> bool:
     """Fill all required fields on the questions page. Returns True if it looks complete."""
     print("    📝 Questions page detected — filling required fields")
@@ -460,6 +521,7 @@ def fill_questions_page(page, db, profile, company: str = "") -> bool:
     total += _fill_textareas(page, db, profile, company)
     total += _fill_text_inputs(page, db, profile, company)
     total += _fill_selects(page, db, profile, company)
+    total += _fill_checkboxes(page, db, profile, company)
     print(f"    📝 filled {total} field(s)")
     time.sleep(1)
     return total

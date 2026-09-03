@@ -428,3 +428,31 @@ Verified (unit test): "Blockchain Developer (Java)" [in applied_titles] + a dup 
 jk already applied · jk previously failed · title already applied/confirmed (any jk) ·
 duplicate title in same batch · off-CV title. All skipped WITHOUT opening the browser page.
 (The in-submit_one jk/title/Applied-button checks remain as a second safety net.)
+
+
+---
+## Session: 2026-09-02 night — edge-case hardening: consent CHECKBOX filler (top stall cause)
+
+### Data-driven: what was breaking most (from data/flow_lessons.json)
+- stuck@pct50%: 12x · submit_click_failed@pct38%: 12x · '📝 filled 0 field(s)': 8x in logs.
+- Root cause of many stuck@pctN + 'filled 0': fill_questions_page handled radios/textareas/
+  text-inputs/selects — but NOT standalone CHECKBOXES. A required consent checkbox
+  ("I certify...", "I agree to Terms", "I acknowledge Privacy Notice") left unchecked blocks
+  Continue → force-advance fails 3x → stuck.
+
+### FIX — new _fill_checkboxes(page,...) in src/questions_filler.py (wired into fill_questions_page)
+- Ticks affirmative consent/required checkboxes: certify/agree/acknowledge/consent/understand/
+  accept/confirm/authorize/"i have read"/"true and complete"/terms/privacy, OR `required`.
+- Does NOT tick marketing/opt-in (marketing/promotional/newsletter/subscribe/sms/"text me"/
+  "receive calls|texts"/offers) UNLESS they're `required` (i.e., gate submit).
+- Reads label via for/id → wrapping <label> → aria-label → parent text.
+- VERIFIED with a local synthetic-HTML playwright unit test (NO Indeed, NO IP risk):
+  certify=checked, required-agree=checked, acknowledge=checked; marketing=unchecked, sms=unchecked.
+
+### Self-learning for remaining stuck questions already in place
+- submit_one logs unfilled question texts → data/needs_resolution.json → next run's
+  self-heal pre-resolves them via AI (_aq). No change needed there.
+
+### Testing discipline note
+- Did this WITHOUT live Indeed runs (IP still cooling from earlier over-testing). Used unit
+  tests on synthetic HTML — the right way to harden edge cases without re-flagging the IP.
