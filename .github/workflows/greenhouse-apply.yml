@@ -96,7 +96,7 @@ jobs:
           cd $GITHUB_WORKSPACE
           git config user.email "bot@bobrikh.dev"
           git config user.name "Greenhouse Bot"
-          git add agent/data/failed_jobs.json agent/data/greenhouse_applied.json agent/data/scan_offset.json 2>/dev/null || true
-          git diff --staged --quiet || git commit -m "greenhouse: sync applied/dedup/scan-offset [skip ci]"
+          git add agent/data/failed_jobs.json agent/data/greenhouse_applied.json agent/data/scan_offset.json agent/data/companies.json 2>/dev/null || true
+          git diff --staged --quiet || git commit -m "greenhouse: sync applied/dedup/scan-offset/discovered-companies [skip ci]"
           git pull --rebase --autostash || true
           git push || true

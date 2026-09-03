@@ -92,6 +92,47 @@ def main():
     _gh_applied = _load_gh_applied()
     print(f"🗂️  {len(_gh_applied)} Greenhouse company+title already applied (persistent dedup)")
 
+    # DYNAMIC CV-DRIVEN DISCOVERY (Bobur: find NEW companies based on my CV, not a static
+    # list). Search job boards for Java/Spring roles, extract the hiring company names, probe
+    # each for a real Greenhouse/Lever board, and add the ones that exist. The list then
+    # GROWS over time (companies.json is git-tracked + CI-committed). GH_DISCOVER=0 disables.
+    if os.environ.get('GH_DISCOVER', '1') == '1':
+        try:
+            _before = len(companies.get('greenhouse', []))
+            from src.portal_scanner import discover_company, save_companies
+            _names = set()
+            try:
+                from jobspy import scrape_jobs as _sj
+                for _q in (os.environ.get('GH_DISCOVER_TERM',
+                           'Java Spring Boot developer remote'),
+                           'Senior Java backend engineer remote',
+                           'Java microservices developer remote'):
+                    try:
+                        _df = _sj(site_name=['indeed', 'linkedin'], search_term=_q,
+                                  location='USA', results_wanted=25)
+                        if _df is not None and not getattr(_df, 'empty', True) and 'company' in _df.columns:
+                            for _c in _df['company'].tolist():
+                                _c = str(_c).strip()
+                                if _c and _c.lower() != 'nan' and len(_c) > 2:
+                                    _names.add(_c)
+                    except Exception as _qe:
+                        print(f"  ⚠️ discover search '{_q[:30]}' err: {str(_qe)[:40]}")
+            except Exception:
+                print("  ⚠️ jobspy unavailable for discovery — skipping")
+            _probed = 0
+            for _cn in sorted(_names)[:60]:   # cap probes per run
+                discover_company(_cn, companies)
+                _probed += 1
+            _after = len(companies.get('greenhouse', []))
+            if _after > _before:
+                save_companies(companies)
+                print(f"  🔍 CV-driven discovery: probed {_probed} companies from Java/Spring "
+                      f"searches → +{_after - _before} new Greenhouse boards (now {_after})")
+            else:
+                print(f"  🔍 CV-driven discovery: probed {_probed}, no new boards this run")
+        except Exception as _de:
+            print(f"  ⚠️ discovery step error: {str(_de)[:60]} — continuing with existing list")
+
     greenhouse_companies = companies.get('greenhouse', [])
     # ROTATE through ALL companies (Bobur: kept hitting the SAME companies). random.shuffle
     # + [:15] re-picked the same popular ~15 by chance and never covered the full list.

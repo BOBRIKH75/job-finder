@@ -576,3 +576,32 @@ Feels like applying to the SAME companies again and again; not finding others.
   always scanned companies 0-14). Now git-tracked.
 - greenhouse-apply.yml: commit scan_offset.json too (offset persists across CI runs).
 - Verified (unit test): run1=0-14, run2=15-29 ... run7=95/95 covered, run8 wraps. All new each run.
+
+
+---
+## Session: 2026-09-02 night — GREENHOUSE dynamic CV-driven company DISCOVERY
+
+### Bobur's ask
+Find companies dynamically based on my CV (Java/Spring); company list should auto-grow, not static.
+
+### Gap
+- discover_company()/save_companies() exist (probe a name for a real Lever/Greenhouse board,
+  add if found) and agent.py uses them — BUT greenhouse_apply.py NEVER discovered; it only
+  scanned the static 95-company list. So no NEW companies were ever found by the GH flow.
+
+### FIX (greenhouse_apply.py, GH_DISCOVER=1 default; GH_DISCOVER=0 to disable)
+- At main() start: search jobspy (indeed+linkedin) for CV terms — "Java Spring Boot developer
+  remote", "Senior Java backend engineer remote", "Java microservices developer remote"
+  (override first via GH_DISCOVER_TERM) → extract hiring company names → discover_company()
+  probes each (cap 60/run) for a real Greenhouse/Lever board → adds the ones that exist →
+  save_companies() to git-tracked companies.json. List GROWS over time, persists local+CI.
+- CI: companies.json added to the commit step (discovered companies survive across runs).
+- Verified (live probe): Stripe/Databricks/Airbnb → real GH boards added; fake company → not added.
+
+### Greenhouse flow is now fully dynamic + CV-driven
+1. DISCOVER new companies from Java/Spring searches (grows companies.json).
+2. ROTATE through ALL companies (round-robin, covers all, no repeats).
+3. CV-FIT gate before applying (Java/Spring/backend/remote/C2C only).
+4. Persistent dedup (company+normalized-title, git-synced) — no re-applying same job.
+All four persist via git-tracked files committed by CI: companies.json, scan_offset.json,
+greenhouse_applied.json.
