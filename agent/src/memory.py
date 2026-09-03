@@ -275,6 +275,54 @@ def get_applications(db: sqlite3.Connection, status: str = None, limit: int = 50
     return [dict(r) for r in db.execute(sql, params).fetchall()]
 
 
+def prune_old_records(db: sqlite3.Connection, days: int = 90) -> dict:
+    """Weekly-cleanup helper (imported by scripts/weekly_cleanup.py). Prunes rows that grow
+    unbounded but are safe to drop after `days`, WITHOUT deleting applied/submitted history
+    (that's the dedup record — keep it). Returns {table: rows_deleted}."""
+    counts = {}
+    cutoff_sql = f"datetime('now', '-{int(days)} days')"
+
+    def _tables():
+        try:
+            return {r[0] for r in db.execute(
+                "SELECT name FROM sqlite_master WHERE type='table'").fetchall()}
+        except Exception:
+            return set()
+
+    tables = _tables()
+    # 1) stale claim locks (job_claims) — anything older than cutoff is dead
+    if 'job_claims' in tables:
+        try:
+            cur = db.execute(f"DELETE FROM job_claims WHERE claimed_at < {cutoff_sql}")
+            counts['job_claims'] = cur.rowcount
+        except Exception:
+            pass
+    # 2) old 'found'/'seen' applications that were NEVER applied (not dedup history)
+    if 'applications' in tables:
+        try:
+            cur = db.execute(
+                f"DELETE FROM applications WHERE created_at < {cutoff_sql} "
+                "AND status NOT IN ('applied','submitted','dry_run','applied_via_email')")
+            counts['applications_stale'] = cur.rowcount
+        except Exception:
+            pass
+    # 3) audit/log tables if present
+    for t in ('audit_log', 'events', 'patterns'):
+        if t in tables:
+            try:
+                cur = db.execute(f"DELETE FROM {t} WHERE rowid IN "
+                                 f"(SELECT rowid FROM {t} WHERE created_at < {cutoff_sql})")
+                counts[t] = cur.rowcount
+            except Exception:
+                pass
+    try:
+        db.commit()
+        db.execute("VACUUM")
+    except Exception:
+        pass
+    return counts
+
+
 def update_application_status(db: sqlite3.Connection, job_url: str, status: str) -> None:
     db.execute(
         "UPDATE applications SET status=?, status_updated_at=datetime('now') WHERE job_url=?",
