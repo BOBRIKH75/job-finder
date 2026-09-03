@@ -28,7 +28,14 @@ from typing import Optional
 logger = logging.getLogger(__name__)
 
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
-GEMINI_MODEL = "gemini-2.5-flash-preview-05-20"
+# NOTE: the old pinned preview model "gemini-2.5-flash-preview-05-20" was retired
+# by Google and returned HTTP 404 on every call — the AI solver silently failed.
+# "gemini-flash-latest" always resolves to the current flash model, so it never
+# 404s again. Override with GEMINI_MODEL in .env if needed. (Verified 2026-09-02:
+# key ends ...8HTY is VALID; gemini-flash-latest + gemini-2.5-flash are available.)
+# >>> LOCKED FIX #2 (do not change without approval) — model must resolve, not 404
+GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-flash-latest")
+# <<< LOCKED FIX #2
 GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={key}"
 
 # Max attempts to solve a single CAPTCHA (new images may appear after first selection)

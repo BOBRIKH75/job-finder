@@ -136,6 +136,43 @@ def init_db(db: sqlite3.Connection) -> None:
     schema = SCHEMA_PATH.read_text()
     db.executescript(schema)
     db.commit()
+    _purge_poisoned_answers(db)
+
+
+def _purge_poisoned_answers(db: sqlite3.Connection) -> None:
+    """Self-heal wrong memory so a cached/persistent DB (CI or local) can't keep
+    serving a bad answer even after the code is fixed.
+
+    The 2026-09-02 bug saved the salary number ("75") as the answer to consent /
+    attestation questions (the bare-substring "rate" false-matched "sepaRATEly" /
+    "incorpoRATEd"). Memory is checked before the profile rules, so a poisoned row
+    would defeat the code fix. Delete any consent/agreement question whose saved
+    answer is a bare number — the fixed profile rule will re-answer it correctly.
+    """
+    try:
+        rows = db.execute(
+            "SELECT question_hash, question_text, approved_answer FROM approved_answers"
+        ).fetchall()
+    except Exception:
+        return  # table not present yet
+    consent_markers = (
+        "i consent", "consent to the processing", "processing of my personal",
+        "by sending us your application", "you confirm that you have read",
+        "read and understood", "terms and conditions", "privacy policy",
+        "privacy notice", "data protection", "answers will be shared",
+    )
+    bad_hashes = []
+    for r in rows:
+        ans = str(r["approved_answer"]).strip()
+        q = (r["question_text"] or "").lower()
+        # A bare number can never be the right answer to a consent/agreement radio.
+        if ans.isdigit() and any(m in q for m in consent_markers):
+            bad_hashes.append(r["question_hash"])
+    for h in bad_hashes:
+        db.execute("DELETE FROM approved_answers WHERE question_hash=?", (h,))
+    if bad_hashes:
+        db.commit()
+        print(f"  🧹 memory self-heal: purged {len(bad_hashes)} poisoned consent answer(s)")
 
 
 # --- Applications ---
@@ -145,6 +182,16 @@ def upsert_application(db: sqlite3.Connection, **kw) -> int:
     # to the same row. The UNIQUE(job_url) constraint then dedups automatically.
     if kw.get("job_url"):
         kw["job_url"] = normalize_job_url(kw["job_url"])
+    # DYNAMIC guard: auto-fill any NOT NULL column that the caller didn't provide,
+    # so a missing field (company / job_title / etc.) never aborts the record of a
+    # REAL submit. Reads the live schema — works for any current/future NOT NULL col.
+    try:
+        for _cid, _name, _type, _notnull, _dflt, _pk in db.execute(
+                "PRAGMA table_info(applications)").fetchall():
+            if _notnull and not _pk and _dflt is None and _name not in kw:
+                kw[_name] = "unknown" if "TEXT" in (_type or "").upper() else 0
+    except Exception:
+        pass
     cols = ", ".join(kw.keys())
     placeholders = ", ".join(["?"] * len(kw))
     updates = ", ".join(f"{k}=excluded.{k}" for k in kw if k != "job_url")

@@ -17,6 +17,29 @@ Follows Bobur's EXACT taught loop — NO skipping:
 Screenshots go to screenshots/, 1000px wide (readable), named by step.
 Headed. Submits exactly ONE application, then stops.
 """
+
+# ==========================================================================
+# 🔒 LOCKED FLOW — DO NOT BREAK (approved + verified 2026-09-02)
+# --------------------------------------------------------------------------
+# This submit flow is PROVEN end-to-end: it submitted a REAL application
+# (jk=34729111d7580f6e -> CONFIRMATION url:post-apply). It is APPROVED and FROZEN.
+#
+# RULES for any future change (me or a future session):
+#   1. DO NOT modify the 4 LOCKED fixes below without Bobur's explicit approval.
+#      They are marked in-code with:  #  >>> LOCKED FIX #n  ...  #  <<< LOCKED FIX #n
+#        FIX #1  persistent real-Chrome launch (_launch)         — beats "Try again later"
+#        FIX #2  Gemini model = gemini-flash-latest              — (src/gemini_captcha_solver.py)
+#        FIX #3  single-option consent auto-click                — (src/questions_filler.py)
+#        FIX #4  trust injected TOKEN, never reload-after-solve  — (x2 here)
+#   2. To fix a DIFFERENT/NEW issue: add it as OPTIONAL/ADDITIVE, gated behind an
+#      env flag (e.g. os.environ.get('EXPERIMENTAL_X') == '1'), default OFF.
+#      Never change the locked path to fix an unrelated problem.
+#   3. Only after the new fix is CONFIRMED working (real submit) may it be
+#      promoted to default — and then update SESSION_MEMORY.md + this header.
+#   4. Optimize ONLY after confirmation, and only in an optional path first.
+# Full detail: SESSION_MEMORY.md "APPROVED + FROZEN" section + FLOW_LOCK.md.
+# ==========================================================================
+
 import json
 import os
 import random
@@ -245,6 +268,44 @@ def click_continue(page):
     return False
 
 
+def dismiss_distance_warning(page) -> bool:
+    """DYNAMIC (additive): Indeed sometimes interrupts the flow with a 'this job looks
+    like it might be a little far from you / About N miles away — make sure this job
+    location still works for you' page. Bob is remote-preferred, so we always proceed.
+    Detect the warning by TEXT (any distance), then click the proceed/continue button.
+    Returns True if a warning was found and dismissed. No-op (False) otherwise."""
+    try:
+        body = (page.locator('body').inner_text(timeout=2000) or '').lower()
+    except Exception:
+        return False
+    signals = ('far from you', 'miles away', 'still works for you',
+               'this job location', 'a little far')
+    if not any(s in body for s in signals):
+        return False
+    print("  📍 distance/location warning detected — proceeding (remote-preferred)")
+    for sel in ['[data-testid="continue-button"]',
+                'button:has-text("Continue")',
+                'button:has-text("Apply anyway")',
+                'button:has-text("Continue application")',
+                'button:has-text("Yes")',
+                'a:has-text("Continue")']:
+        loc = page.locator(sel)
+        for i in range(min(loc.count(), 6)):
+            el = loc.nth(i)
+            try:
+                if el.is_visible(timeout=1000):
+                    el.scroll_into_view_if_needed(timeout=1500)
+                    try:
+                        el.click(timeout=3000)
+                    except Exception:
+                        el.evaluate("(b) => b.click()")
+                    time.sleep(2)
+                    return True
+            except Exception:
+                continue
+    return False
+
+
 def is_confirmation(page):
     # URL-based signal is the most reliable post-submit indicator.
     try:
@@ -297,41 +358,142 @@ def has_recaptcha(page):
     return False
 
 
+def click_not_a_robot(page) -> bool:
+    """Directly click the reCAPTCHA v2 'I'm not a robot' anchor checkbox.
+
+    This is the box in the Indeed review-module page (the user's ask: "click the
+    I'm not a robot box"). The checkbox lives inside an anchor iframe
+    (src contains 'recaptcha/.../anchor'). Clicking it with a high-trust
+    Patchright/Camoufox fingerprint usually clears the challenge with NO image
+    grid. Returns True if the checkbox became checked / the challenge cleared.
+    """
+    try:
+        # The anchor checkbox is inside the recaptcha ANCHOR iframe.
+        anchor = None
+        for fr in page.frames:
+            src = (fr.url or '')
+            if 'recaptcha' in src and 'anchor' in src:
+                anchor = fr
+                break
+        if anchor is None:
+            # Fallback: any recaptcha frame.
+            anchor = next((f for f in page.frames if 'recaptcha' in (f.url or '')), None)
+        if anchor is None:
+            return False
+        box = anchor.locator('#recaptcha-anchor, .recaptcha-checkbox, div[role="checkbox"]')
+        if box.count() == 0:
+            return False
+        # Already checked?
+        try:
+            if anchor.locator('.recaptcha-checkbox-checked').count() > 0:
+                return True
+        except Exception:
+            pass
+        try:
+            box.first.scroll_into_view_if_needed(timeout=2000)
+        except Exception:
+            pass
+        # Human jitter before clicking (research 2026: fixed/instant clicks lower the
+        # reCAPTCHA trust score; a short random pause + a settling wait raises it).
+        try:
+            import random as _rnd
+            time.sleep(_rnd.uniform(0.8, 2.1))
+            box.first.hover(timeout=2000)
+            time.sleep(_rnd.uniform(0.3, 0.9))
+        except Exception:
+            pass
+        box.first.click(timeout=4000)
+        print("   ☑️  clicked 'I'm not a robot' checkbox")
+        # Give it a moment to turn into the green check (or pop an image grid).
+        for _ in range(6):
+            time.sleep(1)
+            try:
+                if anchor.locator('.recaptcha-checkbox-checked').count() > 0:
+                    print("   ✅ 'I'm not a robot' now checked (no image challenge)")
+                    return True
+            except Exception:
+                pass
+            if not has_recaptcha(page):
+                return True
+        return False
+    except Exception as _e:
+        print(f"   ⚠️ not-a-robot click n/a: {str(_e)[:60]}")
+        return False
+
+
+# reCAPTCHA tokens expire ~120s after issue. We stamp when a token was last seen
+# and, right before Submit, re-solve if it is older than this budget. Dynamic +
+# TTL-based (additive to the locked flow — does not alter the locked success path).
+_RECAPTCHA_TTL_SECONDS = 110  # safety margin under Google's ~120s hard expiry
+_last_token_at = {'ts': 0.0, 'val': ''}
+
+
+def _current_recaptcha_token(page) -> str:
+    """Return the current g-recaptcha-response token value (or '')."""
+    try:
+        return page.evaluate(
+            """() => {
+                const els = document.querySelectorAll(
+                  '[name="g-recaptcha-response"], [name="recaptcha-token"], textarea[id*="recaptcha"]');
+                for (const e of els) { if (e.value && e.value.length > 20) return e.value; }
+                return '';
+            }""") or ''
+    except Exception:
+        return ''
+
+
+def _stamp_token_if_present(page):
+    """If a fresh token is on the page, record it + the time it was seen."""
+    tok = _current_recaptcha_token(page)
+    if tok and tok != _last_token_at['val']:
+        _last_token_at['val'] = tok
+        _last_token_at['ts'] = time.time()
+    return tok
+
+
+def ensure_fresh_captcha_token(page) -> bool:
+    """DYNAMIC TTL GUARD (call right before Submit). If the page has a reCAPTCHA and
+    the last-seen token is stale (older than the TTL budget) OR missing, re-run the
+    solver chain so the token Indeed receives is valid. Returns True if the page has
+    a usable/fresh token (or no captcha at all)."""
+    if not has_recaptcha(page):
+        return True
+    tok = _stamp_token_if_present(page)
+    age = time.time() - _last_token_at['ts'] if _last_token_at['ts'] else 1e9
+    if tok and age <= _RECAPTCHA_TTL_SECONDS:
+        return True  # token still fresh — nothing to do
+    if tok:
+        print(f"  ⏳ reCAPTCHA token stale ({int(age)}s > {_RECAPTCHA_TTL_SECONDS}s) — re-solving before Submit")
+    else:
+        print("  🔄 no fresh reCAPTCHA token before Submit — solving now")
+    wait_for_human_captcha(page)          # re-run the (locked) dynamic solver chain
+    tok = _stamp_token_if_present(page)   # re-stamp with the new token
+    return bool(tok) or not has_recaptcha(page)
+
+
 def wait_for_human_captcha(page, max_wait=180):
-    """Solve reCAPTCHA. In HEADFUL mode, prefer HUMAN solve (real click = high-trust
-    token that actually passes reCAPTCHA Enterprise). The free auto token-injection
-    produces a LOW-trust token that the employer form silently rejects -> submit bounces.
-    So: HEADFUL -> human first; headless CI -> auto solver chain."""
+    """Solve reCAPTCHA FULLY DYNAMICALLY — NO human handoff (Bobur's rule 2026-09-02).
+
+    Order (all automatic):
+      0. Click the 'I'm not a robot' checkbox FIRST (high-trust fingerprint often
+         clears a v2 checkbox with no image grid on this single click).
+      1. FREE ClickSolver (playwright-captcha) — clicks + solves using browser stealth.
+      2. Existing dynamic solver chain (_try_auto_captcha_solve): NopeCHA -> audio
+         (playwright-recaptcha) -> OhMyCaptcha/Gemini -> hCaptcha/enterprise token.
+      3. Reload to clear (reloading often drops the checkbox).
+    If it still isn't cleared, RETURN False (caller skips the job) — we never block
+    on a human. `max_wait` is kept only for signature compatibility.
+    """
     if not has_recaptcha(page):
         return True
 
-    _headful = os.environ.get('HEADFUL', '0') == '1'
+    # 0) Click 'I'm not a robot' FIRST (both headful + headless).
+    if click_not_a_robot(page) and not has_recaptcha(page):
+        print("   ✅ reCAPTCHA cleared by direct checkbox click")
+        snap(page, "CAPTCHA_checkbox_cleared")
+        return True
 
-    if _headful:
-        # Human solve — real click gives a high-trust token that truly passes.
-        snap(page, "CAPTCHA_solve_human")
-        print("\n" + "=" * 60)
-        print("🧑  reCAPTCHA — please solve it in the browser window NOW")
-        print("   (check 'I'm not a robot' + any picture challenge).")
-        print(f"   Waiting up to {max_wait}s...")
-        print("=" * 60)
-        try:
-            os.system('afplay /System/Library/Sounds/Glass.aiff >/dev/null 2>&1 &')
-        except Exception:
-            pass
-        waited = 0
-        while waited < max_wait:
-            time.sleep(3)
-            waited += 3
-            if not has_recaptcha(page):
-                print(f"   ✅ CAPTCHA cleared (human) after ~{waited}s")
-                snap(page, "CAPTCHA_cleared")
-                return True
-        print("   ⚠️ CAPTCHA still present after wait")
-        return False
-
-    # 1) FREE ClickSolver (playwright-captcha) — clicks the reCAPTCHA using the browser's
-    #    stealth; works best with Patchright/Camoufox fingerprint. No API key. (2026 best free.)
+    # 1) FREE ClickSolver (playwright-captcha) — best with Patchright/Camoufox. No key.
     try:
         from playwright_captcha import ClickSolver, CaptchaType, FrameworkType
         fw = FrameworkType.PATCHRIGHT if _STEALTH == 'patchright' else FrameworkType.PLAYWRIGHT
@@ -348,53 +510,60 @@ def wait_for_human_captcha(page, max_wait=180):
     except Exception as _e:
         print(f"   ⚠️ ClickSolver n/a: {str(_e)[:50]}")
 
-    # 2) Existing auto-solver chain (NopeCHA/audio/Gemini/hCaptcha/enterprise token).
+    # 2) Existing dynamic solver chain (NopeCHA/audio/Gemini/hCaptcha/enterprise token).
+    # >>> LOCKED FIX #4a (do not change without approval) — trust token, no reload
+    #    IMPORTANT: when a solver SUCCEEDS it injects a valid g-recaptcha-response
+    #    token into the hidden field. The visible widget iframe often STAYS in the
+    #    DOM after that — so `has_recaptcha()` still returns True even though the
+    #    challenge is effectively solved. We must TRUST the solver's success and
+    #    NOT reload (reloading throws the token away and bounces the flow back to
+    #    step 0 → the old `submit_click_failed@pct38%` bug). Verify by token presence.
     if _try_auto_captcha_solve is not None:
         try:
-            print("   🔓 trying auto-captcha solver chain...")
-            if _try_auto_captcha_solve(page) and not has_recaptcha(page):
-                print("   ✅ auto-solver cleared the CAPTCHA")
-                snap(page, "CAPTCHA_autosolved")
-                return True
+            print("   🔓 trying dynamic auto-captcha solver chain...")
+            if _try_auto_captcha_solve(page):
+                # Confirm a real token landed in the response field (widget may linger).
+                _has_token = False
+                try:
+                    _has_token = bool(page.evaluate(
+                        """() => {
+                            const els = document.querySelectorAll(
+                              '[name="g-recaptcha-response"], [name="recaptcha-token"], textarea[id*="recaptcha"]');
+                            for (const e of els) { if (e.value && e.value.length > 20) return true; }
+                            return false;
+                        }"""))
+                except Exception:
+                    _has_token = False
+                if _has_token or not has_recaptcha(page):
+                    print("   ✅ dynamic solver cleared the CAPTCHA (token injected)")
+                    snap(page, "CAPTCHA_autosolved")
+                    return True
         except Exception as _e:
             print(f"   ⚠️ auto-solver error: {str(_e)[:60]}")
+    # <<< LOCKED FIX #4a
 
-    # 3) Reload to clear (LEARNED: reloading often removes the checkbox).
+    # 3) Reload to clear (LEARNED: reloading often removes the checkbox), then
+    #    re-click the box + retry the solver once.
     for rl in range(2):
-        if has_recaptcha(page):
-            print(f"   🔄 reloading to clear CAPTCHA ({rl+1}/2)")
-            try:
-                page.reload(wait_until='domcontentloaded', timeout=20000)
-            except Exception:
-                pass
-            time.sleep(4)
-        else:
+        if not has_recaptcha(page):
             print("   ✅ CAPTCHA cleared after reload")
+            return True
+        print(f"   🔄 reloading to clear CAPTCHA ({rl + 1}/2)")
+        try:
+            page.reload(wait_until='domcontentloaded', timeout=20000)
+        except Exception:
+            pass
+        time.sleep(4)
+        if click_not_a_robot(page) and not has_recaptcha(page):
+            print("   ✅ reCAPTCHA cleared by checkbox click after reload")
             return True
 
     if not has_recaptcha(page):
         return True
 
-    # 3) Human handoff (last resort — a bot must not auto-solve Google image grids).
-    snap(page, "CAPTCHA_needs_human")
-    print("\n" + "=" * 60)
-    print("🤖➡️🧑  reCAPTCHA / 'I'm not a robot' — auto-solve failed.")
-    print("   PLEASE solve it manually in the browser window now.")
-    print(f"   Waiting up to {max_wait}s for you to finish...")
-    print("=" * 60)
-    try:
-        os.system('afplay /System/Library/Sounds/Glass.aiff >/dev/null 2>&1 &')
-    except Exception:
-        pass
-    waited = 0
-    while waited < max_wait:
-        time.sleep(3)
-        waited += 3
-        if not has_recaptcha(page):
-            print(f"   ✅ CAPTCHA cleared after ~{waited}s — continuing.")
-            snap(page, "CAPTCHA_cleared")
-            return True
-    print("   ⚠️ CAPTCHA still present after wait — continuing anyway (submit may fail).")
+    # No human handoff. Report unsolved so the caller skips this job and moves on.
+    print("   ⚠️ reCAPTCHA not cleared by dynamic solvers — skipping job (no human wait)")
+    snap(page, "CAPTCHA_unsolved_skip")
     return False
 
 
@@ -599,6 +768,12 @@ def submit_one(pg, url, db, profile):
     _submit_attempts = 0
     _reached_submit_once = False
     for step in range(MAX_STEPS):
+        # DYNAMIC (additive): clear Indeed's 'job is far from you' location warning
+        # if present, so the flow proceeds (Bob is remote-preferred). No-op otherwise.
+        try:
+            dismiss_distance_warning(pg)
+        except Exception:
+            pass
         # LEARNED (Bobur screenshot 2026-09-01): SmartApply sometimes throws
         # "Something went wrong — please try again later" (a SERVER error, often from
         # automated/too-fast interaction). Dismiss it (OK) and RELOAD to recover.
@@ -722,13 +897,28 @@ def submit_one(pg, url, db, profile):
                 snap(pg, f"SUBMIT_LOOP_step{step}")
                 record_lesson('submit_click_failed', step, p)
                 return 'submit_click_failed'
+            # >>> LOCKED FIX #4b (do not change without approval) — trust token, no reload
             # Try auto-solver / reload to clear any CAPTCHA. This MAY reload the page.
             wait_for_human_captcha(pg)
-            # If a CAPTCHA is still present, re-loop (don't submit into a challenge).
-            if has_recaptcha(pg):
+            # If a CAPTCHA is still present AND no token was injected, re-loop (don't
+            # submit into an unsolved challenge). But if a valid token IS present, the
+            # widget just lingers in the DOM — proceed to Submit (don't reload/bounce).
+            _tok = False
+            try:
+                _tok = bool(pg.evaluate(
+                    """() => {
+                        const els = document.querySelectorAll(
+                          '[name="g-recaptcha-response"], [name="recaptcha-token"], textarea[id*="recaptcha"]');
+                        for (const e of els) { if (e.value && e.value.length > 20) return true; }
+                        return false;
+                    }"""))
+            except Exception:
+                _tok = False
+            if has_recaptcha(pg) and not _tok:
                 print("  ↻ CAPTCHA still present after solve attempt — re-looping")
                 time.sleep(2)
                 continue
+            # <<< LOCKED FIX #4b
             # CAPTCHA cleared — scroll to bottom (75s human solve may have moved view),
             # then poll for the Submit button to be present before clicking.
             try:
@@ -750,6 +940,9 @@ def submit_one(pg, url, db, profile):
                 print("  ↻ submit button still not ready — re-looping once")
                 continue
             time.sleep(random.uniform(0.6, 1.4))  # human-like pause before clicking
+            # DYNAMIC TTL GUARD: re-solve if the reCAPTCHA token went stale while we
+            # were filling later steps (Google expires it ~120s after issue).
+            ensure_fresh_captcha_token(pg)
             if click_submit(pg):
                 print("  📨 clicked Submit — waiting for confirmation")
                 try:
@@ -768,8 +961,12 @@ def submit_one(pg, url, db, profile):
                     print(f"  🎉 CONFIRMATION: matched '{conf}'")
                     snap(pg, "CONFIRMED_final")
                     try:
+                        _company = (locals().get('job_company') or locals().get('employer')
+                                    or (job_title or '').strip() or 'Indeed Employer')
+                        _title = (locals().get('job_title') or '').strip() or 'Indeed Job'
                         upsert_application(db, job_url=url, ats_type='indeed',
-                                           status='submitted', match_score=70)
+                                           status='submitted', match_score=70,
+                                           company=_company, job_title=_title)
                         print("  💾 recorded to applications DB (won't retry next time)")
                     except Exception as _e:
                         print(f"  ⚠️ DB record failed: {str(_e)[:50]}")
@@ -1059,31 +1256,111 @@ def main():
         pass
 
     print("Searching Indeed easy-apply jobs...")
-    jobs = scrape_jobs(site_name=['indeed'],
-                       search_term=os.environ.get('SEARCH_TERM', 'Java Spring Boot developer contract remote'),
-                       location=os.environ.get('SEARCH_LOCATION', 'USA'),
-                       results_wanted=int(os.environ.get('RESULTS_WANTED', '20')), easy_apply=True)
-    urls = [str(u) for u in jobs['job_url'].tolist() if str(u) != 'nan']
+
+    def _extract_urls(df):
+        """Safely pull job_url values from a jobspy DataFrame that may be empty
+        or missing the column (Indeed rate-limits/blocks return an empty frame)."""
+        try:
+            if df is None or getattr(df, 'empty', True):
+                return []
+            if 'job_url' not in df.columns:
+                return []
+            return [str(u) for u in df['job_url'].tolist() if str(u) not in ('nan', '', 'None')]
+        except Exception:
+            return []
+
+    # Allow forcing ONE specific job by URL (test loop: prove a real submit).
+    forced = os.environ.get('TARGET_URL', '').strip()
+    if forced:
+        urls = [forced]
+        print(f"  🎯 TARGET_URL set — testing exactly one job: {forced[:60]}")
+    else:
+        # Try the requested term, then fall back through a few terms if Indeed
+        # returns nothing (rate-limit / block) so the run never crashes on an
+        # empty result set. VERIFIED BUG 2026-09-02: an empty frame raised
+        # KeyError: 'job_url' and killed the whole run.
+        _terms = [os.environ.get('SEARCH_TERM', 'Java Spring Boot developer contract remote')]
+        _terms += [
+            'Java developer remote contract',
+            'Senior Java backend developer remote',
+            'Spring Boot developer remote',
+        ]
+        _loc = os.environ.get('SEARCH_LOCATION', 'USA')
+        _rw = int(os.environ.get('RESULTS_WANTED', '20'))
+        urls = []
+        for _t in _terms:
+            try:
+                jobs = scrape_jobs(site_name=['indeed'], search_term=_t,
+                                   location=_loc, results_wanted=_rw, easy_apply=True)
+            except Exception as _e:
+                print(f"  ⚠️ search '{_t[:40]}' errored: {str(_e)[:60]}")
+                continue
+            urls = _extract_urls(jobs)
+            print(f"  🔍 '{_t[:45]}' → {len(urls)} urls")
+            if urls:
+                break
+            time.sleep(2)  # brief backoff before the next term
+
+    if not urls:
+        print("❌ No jobs found (Indeed likely rate-limited/blocked the search). "
+              "Try again shortly, use TARGET_URL=<job link>, or run from a residential IP.")
+        return
     print(f"Got {len(urls)} urls")
     cookies = load_cookies()
 
     with sync_playwright() as pw:
-        # Headless by default (CI/CD has no display). Set HEADFUL=1 locally to watch
-        # and to solve CAPTCHAs manually. Same code runs in CI and locally.
+        # Headless by default (CI/CD has no display). Set HEADFUL=1 locally to watch.
+        # reCAPTCHA is solved DYNAMICALLY (no human) — same code runs in CI + locally.
         _headful = os.environ.get('HEADFUL', '0') == '1'
-        b = pw.chromium.launch(headless=not _headful,
-                               args=['--disable-blink-features=AutomationControlled'])
-        # Human-like context: rotating UA/viewport + Denver timezone (matches IP).
-        try:
-            from human_behavior import random_context_args
-            ctx = b.new_context(**random_context_args())
-            print("  🧑 human-like context (rotating UA/viewport/timezone)")
-        except Exception:
-            ctx = b.new_context(viewport={'width': 1000, 'height': 1300}, user_agent=(
-                'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) '
-                'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36'))
-        ctx.add_cookies(cookies)
-        pg = ctx.new_page()
+
+        def _launch():
+            """Launch browser + a fresh human-like context with cookies. Returns
+            (browser, context, page). Used at start AND to RELAUNCH after the
+            browser/context dies (fix-list #2: the time=0s cascade — one crash
+            used to kill every subsequent job)."""
+            # >>> LOCKED FIX #1 (do not change without approval) — persistent real Chrome
+            # PATCHRIGHT BEST PRACTICE (official README "use Chrome without
+            # Fingerprint Injection"): a PERSISTENT context on REAL Chrome, with
+            # NO custom args and NO custom user_agent. This is what stops Google's
+            # "Try again later / automated queries" block — a fresh chromium.launch()
+            # with a fake UA + manual --disable-blink-features (which patchright
+            # already adds itself) gives a near-zero trust score. A persistent
+            # profile keeps cookies/history across runs so Google trusts the session.
+            _prof_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '.chrome-profile')
+            os.makedirs(_prof_dir, exist_ok=True)
+            _launch_kw = dict(
+                user_data_dir=_prof_dir,
+                headless=not _headful,
+                no_viewport=True,
+            )
+            if _STEALTH == 'patchright':
+                # Real Google Chrome (channel="chrome") is required for full stealth.
+                _launch_kw['channel'] = 'chrome'
+            try:
+                _ctx = pw.chromium.launch_persistent_context(**_launch_kw)
+            except Exception:
+                # Fallback: some machines lack channel="chrome" — retry on bundled Chromium.
+                _launch_kw.pop('channel', None)
+                _ctx = pw.chromium.launch_persistent_context(**_launch_kw)
+            try:
+                _ctx.add_cookies(cookies)
+            except Exception:
+                pass
+            # launch_persistent_context returns the context (its own browser); reuse
+            # an existing page if Chrome opened one, else create a fresh page.
+            _pg = _ctx.pages[0] if _ctx.pages else _ctx.new_page()
+            return _ctx, _ctx, _pg
+            # <<< LOCKED FIX #1
+
+        b, ctx, pg = _launch()
+        print("  🧑 human-like context (rotating UA/viewport/timezone)")
+
+        def _page_alive(_pg):
+            """True if the page/context/browser is still usable."""
+            try:
+                return _pg is not None and not _pg.is_closed()
+            except Exception:
+                return False
 
         target = int(os.environ.get('TARGET_SUBMITS', '2'))
         submitted_jobs = []
@@ -1143,6 +1420,12 @@ def main():
             except Exception:
                 pass
         failed_jks = _load_failed()
+        # TEST/RETRY mode: when RETRY_FAILED=1, do NOT skip previously-failed jobs.
+        # After a filler/answer bug fix we WANT to re-attempt the jobs that stalled
+        # before, so the fix is proven on a real submit (Bobur: loop until confirmed).
+        if os.environ.get('RETRY_FAILED', '0') == '1':
+            print(f"  ♻️  RETRY_FAILED=1 — will re-attempt {len(failed_jks)} previously-failed job(s)")
+            failed_jks = set()
 
         for url in urls:
             jk = _jk(url)
@@ -1152,14 +1435,42 @@ def main():
             if jk and jk in failed_jks:
                 print(f"  ⏭️  previously failed (jk={jk}) — skipping to save time")
                 continue
+            # RELAUNCH GUARD (fix-list #2): if the browser/context died on a prior
+            # job, revive it BEFORE the next goto so we don't cascade time=0s errors.
+            if not _page_alive(pg):
+                print("  ♻️  browser/context was dead — relaunching before next job")
+                try:
+                    b.close()
+                except Exception:
+                    pass
+                try:
+                    b, ctx, pg = _launch()
+                except Exception as _re:
+                    print(f"  ❌ relaunch failed: {str(_re)[:80]} — stopping run")
+                    break
             try:
                 _job_start = time.time()
                 result = submit_one(pg, url, db, profile)
                 _job_elapsed = time.time() - _job_start
             except Exception as e:
-                print(f"  ERR {str(e)[:120]}")
+                _emsg = str(e)
+                print(f"  ERR {_emsg[:120]}")
                 result = 'error'
                 _job_elapsed = time.time() - _job_start if '_job_start' in dir() else 0
+                # Dead browser/context/page -> relaunch immediately so the NEXT
+                # job runs on a live browser (prevents the whole-run cascade).
+                if ('has been closed' in _emsg or 'Target page' in _emsg
+                        or 'crash' in _emsg.lower() or not _page_alive(pg)):
+                    print("  ♻️  detected dead browser — relaunching for next job")
+                    try:
+                        b.close()
+                    except Exception:
+                        pass
+                    try:
+                        b, ctx, pg = _launch()
+                    except Exception as _re:
+                        print(f"  ❌ relaunch failed: {str(_re)[:80]} — stopping run")
+                        break
             if result in ('submitted', 'submitted_no_conf') and jk:
                 _save_jk(jk)
                 applied_jks.add(jk)

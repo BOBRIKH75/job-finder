@@ -26,22 +26,26 @@ def get_verification_code(
     sender_filter: str = "greenhouse",
     max_wait_seconds: int = 30,
     poll_interval: int = 3,
+    company: str = "",
 ) -> Optional[str]:
     """Poll Gmail IMAP for a FRESH verification code email.
     
     CRITICAL: Each Greenhouse application sends a UNIQUE code. Reusing an old
     code silently fails (page redirects but application is NOT actually submitted).
     
-    Strategy:
-    1. Search UNSEEN emails from sender
-    2. Loop through ALL matches (newest first) looking for a code NOT in _USED_CODES
-    3. Mark every processed email as SEEN (prevents re-reads)
-    4. If no fresh code found, wait and retry until timeout
+    VERIFIED LIVE (2026-09-01): the code email ALWAYS has the subject
+    "Security code for your application to <Company>" (sender is Greenhouse even
+    for Airbnb/Affirm/etc). The old FROM-only search grabbed the newest
+    greenhouse email, which is usually a "Thank you for applying" CONFIRMATION
+    (no code) → parser returned None or a junk token → wrong code entered.
+    Fix: search by SUBJECT "security code" first, and if we know the company,
+    prefer the email whose subject names that company.
     
     Args:
-        sender_filter: keyword to match in sender address (e.g., 'greenhouse', 'no-reply')
+        sender_filter: keyword to match in sender address (fallback only)
         max_wait_seconds: how long to wait for the email to arrive
         poll_interval: seconds between IMAP checks
+        company: the employer name for the current application (best-match filter)
     
     Returns:
         The verification code as a string, or None if not found
@@ -81,11 +85,16 @@ def get_verification_code(
             mail.login(gmail_user, gmail_pass)
             mail.select('"[Gmail]/All Mail"')  # Search ALL mail, not just Primary tab
             
-            # Search for RECENT emails from the sender (today only)
+            # Search for RECENT emails (today only)
             # (datetime/timedelta come from the module-level import — do NOT
             # re-import locally or the freshness-cutoff use above becomes UnboundLocal)
             today = datetime.now().strftime("%d-%b-%Y")
-            if sender_filter:
+            # PRIMARY: subject-based — the code email is ALWAYS titled
+            # "Security code for your application to <Company>". This reliably
+            # excludes "Thank you for applying" confirmation emails.
+            if sender_filter == "__subject__":
+                search_criteria = f'(SINCE {today} SUBJECT "security code")'
+            elif sender_filter:
                 search_criteria = f'(SINCE {today} FROM "{sender_filter}")'
             else:
                 search_criteria = f'(SINCE {today})'
@@ -101,6 +110,18 @@ def get_verification_code(
                     
                     raw_email = msg_data[0][1]
                     msg = email.message_from_bytes(raw_email)
+
+                    # COMPANY MATCH: when we know the employer, skip code emails
+                    # whose subject is for a DIFFERENT company. The subject is
+                    # "Security code for your application to <Company>". This
+                    # stops us entering Airbnb's code on an Affirm application.
+                    if company:
+                        subj = str(msg.get("Subject", "")).lower()
+                        comp = company.lower().strip()
+                        # only enforce when this looks like a security-code email
+                        if 'security code' in subj and comp and comp[:12] not in subj:
+                            mail.store(msg_id, '+FLAGS', '\\Seen')
+                            continue
 
                     # FRESHNESS GUARD: reject emails that arrived before this OTP
                     # attempt began (minus a 5-min buffer). A real Greenhouse code
@@ -468,7 +489,7 @@ def _click_submit_after_code(page) -> None:
     print("      ⚠️ No submit button found AND Enter didn't work — code was entered but NOT submitted")
 
 
-def handle_email_verification(page, skip_detection: bool = False) -> bool:
+def handle_email_verification(page, skip_detection: bool = False, company: str = "") -> bool:
     """Detect and handle email verification challenge on current page.
     
     Call this when the page shows a verification/security code prompt.
@@ -479,6 +500,7 @@ def handle_email_verification(page, skip_detection: bool = False) -> bool:
         skip_detection: If True, skip the page text signal check (caller already confirmed
                        this is a verification page, e.g. submit_and_verify returned 
                        email_verification_required). Goes straight to reading code from Gmail.
+        company: employer name for the current application (matches the right code email)
     """
     if not skip_detection:
         # Check if page is asking for email verification
@@ -518,7 +540,10 @@ def handle_email_verification(page, skip_detection: bool = False) -> bool:
     _ci_mode = (os.environ.get('GITHUB_ACTIONS') == 'true'
                 and os.environ.get('RUNNER_OS', '').lower() == 'linux')
     senders_to_try = [
-        ("greenhouse", 120 if _ci_mode else 45),
+        # PRIMARY: subject-based — reliably finds "Security code for your
+        # application to <Company>" and skips confirmation emails.
+        ("__subject__", 120 if _ci_mode else 45),
+        ("greenhouse", 60 if _ci_mode else 25),
         ("lever", 40 if _ci_mode else 20),
         ("ashby", 20 if _ci_mode else 15),
         ("workday", 20 if _ci_mode else 15),
@@ -530,7 +555,7 @@ def handle_email_verification(page, skip_detection: bool = False) -> bool:
     ]
     code = None
     for sender, wait_sec in senders_to_try:
-        code = get_verification_code(sender_filter=sender, max_wait_seconds=wait_sec)
+        code = get_verification_code(sender_filter=sender, max_wait_seconds=wait_sec, company=company)
         if code:
             break
     

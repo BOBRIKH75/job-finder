@@ -400,6 +400,42 @@ def fill_form(page, page_data, profile, learned, domain) -> dict:
 
 # ─── STEP 4: Submit and verify ───
 
+def _click_recaptcha_anchor(page) -> bool:
+    """Click the reCAPTCHA v2 'I'm not a robot' anchor checkbox (inside the anchor
+    iframe). Returns True if a click was performed. Called FIRST, before any solver,
+    per Bobur's rule: click the box, THEN let the existing solution handle the rest.
+    """
+    try:
+        anchor = None
+        for fr in page.frames:
+            src = (fr.url or '')
+            if 'recaptcha' in src and 'anchor' in src:
+                anchor = fr
+                break
+        if anchor is None:
+            anchor = next((f for f in page.frames if 'recaptcha' in (f.url or '')), None)
+        if anchor is None:
+            return False
+        box = anchor.locator('#recaptcha-anchor, .recaptcha-checkbox, div[role="checkbox"]')
+        if box.count() == 0:
+            return False
+        try:
+            if anchor.locator('.recaptcha-checkbox-checked').count() > 0:
+                return True  # already checked
+        except Exception:
+            pass
+        try:
+            box.first.scroll_into_view_if_needed(timeout=2000)
+        except Exception:
+            pass
+        box.first.click(timeout=4000)
+        print("      ☑️  clicked 'I'm not a robot' checkbox (pre-solver)")
+        return True
+    except Exception as _e:
+        print(f"      ⚠️ anchor-click failed: {str(_e)[:50]}")
+        return False
+
+
 def _try_auto_captcha_solve(page, captured_sitekey: str = "") -> bool:
     """Solve any CAPTCHA using a chain of free solvers. Tries each until one succeeds.
     
@@ -432,7 +468,29 @@ def _try_auto_captcha_solve(page, captured_sitekey: str = "") -> bool:
         return True  # no CAPTCHA, proceed to submit
     
     print(f"      🔓 CAPTCHA detected — trying solver chain...")
-    
+
+    # === STEP 0 (ALWAYS FIRST — Bobur's rule): click the 'I'm not a robot' box
+    # BEFORE running any solver. The audio/token solvers need the challenge to be
+    # OPENED, and a high-trust fingerprint often clears a v2 checkbox on this click
+    # alone (no image grid). Only if the box-click does NOT clear it do we fall
+    # through to the NopeCHA/audio/OhMyCaptcha/CapSolver chain below.
+    try:
+        if _click_recaptcha_anchor(page):
+            # Re-check: did the single click clear the whole challenge (no image grid)?
+            import time as _t
+            for _ in range(6):
+                _t.sleep(1)
+                try:
+                    for fr in page.frames:
+                        if 'recaptcha' in (fr.url or '') and 'anchor' in (fr.url or ''):
+                            if fr.locator('.recaptcha-checkbox-checked').count() > 0:
+                                print("      ✅ 'I'm not a robot' checked by direct click (no grid)")
+                                return True
+                except Exception:
+                    pass
+    except Exception as _e:
+        print(f"      ⚠️ pre-click not-a-robot n/a: {str(_e)[:50]}")
+
     # === SOLVER 1: NopeCHA (auto-captcha library) ===
     nopecha_key = os.environ.get("NOPECHA_API_KEY", "")
     if nopecha_key:

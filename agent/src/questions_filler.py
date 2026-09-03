@@ -167,7 +167,20 @@ def _fill_radios(page, db, profile, company):
             continue  # already answered
         q = _clean(g['question'])
         opts = [o for o in g['options'] if o]
-        ans = answer_question(db, q, field_type='radio', options=opts, profile=profile, company=company)
+        # >>> LOCKED FIX #3 (do not change without approval) — single-option consent
+        # DYNAMIC single-option consent/acknowledge handling (generic — not tied to any
+        # one job). Many Indeed forms have a mandatory notice whose ONLY radio option is
+        # "Acknowledge" / "I agree" / "I consent" / "I understand" / "Accept". There is no
+        # Yes/No — the profile answer engine returns "Yes" (no match) and the flow used to
+        # get stuck at 50%. When a group has exactly one selectable option, just click it.
+        _consent_words = ("acknowledg", "i agree", "agree", "consent", "understand",
+                          "accept", "confirm")
+        if len(opts) == 1 and any(w in opts[0].lower() for w in _consent_words):
+            ans = opts[0]
+            print(f"      ✅ single-option consent → clicking {ans!r} for {q[:40]!r}")
+        else:
+            ans = answer_question(db, q, field_type='radio', options=opts, profile=profile, company=company)
+        # <<< LOCKED FIX #3
         if not ans:
             print(f"      ⚠️ no answer for radio: {q[:50]!r} opts={opts}")
             continue

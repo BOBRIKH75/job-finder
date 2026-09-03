@@ -41,6 +41,21 @@ def _can_ask_user() -> bool:
 
 # --- Profile-based rule answers ---
 
+def _has_word(text: str, *words) -> bool:
+    """Whole-word (token) match. Prevents short keywords like 'rate'/'pay'/'amount'
+    from false-matching inside longer words ('sepaRATEly', 'incorpoRATEd', 'comPAYny').
+    Multi-word phrases (containing a space) fall back to plain substring match.
+    """
+    for w in words:
+        w = w.lower()
+        if " " in w:
+            if w in text:
+                return True
+        elif re.search(r"\b" + re.escape(w) + r"\b", text):
+            return True
+    return False
+
+
 def _profile_answer(question: str, field_type: str, options, profile: dict):
     """Return an answer from the profile, or None if no rule matches."""
     q = question.lower()
@@ -163,19 +178,36 @@ def _profile_answer(question: str, field_type: str, options, profile: dict):
     if "remote" in q and field_type in ("radio", "select"):
         return pick_option("yes", "remote") or "Yes"
 
+    # Consent / data-processing / application-confirmation agreement (LEARNED 2026-09-02
+    # from Gravity 9 job): "I consent to the processing of my personal data ...",
+    # "By sending us your application, you confirm that you have read ...".
+    # These are Yes / Yes-No radios — answer Yes (agree). MUST come before the salary
+    # rule, whose old bare-substring "rate" match false-fired on "sepaRATEly" /
+    # "incorpoRATEd" and returned the salary number "75" for these consent radios.
+    yn_opts = set(o.lower() for o in opts) <= {"yes", "no"} and len(opts) > 0
+    if any(k in q for k in ["i consent", "consent to the processing", "processing of my personal",
+                            "by sending us your application", "you confirm that you have read",
+                            "read and understood", "i agree to the", "agree to the terms",
+                            "terms and conditions", "privacy policy", "privacy notice",
+                            "data protection", "gdpr"]):
+        return pick_option("yes", "i agree", "agree", "i consent") or "Yes"
+
     # Salary / rate / compensation — from profile rate_target (hourly C2C).
     rate = str(profile.get("rate_target", 75))
     opts_l = " | ".join(opts).lower()
     # Annually vs Hourly choice -> Hourly (Bob works C2C hourly).
     # Detect by question text OR by the options themselves being Annually/Hourly.
     if field_type in ("radio", "select") and (
-            "annually" in q or "hourly" in q or "per year" in q or "per hour" in q
+            _has_word(q, "annually", "hourly", "per year", "per hour")
             or ("annually" in opts_l and "hourly" in opts_l)):
         return pick_option("hourly", "hour", "per hour") or "Hourly"
     # "Enter the amount ($)" or any salary/rate/pay/compensation question -> the number.
-    if any(k in q for k in ["salary", "compensation", "rate", "pay expectation",
-                            "hourly", "expected pay", "desired", "amount", "how much",
-                            "enter the amount"]):
+    # Use WHOLE-WORD matching (not bare substring) so "rate"/"pay"/"amount" don't
+    # false-match "separately"/"company"/"paycheck-unrelated" words. Never return a
+    # bare number for a Yes/No radio (a number can't be a Yes/No option).
+    if not yn_opts and _has_word(q, "salary", "compensation", "rate", "pay expectation",
+                                 "hourly", "expected pay", "desired", "amount", "how much",
+                                 "enter the amount"):
         return rate
 
     # Start date / availability / notice

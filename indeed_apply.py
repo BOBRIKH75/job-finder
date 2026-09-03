@@ -22,6 +22,7 @@ import indeed_learner
 
 from src.memory import get_db, init_db, application_exists, upsert_application
 from src.form_filler import load_profile
+from src.questions_filler import fill_questions_page, is_questions_page
 
 
 def load_indeed_cookies() -> list:
@@ -502,31 +503,222 @@ def main():
                 if clicked_selector:
                     time.sleep(random.uniform(2, 4))
 
-                    # DRY_RUN: prove we reached the apply flow WITHOUT submitting
-                    # a real application (safe for local testing).
-                    if os.environ.get('DRY_RUN', '0') == '1':
-                        indeed_learner.record_win(selectors_store, clicked_selector)
-                        print(f"  🧪 DRY_RUN reached apply form via '{clicked_selector[:45]}' — "
-                              f"NOT submitting: {title[:40]} @ {company}")
-                        applied += 1
-                        time.sleep(random.uniform(2, 4))
-                        continue
+                    # DRY_RUN walks the Continue wizard but does NOT click the
+                    # final Submit (safe live test of the multi-step flow).
+                    dry_run = os.environ.get('DRY_RUN', '0') == '1'
 
                     # Look for Continue/Submit in the apply modal.
                     # Each step: handle any robot check, then wait 5s before click.
                     submitted = False
-                    for btn_text in ['Continue', 'Submit your application', 'Apply', 'Submit']:
+                    # MULTI-STEP WIZARD (taught by Bobur + verified live 2026-09-01):
+                    # After 'Apply with Indeed', SmartApply is a multi-page flow.
+                    # On each page click 'Continue' until the final
+                    # 'Submit your application' appears, then click it.
+                    #
+                    # CRITICAL DOM FACT (verified): the resume-selection page has
+                    # SEVEN "Continue" buttons — SIX are HIDDEN (data-testid
+                    # hp-continue-button-0/1/2) and only ONE is visible
+                    # (data-testid="continue-button"). Using has-text().first
+                    # clicked a HIDDEN button and the flow never advanced — THIS
+                    # was the "can't click Continue" bug. Fix: target the real
+                    # testids and always click the VISIBLE match.
+                    CONTINUE_SELECTORS = [
+                        '[data-testid="continue-button"]',
+                        'button[data-testid="continue-button"]',
+                        'button:has-text("Continue")',
+                        'button:has-text("Next")',
+                    ]
+                    SUBMIT_SELECTORS = [
+                        '[data-testid="submit-application-button"]',
+                        'button:has-text("Submit your application")',
+                        'button:has-text("Submit application")',
+                        'button:has-text("Submit")',
+                    ]
+                    MAX_STEPS = int(os.environ.get('MAX_WIZARD_STEPS', '12'))
+
+                    def _click_visible(selectors):
+                        """Click the first VISIBLE match across selectors. Returns True on click.
+                        Scrolls each candidate into view FIRST — the Continue/Submit button
+                        is often below the fold on the questions/review pages."""
+                        for sel in selectors:
+                            loc = page.locator(sel)
+                            for i in range(min(loc.count(), 8)):
+                                el = loc.nth(i)
+                                try:
+                                    el.scroll_into_view_if_needed(timeout=2000)
+                                except Exception:
+                                    pass
+                                try:
+                                    if el.is_visible(timeout=1000):
+                                        if safe_click(el):
+                                            return True
+                                except Exception:
+                                    continue
+                        return False
+                    def _has_visible(selectors):
+                        for sel in selectors:
+                            loc = page.locator(sel)
+                            for i in range(min(loc.count(), 8)):
+                                el = loc.nth(i)
+                                try:
+                                    el.scroll_into_view_if_needed(timeout=2000)
+                                except Exception:
+                                    pass
+                                try:
+                                    if el.is_visible(timeout=800):
+                                        return True
+                                except Exception:
+                                    continue
+                        return False
+                    def _answer_screening_questions():
+                        """Fill empty REQUIRED screening fields so Continue can proceed.
+                        Verified live 2026-09-01: the 50% 'Answer these questions'
+                        page has required textareas + dropdowns that block Continue
+                        when empty. Fills generic safe answers for Bob's profile."""
+                        filled = 0
+                        # 1. Textareas: answer by keyword, else a safe default.
+                        try:
+                            tas = page.locator('textarea:visible')
+                            for i in range(min(tas.count(), 15)):
+                                ta = tas.nth(i)
+                                try:
+                                    if (ta.input_value() or '').strip():
+                                        continue  # already answered
+                                    label = ''
+                                    try:
+                                        label = ta.evaluate(
+                                            "el => { const w = el.closest('div'); return w ? (w.innerText||'') : ''; }"
+                                        ).lower()
+                                    except Exception:
+                                        pass
+                                    if 'earliest' in label or 'available' in label or 'start' in label:
+                                        ans = 'Immediately / two weeks notice'
+                                    elif 'requirement' in label or 'meet' in label or 'qualif' in label:
+                                        ans = 'Yes, I meet the requirements outlined in the job description.'
+                                    elif 'why' in label or 'interested' in label:
+                                        ans = ('I am excited about the mission and the modern Java/Spring, '
+                                               'microservices and cloud tech stack, and believe my backend '
+                                               'experience is a strong fit.')
+                                    elif 'background check' in label or 'clearance' in label or 'security' in label:
+                                        ans = 'Yes, I am willing to complete a background check.'
+                                    elif 'salary' in label or 'compensation' in label or 'rate' in label:
+                                        ans = '80 per hour (negotiable)'
+                                    else:
+                                        ans = 'Yes'
+                                    ta.scroll_into_view_if_needed(timeout=1500)
+                                    ta.fill(ans)
+                                    filled += 1
+                                except Exception:
+                                    continue
+                        except Exception:
+                            pass
+                        # 2. Salary single-line inputs that got junk like "9".
+                        try:
+                            sal = page.locator('input:visible')
+                            for i in range(min(sal.count(), 20)):
+                                el = sal.nth(i)
+                                try:
+                                    lbl = el.evaluate("el => { const w = el.closest('div'); return w ? (w.innerText||'') : ''; }").lower()
+                                    if 'salary' in lbl or 'compensation' in lbl:
+                                        cur = (el.input_value() or '').strip()
+                                        if cur == '' or cur.isdigit() and len(cur) <= 2:
+                                            el.fill('80 per hour (negotiable)')
+                                            filled += 1
+                                except Exception:
+                                    continue
+                        except Exception:
+                            pass
+                        # 3. Required dropdowns still on 'Select an option'.
+                        try:
+                            sels = page.locator('select:visible')
+                            for i in range(min(sels.count(), 15)):
+                                dd = sels.nth(i)
+                                try:
+                                    lbl = dd.evaluate("el => { const w = el.closest('div'); return w ? (w.innerText||'') : ''; }").lower()
+                                    val = dd.input_value()
+                                    if val:
+                                        continue
+                                    opts = dd.evaluate("el => [...el.options].map(o => o.label || o.textContent)")
+                                    chosen = None
+                                    if 'state' in lbl:
+                                        chosen = next((o for o in opts if 'colorado' in o.lower()), None)
+                                    elif 'identif' in lbl or 'id' in lbl:
+                                        chosen = next((o for o in opts if 'driver' in o.lower() or 'license' in o.lower() or 'passport' in o.lower()), None)
+                                    if not chosen:
+                                        # pick first real (non-placeholder) option
+                                        chosen = next((o for o in opts if o and 'select' not in o.lower()), None)
+                                    if chosen:
+                                        dd.select_option(label=chosen)
+                                        filled += 1
+                                except Exception:
+                                    continue
+                        except Exception:
+                            pass
+                        if filled:
+                            print(f"  ✍️ Auto-answered {filled} screening field(s)")
+                        return filled
+
+                    for step in range(MAX_STEPS):
                         handle_robot_check(page)
-                        btn = page.locator(f'button:has-text("{btn_text}")')
-                        if btn.count() > 0 and btn.first.is_visible(timeout=2000):
-                            if safe_click(btn.first):
-                                time.sleep(2)
+                        wait_out_cloudflare(page, page.url, attempts=2)
+
+                        # 1. Submit page? click Submit and finish.
+                        if _has_visible(SUBMIT_SELECTORS):
+                            if dry_run:
+                                print(f"  🧪 DRY_RUN reached SUBMIT page (step {step+1}) — NOT clicking: {title[:40]} @ {company}")
                                 submitted = True
+                                break
+                            if _click_visible(SUBMIT_SELECTORS):
+                                submitted = True
+                                print(f"  📨 Clicked Submit (step {step+1})")
+                                time.sleep(3)
+                            break
+
+                        # 2. Otherwise fill any required screening questions,
+                        #    then advance with the VISIBLE Continue button.
+                        #    Uses the self-learning answerer (memory -> profile ->
+                        #    ask-user). Falls back to the old inline filler if the
+                        #    module errors, so the flow never crashes.
+                        try:
+                            if is_questions_page(page):
+                                fill_questions_page(page, db, profile, company=company)
+                            else:
+                                _answer_screening_questions()
+                        except Exception as _qe:
+                            print(f"  ⚠️ questions filler error: {str(_qe)[:60]} — using fallback")
+                            _answer_screening_questions()
+                        if _click_visible(CONTINUE_SELECTORS):
+                            print(f"  ➡️ Clicked Continue (step {step+1})")
+                            try:
+                                page.wait_for_load_state('domcontentloaded', timeout=8000)
+                            except Exception:
+                                pass
+                            time.sleep(random.uniform(1.5, 3))
+                        else:
+                            print(f"  ⚠️ No visible Continue/Submit at step {step+1} — stopping wizard")
+                            break
 
                     # Check success
-                    page_text = page.locator('body').inner_text(timeout=3000).lower()
-                    if any(s in page_text for s in ['application submitted', 'applied', 'thank you']):
+                    if dry_run and submitted:
                         applied += 1
+                        indeed_learner.record_win(selectors_store, clicked_selector)
+                        print(f"  🧪 DRY_RUN walked wizard to Submit: {title[:40]} @ {company}")
+                        time.sleep(random.uniform(2, 4))
+                        continue
+                    page_text = page.locator('body').inner_text(timeout=3000).lower()
+                    success_phrases = ['application submitted', 'applied', 'thank you',
+                                       'your application has been submitted']
+                    matched_phrase = next((s for s in success_phrases if s in page_text), None)
+                    if matched_phrase:
+                        applied += 1
+                        # Proof of the confirmation ("thank you") page.
+                        try:
+                            os.makedirs('agent/screenshots', exist_ok=True)
+                            shot = f"agent/screenshots/{int(time.time())}_confirmed.png"
+                            page.screenshot(path=shot, full_page=True)
+                            print(f"  📸 Confirmation saved: {shot} (matched: '{matched_phrase}')")
+                        except Exception:
+                            pass
                         # LEARN: this selector reached a real application — rank it up.
                         indeed_learner.record_win(selectors_store, clicked_selector)
                         upsert_application(
