@@ -68,10 +68,28 @@ def _profile_answer(question: str, field_type: str, options, profile: dict):
         return name or "Bob Rikh"
 
     def pick_option(*preferred):
-        """Pick the first option matching any preferred keyword."""
+        """Pick the first option matching any preferred keyword.
+        WORD-AWARE: avoids the classic bug where 'no' matches inside 'now' (as in
+        'Yes, I will require sponsorship NOW or in the future'). For short tokens
+        like yes/no we require a word-boundary match and prefer options that START
+        with the keyword; longer phrases still use substring."""
+        import re as _re
         for want in preferred:
+            wl = want.lower().strip()
+            # 1) exact option match
             for o in opts:
-                if want.lower() in o.lower():
+                if o.lower().strip() == wl:
+                    return o
+            # 2) option STARTS with the keyword (e.g. 'No, I will not require...')
+            for o in opts:
+                if o.lower().strip().startswith(wl):
+                    return o
+            # 3) word-boundary match for short tokens (yes/no); substring for phrases
+            for o in opts:
+                if len(wl) <= 3:
+                    if _re.search(r'\b' + _re.escape(wl) + r'\b', o.lower()):
+                        return o
+                elif wl in o.lower():
                     return o
         return None
 

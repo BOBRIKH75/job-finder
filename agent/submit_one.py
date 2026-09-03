@@ -387,6 +387,26 @@ def has_recaptcha(page):
     return False
 
 
+def is_recaptcha_rate_limited(page) -> bool:
+    """Detect Google's 'Try again later / automated queries' block. This is NOT a
+    solvable puzzle — it means the IP/session is temporarily rate-limited (usually
+    from too many audio-solve attempts). Fighting it with more solves makes it worse;
+    the caller should back off + skip the job so the cooldown can clear."""
+    try:
+        for fr in [page] + list(page.frames):
+            try:
+                txt = (fr.locator('body').inner_text(timeout=1000) or '').lower()
+            except Exception:
+                continue
+            if 'try again later' in txt and (
+                    'automated queries' in txt or 'automated requests' in txt
+                    or "can't process your request" in txt or 'cannot process your request' in txt):
+                return True
+    except Exception:
+        pass
+    return False
+
+
 def click_not_a_robot(page) -> bool:
     """Directly click the reCAPTCHA v2 'I'm not a robot' anchor checkbox.
 
@@ -515,6 +535,22 @@ def wait_for_human_captcha(page, max_wait=180):
     """
     if not has_recaptcha(page):
         return True
+
+    # RATE-LIMIT BACKOFF: if Google shows "Try again later / automated queries", the
+    # IP/session is temporarily flagged (usually from too many audio solves). No solver
+    # can beat it — the only cure is to wait. Do ONE cooldown+reload; if still blocked,
+    # return False so the caller skips this job (don't burn Enterprise reloads that fail).
+    if is_recaptcha_rate_limited(page):
+        print("   ⏳ reCAPTCHA 'Try again later' (IP rate-limited) — cooling down 20s + reload")
+        time.sleep(20)
+        try:
+            page.reload(wait_until='domcontentloaded', timeout=20000)
+            time.sleep(4)
+        except Exception:
+            pass
+        if is_recaptcha_rate_limited(page):
+            print("   ⛔ still rate-limited after cooldown — skipping job (let the IP cool)")
+            return False
 
     # 0) Click 'I'm not a robot' FIRST (both headful + headless).
     if click_not_a_robot(page) and not has_recaptcha(page):

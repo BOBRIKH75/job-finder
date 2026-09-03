@@ -216,3 +216,42 @@ Verified: 3 real submits this round — jk=9ec8f0a8dcc3aaea, 40a2c4f9be4522b2 (+
 ### NOTE on the two entry points
 - `agent/submit_one.py` = THE submitter (local + CI now). `indeed_apply.py` (root) = legacy,
   no longer used by CI. Do not add fixes to indeed_apply.py — everything lives in submit_one.py.
+
+
+---
+## Session: 2026-09-02 late — 2 more real bugs found by local testing + rate-limit insight
+
+### BUG D — pick_option matched 'no' inside 'now' → WRONG sponsorship answer (serious)
+- `question_answerer.pick_option("no")` used naive substring `if want in o`. For sponsorship
+  options ["Yes, I will require sponsorship NOW or in the future", "No, I will not require..."],
+  "no" matched inside "**no**w" → picked the YES option → told employers Bob NEEDS sponsorship
+  (he's a Green Card holder — he does NOT). Also stuck the flow at 50%.
+- FIX: `pick_option` is now WORD-AWARE — (1) exact match, (2) option STARTS WITH keyword,
+  (3) word-boundary regex for short tokens (yes/no), substring only for longer phrases.
+  Unit-tested: sponsorship→"No, I will not...", authorization→"Yes, I am authorized...", resident→Yes.
+- This was giving WRONG answers on real applications. High-value fix.
+
+### KEY INSIGHT — "Try again later" is now mostly SELF-INFLICTED by over-testing
+- Data: across today's runs, audio solver "Solved" 3x early, then "rate-limited" 7x. 32 jobs
+  applied. The audio solver (playwright-recaptcha) hammered Google's audio endpoint → Google
+  temporarily RATE-LIMITED the IP → "Try again later / automated queries" appears → Enterprise
+  fallback injects a token but the page still shows the block → submit_click_failed.
+- Root cause of the LATER failures = transient IP rate-limit from too much testing, NOT a code
+  bug. The flow itself works (6+ real confirmed submits). CURE: stop hammering; the limit clears
+  in minutes–hours. Space out runs; don't loop-test the CAPTCHA path.
+
+### BUG E — no backoff on rate-limit (fixed)
+- Added `is_recaptcha_rate_limited(page)` (detects "try again later" + "automated queries").
+- `wait_for_human_captcha` now: if rate-limited → wait 20s + reload once → if still blocked,
+  return False so the caller SKIPS the job (don't burn Enterprise reloads). Graceful cooldown.
+
+### Testing discipline (IMPORTANT for next session)
+- Each real submit + CAPTCHA solve pushes the IP toward rate-limit. Do NOT loop-test submits.
+- Prefer verifying logic changes with the unit-test style (like pick_option test) over live runs.
+- If "Try again later" appears: it's rate-limit — WAIT, don't fight it. Space CI schedule already
+  spreads runs (4x/day) which is fine; the damage today was rapid manual test runs.
+
+### Still open
+- reCAPTCHA Enterprise path submit_click_failed only happens WHEN rate-limited (audio blocked →
+  Enterprise → page still shows "try again later"). Should resolve once IP cools + audio works
+  again. The click_submit patience bump (7 tries) + rate-limit backoff both help.
