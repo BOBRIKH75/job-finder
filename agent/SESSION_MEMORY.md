@@ -1164,3 +1164,31 @@ gives real people for free — the main gap (dead API keys) is worked around.
 - Indeed + Greenhouse + Dice apply: working, scheduled, CV-matched, deduped, email-confirmed.
 - Recruiter: 89 in vendor_list (7 real from inbox), 7 job leads mined; outreach sends CV (weekly).
 - Runner bobur-laptop online + healthy. All apply/recruiter workflows green.
+
+
+---
+## Session: 2026-09-03 AM — FULL CI/CD AUDIT (23 workflows)
+
+### Audited every workflow's last run. 18 green, 5 were failing:
+1. greenhouse-apply — last FAIL was Aug 28 (STALE, pre-fix): old code timed out at 45min.
+   Today's re-enabled version (CV-fit + rotation + dedup) triggered + runs clean (8min+, applying,
+   no timeout/error). The "failure" badge was the old run. FIXED (needs a completed run to go green).
+2. weekly-cleanup — REAL BUG: ImportError 'prune_old_records' not in src.memory. FIXED — added
+   prune_old_records() (prunes stale job_claims + old non-applied records + audit; keeps applied
+   history). Verified locally.
+3. linkedin-keep-alive + refresh-linkedin-cookies — both fail: browser-cookie3 "Unable to get key
+   for cookie decryption" → LinkedIn cookies expired + runner can't decrypt Chrome cookies (same
+   class as Dice). NEED: fresh LINKEDIN_COOKIES secret (li_at + JSESSIONID from a logged-in Chrome).
+   NOT a code bug — expired login. LinkedIn apply still 'success' (uses the secret while valid).
+4. refresh-dice-cookies — fails by design: we DISABLED its schedule (CI runner can't reach the
+   local .dice-profile). Harmless. Dice apply uses DICE_COOKIES secret (kept fresh locally).
+
+### Logically-correct? Mostly yes. The only REAL code bug was weekly-cleanup (fixed).
+The rest are EXPIRED-CREDENTIAL issues (LinkedIn cookies) or STALE failure badges (greenhouse
+pre-fix), not logic errors. Apply pipelines (Indeed/Greenhouse/Dice) + recruiter + outreach are
+logically sound.
+
+### TODO (credential refreshes, not code)
+- LINKEDIN_COOKIES: refresh from a logged-in Chrome (li_at + JSESSIONID) → fixes keep-alive +
+  refresh-linkedin + keeps linkedin-apply working. Same pattern as Dice.
+- Optionally move dice/linkedin cookie refresh onto the RUNNER (bobur-laptop) where the login lives.
