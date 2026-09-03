@@ -62,6 +62,15 @@ jobs:
       - name: Initialize database
         run: python3 -c "from src.memory import get_db, init_db; db = get_db(); init_db(db)"
 
+      - name: Restore dedup state (pull latest applied records)
+        if: always()
+        continue-on-error: true
+        run: |
+          cd $GITHUB_WORKSPACE
+          git config user.email "bot@bobrikh.dev"
+          git config user.name "Greenhouse Bot"
+          git pull --rebase --autostash || true
+
       - name: Run Greenhouse applicator
         timeout-minutes: 45
         env:
@@ -87,6 +96,7 @@ jobs:
           cd $GITHUB_WORKSPACE
           git config user.email "bot@bobrikh.dev"
           git config user.name "Greenhouse Bot"
-          git add agent/data/failed_jobs.json 2>/dev/null || true
-          git diff --staged --quiet || git commit -m "greenhouse: save failed jobs for retry [skip ci]"
+          git add agent/data/failed_jobs.json agent/data/greenhouse_applied.json 2>/dev/null || true
+          git diff --staged --quiet || git commit -m "greenhouse: sync applied/dedup state [skip ci]"
+          git pull --rebase --autostash || true
           git push || true

@@ -494,3 +494,36 @@ ACROSS runs (persistent):
 Everything learned is in memory + code markers (no rebuild next session). Every failure path
 is capped or persisted-and-skipped, and repeated failures permanently retire the job (dead_jks)
 — so neither the bot nor the self-learning loops the same job.
+
+
+---
+## Session: 2026-09-02 night — GREENHOUSE re-applying same company+title (root cause + fix)
+
+### Bobur's report
+Greenhouse kept applying to the SAME company + SAME title repeatedly.
+
+### TWO root causes (deep-checked)
+1. Dedup passed ONLY the URL: `application_exists(db, url)`. The function HAS a company+title
+   fallback (normalized-title match for reposts under a new URL) but greenhouse_apply.py never
+   passed company/title (they were read AFTER the check). Greenhouse re-posts the same role under
+   a new url/gh_jid → URL-only check saw it as new → re-applied.
+2. BIGGER: CI persisted applied history ONLY via actions/cache (agent_memory.db) — lossy + separate
+   from local (local DB had just 1 row total). Cache miss/expire → CI starts empty → re-applies to
+   everything. Same flaw Indeed had before the git-sync fix.
+
+### FIX (greenhouse_apply.py + greenhouse-apply.yml)
+- Extract title+company BEFORE the dedup check; pass to application_exists(db,url,company,title)
+  → activates the normalized-title repost dedup.
+- NEW git-tracked `agent/data/greenhouse_applied.json` keyed by company|normalized-title
+  (_gh_key drops sr/senior/jr/lead/remote/w2/c2c/paren/loc noise). Checked before applying,
+  saved on success (_record_applied), loaded at main() start.
+- Workflow: `git pull --rebase` BEFORE the run (restore dedup) + commit greenhouse_applied.json
+  AFTER (share local+CI). greenhouse_applied.json is NOT gitignored.
+- Verified: "Senior Java Developer (Remote)" == "Java Developer - W2" == "Sr. Java Developer, US"
+  → same key stripe|java developer (repost dedup); Databricks distinct.
+
+### Pattern note (applies to ALL ATS submitters)
+DB-only dedup is unreliable in CI (cache-based, lossy). The robust pattern = git-tracked JSON
+applied-list (company+normalized-title) + CI pull-before/commit-after. Indeed uses applied_jks/
+applied_titles/email_confirmed_titles; Greenhouse now uses greenhouse_applied.json. If a new ATS
+submitter is added, use the same pattern.

@@ -26,6 +26,41 @@ from src.form_filler import load_profile
 from src.self_heal import classify_error, get_retry_config, STRATEGY, DeepHeal
 from src.memory import get_db, init_db, application_exists, upsert_application
 
+# Git-tracked persistent dedup (Bobur: same company+title kept repeating). The DB is
+# cache-only in CI (lossy) and near-empty locally, so we ALSO keep a JSON keyed by
+# company+normalized-title. Committed by CI → survives across runs on local AND CI.
+GH_APPLIED_FILE = 'agent/data/greenhouse_applied.json'
+
+
+def _gh_key(company, title):
+    import re as _re
+    c = ' '.join((company or '').lower().split())
+    t = (title or '').lower()
+    # normalize title: drop seniority/paren/loc noise so reposts match
+    t = _re.sub(r'\(.*?\)', ' ', t)
+    t = _re.sub(r'\b(sr|senior|jr|junior|lead|staff|principal|remote|w2|c2c|contract|us|usa)\b', ' ', t)
+    t = ' '.join(_re.sub(r'[^a-z0-9 ]', ' ', t).split())
+    return f"{c}|{t}" if c and t else ''
+
+
+def _load_gh_applied() -> set:
+    try:
+        return set(json.load(open(GH_APPLIED_FILE)))
+    except Exception:
+        return set()
+
+
+def _save_gh_applied(company, title):
+    key = _gh_key(company, title)
+    if not key:
+        return
+    s = _load_gh_applied(); s.add(key)
+    try:
+        os.makedirs(os.path.dirname(GH_APPLIED_FILE), exist_ok=True)
+        json.dump(sorted(s), open(GH_APPLIED_FILE, 'w'), indent=0)
+    except Exception:
+        pass
+
 
 def load_failed_jobs(failed_file: str) -> list:
     if os.path.exists(failed_file):
@@ -46,6 +81,7 @@ def save_failed_jobs(failed_file: str, jobs: list) -> None:
 def _record_applied(db, company, title, url):
     upsert_application(db, company=company, job_title=title, job_url=url,
                        ats_type='greenhouse', match_score=80, status='applied')
+    _save_gh_applied(company, title)   # persist to git-tracked JSON (survives CI runs)
 
 
 def main():
@@ -53,6 +89,8 @@ def main():
     init_db(db)
     profile = load_profile()
     companies = load_companies()
+    _gh_applied = _load_gh_applied()
+    print(f"🗂️  {len(_gh_applied)} Greenhouse company+title already applied (persistent dedup)")
 
     greenhouse_companies = companies.get('greenhouse', [])
     random.shuffle(greenhouse_companies)
@@ -103,12 +141,18 @@ def main():
         url = job.get('url', '')
         if not url:
             continue
-        if application_exists(db, url):
-            skipped += 1
-            continue
-
         title = job.get('title', '')
         company_name = job.get('company', '')
+
+        # DEDUP FIX (Bobur: same company+title kept repeating): check by URL AND by
+        # company+title. Greenhouse re-posts the same role under a NEW url/gh_jid, so a
+        # URL-only check let duplicates through. Passing company+title uses the
+        # normalized-title fallback in application_exists() to catch re-postings.
+        # ALSO check the git-tracked JSON set (survives CI runs; DB is cache-only/lossy).
+        if _gh_key(company_name, title) in _gh_applied or \
+                application_exists(db, url, company=company_name, title=title):
+            skipped += 1
+            continue
 
         if company_failures.get(company_name, 0) >= 3:
             continue
