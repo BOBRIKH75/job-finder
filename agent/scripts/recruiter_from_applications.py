@@ -93,6 +93,42 @@ def hunter_recruiters(company, existing):
     return found
 
 
+def _mx_ok(domain):
+    """True if the domain has a live mail server (free, no quota — just DNS MX lookup)."""
+    try:
+        import subprocess
+        out = subprocess.run(['nslookup', '-type=mx', domain], capture_output=True,
+                             text=True, timeout=8).stdout.lower()
+        return 'mail exchanger' in out
+    except Exception:
+        return False
+
+
+ROLE_ALIASES = ("careers", "recruiting")   # the 2 most-standard staffing inbox aliases
+
+
+def free_role_recruiters(company, existing):
+    """FREE (no API/quota): standard recruiter inbox aliases at a staffing firm's domain,
+    kept only if the domain's MX is live. careers@/recruiting@/hr@ etc. are real published
+    inboxes at staffing companies — safe outreach targets."""
+    found = []
+    slug = company_to_domain(company)
+    if not slug:
+        return found
+    # try .com (most common for US staffing firms)
+    for domain in (f"{slug}.com",):
+        if not _mx_ok(domain):
+            continue
+        for alias in ROLE_ALIASES:
+            addr = f"{alias}@{domain}"
+            if addr not in existing:
+                found.append({'name': '', 'company': company, 'email': addr,
+                              'position': f'{alias} (role inbox)', 'source': 'free/role-mx',
+                              'verified': datetime.now().strftime('%Y-%m-%d')})
+        break   # one live domain is enough
+    return found
+
+
 def _snov_token():
     uid, sec = os.environ.get('SNOV_USER_ID', ''), os.environ.get('SNOV_API_SECRET', '')
     if not uid or not sec:
@@ -166,6 +202,8 @@ def main():
             recs = snov_recruiters(dom, snov_tok, existing)
         if not recs and have_hunter:
             recs = hunter_recruiters(c, existing)   # fallback (may 429 if exhausted)
+        if not recs:
+            recs = free_role_recruiters(c, existing)   # FREE fallback (no API/quota, MX-verified)
         already_searched.add(c)
         for rec in recs:
             if rec['email'] not in existing:
