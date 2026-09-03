@@ -1097,3 +1097,31 @@ individuals on top. vendor_list now 82 (was 68). recruiter-auto-reply + outreach
 ### Caveat (honest)
 Role inboxes (careers@company.com) not named people; domain = best-effort company->company.com
 + MX filter (dead domains dropped). Some may bounce — acceptable for bulk C2C outreach.
+
+
+---
+## Session: 2026-09-03 AM — RECRUITER: harvest REAL recruiters from inbox (best free source)
+
+### The insight
+Recruiters who EMAIL Bob about Java/C2C roles are REAL people with REAL verified emails — far
+better than guessed careers@ inboxes. Harvest them from Gmail = free, real names, no API.
+
+### Built + TESTED: recruiter_from_inbox.py
+- Scans Gmail (last INBOX_SCAN=300), keeps senders whose subject/from has a recruiter SIGNAL
+  (java/developer/opportunity/role/contract/c2c/hiring/w2/spring/microservice...), DROPS job-board
+  /automated NOISE (indeed/dice/linkedin/lensa/jobot/jobleads/haystack/monster/alerts/noreply...).
+  Captures recruiter NAME (display name) + company (domain) + last subject. Skips Bob's own emails.
+- LOCAL TEST: harvested 8 REAL named recruiters: Prateek Verma (expeditets.com), Ankita Banswal
+  (prideveterans.com), Mohamed Afsal (lorventech.com), Himanshu Pujari + Vikas Yadav (apetan.com),
+  Alison Maddox (themostudio.com)... vendor_list -> 89 (removed 1 self-email).
+- Wired into recruiter-discovery.yml (Gmail creds only, no API quota).
+
+### Recruiter source stack now (all free / best-first)
+1. recruiter_from_inbox.py — REAL named recruiters who emailed Bob (BEST, free, verified). ← NEW
+2. recruiter_from_applications.py — free MX-role inboxes (careers@/recruiting@) for applied
+   companies; Snov/Hunter named lookup IF keys ever refreshed.
+3. recruiter-auto-reply (every 2h) + outreach consume vendor_list (now 89).
+
+### Still optional (not blocking)
+Refresh Snov key (401) / Apollo cookies for MORE named recruiters. The inbox harvest already
+gives real people for free — the main gap (dead API keys) is worked around.

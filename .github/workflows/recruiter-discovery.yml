@@ -35,6 +35,12 @@ jobs:
           SNOV_API_SECRET: ${{ secrets.SNOV_API_SECRET }}
         run: python scripts/recruiter_from_applications.py
 
+      - name: Harvest REAL recruiters from inbox (free, no API)
+        env:
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+        run: python scripts/recruiter_from_inbox.py
+
       - name: Commit new vendors
         if: always()
         env:
