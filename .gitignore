@@ -46,3 +46,7 @@ agent/test_deep_greenhouse.py
 agent/data/*.png
 agent/data/*.html
 agent/data/flow_transcript.json
+
+# Dice login profile + cookies (never commit)
+agent/.dice-profile/
+agent/data/dice_cookies.json

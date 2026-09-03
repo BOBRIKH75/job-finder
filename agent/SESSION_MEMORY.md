@@ -728,3 +728,39 @@ Test exposed 2 gaps: "Software Engineer, C++" @ Figma and generic "Software Engi
 - Greenhouse: 3 runs × MAX_APPS=30 = up to 90/day (rotates all 95 companies, CV-fit only).
 - LinkedIn: 1 run/day (20h cooldown in script). Dice: disabled (blocks headless).
 - Every apply is now: CV-fit + non-duplicate (5-layer dedup + DB lock) + real submit.
+
+
+---
+## Session: 2026-09-02 night — DICE diagnostic (why it can't apply + the fix path)
+
+### Bobur's ask
+Learn why Dice can't apply more; test locally; apply the same treatments as Indeed.
+
+### Findings (deep-checked)
+1. There was NEVER a real Dice apply flow — only test_dice_login.py (a login test using
+   undetected_chromedriver/Selenium) + dice-apply.yml that just does `echo "Disabled"`.
+   Disable reason: "Dice blocks headless Chrome. Click-counting, no real applies."
+2. Dice API is 403 (protected) → browser automation is the path (research confirms; svrohith9
+   Selenium bot does the same). Research: 2026 bot-bypass = stealth browser + real headed Chrome.
+3. DICE_EMAIL + DICE_PASSWORD secrets EXIST (since 2026-08-15). No cookie file, not in local .env.
+
+### KEY RESULT — stealth beats Dice's block (like Indeed)
+Built agent/dice_probe.py using the PROVEN patchright stealth (persistent real Chrome,
+channel=chrome, no fake UA/args, headful). Ran locally:
+  "1) reached dice.com — blocked=False"  ← NOT blocked!
+So the old disable reason (headless detection) is SOLVED by the same launch that fixed Indeed.
+The old failure was undetected_chromedriver + --headless=new + --no-sandbox (the detectable combo).
+
+### The remaining blocker (to continue)
+Login: DICE_EMAIL/DICE_PASSWORD not in local agent/.env (they're GitHub secrets, write-only).
+Options to proceed:
+  A) add DICE_EMAIL/DICE_PASSWORD to agent/.env → probe tests 2-step login + job search.
+  B) COOKIE route (like Indeed — preferred, more reliable): log into Dice in Chrome once,
+     export cookies to agent/data/dice_cookies.json; probe already supports loading them.
+dice_probe.py saves cookies after a successful password login for reuse.
+
+### Next steps (once login works)
+Build dice_apply.py mirroring greenhouse/indeed: patchright stealth launch + cookie login +
+Java/Spring search (filters.easyApply=true, workplaceTypes=Remote) + cv_match gate +
+persistent dedup + DB claim_job lock + self-learning. Then re-enable dice-apply.yml schedule.
+Dice apply = "Easy apply" 1-click for many jobs (should be high-yield once wired).
