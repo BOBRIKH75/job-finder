@@ -255,3 +255,37 @@ Verified: 3 real submits this round — jk=9ec8f0a8dcc3aaea, 40a2c4f9be4522b2 (+
 - reCAPTCHA Enterprise path submit_click_failed only happens WHEN rate-limited (audio blocked →
   Enterprise → page still shows "try again later"). Should resolve once IP cools + audio works
   again. The click_submit patience bump (7 tries) + rate-limit backoff both help.
+
+
+---
+## Session: 2026-09-02 late — THE audio-rate-limit SOLUTION (image-challenge fallback)
+
+### Web research (Xewdy444 Playwright-reCAPTCHA README — the exact lib in use)
+- The library solves reCAPTCHA v2 TWO ways: (1) AUDIO challenge (default — this is what gets
+  IP-rate-limited), (2) IMAGE challenge via CapSolver (`image_challenge=True` + capsolver key).
+- Our code only ever called the AUDIO path → when audio rate-limited → "Try again later".
+- SOLUTION THAT ALREADY EXISTED: switch to the IMAGE challenge when audio is blocked. Same lib.
+- Google official (support/6081888): "automated queries" = IP/network rate-limit; clears with a
+  clean IP / time. So: stop hammering audio → use image solve instead.
+
+### FIX (applied)
+- `src/applier.py` audio-solver block: on "rate limit", now falls back to
+  `recaptchav2.SyncSolver(page, capsolver_api_key=_cap).solve_recaptcha(wait=True, image_challenge=True)`.
+  `_cap = CAPSOLVER_API_KEY or CAPSOLVER_KEY` (repo secret is named CAPSOLVER_KEY — the lib wants
+  CAPSOLVER_API_KEY; we read both).
+- If no CapSolver key → falls through to the FREE Gemini Flash GRID solver
+  (`solve_captcha_with_gemini(page,"recaptcha")` inside solve_recaptcha_enterprise METHOD 3) —
+  Gemini now works (model fixed) and is in local .env. So local has a FREE image fallback.
+- CI workflow: added `CAPSOLVER_KEY` + `CAPSOLVER_API_KEY` env (from secrets.CAPSOLVER_KEY) to the
+  submit_one step. CI now has BOTH image paths (CapSolver + Gemini).
+
+### Full CAPTCHA chain now (order)
+0 click not-a-robot → 1 ClickSolver → 2 audio; if audio RATE-LIMITED → 2b image via CapSolver →
+3 OhMyCaptcha → 3.5 hCaptcha → 4 Enterprise token → METHOD3 Gemini FREE grid solver.
+Plus: rate-limit backoff (20s cooldown+reload, skip if still blocked) at the top.
+
+### LOCAL setup note (for Bobur)
+- Local `.env` has GEMINI_API_KEY (free grid fallback works). It does NOT have CAPSOLVER_API_KEY.
+  To enable the paid CapSolver image path locally too, add `CAPSOLVER_API_KEY=<value>` to
+  agent/.env (the value is in the GitHub secret CAPSOLVER_KEY — secrets are write-only so copy it
+  from wherever it was originally saved). Not required — Gemini covers the free path.

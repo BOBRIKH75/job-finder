@@ -70,6 +70,8 @@ jobs:
           INDEED_COOKIES: ${{ secrets.INDEED_COOKIES }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           NOPECHA_API_KEY: ${{ secrets.NOPECHA_API_KEY }}
+          CAPSOLVER_KEY: ${{ secrets.CAPSOLVER_KEY }}
+          CAPSOLVER_API_KEY: ${{ secrets.CAPSOLVER_KEY }}
           GH_TOKEN: ${{ secrets.GH_PAT || github.token }}
           ANSWERER_NO_ASK: '1'
           TARGET_SUBMITS: '10'

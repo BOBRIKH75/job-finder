@@ -529,7 +529,24 @@ def _try_auto_captcha_solve(page, captured_sitekey: str = "") -> bool:
     except Exception as e:
         err = str(e).lower()
         if "rate limit" in err:
-            print(f"      ⚠️ Audio solver rate-limited — trying next...")
+            print(f"      ⚠️ Audio solver rate-limited — trying IMAGE challenge fallback...")
+            # SOLUTION (from library README): when the AUDIO endpoint is rate-limited,
+            # the SAME library can solve the IMAGE grid via CapSolver — this avoids
+            # hammering the rate-limited audio endpoint. Needs a CapSolver key. The
+            # repo secret is named CAPSOLVER_KEY; the library wants CAPSOLVER_API_KEY.
+            _cap = os.environ.get("CAPSOLVER_API_KEY") or os.environ.get("CAPSOLVER_KEY", "")
+            if _cap:
+                try:
+                    from playwright_recaptcha import recaptchav2 as _rc2
+                    with _rc2.SyncSolver(page, capsolver_api_key=_cap) as _isolver:
+                        _tok = _isolver.solve_recaptcha(wait=True, image_challenge=True)
+                        if _tok and len(_tok) > 20:
+                            print(f"      ✅ Solved via playwright-recaptcha (IMAGE/CapSolver)")
+                            return True
+                except Exception as _ie:
+                    print(f"      ⚠️ image-challenge fallback failed: {str(_ie)[:50]}")
+            else:
+                print(f"      ⚠️ no CapSolver key — image fallback skipped (will try Gemini grid)")
         else:
             pass  # not a visible reCAPTCHA v2, try next
     
