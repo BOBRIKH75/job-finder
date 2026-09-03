@@ -36,7 +36,8 @@ jobs:
 
           # locate the persistent profile dice_apply uses (home-dir repo, any user)
           prof = None
-          for base in glob.glob(os.path.expanduser("~/Downloads/CV/job-finder/agent/.dice-profile")) + \
+          for base in ["/Users/P3260288/Downloads/CV/job-finder/agent/.dice-profile"] + \
+                       glob.glob(os.path.expanduser("~/Downloads/CV/job-finder/agent/.dice-profile")) + \
                        glob.glob("/Users/*/Downloads/CV/job-finder/agent/.dice-profile") + \
                        [os.path.abspath(".dice-profile")]:
               if os.path.isdir(base):
