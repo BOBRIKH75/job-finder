@@ -2,7 +2,7 @@ name: "Vendor Outreach (Monthly)"
 
 on:
   schedule:
-    - cron: "0 16 1 * *"   # 1st of every month at 10:00 AM MT
+    - cron: "0 16 * * 2"   # weekly Tue 10 AM MT (30-day TTL prevents re-spam)
   workflow_dispatch: {}
 
 permissions:
@@ -33,9 +33,13 @@ jobs:
 
       - name: Save outreach history
         if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
         run: |
+          cd $GITHUB_WORKSPACE
           git config user.email "bot@github.actions"
           git config user.name "Outreach Bot"
-          git add ../data/vendor_outreach_history.json || true
-          git diff --staged --quiet || git commit -m "chore: vendor outreach history $(date +%Y-%m-%d)"
+          git add agent/data/vendor_outreach_history.json agent/data/vendor_list.json 2>/dev/null || true
+          git diff --staged --quiet || git commit -m "chore: vendor outreach history $(date +%Y-%m-%d) [skip ci]"
+          git pull --rebase --autostash || true
           git push || true

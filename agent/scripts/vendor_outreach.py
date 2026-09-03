@@ -18,8 +18,14 @@ REPLY_TO    = os.environ.get("GMAIL_USER", "bobrikh75@gmail.com")
 RESEND_FROM = "Bob Rikh <onboarding@resend.dev>"
 TTL_DAYS    = 30
 
-VENDOR_FILE  = Path(__file__).parent.parent.parent / "data" / "vendor_list.json"
-HISTORY_FILE = Path(__file__).parent.parent.parent / "data" / "vendor_outreach_history.json"
+VENDOR_FILE  = Path(__file__).parent.parent / "data" / "vendor_list.json"
+HISTORY_FILE = Path(__file__).parent.parent / "data" / "vendor_outreach_history.json"
+# CV to attach (resolve first existing)
+_CV_CANDIDATES = [
+    Path(__file__).parent.parent / "resume.pdf",
+    Path.home() / "Downloads" / "CV" / "Bob_Rikh_Java_Backend_Developer_C2C.pdf",
+]
+CV_PATH = next((p for p in _CV_CANDIDATES if p.exists()), None)
 
 FALLBACK_VENDORS = [
     # Tier 1 — FAANG placement track (TEKsystems/Apex = Allegis Group, Amazon/Google/Microsoft)
@@ -73,10 +79,20 @@ def make_body(vendor_name: str) -> str:
 def load_vendors() -> list[dict]:
     if VENDOR_FILE.exists():
         data = json.loads(VENDOR_FILE.read_text())
-        vendors = data.get("vendors", [])
-        if vendors:
-            print(f"Loaded {len(vendors)} vendors from vendor_list.json")
-            return vendors
+        # harvester writes a plain LIST; older format was {"vendors": [...]}
+        vendors = data if isinstance(data, list) else data.get("vendors", [])
+        # keep only entries with a usable email; default name from company/email
+        clean = []
+        for v in vendors:
+            em = (v.get("email") or "").strip()
+            if not em or "@" not in em:
+                continue
+            if not v.get("name"):
+                v["name"] = v.get("company") or em.split("@")[1].split(".")[0].title()
+            clean.append(v)
+        if clean:
+            print(f"Loaded {len(clean)} vendors/recruiters from vendor_list.json")
+            return clean
     print(f"Using fallback vendor list ({len(FALLBACK_VENDORS)} firms)")
     return FALLBACK_VENDORS
 
@@ -103,22 +119,34 @@ def should_contact(history: dict, email: str, now: datetime) -> tuple[bool, int]
 
 def send_via_resend(to_email: str, vendor_name: str) -> bool:
     if not RESEND_KEY:
-        print(f"  [DRY RUN] Would send to {vendor_name} ({to_email})")
+        print(f"  [DRY RUN] Would send to {vendor_name} ({to_email})"
+              f"{' + CV' if CV_PATH else ''}")
         return True  # count as success for history tracking in dry-run
+    payload = {
+        "from": RESEND_FROM,
+        "to": [to_email],
+        "reply_to": REPLY_TO,
+        "subject": SUBJECT,
+        "text": make_body(vendor_name),
+    }
+    # Attach the CV so recruiters get Bob's resume directly.
+    if CV_PATH:
+        try:
+            import base64
+            payload["attachments"] = [{
+                "filename": "Bob_Rikh_Java_Backend_Developer.pdf",
+                "content": base64.b64encode(CV_PATH.read_bytes()).decode(),
+            }]
+        except Exception as _e:
+            print(f"    CV attach skipped: {str(_e)[:50]}")
     resp = requests.post(
         "https://api.resend.com/emails",
         headers={
             "Authorization": f"Bearer {RESEND_KEY}",
             "Content-Type": "application/json",
         },
-        json={
-            "from": RESEND_FROM,
-            "to": [to_email],
-            "reply_to": REPLY_TO,
-            "subject": SUBJECT,
-            "text": make_body(vendor_name),
-        },
-        timeout=10,
+        json=payload,
+        timeout=15,
     )
     if resp.status_code in (200, 201):
         return True
