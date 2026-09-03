@@ -865,3 +865,37 @@ Dedup files: dice_applied_ids.json(3) dice_applied.json(3) dice_email_confirmed_
 - CI: DICE_COOKIES secret (fresh full cookies) + a refresh-cookies workflow (session cookies expire);
   git-commit the dice dedup files (like Indeed/Greenhouse). Re-enable dice-apply.yml once cookie
   refresh is set. For now: local runs work with DICE_MANUAL_LOGIN=1 (session persists in profile).
+
+
+---
+## Session: 2026-09-02 night — DICE at scale: deep search + freshness + self-learning
+
+### Scale proven (Bobur: run as much as possible, want to see 20 work)
+- 20-target run → SUBMITTED 20/20 (1 incomplete across run, ~95%+), 19 email-confirmed.
+- 10-target run → SUBMITTED 10/10, 0 incomplete, 9 email-confirmed. Cumulative: 42 applied, 42 confirmed.
+
+### Deeper/broader search (Bobur: search more deeply, cover more, apply as much as possible)
+- _search_urls now PAGINATES (pages=DICE_SEARCH_PAGES default 3) per term.
+- 20 CV-relevant terms (seniorities/stacks/synonyms: Core/Lead/Senior Java, Spring Boot/Cloud,
+  Kafka, AWS, Kubernetes, REST API, full stack, backend engineer...).
+- Pool grew 56 → 273 unique jobs (~5x coverage). Cap = max(300, target*12).
+
+### Freshness logic (Bobur: after 1 week only latest jobs, logically)
+- _posted_date_filter(): tracks first-run date in data/dice_first_run.json. Week 1 = apply to ALL
+  (clear backlog). After 7 days → filters.postedDate=SEVEN (last-7-days jobs only = latest).
+  Override with DICE_POSTED_DATE (ONE/THREE/SEVEN/''). Verified: first=all, 8d ago=SEVEN, 3d=all.
+
+### Self-learning on failure (Bobur: when failed, self-adjust so next run fixes it)
+- data/dice_lessons.json: _record_dice_lesson(reason) on every failure →
+  no_apply_button→longer_button_wait, incomplete→more_wizard_steps, error→reload_retry,
+  login_redirect→need_fresh_login.
+- _apply_lessons_to_env() at run start sets env flags consumed by _apply_one:
+  DICE_BTN_WAIT (8s→15s), DICE_WIZARD_STEPS (8→12), DICE_STEP_SETTLE (2→3).
+- login-redirect now detected as a distinct reason (session expired → needs fresh login).
+- Mechanism wired + verified present (fires only on failure; the clean 10/10 run had 0 lessons).
+
+### Dice = best-performing source now
+Full pattern: stealth + cookie/profile login + DEEP paginated CV search + freshness filter +
+cv_match gate + 5-layer dedup + DB claim-lock + self-learning + email-confirmation oracle.
+Local: DICE_MANUAL_LOGIN=1 once (session persists). Env knobs: DICE_TARGET, DICE_SEARCH_PAGES,
+DICE_POSTED_DATE, RETRY_FAILED, CV_MATCH_OFF.

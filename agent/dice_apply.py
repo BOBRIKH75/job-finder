@@ -104,6 +104,51 @@ def _load_dead():
         return {}
 
 
+LESSONS_FILE = 'data/dice_lessons.json'
+
+
+def _load_dice_lessons():
+    try:
+        return json.load(open(LESSONS_FILE))
+    except Exception:
+        return {}
+
+
+def _record_dice_lesson(reason):
+    """SELF-LEARNING (Bobur): remember WHY an apply failed so the NEXT run auto-applies a
+    fix. reason -> {count, fix}. Fixes are consumed by _apply_one via env flags set at start."""
+    lessons = _load_dice_lessons()
+    e = lessons.get(reason, {'count': 0, 'fix': None})
+    e['count'] += 1
+    e['fix'] = {
+        'no_apply_button': 'longer_button_wait',   # button rendered late → wait longer
+        'incomplete': 'more_wizard_steps',          # wizard had more steps → more steps + settle
+        'error': 'reload_retry',                    # transient → reload + retry once
+        'login_redirect': 'need_fresh_login',       # session expired → prompt manual login
+    }.get(reason, e.get('fix'))
+    lessons[reason] = e
+    try:
+        os.makedirs('data', exist_ok=True)
+        json.dump(lessons, open(LESSONS_FILE, 'w'), indent=2)
+        print(f"  🧠 learned: {reason} → fix='{e['fix']}' (seen {e['count']}x)")
+    except Exception:
+        pass
+
+
+def _apply_lessons_to_env():
+    """At run start, read past lessons and set env flags so _apply_one self-heals this run."""
+    lessons = _load_dice_lessons()
+    for reason, e in lessons.items():
+        fix = (e or {}).get('fix')
+        if fix == 'longer_button_wait':
+            os.environ.setdefault('DICE_BTN_WAIT', '15000')      # 15s button wait (was 8s)
+        elif fix == 'more_wizard_steps':
+            os.environ.setdefault('DICE_WIZARD_STEPS', '12')     # more steps (was 8)
+            os.environ.setdefault('DICE_STEP_SETTLE', '3')       # longer settle between steps
+    if lessons:
+        print(f"  🧠 self-heal: applied {len(lessons)} learned lesson(s) to this run")
+
+
 def _job_id(url):
     m = re.search(r'/job-detail/([0-9a-f-]+)', url or '')
     return m.group(1) if m else ''
@@ -146,28 +191,59 @@ def _launch(pw, headful):
     return ctx
 
 
-def _search_urls(page, term, want=25):
-    """Return [(url, title)] of easy-apply jobs from a Dice search."""
-    q = term.replace(' ', '%20')
-    page.goto(f'https://www.dice.com/jobs?q={q}&countryCode=US&page=1&pageSize={want}'
-              f'&filters.easyApply=true&filters.workplaceTypes=Remote',
-              wait_until='domcontentloaded', timeout=30000)
-    time.sleep(5)
+def _posted_date_filter():
+    """Freshness logic (Bobur): burst through the backlog for the first week, then apply
+    ONLY to the LATEST jobs. Tracks the first-run date in data/dice_first_run.json; after
+    7 days, restrict Dice search to jobs posted in the last 7 days (filters.postedDate=SEVEN).
+    Override anytime with DICE_POSTED_DATE (ONE/THREE/SEVEN/'' for all)."""
+    override = os.environ.get('DICE_POSTED_DATE')
+    if override is not None:
+        return override.strip()
+    marker = 'data/dice_first_run.json'
     try:
-        rows = page.evaluate(r"""() => {
-            const out = [];
-            for (const a of document.querySelectorAll('a[data-testid="job-search-job-card-link"]')) {
-                const label = a.getAttribute('aria-label') || '';
-                const title = label.replace(/^View Details for /, '').replace(/\s*\([0-9a-f]+\)\s*$/, '');
-                const href = a.getAttribute('href') || '';
-                if (href.includes('/job-detail/')) out.push({title: title.trim(), href});
-            }
-            return out;
-        }""") or []
+        first = float(json.load(open(marker)).get('ts', 0))
     except Exception:
-        rows = []
-    base = 'https://www.dice.com'
-    return [(base + r['href'] if r['href'].startswith('/') else r['href'], r['title']) for r in rows]
+        first = 0.0
+    if not first:
+        try:
+            os.makedirs('data', exist_ok=True)
+            json.dump({'ts': time.time()}, open(marker, 'w'))
+        except Exception:
+            pass
+        return ''   # week 1 → apply to all (clear the backlog)
+    age_days = (time.time() - first) / 86400.0
+    return 'SEVEN' if age_days >= 7 else ''   # after 1 week → last-7-days jobs only
+
+
+def _search_urls(page, term, want=50, pages=3):
+    """Return [(url, title)] of easy-apply jobs from a Dice search, across N pages."""
+    q = term.replace(' ', '%20')
+    posted = _posted_date_filter()
+    pd = f'&filters.postedDate={posted}' if posted else ''
+    out = []
+    for pg_num in range(1, pages + 1):
+        try:
+            page.goto(f'https://www.dice.com/jobs?q={q}&countryCode=US&page={pg_num}&pageSize={want}'
+                      f'&filters.easyApply=true&filters.workplaceTypes=Remote{pd}',
+                      wait_until='domcontentloaded', timeout=30000)
+            time.sleep(4)
+            rows = page.evaluate(r"""() => {
+                const out = [];
+                for (const a of document.querySelectorAll('a[data-testid="job-search-job-card-link"]')) {
+                    const label = a.getAttribute('aria-label') || '';
+                    const title = label.replace(/^View Details for /, '').replace(/\s*\([0-9a-f]+\)\s*$/, '');
+                    const href = a.getAttribute('href') || '';
+                    if (href.includes('/job-detail/')) out.push({title: title.trim(), href});
+                }
+                return out;
+            }""") or []
+        except Exception:
+            rows = []
+        if not rows:
+            break   # no more pages
+        base = 'https://www.dice.com'
+        out += [(base + r['href'] if r['href'].startswith('/') else r['href'], r['title']) for r in rows]
+    return out
 
 
 def _apply_one(page, url, title):
@@ -184,12 +260,16 @@ def _apply_one(page, url, title):
             }""") or ''
     except Exception:
         company = ''
+    # detect session-expired redirect (apply needs login) → distinct reason for self-heal
+    if 'login' in (page.url or '').lower():
+        return 'login_redirect', company
     # find + click Apply (Dice uses <a data-testid="apply-button">Apply Now</a>)
     clicked = False
-    # wait for the apply control to render
+    # wait for the apply control to render (learned: DICE_BTN_WAIT longer if it rendered late)
+    _btn_wait = int(os.environ.get('DICE_BTN_WAIT', '8000'))
     try:
         page.wait_for_selector('[data-testid="apply-button"], a:has-text("Apply Now"), '
-                               'button:has-text("Easy apply")', timeout=8000)
+                               'button:has-text("Easy apply")', timeout=_btn_wait)
     except Exception:
         pass
     for sel in ['[data-testid="apply-button"]',
@@ -214,8 +294,10 @@ def _apply_one(page, url, title):
         return 'no_apply_button', company
     time.sleep(4)
     _clicked_submit = False
+    _wizard_steps = int(os.environ.get('DICE_WIZARD_STEPS', '8'))
+    _step_settle = int(os.environ.get('DICE_STEP_SETTLE', '2'))
     # multi-step easy-apply modal: fill questions + click Next/Submit up to N steps
-    for _step in range(8):
+    for _step in range(_wizard_steps):
         try:
             if is_questions_page and is_questions_page(page):
                 fill_questions_page(page, None, {}, company or 'Employer')
@@ -245,7 +327,7 @@ def _apply_one(page, url, title):
                         _clicked_submit = True
                     loc.first.click(timeout=3000)
                     advanced = True
-                    time.sleep(2)
+                    time.sleep(_step_settle)
                     break
             except Exception:
                 continue
@@ -283,6 +365,7 @@ def main():
     failed_ids = _load_json_set(FAILED_FILE)
     dead = {k for k, c in _load_dead().items() if int(c) >= MAX_FAILS}
     applied_titles = _load_json_set(APPLIED_FILE)
+    _apply_lessons_to_env()   # SELF-LEARNING: apply fixes learned from past failures
     print(f"🗂️  Dice dedup: {len(applied_ids)} ids applied, {len(applied_titles)} titles, "
           f"{len(dead)} retired")
 
@@ -333,16 +416,25 @@ def main():
                 print("     ⚠️ login not detected within 180s — continuing anyway")
 
         terms = [os.environ.get('DICE_TERM', 'Java Spring Boot'),
-                 'Java backend developer', 'Java microservices']
+                 'Java backend developer', 'Java microservices',
+                 'Senior Java developer', 'Java developer remote',
+                 'Java AWS developer', 'Spring Boot microservices',
+                 'Java REST API developer', 'Java software engineer',
+                 'Core Java developer', 'Java full stack developer',
+                 'Java Kafka developer', 'Java Spring Cloud', 'Java backend engineer',
+                 'Lead Java developer', 'Java API developer', 'Spring Boot engineer',
+                 'Java Kubernetes microservices', 'Java Spring developer', 'backend Java engineer']
+        _pages = int(os.environ.get('DICE_SEARCH_PAGES', '3'))
         jobs = []
         seen = set()
         for term in terms:
-            for url, title in _search_urls(page, term):
+            for url, title in _search_urls(page, term, pages=_pages):
                 jid = _job_id(url)
                 if jid and jid not in seen:
                     seen.add(jid)
                     jobs.append((url, title, jid))
-            if len(jobs) >= 40:
+            # collect a big pool (deeper coverage) — stop only when we have plenty
+            if len(jobs) >= max(300, target * 12):
                 break
         print(f"🔍 {len(jobs)} unique Dice easy-apply jobs found")
 
@@ -392,6 +484,7 @@ def main():
                 release_claim(db, 'dice:' + (title or ''), title)   # not applied → free claim
                 if jid:
                     _save_failed(jid)
+                _record_dice_lesson(result)   # SELF-LEARNING: next run auto-applies the fix
                 print(f"  -> {result}: {title[:40]}")
             time.sleep(2)
 
