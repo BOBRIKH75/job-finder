@@ -440,6 +440,7 @@ def main():
 
         submitted = 0
         _seen_titles = set()
+        _login_redirect_seen = False
         for url, title, jid in jobs:
             if submitted >= target:
                 break
@@ -485,8 +486,29 @@ def main():
                 if jid:
                     _save_failed(jid)
                 _record_dice_lesson(result)   # SELF-LEARNING: next run auto-applies the fix
+                if result == 'login_redirect':
+                    _login_redirect_seen = True
                 print(f"  -> {result}: {title[:40]}")
             time.sleep(2)
+
+        # Save FRESH cookies after the run — browsing refreshes the session, so this keeps
+        # the DICE_COOKIES refresh source (dice_cookies.json) as new as possible. Dynamic:
+        # the refresh workflow reads this on its schedule, so the secret stays valid.
+        try:
+            os.makedirs('data', exist_ok=True)
+            json.dump(ctx.cookies(), open(COOKIE_FILE, 'w'))
+        except Exception:
+            pass
+        # If the session had expired mid-run (login_redirect), flag it so the cookie-refresh
+        # workflow / next run knows to re-authenticate — no manual step needed.
+        if _login_redirect_seen:
+            try:
+                json.dump({'ts': time.time(), 'reason': 'login_redirect'},
+                          open('data/dice_needs_login.json', 'w'))
+            except Exception:
+                pass
+            print("  ⚠️ SESSION EXPIRED (login_redirect) — DICE_COOKIES needs refresh. The "
+                  "refresh-dice-cookies workflow will update it; or run DICE_MANUAL_LOGIN=1 locally.")
 
         print(f"\n=== Dice: SUBMITTED {submitted} application(s) ===")
         ctx.close()
