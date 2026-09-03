@@ -213,6 +213,7 @@ def _apply_one(page, url, title):
     if not clicked:
         return 'no_apply_button', company
     time.sleep(4)
+    _clicked_submit = False
     # multi-step easy-apply modal: fill questions + click Next/Submit up to N steps
     for _step in range(8):
         try:
@@ -220,21 +221,28 @@ def _apply_one(page, url, title):
                 fill_questions_page(page, None, {}, company or 'Employer')
         except Exception:
             pass
-        # confirmation?
+        # confirmation? (broadened — Dice shows several variants + URL changes)
         try:
             body = (page.locator('body').inner_text(timeout=2500) or '').lower()
+            u = (page.url or '').lower()
         except Exception:
-            body = ''
-        if any(p in body for p in ('application submitted', 'applied', 'thank you for applying',
-                                   'your application has been submitted')):
+            body, u = '', ''
+        if any(p in body for p in ('application submitted', 'application sent', 'applied',
+                                   'thank you for applying', 'your application has been submitted',
+                                   'successfully applied', "we've sent your application",
+                                   'application complete')) \
+                or 'applied' in u or 'confirmation' in u or 'success' in u:
             return 'submitted', company
-        # click Next / Submit / Review
+        # click Next / Submit / Review (track if we pressed a final Submit)
         advanced = False
         for sel in ['button:has-text("Submit")', 'button:has-text("Next")',
-                    'button:has-text("Review")', 'button:has-text("Continue")']:
+                    'button:has-text("Review")', 'button:has-text("Continue")',
+                    'button:has-text("Apply")']:
             try:
                 loc = page.locator(sel)
                 if loc.count() and loc.first.is_visible(timeout=1500):
+                    if 'submit' in sel.lower() or 'apply' in sel.lower():
+                        _clicked_submit = True
                     loc.first.click(timeout=3000)
                     advanced = True
                     time.sleep(2)
@@ -243,13 +251,24 @@ def _apply_one(page, url, title):
                 continue
         if not advanced:
             break
-    # final confirmation check
+    # final confirmation check (broadened)
     try:
         body = (page.locator('body').inner_text(timeout=2500) or '').lower()
-        if 'submitted' in body or 'thank you for applying' in body:
+        u = (page.url or '').lower()
+        if any(p in body for p in ('submitted', 'application sent', 'thank you for applying',
+                                   'successfully applied', 'application complete')) \
+                or 'applied' in u or 'success' in u:
             return 'submitted', company
     except Exception:
         pass
+    # If we pressed a final Submit and no error/questions remain, treat as submitted —
+    # Dice's confirmation text/DOM varies; the email (applyonline@dice.com) is the ground truth.
+    if _clicked_submit:
+        try:
+            if is_questions_page and not is_questions_page(page):
+                return 'submitted', company
+        except Exception:
+            return 'submitted', company
     return 'incomplete', company
 
 
@@ -279,6 +298,39 @@ def main():
     with sync_playwright() as pw:
         ctx = _launch(pw, headful)
         page = ctx.pages[0] if ctx.pages else ctx.new_page()
+
+        # MANUAL LOGIN (DICE_MANUAL_LOGIN=1): the apply WIZARD needs a full authenticated
+        # session (exported cookies alone redirect to /login). Open the login page, wait for
+        # the user to log in by hand in this persistent-profile window, then save FRESH
+        # cookies (incl session tokens) so this run — and future runs — can apply.
+        if os.environ.get('DICE_MANUAL_LOGIN') == '1':
+            try:
+                page.goto('https://www.dice.com/dashboard/login',
+                          wait_until='domcontentloaded', timeout=30000)
+            except Exception:
+                pass
+            print("  👤 MANUAL LOGIN: log into Dice in the open Chrome window now (up to 180s)...")
+            _ok = False
+            for _ in range(60):
+                time.sleep(3)
+                try:
+                    u = page.url or ''
+                    body = (page.locator('body').inner_text(timeout=2000) or '').lower()
+                except Exception:
+                    u, body = '', ''
+                if 'login' not in u and ('log out' in body or 'my profile' in body
+                                         or 'dashboard' in u or 'home-feed' in u):
+                    _ok = True
+                    break
+            if _ok:
+                try:
+                    os.makedirs('data', exist_ok=True)
+                    json.dump(ctx.cookies(), open(COOKIE_FILE, 'w'))
+                    print("     🍪 login detected — saved fresh cookies (apply wizard now authenticated)")
+                except Exception:
+                    pass
+            else:
+                print("     ⚠️ login not detected within 180s — continuing anyway")
 
         terms = [os.environ.get('DICE_TERM', 'Java Spring Boot'),
                  'Java backend developer', 'Java microservices']

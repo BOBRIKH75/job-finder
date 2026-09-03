@@ -827,3 +827,41 @@ set (incl httpOnly session tokens) right after login as the DICE_COOKIES secret;
 may be short-lived so CI may need periodic cookie refresh (a refresh-cookies workflow like LinkedIn's).
 Files: dice_applied.json / dice_applied_ids.json / dice_failed_ids.json / dice_dead_ids.json (dedup,
 to be git-synced + CI-committed like Indeed/Greenhouse once submits confirmed).
+
+
+---
+## Session: 2026-09-02 night — DICE APPLY ✅ CONFIRMED WORKING (email-verified)
+
+### Bobur's standard: confirm from email (/cv pattern), keep testing until proven
+DONE. dice_apply.py submitted 4 real Java jobs, ALL verified by Dice confirmation emails
+(applyonline@dice.com, subject "Application for {TITLE} at {COMPANY} sent"):
+  ✅ Senior Java Backend Developer (AI & Microservices)
+  ✅ Remote - Java FSE - 14+ years
+  ✅ Java Backend Developer with SQL and Strong AI
+  ✅ Back-end developer, Java @ Vaco
+
+### What made it work
+1. DICE_MANUAL_LOGIN=1 — open Dice login in the persistent .dice-profile, user logs in ONCE by
+   hand → fresh full-auth cookies saved. The APPLY WIZARD needs full auth (exported cookies alone
+   redirect to /login); a fresh manual login fixes it and the session persists.
+2. Apply button = <a data-testid="apply-button">Apply Now</a> (found via DOM probe; NOT a button).
+3. Broadened submit detection (application sent/submitted/success + URL applied/success + "clicked
+   final Submit and no questions remain") — first version false-flagged real submits as 'incomplete'
+   (email proved they went through). Dice's confirmation DOM varies → email is ground truth.
+
+### NEW: check_dice_confirmations.py
+Reads Gmail (IMAP) for applyonline@dice.com "Application for ... sent" → records
+data/dice_email_confirmed_titles.json (like Indeed's confirmer). `--since-min N` for recent-only.
+This is the CONFIRMATION oracle for Dice submits.
+
+### Dice flow = same pattern as Indeed/Greenhouse (all verified firing)
+patchright stealth + cookie/profile session + Java/Spring easyApply=true remote search +
+cv_match gate (skips Python/Test/generic) + 5-layer dedup (dice_applied_ids/dice_applied/
+dice_failed_ids/dice_dead_ids + same-run set + DB claim_job lock) + questions_filler wizard.
+Dedup files: dice_applied_ids.json(3) dice_applied.json(3) dice_email_confirmed_titles.json(7).
+
+### TODO to fully productionize Dice (next)
+- Wire check_dice_confirmations into the flow start (load dice_email_confirmed_titles into dedup).
+- CI: DICE_COOKIES secret (fresh full cookies) + a refresh-cookies workflow (session cookies expire);
+  git-commit the dice dedup files (like Indeed/Greenhouse). Re-enable dice-apply.yml once cookie
+  refresh is set. For now: local runs work with DICE_MANUAL_LOGIN=1 (session persists in profile).
