@@ -1,16 +1,92 @@
-name: Dice Easy Apply (DISABLED)
+name: Dice Easy Apply
 
-# DISABLED: Dice blocks headless Chrome. Click-counting, no real applies.
-# Re-enable after building proper Dice API integration.
+# RE-ENABLED 2026-09-02: Dice apply is CONFIRMED WORKING (email-verified, 42+ real submits).
+# Old disable reason ("blocks headless") was the old undetected_chromedriver+headless combo —
+# solved by patchright stealth (dice_apply.py). Runs on self-hosted (home IP; Dice cookies are
+# IP-bound). High target to maximize CV-fit applies; freshness filter auto-limits to latest jobs
+# after the first week.
 on:
+  schedule:
+    - cron: '30 14 * * 1-5'   # 8:30 AM MT
+    - cron: '30 18 * * 1-5'   # 12:30 PM MT
+    - cron: '30 22 * * 1-5'   # 4:30 PM MT
   workflow_dispatch: {}
-  # schedule DISABLED:
-  # - cron: "30 13 * * 1-5"
+
+concurrency:
+  group: dice-apply
+  cancel-in-progress: false
+
+defaults:
+  run:
+    working-directory: agent
+
+permissions:
+  contents: write
 
 jobs:
   dice-apply:
-    if: false
-    runs-on: ubuntu-latest
-    steps:
-      - run: echo "Disabled"
+    runs-on: self-hosted   # MUST be self-hosted — Dice cookies are IP-bound (cloud IP breaks session)
+    timeout-minutes: 40
 
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          python3 -m venv $GITHUB_WORKSPACE/.venv || true
+          echo "$GITHUB_WORKSPACE/.venv/bin" >> $GITHUB_PATH
+          source $GITHUB_WORKSPACE/.venv/bin/activate || true
+          python3 -m pip install --upgrade pip setuptools wheel
+          python3 -m pip install -r requirements.txt
+          python3 -m patchright install chrome || python3 -m playwright install chromium --with-deps || true
+
+      - name: Initialize database
+        run: python3 -c "from src.memory import get_db, init_db; db = get_db(); init_db(db)"
+
+      - name: Restore dedup state (pull latest applied records)
+        if: always()
+        continue-on-error: true
+        run: |
+          cd $GITHUB_WORKSPACE
+          git config user.email "bot@bobrikh.dev"
+          git config user.name "Dice Bot"
+          git pull --rebase --autostash || true
+
+      - name: Run Dice applicator
+        timeout-minutes: 35
+        env:
+          DICE_COOKIES: ${{ secrets.DICE_COOKIES }}
+          DICE_EMAIL: ${{ secrets.DICE_EMAIL }}
+          DICE_PASSWORD: ${{ secrets.DICE_PASSWORD }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          GH_TOKEN: ${{ secrets.GH_PAT || github.token }}
+          DICE_TARGET: '25'          # apply to as many CV-fit jobs as possible per run
+          DICE_SEARCH_PAGES: '4'     # deep search coverage
+          HEADFUL: '1'               # self-hosted runner has a display; headless is the bot tell
+        run: |
+          cd $GITHUB_WORKSPACE/agent
+          python3 dice_apply.py
+
+      - name: Confirm submits via email
+        if: always()
+        continue-on-error: true
+        run: |
+          cd $GITHUB_WORKSPACE/agent
+          python3 check_dice_confirmations.py --since-min 45 || true
+
+      - name: Commit dedup + lessons state (shared with local)
+        if: always()
+        continue-on-error: true
+        run: |
+          cd $GITHUB_WORKSPACE
+          git config user.email "bot@bobrikh.dev"
+          git config user.name "Dice Bot"
+          git add agent/data/dice_applied_ids.json agent/data/dice_applied.json \
+                  agent/data/dice_email_confirmed_titles.json agent/data/dice_failed_ids.json \
+                  agent/data/dice_dead_ids.json agent/data/dice_lessons.json \
+                  agent/data/dice_first_run.json 2>/dev/null || true
+          git diff --staged --quiet || git commit -m "dice: sync applied/dedup/lessons state [skip ci]"
+          git pull --rebase --autostash || true
+          git push || true
