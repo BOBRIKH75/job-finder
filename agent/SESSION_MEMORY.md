@@ -1000,3 +1000,39 @@ Is real recruiter-finding working in CI?
   postings often list a recruiter email) → feed into vendor_list.json → outreach. No external API needed.
 - Secrets present: HUNTER_API_KEY, SNOV_USER_ID/SECRET, APOLLO_API_KEY, APOLLO_COOKIES_B64,
   APOLLO_EMAIL/PASSWORD, RESEND_KEY, GH_PAT. vendor_list.json has 68 existing contacts.
+
+
+---
+## Session: 2026-09-02 night — RECRUITER finding: tested locally + CI, reliable source built
+
+### Local + CI test results (Bobur: test to be sure)
+- OLD recruiter_finder.py (local + CI): "New recruiters found: 0" — nvoids 404, Google Groups
+  404 (both dead), Apollo skipped, Hunter/Snov exhausted. Confirmed broken. REMOVED from workflow.
+- NEW recruiter_from_applications.py: extracts companies from Dice/Indeed confirmation emails
+  (applyonline@dice.com "Application for TITLE at COMPANY sent") → real staffing firms we applied
+  to → Hunter domain-search → recruiter emails → vendor_list.
+  - LOCAL test: ✅ 32 real companies extracted (Beacon Hill, Anveta, Aspire, CitiusTech, Motion
+    Recruitment, System One...). Hunter call well-formed (401 w/ test key = correct structure).
+  - CI test (real key): ✅ 32 companies extracted, BUT Hunter returned HTTP 429 Too Many Requests
+    for every company → Hunter FREE tier quota (~50/mo) is EXHAUSTED (the old finder burned it).
+
+### Honest status: pipeline WORKS, blocked by Hunter free quota
+- Not a code bug — Hunter free credits used up. Fixes applied:
+  1. Removed the dead old recruiter_finder.py step (0 found + wasted quota).
+  2. recruiter_from_applications.py now SKIPS already-searched companies
+     (recruiter_searched_companies.json) + HUNTER_MAX_PER_RUN cap (default 15) so the free 50/mo
+     isn't re-burned on the same companies each daily run.
+- git push 403 fixed earlier (GH_PAT) so found recruiters actually SAVE.
+
+### To fully get recruiters flowing (next / options)
+- Hunter free quota resets monthly → next month it'll find emails for the 32 companies. OR
+- Use Snov.io (separate quota, creds present) as the email-lookup instead of/alongside Hunter. OR
+- Upgrade Hunter (paid) if you want volume now. OR
+- The 23-32 applied companies ARE known — could also just outreach via the recruiter reply thread
+  (recruiter-auto-reply already runs every 2h and works).
+- vendor_list.json = 68 existing contacts (outreach works off these).
+
+### Files
+- agent/scripts/recruiter_from_applications.py (new), data/applied_companies.json (32),
+  data/recruiter_searched_companies.json (quota tracker). recruiter-discovery.yml uses only
+  the new reliable finder now + token'd push.

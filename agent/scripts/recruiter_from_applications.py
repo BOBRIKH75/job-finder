@@ -105,11 +105,25 @@ def main():
     print(f"  📋 {len(companies)} companies we applied to (recruiter targets)")
 
     new = []
+    searched_file = os.path.join(DATA, 'recruiter_searched_companies.json')
+    try:
+        already_searched = set(json.load(open(searched_file)))
+    except Exception:
+        already_searched = set()
     if os.environ.get('HUNTER_API_KEY'):
-        for c in sorted(companies):
-            for rec in hunter_recruiters(c, existing):
+        # only search companies we haven't searched before (Hunter free = ~50/mo; don't re-burn)
+        todo = [c for c in sorted(companies) if c not in already_searched]
+        print(f"  🔎 {len(todo)} NEW companies to Hunter-search ({len(already_searched)} already done)")
+        for c in todo[:int(os.environ.get('HUNTER_MAX_PER_RUN', '15'))]:
+            recs = hunter_recruiters(c, existing)
+            already_searched.add(c)
+            for rec in recs:
                 if rec['email'] not in existing:
                     existing.add(rec['email']); new.append(rec)
+        try:
+            json.dump(sorted(already_searched), open(searched_file, 'w'), indent=2)
+        except Exception:
+            pass
     else:
         print("  ⚠️ HUNTER_API_KEY not set — company list gathered but no email lookup this run")
 

@@ -26,13 +26,6 @@ jobs:
       - name: Install dependencies
         run: pip install requests
 
-      - name: Run recruiter discovery
-        env:
-          HUNTER_API_KEY: ${{ secrets.HUNTER_API_KEY }}
-          SNOV_USER_ID: ${{ secrets.SNOV_USER_ID }}
-          SNOV_API_SECRET: ${{ secrets.SNOV_API_SECRET }}
-        run: python scripts/recruiter_finder.py
-
       - name: Find recruiters from OUR applications (reliable source)
         env:
           HUNTER_API_KEY: ${{ secrets.HUNTER_API_KEY }}
