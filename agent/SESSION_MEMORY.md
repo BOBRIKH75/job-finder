@@ -605,3 +605,31 @@ Find companies dynamically based on my CV (Java/Spring); company list should aut
 4. Persistent dedup (company+normalized-title, git-synced) — no re-applying same job.
 All four persist via git-tracked files committed by CI: companies.json, scan_offset.json,
 greenhouse_applied.json.
+
+
+---
+## Session: 2026-09-02 night — FIX: discovery was misaligning rotation (Bobur caught it)
+
+### Bobur's concern
+"Are you sure discovery isn't overriding the company & job filtering? logic should be clear."
+
+### Real bug found (he was right)
+Discovery ran BEFORE rotation → it grew companies['greenhouse'] → changed _total AND shifted
+what the offset pointed to (new companies insert mid-list when sorted) → the round-robin offset
+became MISALIGNED every time a company was discovered → could skip/repeat companies. Override risk.
+
+### FIX — clean, non-overriding order
+1. load companies.json
+2. read offset
+3. PICK this run's slice via _rotate (offset aligned to the CURRENT list) ← rotation decided FIRST
+4. DISCOVER (append-only) → save_companies for FUTURE runs ← does NOT touch step-3 picked list
+5. SCAN the picked companies
+6. per-job DEDUP (company+title) — independent
+7. per-job CV-FIT gate (should_apply) — independent
+8. apply
+- discover_company only APPENDS verified boards (never removes/reorders).
+- Discovery gated to every Nth run (GH_DISCOVER_EVERY=3) to avoid hammering job-search
+  (shares the reCAPTCHA rate-limit).
+- CV-fit + dedup are per-job and run regardless of discovery → discovery can NEVER push an
+  off-CV or duplicate job through. Three concerns cleanly separated: discover(grow) →
+  rotate(cover all) → cv-fit+dedup(gate each job). No override.
