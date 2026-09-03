@@ -899,3 +899,32 @@ Full pattern: stealth + cookie/profile login + DEEP paginated CV search + freshn
 cv_match gate + 5-layer dedup + DB claim-lock + self-learning + email-confirmation oracle.
 Local: DICE_MANUAL_LOGIN=1 once (session persists). Env knobs: DICE_TARGET, DICE_SEARCH_PAGES,
 DICE_POSTED_DATE, RETRY_FAILED, CV_MATCH_OFF.
+
+
+---
+## Session: 2026-09-02 night — DICE CI SCHEDULING re-enabled (maximize applies)
+
+### Bobur's ask
+Make sure CI scheduling applies to as many jobs as possible (not just local).
+
+### Done
+- dice-apply.yml REWRITTEN (was disabled `echo`): now runs dice_apply.py on `self-hosted`
+  (Dice cookies are IP-bound — home IP like Indeed/Greenhouse), 3x/day weekdays
+  (14:30/18:30/22:30 UTC), staggered from Indeed/Greenhouse/LinkedIn.
+- Env: DICE_TARGET=25, DICE_SEARCH_PAGES=4 (deep search) → maximize CV-fit applies/run.
+- Auth: DICE_COOKIES secret set from local cookies. NOTE: full 150-cookie set was TOO LARGE
+  for a GH secret (HTTP 422) → filtered to dice.com-only (39 cookies, 18KB b64) which has the
+  session tokens (DLI, SERVERID, _gd_session, _gd_visitor). dice_apply _launch reads DICE_COOKIES.
+- Steps: pull(restore dedup) → run → check_dice_confirmations(--since-min 45) → commit dedup+lessons.
+- Git-synced dedup files committed by CI (dice_applied_ids/applied/email_confirmed/failed/dead/
+  lessons/first_run) — shared local+CI.
+
+### DAILY CI CAPACITY now (~205 CV-fit applies/day, weekdays)
+- Indeed 4x10=40 · Greenhouse 3x30=90 · Dice 3x25=75 · LinkedIn 1x. All CV-filtered + deduped.
+
+### CI verification status
+Triggered manual run 33712628017 (self-hosted). Dep install (patchright+chrome) is slow first
+run; applicator uses the SAME dice_apply.py proven locally (42 email-confirmed submits) + the
+cookie secret. WATCH: confirm DICE_COOKIES auth works on the runner (cookies may be short-lived
+→ may need a dice cookie-refresh workflow like LinkedIn's if the session expires). If CI shows
+login_redirect, refresh DICE_COOKIES from a fresh local login.
