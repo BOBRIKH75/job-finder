@@ -527,3 +527,28 @@ DB-only dedup is unreliable in CI (cache-based, lossy). The robust pattern = git
 applied-list (company+normalized-title) + CI pull-before/commit-after. Indeed uses applied_jks/
 applied_titles/email_confirmed_titles; Greenhouse now uses greenhouse_applied.json. If a new ATS
 submitter is added, use the same pattern.
+
+
+---
+## Session: 2026-09-02 night — GREENHOUSE CV-fit gate (don't waste time on off-target jobs)
+
+### Bobur's ask
+Make sure Greenhouse only applies to jobs matching the CV (not spending time on wrong jobs).
+
+### Gap
+scan_greenhouse used matches_skills() (portal_scanner.py): broad — title has ANY dev signal
+(engineer/developer/platform/sre/devops/api) AND matches ANY one skill keyword. No hard-negatives.
+So DevOps/SRE/Data/Platform/anything mentioning "aws" or "api" passed → wasted applies.
+
+### FIX (greenhouse_apply.py)
+- Added the STRICT cv_match.should_apply() gate in the apply loop, right after dedup (same
+  matcher Indeed uses). Requires a Java/backend CORE signal + scores skills + remote/C2C bonus +
+  hard TITLE_NEGATIVES (.net/c#/salesforce/nurse/frontend-only/android/data-entry/...).
+  CV_MATCH_OFF=1 disables. Uses greenhouse job dict title+description(1000ch)+location.
+- Verified (unit test): Java/Spring backend = apply (8-11); Platform/SRE/Data/Frontend =
+  skip (no core signal); .NET = skip (title negative).
+- matches_skills stays as the broad scanner; cv_match is the precise pre-apply gate.
+
+### Both ATS now consistent
+Indeed + Greenhouse: (1) CV-fit gate before applying, (2) persistent git-synced dedup
+(company+normalized-title), (3) skip-before-open where possible. Every submit = new + CV-fit.

@@ -154,6 +154,26 @@ def main():
             skipped += 1
             continue
 
+        # CV-FIT GATE (Bobur: only apply to jobs that MATCH the CV — Java/Spring/
+        # backend/remote/C2C — don't waste time on off-target roles). Same matcher as
+        # Indeed. scan_greenhouse's matches_skills() is broad (any 1 keyword); this is
+        # the strict gate with hard-negatives (.net/salesforce/nurse/frontend-only...).
+        # CV_MATCH_OFF=1 disables. Uses title + description if available.
+        if os.environ.get('CV_MATCH_OFF') != '1':
+            try:
+                from src.cv_match import should_apply as _cv_ok
+            except Exception:
+                _cv_ok = None
+            if _cv_ok is not None:
+                _desc = job.get('description', '') or ''
+                _loc = job.get('location', '') or ''
+                _ok, _score, _why = _cv_ok(title, _desc, _loc)
+                if not _ok:
+                    skipped += 1
+                    print(f"  ⏭️ off-CV: '{title[:40]}' @ {company_name[:20]} "
+                          f"(score={_score} {','.join(_why)})")
+                    continue
+
         if company_failures.get(company_name, 0) >= 3:
             continue
 
