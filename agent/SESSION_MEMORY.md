@@ -180,3 +180,39 @@ Verified: 3 real submits this round — jk=9ec8f0a8dcc3aaea, 40a2c4f9be4522b2 (+
 - ClickSolver (playwright_captcha) import error — harmless, audio solver covers it.
 - GitHub Actions datacenter IP may still trip "Try again later" (IP reputation) → residential
   proxy needed there (Bobur decides). Local home-IP runs work.
+
+
+---
+## Session: 2026-09-02 evening — CI unified to submit_one.py + dedup git-sync
+
+### ROOT CAUSE of "CI re-applies to already-applied jobs" + "Try again later on CI"
+- CI ran a SEPARATE old submitter `indeed_apply.py` (root), NOT the fixed `agent/submit_one.py`.
+  `indeed_apply.py` still had the OLD launch (plain `chromium.launch()` + `--no-sandbox` +
+  `--disable-blink-features` + fake UA, no persistent profile) → the screenshot's "unsupported
+  flag --no-sandbox" + "Try again later". My 4 locked fixes were only in submit_one.py.
+- Dedup files (`applied_jks.json`, `applied_titles.json`, `email_confirmed_titles.json`) were
+  UNTRACKED + never restored/committed by CI → CI had no idea what local runs applied to →
+  re-applied to the same jobs. Only `agent_memory.db` went through a flaky Actions cache.
+
+### FIX (Option A + dedup sync)
+1. `.github/workflows/indeed-apply.yml` now runs `agent/submit_one.py` (the FIXED flow) — one
+   submitter, no duplication. Env: INDEED_COOKIES, GEMINI_API_KEY, NOPECHA_API_KEY, GH_PAT,
+   ANSWERER_NO_ASK=1, TARGET_SUBMITS=10, HEADFUL=1. Runner is `self-hosted` (home IP — so the
+   "Try again later" datacenter-IP concern does NOT apply; comment in yaml confirms cookies are
+   IP-bound). GEMINI/NOPECHA secrets exist; INDEED_COOKIES updated 2026-09-02.
+2. Dedup now shared via GIT (not cache): the 4 dedup JSONs are committed. CI `git pull --rebase
+   --autostash` BEFORE the run (restore) and commits them AFTER (`applied_jks/applied_titles/
+   email_confirmed_titles/failed_jks/...`). Local runs share the same tracked files. No PII in
+   them (job hashes + public titles only) — safe for the PUBLIC repo.
+3. `submit_one.py load_cookies()` upgraded: reads INDEED_COOKIES base64 secret (CI) → file →
+   browser_cookie3. Verified: secret decode OK (40 cookies).
+4. `_launch()` now clears STALE Chrome SingletonLock/Cookie/Socket before launch — a crashed/
+   killed prior run left the persistent profile locked → `launch_persistent_context` failed
+   ("profile in use"). Removes only lock symlinks, keeps cookies/history. Critical for CI reruns.
+5. `click_submit` more patient: 7 attempts, settle grows `1.2 + attempt*0.8s`. Fixes intermittent
+   `submit_click_failed@pct100%` on the reCAPTCHA ENTERPRISE path (Enterprise token solved via
+   Google reload endpoint — NOT a page reload — but the Submit button re-enables slowly).
+
+### NOTE on the two entry points
+- `agent/submit_one.py` = THE submitter (local + CI now). `indeed_apply.py` (root) = legacy,
+  no longer used by CI. Do not add fixes to indeed_apply.py — everything lives in submit_one.py.

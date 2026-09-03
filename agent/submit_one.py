@@ -94,7 +94,33 @@ MAX_STEPS = 20
 
 
 def load_cookies():
-    c = json.load(open('data/indeed_cookies.json'))
+    # Source order: (1) INDEED_COOKIES env secret (base64 JSON — how CI provides them),
+    # (2) local data/indeed_cookies.json file, (3) live Chrome via browser_cookie3.
+    c = None
+    _env = os.environ.get('INDEED_COOKIES', '').strip()
+    if _env:
+        try:
+            import base64 as _b64
+            _raw = _b64.b64decode(_env).decode() if not _env.startswith('[') else _env
+            c = json.loads(_raw)
+            print(f"  🍪 loaded {len(c)} cookies from INDEED_COOKIES secret")
+        except Exception as _e:
+            print(f"  ⚠️ INDEED_COOKIES parse failed ({str(_e)[:40]}) — falling back to file")
+            c = None
+    if c is None:
+        try:
+            c = json.load(open('data/indeed_cookies.json'))
+        except Exception:
+            c = None
+    if c is None:
+        try:
+            import browser_cookie3
+            cj = browser_cookie3.chrome(domain_name='.indeed.com')
+            c = [{"name": k.name, "value": k.value, "domain": k.domain,
+                  "path": k.path, "secure": bool(k.secure)} for k in cj]
+            print(f"  🍪 extracted {len(c)} Indeed cookies from Chrome")
+        except Exception:
+            c = []
     for x in c:
         x['secure'] = bool(x.get('secure', False))
         if x.get('sameSite') not in ('Strict', 'Lax', 'None'):
@@ -196,12 +222,15 @@ def click_submit(page):
     """Click Submit and VERIFY it REALLY submitted. Returns True ONLY when a real
     confirmation is reached (post-apply URL or 'application submitted' text).
     A mere page change is NOT enough — it may just navigate elsewhere."""
-    for attempt in range(4):
+    for attempt in range(7):
         try:
             page.evaluate("() => window.scrollTo(0, document.body.scrollHeight)")
         except Exception:
             pass
-        time.sleep(1.2)
+        # Longer settle on later attempts — after an Enterprise token reload the
+        # Submit button can take several seconds to re-enable (fixes intermittent
+        # submit_click_failed@pct100% on the Enterprise path).
+        time.sleep(1.2 + attempt * 0.8)
         el = _find_submit(page)
         if el is None:
             # no submit button -> only success if a real confirmation is present
@@ -1328,6 +1357,15 @@ def main():
             # profile keeps cookies/history across runs so Google trusts the session.
             _prof_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '.chrome-profile')
             os.makedirs(_prof_dir, exist_ok=True)
+            # Clear STALE Chrome singleton locks left by a crashed/killed prior run.
+            # Without this, launch_persistent_context() fails with "profile in use"
+            # (would break the next scheduled CI run). Only removes lock symlinks —
+            # never the cookies/history that give us the trusted session.
+            for _lock in ('SingletonLock', 'SingletonCookie', 'SingletonSocket'):
+                try:
+                    os.unlink(os.path.join(_prof_dir, _lock))
+                except OSError:
+                    pass
             _launch_kw = dict(
                 user_data_dir=_prof_dir,
                 headless=not _headful,
