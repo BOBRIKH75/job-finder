@@ -963,3 +963,40 @@ checkout/user context and CANNOT access the logged-in .dice-profile on the local
 One manual step: `cd agent && DICE_MANUAL_LOGIN=1 HEADFUL=1 python3 dice_apply.py` (log in once).
 Then cds-dice-refresh keeps it fresh forever. To force a refresh now: `cds-dice-refresh`.
 launchctl: load/unload ~/Library/LaunchAgents/com.cds.dice-refresh.plist.
+
+
+---
+## Session: 2026-09-02 night — RECRUITER-FINDING diagnosis (NOT working as expected)
+
+### Bobur's ask
+Is real recruiter-finding working in CI?
+
+### Answer: NO — mostly broken. Evidence from the daily recruiter-discovery run:
+- "New recruiters found: 0" every run. Root causes (verified live):
+  1. Source 1 nvoids.com/search_jobs.jsp → HTTP 404 (endpoint changed; base domain 200).
+  2. Source 2 Google Groups /g/<group>/feed → HTTP 404 (Google removed public RSS; auth-walled now).
+  3. Hunter.io + Snov.io run but the staffing-domain list is largely exhausted (already-found) /
+     credit-limited → few/no new.
+  4. Apollo.io "SKIPPED (no cookies configured)" — the BEST source. recruiter_finder.py DOES
+     support it (checks APOLLO_COOKIES_B64) but the workflow didn't pass it. NOTE: apollo_scraper
+     uses SELENIUM (browser) → can't run on the requests-only ubuntu recruiter-discovery job;
+     it belongs in the apollo-recruiter-discovery weekly workflow (which installs selenium).
+  5. git push 403: the commit step had NO GH_TOKEN → even the +409 contacts it tried to commit
+     FAILED to push. So nothing was saved.
+
+### FIX applied (recruiter-discovery.yml)
+- checkout with token: ${{ secrets.GH_PAT }} + commit step env GH_TOKEN: ${{ secrets.GH_PAT }}
+  + git pull --rebase before push → results now SAVE (fixes the 403).
+- Did NOT add Apollo to this requests-only job (needs Selenium → would error); Apollo belongs in
+  apollo-recruiter-discovery weekly (runs-on ubuntu + pip install selenium webdriver-manager).
+
+### STILL TODO (recruiter-finding real fixes — next session)
+- Replace the 2 DEAD scrapers (nvoids search 404, Google Groups feed 404) with working sources
+  (e.g., Dice/Indeed recruiter emails already parsed during apply; the cloud find_jobs recruiter
+  extraction; or Hunter domain-search on FRESH company domains harvested from the jobs we apply to).
+- Verify apollo-recruiter-discovery weekly actually finds+saves (its log was boilerplate-heavy;
+  confirm apollo_outreach.py runs Selenium OK on ubuntu — chromedriver via webdriver-manager).
+- Best dynamic idea: harvest recruiter emails from the JOBS we already apply to (Dice/Indeed
+  postings often list a recruiter email) → feed into vendor_list.json → outreach. No external API needed.
+- Secrets present: HUNTER_API_KEY, SNOV_USER_ID/SECRET, APOLLO_API_KEY, APOLLO_COOKIES_B64,
+  APOLLO_EMAIL/PASSWORD, RESEND_KEY, GH_PAT. vendor_list.json has 68 existing contacts.
