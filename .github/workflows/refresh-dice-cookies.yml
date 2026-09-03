@@ -36,8 +36,13 @@ jobs:
           home = os.path.expanduser("~")
           cookies = []
 
-          # --- source 1: persistent profile's saved cookies (freshest, decrypted) ---
-          for p in ("agent/data/dice_cookies.json", "data/dice_cookies.json"):
+          # --- source 1: the REAL saved cookies in the home-dir repo (dice_apply writes them
+          # after each run; gitignored so NOT in the CI checkout — use the absolute home path). ---
+          candidates = [
+              f"{home}/Downloads/CV/job-finder/agent/data/dice_cookies.json",
+              "agent/data/dice_cookies.json", "data/dice_cookies.json",
+          ]
+          for p in candidates:
               if os.path.exists(p):
                   try:
                       c = json.load(open(p))
