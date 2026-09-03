@@ -1,70 +1,410 @@
 [
-  {"name": "Collabera", "email": "submit@collabera.com", "domain": "collabera.com", "notes": "Large IT staffing, C2C friendly, Java heavy"},
-  {"name": "Mastech Digital", "email": "jobs@mastechdigital.com", "domain": "mastechdigital.com", "notes": "Java/Spring Boot focused"},
-  {"name": "Pyramid Consulting", "email": "info@pyramidci.com", "domain": "pyramidci.com", "notes": "C2C accepted, backend Java"},
-  {"name": "TekSystems", "email": "jobs@teksystems.com", "domain": "teksystems.com", "notes": "Large IT staffing, corp-to-corp"},
-  {"name": "Kforce", "email": "careers@kforce.com", "domain": "kforce.com", "notes": "Technology staffing, contract Java roles"},
-  {"name": "Softpath System", "email": "staffing@softpath.net", "domain": "softpath.net", "notes": "IT staffing C2C Java microservices"},
-  {"name": "Skiltrek", "email": "submissions@skiltrek.com", "domain": "skiltrek.com", "notes": "Java/cloud, C2C friendly"},
-  {"name": "Talent Burst", "email": "info@talentburst.com", "domain": "talentburst.com", "notes": "IT contract staffing"},
-  {"name": "Motion Recruitment", "email": "jobs@motionrecruitment.com", "domain": "motionrecruitment.com", "notes": "Tech staffing, Java backend"},
-  {"name": "CyberCoders", "email": "apply@cybercoders.com", "domain": "cybercoders.com", "notes": "Tech recruiting, Java"},
-  {"name": "Randstad Technologies", "email": "techinfo@randstadusa.com", "domain": "randstad.com", "notes": "IT staffing, corp-to-corp"},
-  {"name": "Adecco Technical", "email": "us.tech@adeccousa.com", "domain": "adecco.com", "notes": "IT staffing corp-to-corp"},
-  {"name": "Cognizant Staffing", "email": "staffing@cognizant.com", "domain": "cognizant.com", "notes": "Java microservices projects"},
-  {"name": "Infosys BPM", "email": "careers@infosys.com", "domain": "infosys.com", "notes": "Java/Spring contract roles"},
-  {"name": "EPAM Systems", "email": "careers@epam.com", "domain": "epam.com", "notes": "Remote Java/Kotlin engineering"},
-  {"name": "Wipro Technologies", "email": "careers@wipro.com", "domain": "wipro.com", "notes": "Java backend projects"},
-  {"name": "HCL Technologies", "email": "us.talent@hcltech.com", "domain": "hcltech.com", "notes": "Java/Spring, large contract shop"},
-  {"name": "Syntel", "email": "info@syntelinc.com", "domain": "syntelinc.com", "notes": "IT staffing Java"},
-  {"name": "iGate", "email": "staffing@igate.com", "domain": "igate.com", "notes": "Java contract/C2C"},
-  {"name": "Bartech Staffing", "email": "info@bartechstaffing.com", "domain": "bartechstaffing.com", "notes": "Contract IT staffing"},
-  {"name": "Hanover Direct (Han Staffing)", "email": "info@hanstaffing.com", "domain": "hanstaffing.com", "notes": "Java C2C"},
-  {"name": "Sansom Staffing", "email": "info@sansomstaffing.com", "domain": "sansomstaffing.com", "notes": "IT Java contract"},
-  {"name": "Pacer Staffing", "email": "info@pacerstaffing.com", "domain": "pacerstaffing.com", "notes": "IT contract Java"},
-  {"name": "Synergy Staffing", "email": "info@synergystaffing.com", "domain": "synergystaffing.com", "notes": "Java backend contract"},
-  {"name": "United Tek Info", "email": "info@unitedtekinfo.com", "domain": "unitedtekinfo.com", "notes": "Java C2C corp-to-corp"},
-  {"name": "Brillfy", "email": "info@brillfy.com", "domain": "brillfy.com", "notes": "Java microservices staffing"},
-  {"name": "Modis (Experis)", "email": "info@modis.com", "domain": "modis.com", "notes": "IT contract Java"},
-  {"name": "Insight Global", "email": "contact@insightglobal.com", "domain": "insightglobal.com", "notes": "Large IT staffing, Java"},
-  {"name": "Robert Half Technology", "email": "technology@roberthalf.com", "domain": "roberthalf.com", "notes": "Tech contract Java"},
-  {"name": "Apex Systems", "email": "info@apexsystems.com", "domain": "apexsystems.com", "notes": "IT staffing Java/Spring"},
-  {"name": "Aerotek", "email": "info@aerotek.com", "domain": "aerotek.com", "notes": "Engineering/IT contract"},
-  {"name": "TEKsavvy", "email": "info@teksavvy.com", "domain": "teksavvy.com", "notes": "IT staffing Java"},
-  {"name": "Jobot", "email": "apply@jobot.com", "domain": "jobot.com", "notes": "Remote Java contract roles"},
-  {"name": "Hired.com", "email": "support@hired.com", "domain": "hired.com", "notes": "Tech hiring marketplace Java"},
-  {"name": "Gun.io", "email": "talent@gun.io", "domain": "gun.io", "notes": "Remote Java/backend freelance"},
-  {"name": "Toptal", "email": "apply@toptal.com", "domain": "toptal.com", "notes": "Elite remote Java freelance"},
-  {"name": "Turing", "email": "apply@turing.com", "domain": "turing.com", "notes": "Remote Java backend C2C"},
-  {"name": "Andela", "email": "talent@andela.com", "domain": "andela.com", "notes": "Remote Java contract"},
-  {"name": "Crossover", "email": "jobs@crossover.com", "domain": "crossover.com", "notes": "Remote Java senior roles"},
-  {"name": "Arc.dev", "email": "developers@arc.dev", "domain": "arc.dev", "notes": "Remote Java developer marketplace"},
-  {"name": "Lensa", "email": "info@lensa.com", "domain": "lensa.com", "notes": "Java job aggregator"},
-  {"name": "Dice", "email": "customersupport@dice.com", "domain": "dice.com", "notes": "Primary Java/IT job board"},
-  {"name": "SAIC", "email": "careers@saic.com", "domain": "saic.com", "notes": "Java backend, check clearance"},
-  {"name": "Leidos", "email": "staffing@leidos.com", "domain": "leidos.com", "notes": "Java engineering, check clearance"},
-  {"name": "ManTech", "email": "careers@mantech.com", "domain": "mantech.com", "notes": "Java, some non-clearance roles"},
-  {"name": "Unison", "email": "info@unison.com", "domain": "unison.com", "notes": "IT contract staffing"},
-  {"name": "AmeriSourceBergen Tech", "email": "staffing@amerisourcebergen.com", "domain": "amerisourcebergen.com", "notes": "Java contract healthcare tech"},
-  {"name": "Harvey Nash", "email": "info@harveynash.com", "domain": "harveynash.com", "notes": "IT staffing Java global"},
-  {"name": "Harnham", "email": "us@harnham.com", "domain": "harnham.com", "notes": "Data/engineering staffing Java"},
-  {"name": "iSoftStone", "email": "hr@isoftstone.com", "domain": "isoftstone.com", "notes": "Java/cloud contract"},
-  {"name": "Staffigo", "email": "info@staffigo.com", "domain": "staffigo.com", "notes": "Java C2C friendly staffing"},
-  {"name": "Sysnet Global Solutions", "email": "info@sysnetgs.com", "domain": "sysnetgs.com", "notes": "Java backend C2C contract"},
-  {"name": "Global IT", "email": "info@global-it.com", "domain": "global-it.com", "notes": "Java contract IT staffing"},
-  {"name": "VSoft Technologies", "email": "info@vsoftconsulting.com", "domain": "vsoftconsulting.com", "notes": "Java Spring Boot C2C"},
-  {"name": "Nityo Infotech", "email": "info@nityo.com", "domain": "nityo.com", "notes": "Java microservices C2C"},
-  {"name": "Innova Solutions", "email": "info@innovasolutions.com", "domain": "innovasolutions.com", "notes": "Java backend staffing"},
-  {"name": "Calance", "email": "info@calance.com", "domain": "calance.com", "notes": "Java IT staffing California"},
-  {"name": "iTechSolutions", "email": "info@itechsolutions.com", "domain": "itechsolutions.com", "notes": "Java staffing C2C"},
-  {"name": "Alten Technology", "email": "careers@alten.com", "domain": "alten.com", "notes": "Java engineering Europe + US"},
-  {"name": "Persistent Systems", "email": "careers@persistent.com", "domain": "persistent.com", "notes": "Java Spring Boot microservices"},
-  {"name": "Mphasis", "email": "careers@mphasis.com", "domain": "mphasis.com", "notes": "Java backend financial tech"},
-  {"name": "Hexaware", "email": "careers@hexaware.com", "domain": "hexaware.com", "notes": "Java contract staffing"},
-  {"name": "Brillio", "email": "careers@brillio.com", "domain": "brillio.com", "notes": "Java Kafka AWS remote roles"},
-  {"name": "Publicis Sapient", "email": "careers@sapient.com", "domain": "sapient.com", "notes": "Java Spring Boot consulting"},
-  {"name": "Globant", "email": "careers@globant.com", "domain": "globant.com", "notes": "Java remote contract"},
-  {"name": "Endava", "email": "careers@endava.com", "domain": "endava.com", "notes": "Java backend engineering"},
-  {"name": "SoftServe", "email": "careers@softserveinc.com", "domain": "softserveinc.com", "notes": "Java Kotlin remote"},
-  {"name": "Luxoft", "email": "careers@luxoft.com", "domain": "luxoft.com", "notes": "Java financial systems remote"}
+  {
+    "name": "Collabera",
+    "email": "submit@collabera.com",
+    "domain": "collabera.com",
+    "notes": "Large IT staffing, C2C friendly, Java heavy"
+  },
+  {
+    "name": "Mastech Digital",
+    "email": "jobs@mastechdigital.com",
+    "domain": "mastechdigital.com",
+    "notes": "Java/Spring Boot focused"
+  },
+  {
+    "name": "Pyramid Consulting",
+    "email": "info@pyramidci.com",
+    "domain": "pyramidci.com",
+    "notes": "C2C accepted, backend Java"
+  },
+  {
+    "name": "TekSystems",
+    "email": "jobs@teksystems.com",
+    "domain": "teksystems.com",
+    "notes": "Large IT staffing, corp-to-corp"
+  },
+  {
+    "name": "Kforce",
+    "email": "careers@kforce.com",
+    "domain": "kforce.com",
+    "notes": "Technology staffing, contract Java roles"
+  },
+  {
+    "name": "Softpath System",
+    "email": "staffing@softpath.net",
+    "domain": "softpath.net",
+    "notes": "IT staffing C2C Java microservices"
+  },
+  {
+    "name": "Skiltrek",
+    "email": "submissions@skiltrek.com",
+    "domain": "skiltrek.com",
+    "notes": "Java/cloud, C2C friendly"
+  },
+  {
+    "name": "Talent Burst",
+    "email": "info@talentburst.com",
+    "domain": "talentburst.com",
+    "notes": "IT contract staffing"
+  },
+  {
+    "name": "Motion Recruitment",
+    "email": "jobs@motionrecruitment.com",
+    "domain": "motionrecruitment.com",
+    "notes": "Tech staffing, Java backend"
+  },
+  {
+    "name": "CyberCoders",
+    "email": "apply@cybercoders.com",
+    "domain": "cybercoders.com",
+    "notes": "Tech recruiting, Java"
+  },
+  {
+    "name": "Randstad Technologies",
+    "email": "techinfo@randstadusa.com",
+    "domain": "randstad.com",
+    "notes": "IT staffing, corp-to-corp"
+  },
+  {
+    "name": "Adecco Technical",
+    "email": "us.tech@adeccousa.com",
+    "domain": "adecco.com",
+    "notes": "IT staffing corp-to-corp"
+  },
+  {
+    "name": "Cognizant Staffing",
+    "email": "staffing@cognizant.com",
+    "domain": "cognizant.com",
+    "notes": "Java microservices projects"
+  },
+  {
+    "name": "Infosys BPM",
+    "email": "careers@infosys.com",
+    "domain": "infosys.com",
+    "notes": "Java/Spring contract roles"
+  },
+  {
+    "name": "EPAM Systems",
+    "email": "careers@epam.com",
+    "domain": "epam.com",
+    "notes": "Remote Java/Kotlin engineering"
+  },
+  {
+    "name": "Wipro Technologies",
+    "email": "careers@wipro.com",
+    "domain": "wipro.com",
+    "notes": "Java backend projects"
+  },
+  {
+    "name": "HCL Technologies",
+    "email": "us.talent@hcltech.com",
+    "domain": "hcltech.com",
+    "notes": "Java/Spring, large contract shop"
+  },
+  {
+    "name": "Syntel",
+    "email": "info@syntelinc.com",
+    "domain": "syntelinc.com",
+    "notes": "IT staffing Java"
+  },
+  {
+    "name": "iGate",
+    "email": "staffing@igate.com",
+    "domain": "igate.com",
+    "notes": "Java contract/C2C"
+  },
+  {
+    "name": "Bartech Staffing",
+    "email": "info@bartechstaffing.com",
+    "domain": "bartechstaffing.com",
+    "notes": "Contract IT staffing"
+  },
+  {
+    "name": "Hanover Direct (Han Staffing)",
+    "email": "info@hanstaffing.com",
+    "domain": "hanstaffing.com",
+    "notes": "Java C2C"
+  },
+  {
+    "name": "Sansom Staffing",
+    "email": "info@sansomstaffing.com",
+    "domain": "sansomstaffing.com",
+    "notes": "IT Java contract"
+  },
+  {
+    "name": "Pacer Staffing",
+    "email": "info@pacerstaffing.com",
+    "domain": "pacerstaffing.com",
+    "notes": "IT contract Java"
+  },
+  {
+    "name": "Synergy Staffing",
+    "email": "info@synergystaffing.com",
+    "domain": "synergystaffing.com",
+    "notes": "Java backend contract"
+  },
+  {
+    "name": "United Tek Info",
+    "email": "info@unitedtekinfo.com",
+    "domain": "unitedtekinfo.com",
+    "notes": "Java C2C corp-to-corp"
+  },
+  {
+    "name": "Brillfy",
+    "email": "info@brillfy.com",
+    "domain": "brillfy.com",
+    "notes": "Java microservices staffing"
+  },
+  {
+    "name": "Modis (Experis)",
+    "email": "info@modis.com",
+    "domain": "modis.com",
+    "notes": "IT contract Java"
+  },
+  {
+    "name": "Insight Global",
+    "email": "contact@insightglobal.com",
+    "domain": "insightglobal.com",
+    "notes": "Large IT staffing, Java"
+  },
+  {
+    "name": "Robert Half Technology",
+    "email": "technology@roberthalf.com",
+    "domain": "roberthalf.com",
+    "notes": "Tech contract Java"
+  },
+  {
+    "name": "Apex Systems",
+    "email": "info@apexsystems.com",
+    "domain": "apexsystems.com",
+    "notes": "IT staffing Java/Spring"
+  },
+  {
+    "name": "Aerotek",
+    "email": "info@aerotek.com",
+    "domain": "aerotek.com",
+    "notes": "Engineering/IT contract"
+  },
+  {
+    "name": "TEKsavvy",
+    "email": "info@teksavvy.com",
+    "domain": "teksavvy.com",
+    "notes": "IT staffing Java"
+  },
+  {
+    "name": "Jobot",
+    "email": "apply@jobot.com",
+    "domain": "jobot.com",
+    "notes": "Remote Java contract roles"
+  },
+  {
+    "name": "Hired.com",
+    "email": "support@hired.com",
+    "domain": "hired.com",
+    "notes": "Tech hiring marketplace Java"
+  },
+  {
+    "name": "Gun.io",
+    "email": "talent@gun.io",
+    "domain": "gun.io",
+    "notes": "Remote Java/backend freelance"
+  },
+  {
+    "name": "Toptal",
+    "email": "apply@toptal.com",
+    "domain": "toptal.com",
+    "notes": "Elite remote Java freelance"
+  },
+  {
+    "name": "Turing",
+    "email": "apply@turing.com",
+    "domain": "turing.com",
+    "notes": "Remote Java backend C2C"
+  },
+  {
+    "name": "Andela",
+    "email": "talent@andela.com",
+    "domain": "andela.com",
+    "notes": "Remote Java contract"
+  },
+  {
+    "name": "Crossover",
+    "email": "jobs@crossover.com",
+    "domain": "crossover.com",
+    "notes": "Remote Java senior roles"
+  },
+  {
+    "name": "Arc.dev",
+    "email": "developers@arc.dev",
+    "domain": "arc.dev",
+    "notes": "Remote Java developer marketplace"
+  },
+  {
+    "name": "Lensa",
+    "email": "info@lensa.com",
+    "domain": "lensa.com",
+    "notes": "Java job aggregator"
+  },
+  {
+    "name": "Dice",
+    "email": "customersupport@dice.com",
+    "domain": "dice.com",
+    "notes": "Primary Java/IT job board"
+  },
+  {
+    "name": "SAIC",
+    "email": "careers@saic.com",
+    "domain": "saic.com",
+    "notes": "Java backend, check clearance"
+  },
+  {
+    "name": "Leidos",
+    "email": "staffing@leidos.com",
+    "domain": "leidos.com",
+    "notes": "Java engineering, check clearance"
+  },
+  {
+    "name": "ManTech",
+    "email": "careers@mantech.com",
+    "domain": "mantech.com",
+    "notes": "Java, some non-clearance roles"
+  },
+  {
+    "name": "Unison",
+    "email": "info@unison.com",
+    "domain": "unison.com",
+    "notes": "IT contract staffing"
+  },
+  {
+    "name": "AmeriSourceBergen Tech",
+    "email": "staffing@amerisourcebergen.com",
+    "domain": "amerisourcebergen.com",
+    "notes": "Java contract healthcare tech"
+  },
+  {
+    "name": "Harvey Nash",
+    "email": "info@harveynash.com",
+    "domain": "harveynash.com",
+    "notes": "IT staffing Java global"
+  },
+  {
+    "name": "Harnham",
+    "email": "us@harnham.com",
+    "domain": "harnham.com",
+    "notes": "Data/engineering staffing Java"
+  },
+  {
+    "name": "iSoftStone",
+    "email": "hr@isoftstone.com",
+    "domain": "isoftstone.com",
+    "notes": "Java/cloud contract"
+  },
+  {
+    "name": "Staffigo",
+    "email": "info@staffigo.com",
+    "domain": "staffigo.com",
+    "notes": "Java C2C friendly staffing"
+  },
+  {
+    "name": "Sysnet Global Solutions",
+    "email": "info@sysnetgs.com",
+    "domain": "sysnetgs.com",
+    "notes": "Java backend C2C contract"
+  },
+  {
+    "name": "Global IT",
+    "email": "info@global-it.com",
+    "domain": "global-it.com",
+    "notes": "Java contract IT staffing"
+  },
+  {
+    "name": "VSoft Technologies",
+    "email": "info@vsoftconsulting.com",
+    "domain": "vsoftconsulting.com",
+    "notes": "Java Spring Boot C2C"
+  },
+  {
+    "name": "Nityo Infotech",
+    "email": "info@nityo.com",
+    "domain": "nityo.com",
+    "notes": "Java microservices C2C"
+  },
+  {
+    "name": "Innova Solutions",
+    "email": "info@innovasolutions.com",
+    "domain": "innovasolutions.com",
+    "notes": "Java backend staffing"
+  },
+  {
+    "name": "Calance",
+    "email": "info@calance.com",
+    "domain": "calance.com",
+    "notes": "Java IT staffing California"
+  },
+  {
+    "name": "iTechSolutions",
+    "email": "info@itechsolutions.com",
+    "domain": "itechsolutions.com",
+    "notes": "Java staffing C2C"
+  },
+  {
+    "name": "Alten Technology",
+    "email": "careers@alten.com",
+    "domain": "alten.com",
+    "notes": "Java engineering Europe + US"
+  },
+  {
+    "name": "Persistent Systems",
+    "email": "careers@persistent.com",
+    "domain": "persistent.com",
+    "notes": "Java Spring Boot microservices"
+  },
+  {
+    "name": "Mphasis",
+    "email": "careers@mphasis.com",
+    "domain": "mphasis.com",
+    "notes": "Java backend financial tech"
+  },
+  {
+    "name": "Hexaware",
+    "email": "careers@hexaware.com",
+    "domain": "hexaware.com",
+    "notes": "Java contract staffing"
+  },
+  {
+    "name": "Brillio",
+    "email": "careers@brillio.com",
+    "domain": "brillio.com",
+    "notes": "Java Kafka AWS remote roles"
+  },
+  {
+    "name": "Publicis Sapient",
+    "email": "careers@sapient.com",
+    "domain": "sapient.com",
+    "notes": "Java Spring Boot consulting"
+  },
+  {
+    "name": "Globant",
+    "email": "careers@globant.com",
+    "domain": "globant.com",
+    "notes": "Java remote contract"
+  },
+  {
+    "name": "Endava",
+    "email": "careers@endava.com",
+    "domain": "endava.com",
+    "notes": "Java backend engineering"
+  },
+  {
+    "name": "SoftServe",
+    "email": "careers@softserveinc.com",
+    "domain": "softserveinc.com",
+    "notes": "Java Kotlin remote"
+  },
+  {
+    "name": "Luxoft",
+    "email": "careers@luxoft.com",
+    "domain": "luxoft.com",
+    "notes": "Java financial systems remote"
+  }
 ]
