@@ -1,7 +1,9 @@
 name: Refresh Dice Cookies (Auto)
 
 # Keeps DICE_COOKIES fresh so the Dice apply flow never hits login_redirect.
-# Dice session cookies expire over time; this refreshes the secret automatically.
+# Opens the SAME persistent .dice-profile that dice_apply uses, refreshes the live Dice
+# session, and exports fresh cookies to the DICE_COOKIES secret. Self-hosted (the profile
+# with the login lives on that machine). No manual step ever.
 on:
   schedule:
     - cron: "0 12 */3 * *"   # every 3 days, 6 AM MT (before the apply schedules)
@@ -12,94 +14,88 @@ permissions:
 
 jobs:
   refresh:
-    runs-on: self-hosted   # same machine that holds the logged-in .dice-profile
-    timeout-minutes: 6
+    runs-on: self-hosted
+    timeout-minutes: 8
+    defaults:
+      run:
+        working-directory: agent
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Refresh DICE_COOKIES secret from freshest source
+      - name: Refresh Dice session + update DICE_COOKIES secret
         env:
           GH_TOKEN: ${{ secrets.GH_PAT }}
         run: |
-          cd $GITHUB_WORKSPACE
           python3 << 'EOF'
-          """Refresh DICE_COOKIES from the freshest available source:
-             1) agent/data/dice_cookies.json — saved (decrypted) by dice_apply.py after each
-                successful login/run; ALWAYS fresh + already in Playwright format. Preferred.
-             2) Chrome's SQLite Cookies DB (dice.com host) — fallback.
-             Filters to dice.com cookies only (fits GitHub's secret size limit), base64-encodes,
-             and updates the DICE_COOKIES secret via gh.
-          """
-          import json, os, base64, subprocess, sqlite3, shutil, tempfile, glob
+          """Open the persistent .dice-profile (the one dice_apply logs into), visit dice.com
+          to refresh the live session, export fresh dice.com cookies, and set DICE_COOKIES.
+          The profile lives in the home-dir repo (gitignored), NOT this CI checkout — so we
+          locate it by absolute path relative to this repo's known home location."""
+          import json, os, base64, subprocess, glob, sys
 
-          home = os.path.expanduser("~")
+          # locate the persistent profile dice_apply uses (home-dir repo, any user)
+          prof = None
+          for base in glob.glob(os.path.expanduser("~/Downloads/CV/job-finder/agent/.dice-profile")) + \
+                       glob.glob("/Users/*/Downloads/CV/job-finder/agent/.dice-profile") + \
+                       [os.path.abspath(".dice-profile")]:
+              if os.path.isdir(base):
+                  prof = base; break
+          if not prof:
+              print("❌ .dice-profile not found on this runner — run DICE_MANUAL_LOGIN=1 locally once."); sys.exit(1)
+          print(f"  📂 using profile: {prof}")
+
+          try:
+              from patchright.sync_api import sync_playwright
+          except Exception:
+              from playwright.sync_api import sync_playwright
+
           cookies = []
+          for l in ("SingletonLock", "SingletonCookie", "SingletonSocket"):
+              try: os.unlink(os.path.join(prof, l))
+              except OSError: pass
+          with sync_playwright() as pw:
+              try:
+                  ctx = pw.chromium.launch_persistent_context(prof, channel="chrome", headless=True, no_viewport=True)
+              except Exception:
+                  ctx = pw.chromium.launch_persistent_context(prof, headless=True, no_viewport=True)
+              pg = ctx.pages[0] if ctx.pages else ctx.new_page()
+              try:
+                  pg.goto("https://www.dice.com/dashboard/applications", wait_until="domcontentloaded", timeout=30000)
+                  import time; time.sleep(4)
+              except Exception as e:
+                  print(f"  ⚠️ nav: {e}")
+              url = pg.url or ""
+              cookies = [c for c in ctx.cookies() if "dice.com" in (c.get("domain","") or "")]
+              # also persist to the profile's cookie file for dice_apply reuse
+              try:
+                  os.makedirs(os.path.join(os.path.dirname(prof), "data"), exist_ok=True)
+                  json.dump(ctx.cookies(), open(os.path.join(os.path.dirname(prof), "data", "dice_cookies.json"), "w"))
+              except Exception: pass
+              ctx.close()
 
-          # --- source 1: the REAL saved cookies in the home-dir repo (dice_apply writes them
-          # after each run; gitignored so NOT in the CI checkout — use the absolute home path). ---
-          candidates = [
-              f"{home}/Downloads/CV/job-finder/agent/data/dice_cookies.json",
-              "agent/data/dice_cookies.json", "data/dice_cookies.json",
-          ]
-          for p in candidates:
-              if os.path.exists(p):
-                  try:
-                      c = json.load(open(p))
-                      cookies = [x for x in c if "dice.com" in (x.get("domain", "") or "")]
-                      if cookies:
-                          print(f"  ✅ source 1: {len(cookies)} dice cookies from {p}")
-                          break
-                  except Exception as e:
-                      print(f"  ⚠️ {p}: {e}")
-
-          # --- source 2: Chrome SQLite DB fallback ---
-          if not cookies:
-              paths = glob.glob(f"{home}/Library/Application Support/Google/Chrome/*/Cookies")
-              for db in paths:
-                  tmp = tempfile.mktemp(suffix=".db")
-                  try:
-                      shutil.copy2(db, tmp)
-                      conn = sqlite3.connect(tmp)
-                      for name, value, dom, path, sec in conn.execute(
-                          "SELECT name,value,host_key,path,is_secure FROM cookies "
-                          "WHERE host_key LIKE '%dice.com%'"):
-                          if value:
-                              cookies.append({"name": name, "value": value, "domain": dom,
-                                              "path": path, "secure": bool(sec)})
-                      conn.close()
-                  except Exception as e:
-                      print(f"  ⚠️ {db}: {e}")
-                  finally:
-                      try: os.unlink(tmp)
-                      except OSError: pass
-                  if cookies:
-                      print(f"  ✅ source 2: {len(cookies)} dice cookies from Chrome DB")
-                      break
-
-          if not cookies:
-              print("  ❌ No Dice cookies found. Re-login locally:")
+          if "login" in url.lower():
+              print("  ❌ profile session EXPIRED (redirected to login). Re-login once locally:")
               print("     cd agent && DICE_MANUAL_LOGIN=1 HEADFUL=1 python3 dice_apply.py")
-              raise SystemExit(1)
+              sys.exit(1)
+          if not cookies:
+              print("  ❌ no dice cookies from profile"); sys.exit(1)
 
           names = {c["name"] for c in cookies}
-          # Dice session/auth cookies we want present
-          has_session = any(n in names for n in ("DLI", "SERVERID", "_gd_session", "_gd_visitor"))
-          print(f"  📋 {len(cookies)} cookies; session tokens present: {has_session}")
+          print(f"  ✅ refreshed session — {len(cookies)} dice cookies; "
+                f"session tokens: {any(n in names for n in ('DLI','SERVERID','_gd_session','_gd_visitor'))}")
 
           encoded = base64.b64encode(json.dumps(cookies).encode()).decode()
           if len(encoded) > 48000:
-              # trim to just the essential session cookies if too large for a GH secret
               essential = [c for c in cookies if c["name"] in
-                           ("DLI", "SERVERID", "_gd_session", "_gd_visitor", "__ssid", "CMS_Cookie")]
+                           ("DLI","SERVERID","_gd_session","_gd_visitor","__ssid","CMS_Cookie")]
               encoded = base64.b64encode(json.dumps(essential).encode()).decode()
-              print(f"  ✂️  trimmed to {len(essential)} essential cookies ({len(encoded)}b)")
+              print(f"  ✂️  trimmed to {len(essential)} essential cookies")
 
-          r = subprocess.run(["gh", "secret", "set", "DICE_COOKIES", "--body", encoded,
-                              "--repo", "BOBRIKH75/job-finder"], capture_output=True, text=True)
+          r = subprocess.run(["gh","secret","set","DICE_COOKIES","--body",encoded,
+                              "--repo","BOBRIKH75/job-finder"], capture_output=True, text=True)
           if r.returncode == 0:
-              print(f"  ✅ DICE_COOKIES refreshed ({len(cookies)} cookies) — auto every 3 days")
+              print(f"  ✅ DICE_COOKIES refreshed — auto every 3 days, fully dynamic")
           else:
-              print(f"  ❌ gh secret set failed: {r.stderr[:200]}")
-              raise SystemExit(1)
+              print(f"  ❌ gh secret set failed: {r.stderr[:200]}"); sys.exit(1)
           EOF
