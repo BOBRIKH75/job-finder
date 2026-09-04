@@ -216,7 +216,7 @@ def main():
     # ANTI-SPAM: cap sends per run + space them out. Never blast the whole list at once (a burst
     # of identical-source emails is a block trigger). Weekly schedule + cap spreads outreach.
     import random
-    DAILY_CAP = int(os.environ.get('OUTREACH_DAILY_CAP', '15'))
+    DAILY_CAP = int(os.environ.get('OUTREACH_DAILY_CAP', '40'))
     if len(to_contact) > DAILY_CAP:
         # oldest-contacted first (fairness), then cap
         to_contact = to_contact[:DAILY_CAP]

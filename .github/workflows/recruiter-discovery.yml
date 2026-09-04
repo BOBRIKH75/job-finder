@@ -41,6 +41,12 @@ jobs:
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
         run: python scripts/recruiter_from_inbox.py
 
+      - name: DEEP find — companies -> recruiter emails (free, MX + careers-page)
+        env:
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+        run: python scripts/deep_recruiter_find.py || true
+
       - name: Mine MORE jobs from recruiter emails
         env:
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
@@ -55,7 +61,7 @@ jobs:
           cd $GITHUB_WORKSPACE
           git config user.email "bot@github.actions"
           git config user.name "Recruiter Discovery Bot"
-          git add agent/data/vendor_list.json agent/data/applied_companies.json agent/data/recruiter_job_leads.json 2>/dev/null || true
+          git add agent/data/vendor_list.json agent/data/applied_companies.json agent/data/recruiter_job_leads.json agent/data/deep_find_seen.json 2>/dev/null || true
           git diff --staged --quiet || git commit -m "recruiter: sync new contacts [skip ci]"
           git pull --rebase --autostash || true
           git push || true
