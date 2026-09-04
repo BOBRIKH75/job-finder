@@ -177,6 +177,10 @@ def _job_id(url):
 # ---- browser ----
 def _launch(pw, headful):
     os.makedirs(PROFILE_DIR, exist_ok=True)
+    # DEBUG: show the exact profile path CI uses + whether it holds a session (Cookies file)
+    _cookies_db = os.path.join(PROFILE_DIR, 'Default', 'Cookies')
+    print(f"  📁 profile: {PROFILE_DIR}  (exists={os.path.isdir(PROFILE_DIR)}, "
+          f"session_db={os.path.exists(_cookies_db)}, HOME_env={os.environ.get('HOME','')})", flush=True)
     for lock in ('SingletonLock', 'SingletonCookie', 'SingletonSocket'):
         try:
             os.unlink(os.path.join(PROFILE_DIR, lock))
