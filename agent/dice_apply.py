@@ -639,8 +639,31 @@ def main():
             if should_apply and os.environ.get('CV_MATCH_OFF') != '1':
                 ok, score, why = should_apply(title, '', 'Remote')
                 if not ok:
-                    print(f"  ⏭️ off-CV: '{title[:40]}' (score={score} {','.join(why)})")
-                    continue
+                    # Generic-title SOFT reject (score >= -5, e.g. "Software Engineer"): the TITLE
+                    # lacks a Java signal but the DESCRIPTION might have it. Open the job and
+                    # re-check with the real description before skipping — recovers Java jobs
+                    # hidden behind generic titles. Hard negatives (.NET/Python/C++, score<=-10)
+                    # skip fast (no wasted page open).
+                    if score is not None and score >= -5 and os.environ.get('DICE_DEEP_CV', '1') == '1':
+                        try:
+                            page.goto(url, wait_until='domcontentloaded', timeout=25000)
+                            time.sleep(2)
+                            desc = page.evaluate(
+                                "() => (document.querySelector('[data-testid=\"jobDescriptionHtml\"]')"
+                                " || document.body).innerText || ''")[:4000]
+                            ok2, score2, why2 = should_apply(title, desc, 'Remote')
+                            if ok2:
+                                print(f"  ✅ recovered via description: '{title[:40]}' (score={score2})")
+                                ok, score, why = ok2, score2, why2
+                            else:
+                                print(f"  ⏭️ off-CV (desc-checked): '{title[:40]}' (score={score2})")
+                                continue
+                        except Exception:
+                            print(f"  ⏭️ off-CV: '{title[:40]}' (score={score}, desc check failed)")
+                            continue
+                    else:
+                        print(f"  ⏭️ off-CV: '{title[:40]}' (score={score} {','.join(why)})")
+                        continue
             # ---- DB atomic claim (concurrent-safe) ----
             if not claim_job(db, 'dice:' + (title or ''), title):
                 print(f"  🔒 claimed by another run — skip: {title[:35]}"); continue
