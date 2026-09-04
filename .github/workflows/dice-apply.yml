@@ -51,7 +51,15 @@ jobs:
           source $GITHUB_WORKSPACE/.venv/bin/activate || true
           python3 -m pip install --upgrade pip setuptools wheel
           python3 -m pip install -r requirements.txt
-          python3 -m patchright install chrome || python3 -m playwright install chromium --with-deps || true
+          # Use the runner's ALREADY-INSTALLED Chrome (this laptop uses Chrome daily). patchright
+          # channel="chrome" launches that system Chrome — no download needed. Only install the
+          # bundled browser as a fallback; never fail the step (|| true).
+          if [ -d "/Applications/Google Chrome.app" ] || command -v google-chrome >/dev/null 2>&1; then
+            echo "✅ system Chrome present — patchright will use channel=chrome (no install)"
+          else
+            echo "⚠️ no system Chrome — installing patchright chrome"
+            python3 -m patchright install chrome || python3 -m playwright install chromium || true
+          fi
 
       - name: Initialize database
         run: python3 -c "from src.memory import get_db, init_db; db = get_db(); init_db(db)"
@@ -89,6 +97,16 @@ jobs:
         run: |
           cd $GITHUB_WORKSPACE/agent
           python3 check_dice_confirmations.py --since-min 45 || true
+
+      - name: Upload login debug screenshots (if any)
+        if: always()
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: dice-login-debug
+          path: agent/data/dice_login_*.png
+          if-no-files-found: ignore
+          retention-days: 5
 
       - name: Commit dedup + lessons state (shared with local)
         if: always()

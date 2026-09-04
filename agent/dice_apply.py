@@ -420,34 +420,66 @@ def main():
         def _auto_login():
             email = os.environ.get('DICE_EMAIL', ''); pwd = os.environ.get('DICE_PASSWORD', '')
             if not email or not pwd:
+                print("  ⚠️ no DICE_EMAIL/DICE_PASSWORD in env — cannot auto-login")
                 return False
             try:
                 page.goto('https://www.dice.com/dashboard/login',
                           wait_until='domcontentloaded', timeout=30000)
                 time.sleep(3)
-                # step 1: email
-                page.fill('input[name="email"], input[type="email"]', email, timeout=8000)
+                print(f"  🔐 login page: {page.url[:70]}")
+                # captcha/challenge check (research: Dice-type sites block automated login)
+                body = (page.content() or '').lower()
+                for sig in ('captcha', 'recaptcha', 'are you a robot', 'verify you are human',
+                            'unusual activity', 'px-captcha', 'perimeterx'):
+                    if sig in body:
+                        print(f"  🛑 login blocked by challenge: '{sig}' — automated login not possible here")
+                        page.screenshot(path='data/dice_login_blocked.png')
+                        return False
+                # step 1: email — type like a human
+                email_sel = 'input[name="email"], input[type="email"], input#email'
+                page.wait_for_selector(email_sel, timeout=10000)
+                page.click(email_sel); page.type(email_sel, email, delay=90)
                 time.sleep(1)
-                for b in page.locator('button').all():
+                clicked = False
+                for b in page.locator('button, [role="button"]').all():
                     try:
-                        if 'continue with email' in (b.inner_text() or '').lower():
-                            b.click(); break
+                        t = (b.inner_text() or '').lower()
+                        if 'continue' in t or 'next' in t:
+                            b.click(); clicked = True; break
                     except Exception:
                         continue
+                if not clicked:
+                    page.keyboard.press('Enter')
                 time.sleep(3)
-                # step 2: password
-                page.fill('input[name="password"], input[type="password"]', pwd, timeout=8000)
+                print(f"  → after email step: {page.url[:70]}")
+                # step 2: password — type like a human
+                pwd_sel = 'input[name="password"], input[type="password"], input#password'
+                page.wait_for_selector(pwd_sel, timeout=10000)
+                page.click(pwd_sel); page.type(pwd_sel, pwd, delay=90)
                 time.sleep(1)
-                for b in page.locator('button').all():
+                clicked = False
+                for b in page.locator('button, [role="button"]').all():
                     try:
-                        if (b.inner_text() or '').strip().lower() in ('sign in', 'log in', 'login'):
-                            b.click(); break
+                        t = (b.inner_text() or '').strip().lower()
+                        if t in ('sign in', 'log in', 'login', 'submit') or 'sign in' in t:
+                            b.click(); clicked = True; break
                     except Exception:
                         continue
+                if not clicked:
+                    page.keyboard.press('Enter')
                 time.sleep(6)
-                return _dice_logged_in()
+                print(f"  → after password step: {page.url[:70]}")
+                ok = _dice_logged_in()
+                if not ok:
+                    try: page.screenshot(path='data/dice_login_failed.png')
+                    except Exception: pass
+                    print(f"  ❌ auto-login did not reach home-feed (lands on {page.url[:60]}) "
+                          f"— check data/dice_login_failed.png artifact")
+                return ok
             except Exception as e:
-                print(f"  ⚠️ auto-login error: {str(e)[:60]}")
+                print(f"  ⚠️ auto-login error: {str(e)[:120]}")
+                try: page.screenshot(path='data/dice_login_error.png')
+                except Exception: pass
                 return False
 
         _logged = _dice_logged_in()
@@ -481,8 +513,9 @@ def main():
             print("  ⛔ NOT logged into Dice (no creds / login failed) — applies will login_redirect. "
                   "Set DICE_EMAIL+DICE_PASSWORD in agent/.env, or run DICE_MANUAL_LOGIN=1 and log in.")
 
-        terms = [os.environ.get('DICE_TERM', 'Java Spring Boot'),
-                 'Java backend developer', 'Java microservices',
+        # CV-matched query pool (Java/Spring/backend/remote — all close to Bob's CV).
+        _custom = os.environ.get('DICE_TERM', '').strip()
+        _pool = ['Java backend developer', 'Java microservices',
                  'Senior Java developer', 'Java developer remote',
                  'Java AWS developer', 'Spring Boot microservices',
                  'Java REST API developer', 'Java software engineer',
@@ -490,6 +523,20 @@ def main():
                  'Java Kafka developer', 'Java Spring Cloud', 'Java backend engineer',
                  'Lead Java developer', 'Java API developer', 'Spring Boot engineer',
                  'Java Kubernetes microservices', 'Java Spring developer', 'backend Java engineer']
+        # rotate the pool start each run (persist cursor) so runs cover DIFFERENT queries first
+        _cur_file = 'data/dice_query_cursor.json'
+        try:
+            _cur = json.load(open(_cur_file)).get('i', 0)
+        except Exception:
+            _cur = 0
+        _pool = _pool[_cur % len(_pool):] + _pool[:_cur % len(_pool)]
+        try:
+            os.makedirs('data', exist_ok=True)
+            json.dump({'i': (_cur + 3) % 19}, open(_cur_file, 'w'))
+        except Exception:
+            pass
+        # custom term (dispatch input) always leads if provided; else default Java Spring Boot
+        terms = ([_custom] if _custom else ['Java Spring Boot']) + _pool
         _pages = int(os.environ.get('DICE_SEARCH_PAGES', '3'))
         jobs = []
         seen = set()
