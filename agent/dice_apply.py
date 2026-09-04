@@ -99,7 +99,13 @@ def _save_json_set(path, s):
 
 def _load_dead():
     try:
-        return json.load(open(DEAD_FILE))
+        d = json.load(open(DEAD_FILE))
+        if isinstance(d, dict):
+            return d
+        # tolerate a list format (e.g. from a merge) -> convert to {id: MAX_FAILS}
+        if isinstance(d, list):
+            return {str(x): MAX_FAILS for x in d}
+        return {}
     except Exception:
         return {}
 
