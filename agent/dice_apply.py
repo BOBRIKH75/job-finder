@@ -287,6 +287,28 @@ def _apply_one(page, url, title):
     # detect session-expired redirect (apply needs login) → distinct reason for self-heal
     if 'login' in (page.url or '').lower():
         return 'login_redirect', company
+    # Dice shows an "Applied" state on the button for jobs already applied to (Bobur's tip).
+    # Trust Dice's own state → skip immediately (also covers applies made outside our dedup files).
+    try:
+        already = page.evaluate(r"""() => {
+            const btn = document.querySelector('[data-testid="apply-button"], button, a');
+            const scan = (document.body.innerText || '').toLowerCase();
+            // button text or a page badge that means already-applied
+            const phrases = ['application submitted', 'you applied', "you've applied",
+                             'already applied', 'applied on', 'application sent'];
+            // check the apply control text first (most reliable)
+            const controls = Array.from(document.querySelectorAll('[data-testid="apply-button"], button, a'));
+            for (const c of controls) {
+                const t = (c.textContent || '').trim().toLowerCase();
+                if (t === 'applied' || t === 'application submitted' || t.startsWith('applied')) return true;
+            }
+            return phrases.some(p => scan.includes(p));
+        }""")
+        if already:
+            print(f"  ⏭️ Dice says ALREADY APPLIED — skip: {title[:40]}")
+            return 'already_applied', company
+    except Exception:
+        pass
     # find + click Apply (Dice uses <a data-testid="apply-button">Apply Now</a>)
     clicked = False
     # wait for the apply control to render (learned: DICE_BTN_WAIT longer if it rendered late)
@@ -685,6 +707,13 @@ def main():
                 except Exception:
                     pass
                 print(f"  ✅ SUBMITTED #{submitted}: {title[:45]} @ {company[:20]}")
+            elif result == 'already_applied':
+                # Dice's own "Applied" state → add to dedup so we never re-open it, no fail count
+                release_claim(db, 'dice:' + (title or ''), title)
+                if jid:
+                    applied_ids.add(jid); _save_json_set(JK_FILE, applied_ids)
+                if nt:
+                    applied_titles.add(nt); _save_json_set(APPLIED_FILE, applied_titles); _seen_titles.add(nt)
             else:
                 release_claim(db, 'dice:' + (title or ''), title)   # not applied → free claim
                 if jid:
