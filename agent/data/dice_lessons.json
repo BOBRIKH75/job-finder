@@ -2,5 +2,9 @@
   "incomplete": {
     "count": 37,
     "fix": "more_wizard_steps"
+  },
+  "login_redirect": {
+    "count": 21,
+    "fix": "need_fresh_login"
   }
 }

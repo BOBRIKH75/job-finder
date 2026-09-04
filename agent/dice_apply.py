@@ -381,38 +381,81 @@ def main():
         ctx = _launch(pw, headful)
         page = ctx.pages[0] if ctx.pages else ctx.new_page()
 
-        # MANUAL LOGIN (DICE_MANUAL_LOGIN=1): the apply WIZARD needs a full authenticated
-        # session (exported cookies alone redirect to /login). Open the login page, wait for
-        # the user to log in by hand in this persistent-profile window, then save FRESH
-        # cookies (incl session tokens) so this run — and future runs — can apply.
-        if os.environ.get('DICE_MANUAL_LOGIN') == '1':
+        # ── DYNAMIC LOGIN ───────────────────────────────────────────────────
+        # The apply WIZARD needs a full authenticated session. Verify via /home-feed
+        # (logged-out redirects to /dashboard/login). If logged out, AUTO-LOGIN with
+        # DICE_EMAIL/DICE_PASSWORD (2-step). Manual window is the fallback.
+        def _dice_logged_in():
+            try:
+                page.goto('https://www.dice.com/home-feed', wait_until='domcontentloaded', timeout=25000)
+                time.sleep(3)
+                return 'login' not in (page.url or '').lower()
+            except Exception:
+                return False
+
+        def _auto_login():
+            email = os.environ.get('DICE_EMAIL', ''); pwd = os.environ.get('DICE_PASSWORD', '')
+            if not email or not pwd:
+                return False
             try:
                 page.goto('https://www.dice.com/dashboard/login',
                           wait_until='domcontentloaded', timeout=30000)
-            except Exception:
-                pass
-            print("  👤 MANUAL LOGIN: log into Dice in the open Chrome window now (up to 180s)...")
-            _ok = False
-            for _ in range(60):
                 time.sleep(3)
-                try:
-                    u = page.url or ''
-                    body = (page.locator('body').inner_text(timeout=2000) or '').lower()
-                except Exception:
-                    u, body = '', ''
-                if 'login' not in u and ('log out' in body or 'my profile' in body
-                                         or 'dashboard' in u or 'home-feed' in u):
-                    _ok = True
-                    break
-            if _ok:
+                # step 1: email
+                page.fill('input[name="email"], input[type="email"]', email, timeout=8000)
+                time.sleep(1)
+                for b in page.locator('button').all():
+                    try:
+                        if 'continue with email' in (b.inner_text() or '').lower():
+                            b.click(); break
+                    except Exception:
+                        continue
+                time.sleep(3)
+                # step 2: password
+                page.fill('input[name="password"], input[type="password"]', pwd, timeout=8000)
+                time.sleep(1)
+                for b in page.locator('button').all():
+                    try:
+                        if (b.inner_text() or '').strip().lower() in ('sign in', 'log in', 'login'):
+                            b.click(); break
+                    except Exception:
+                        continue
+                time.sleep(6)
+                return _dice_logged_in()
+            except Exception as e:
+                print(f"  ⚠️ auto-login error: {str(e)[:60]}")
+                return False
+
+        _logged = _dice_logged_in()
+        if not _logged:
+            print("  🔑 session logged out — attempting AUTO-LOGIN (DICE_EMAIL/DICE_PASSWORD)...")
+            _logged = _auto_login()
+            if _logged:
+                print("  ✅ auto-login succeeded (session at /home-feed)")
                 try:
                     os.makedirs('data', exist_ok=True)
                     json.dump(ctx.cookies(), open(COOKIE_FILE, 'w'))
-                    print("     🍪 login detected — saved fresh cookies (apply wizard now authenticated)")
                 except Exception:
                     pass
-            else:
-                print("     ⚠️ login not detected within 180s — continuing anyway")
+        if not _logged and os.environ.get('DICE_MANUAL_LOGIN') == '1':
+            try:
+                page.goto('https://www.dice.com/dashboard/login', wait_until='domcontentloaded', timeout=30000)
+            except Exception:
+                pass
+            print("  👤 MANUAL LOGIN fallback: log into Dice in the Chrome window (up to 180s)...")
+            for _ in range(60):
+                time.sleep(3)
+                if _dice_logged_in():
+                    _logged = True
+                    try:
+                        json.dump(ctx.cookies(), open(COOKIE_FILE, 'w'))
+                    except Exception:
+                        pass
+                    print("     🍪 login detected + saved")
+                    break
+        if not _logged:
+            print("  ⛔ NOT logged into Dice (no creds / login failed) — applies will login_redirect. "
+                  "Set DICE_EMAIL+DICE_PASSWORD in agent/.env, or run DICE_MANUAL_LOGIN=1 and log in.")
 
         terms = [os.environ.get('DICE_TERM', 'Java Spring Boot'),
                  'Java backend developer', 'Java microservices',
