@@ -59,8 +59,11 @@ except Exception:
     except Exception:
         fill_questions_page = is_questions_page = None
 
-PROFILE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), '.dice-profile')
-COOKIE_FILE = 'data/dice_cookies.json'
+# Profile lives in the RUNNER'S HOME (fixed path), NOT the git checkout — so a manual login
+# persists across CI runs (the checkout's .dice-profile is gitignored/fresh each run = always
+# logged out; that's why CI couldn't log in). Log in ONCE into this profile and CI reuses it.
+PROFILE_DIR = os.environ.get('DICE_PROFILE_DIR', os.path.expanduser('~/.dice-profile'))
+COOKIE_FILE = os.environ.get('DICE_COOKIE_FILE', os.path.expanduser('~/.dice-profile/dice_cookies.json'))
 APPLIED_FILE = 'agent/data/dice_applied.json' if os.path.isdir('agent') else 'data/dice_applied.json'
 JK_FILE = 'data/dice_applied_ids.json'
 FAILED_FILE = 'data/dice_failed_ids.json'
