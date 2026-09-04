@@ -10,7 +10,20 @@ on:
     - cron: '30 14 * * 1-5'   # 8:30 AM MT
     - cron: '30 18 * * 1-5'   # 12:30 PM MT
     - cron: '30 22 * * 1-5'   # 4:30 PM MT
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      dice_term:
+        description: "Search filter (e.g. 'Java AWS microservices remote')"
+        required: false
+        default: "Java Spring Boot"
+      dice_target:
+        description: "Max applications this run"
+        required: false
+        default: "25"
+      dice_pages:
+        description: "Search pages per term"
+        required: false
+        default: "4"
 
 concurrency:
   group: dice-apply
@@ -62,8 +75,9 @@ jobs:
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
           GH_TOKEN: ${{ secrets.GH_PAT || github.token }}
-          DICE_TARGET: '25'          # apply to as many CV-fit jobs as possible per run
-          DICE_SEARCH_PAGES: '4'     # deep search coverage
+          DICE_TERM: ${{ github.event.inputs.dice_term || 'Java Spring Boot' }}
+          DICE_TARGET: ${{ github.event.inputs.dice_target || '25' }}
+          DICE_SEARCH_PAGES: ${{ github.event.inputs.dice_pages || '4' }}
           HEADFUL: '1'               # self-hosted runner has a display; headless is the bot tell
         run: |
           cd $GITHUB_WORKSPACE/agent
