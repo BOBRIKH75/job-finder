@@ -26,28 +26,31 @@ jobs:
           python-version: "3.12"
 
       - name: Install dependencies
-        run: pip install selenium webdriver-manager requests
+        run: pip install requests
 
-      - name: Run Apollo scraper + outreach
+      - name: Find recruiters via Apollo API (by company) — no cookies/TTL/ban
         env:
           APOLLO_API_KEY: ${{ secrets.APOLLO_API_KEY }}
-          APOLLO_EMAIL: ${{ secrets.APOLLO_EMAIL }}
-          APOLLO_PASSWORD: ${{ secrets.APOLLO_PASSWORD }}
-          APOLLO_COOKIES_B64: ${{ secrets.APOLLO_COOKIES_B64 }}
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
-          HUNTER_API_KEY: ${{ secrets.HUNTER_API_KEY }}
-        run: python scripts/apollo_outreach.py
+        run: python scripts/apollo_api_recruiters.py
 
       - name: Commit results
         if: always()
+        env:
+          GH_PAT: ${{ secrets.GH_PAT }}
         run: |
           cd $GITHUB_WORKSPACE
           git config user.email "bot@github.actions"
           git config user.name "Apollo Recruiter Bot"
-          git add agent/data/apollo_recruiters.json agent/data/apollo_outreach_log.json agent/data/vendor_list.json 2>/dev/null || true
-          git diff --staged --quiet || git commit -m "apollo: +recruiters discovered, outreach sent $(date +%Y-%m-%d) [skip ci]"
-          git push || true
+          git add agent/data/vendor_list.json agent/data/apollo_api_seen.json 2>/dev/null || true
+          git diff --staged --quiet || git commit -m "apollo: +recruiters via API $(date +%Y-%m-%d) [skip ci]"
+          git pull --rebase --autostash origin master || true
+          if [ -n "$GH_PAT" ]; then
+            git push "https://x-access-token:${GH_PAT}@github.com/BOBRIKH75/job-finder.git" HEAD:master || true
+          else
+            git push || true
+          fi
 
       - name: Upload outreach log
         if: always()

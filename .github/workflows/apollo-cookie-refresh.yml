@@ -1,9 +1,12 @@
 name: "Apollo Cookie Refresh (Self-Hosted)"
 
 on:
-  schedule:
-    # Every 5 days at 8 AM MT — refresh before 7-day TTL expires
-    - cron: "0 14 */5 * *"
+  # SCHEDULE DISABLED 2026-09-04: cookie extraction can't work on CI — background jobs cannot
+  # decrypt Chrome's cookie store on macOS (needs Keychain/GUI). Every scheduled run failed with
+  # "No Apollo cookies found (or all encrypted)". REPLACED by apollo_api_recruiters.py which uses
+  # the APOLLO_API_KEY (no cookies, no TTL, no browser, no ban). Manual dispatch kept as fallback.
+  # schedule:
+  #   - cron: "0 14 */5 * *"
   workflow_dispatch: {}
 
 # Runs on self-hosted runner (your laptop with Chrome logged into Apollo)
