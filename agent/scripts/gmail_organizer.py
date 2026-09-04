@@ -34,6 +34,8 @@ LABELS = {
     "Jobs/Info-Requests": None,
     "Jobs/Rejections": None,
     "Jobs/Auto-Replies": None,
+    "Jobs/Auto/Digests": None,
+    "Jobs/Auto/JobAlerts": None,
     "Jobs/Failed": None,
     "Jobs/Spam": None,
 }
@@ -153,6 +155,20 @@ def classify_email(
     # 1. Bounce
     if any(s in from_lower for s in BOUNCE_SENDERS) or BOUNCE_KW.search(text):
         return "Jobs/Failed"
+
+    # 1b. MY OWN agent job-digest emails (sent from my pipeline via Resend / my own Gmail) —
+    # these are the biggest inbox clutter (self-notifications, not recruiter mail). File them.
+    _self = os.environ.get("GMAIL_USER", "bobrikh75@gmail.com").lower()
+    if (_self in from_lower or "resend.dev" in from_domain or "resend" in from_domain
+            or from_email == _self or "onboarding@resend" in from_lower):
+        # only self-generated digests/reports, not a human — safe to file as Auto
+        if re.search(r"jobs?\b|apply now|c2c|match|digest|daily|report|linkedin post", text, re.I):
+            return "Jobs/Auto/Digests"
+
+    # 1c. Job-board ALERT noise (not applications, not recruiters — just "new jobs" blasts)
+    if any(s in from_domain for s in ("lensa", "ziprecruiter", "jobalert", "glassdoor",
+                                       "monster", "jobcase", "talent.com")):
+        return "Jobs/Auto/JobAlerts"
 
     # 2. Spam (never tag replies or emails that mention us)
     if not is_reply and not mentions_bob:
