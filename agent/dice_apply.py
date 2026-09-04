@@ -417,10 +417,72 @@ def main():
             except Exception:
                 return False
 
+        def _try_google_login():
+            """If Dice uses Google SSO, click 'Continue with Google'. Works when the Chrome
+            profile is already signed into Google (bobrikh75@gmail.com)."""
+            try:
+                page.goto('https://www.dice.com/dashboard/login',
+                          wait_until='domcontentloaded', timeout=30000)
+                time.sleep(3)
+                # find the Google button (text or aria-label or image alt)
+                gbtn = None
+                for sel in ('button:has-text("Google")', 'a:has-text("Google")',
+                            '[aria-label*="Google" i]', 'button:has-text("Continue with Google")',
+                            'button:has-text("Sign in with Google")', '[data-testid*="google" i]'):
+                    try:
+                        loc = page.locator(sel).first
+                        if loc.count() > 0 and loc.is_visible():
+                            gbtn = loc; break
+                    except Exception:
+                        continue
+                if not gbtn:
+                    print("  ℹ️ no 'Continue with Google' button found on login page")
+                    return False
+                print("  🔵 clicking 'Continue with Google'...")
+                # Google SSO may open a popup or navigate in-page — handle both
+                try:
+                    with page.context.expect_page(timeout=8000) as pop:
+                        gbtn.click()
+                    popup = pop.value
+                    time.sleep(4)
+                    # if already signed into Google, click the account chooser tile
+                    for sel in (f'[data-identifier="{os.environ.get("DICE_EMAIL","")}"]',
+                                'div[role="link"]', '[data-authuser]'):
+                        try:
+                            t = popup.locator(sel).first
+                            if t.count() > 0: t.click(); break
+                        except Exception:
+                            continue
+                    time.sleep(6)
+                except Exception:
+                    # no popup — SSO navigated in same tab
+                    time.sleep(6)
+                    for sel in (f'[data-identifier="{os.environ.get("DICE_EMAIL","")}"]',
+                                'div[role="link"]', '[data-authuser]'):
+                        try:
+                            t = page.locator(sel).first
+                            if t.count() > 0: t.click(); break
+                        except Exception:
+                            continue
+                    time.sleep(6)
+                ok = _dice_logged_in()
+                print(f"  {'✅' if ok else '❌'} Google login result: {page.url[:60]}")
+                if not ok:
+                    try: page.screenshot(path='data/dice_login_google.png')
+                    except Exception: pass
+                return ok
+            except Exception as e:
+                print(f"  ⚠️ google-login error: {str(e)[:100]}")
+                return False
+
         def _auto_login():
+            # Try Google SSO FIRST (Bob's Dice may be Google-linked → no password exists).
+            if os.environ.get('DICE_LOGIN_METHOD', 'auto') in ('auto', 'google'):
+                if _try_google_login():
+                    return True
             email = os.environ.get('DICE_EMAIL', ''); pwd = os.environ.get('DICE_PASSWORD', '')
             if not email or not pwd:
-                print("  ⚠️ no DICE_EMAIL/DICE_PASSWORD in env — cannot auto-login")
+                print("  ⚠️ no DICE_EMAIL/DICE_PASSWORD in env — cannot password-login")
                 return False
             try:
                 page.goto('https://www.dice.com/dashboard/login',
