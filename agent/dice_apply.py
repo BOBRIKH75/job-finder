@@ -597,47 +597,60 @@ def main():
             print("  ⛔ NOT logged into Dice (no creds / login failed) — applies will login_redirect. "
                   "Set DICE_EMAIL+DICE_PASSWORD in agent/.env, or run DICE_MANUAL_LOGIN=1 and log in.")
 
-        # CV-matched query pool (Java/Spring/backend/remote — all close to Bob's CV).
-        # Includes Dice BOOLEAN queries (AND/OR/NOT) for precise CV targeting — Dice supports
-        # boolean operators in q= (verified via Dice career-advice boolean-search docs).
+        # CV-matched query pool — TUNED FROM LIVE DATA (2026-09-04):
+        #  * broad queries yield ~95 jobs; too-narrow ("Java Kafka developer") only ~5 → dropped
+        #  * different queries have LOW overlap (union of 3 = 132 vs 95 each) → MORE queries = MORE
+        #    unique jobs. This is how we search "more deeply" — variety, not deeper pages.
+        #  * results run out at ~4 pages/query (page 5+ = 0) → cap pages at 4.
+        # Dice BOOLEAN (AND/OR/NOT) supported in q= (verified via Dice boolean-search docs).
         _custom = os.environ.get('DICE_TERM', '').strip()
-        _pool = ['Java backend developer', 'Java microservices',
-                 'Senior Java developer', 'Java developer remote',
-                 'Java AWS developer', 'Spring Boot microservices',
-                 'Java REST API developer', 'Java software engineer',
-                 'Core Java developer', 'Java full stack developer',
-                 'Java Kafka developer', 'Java Spring Cloud', 'Java backend engineer',
-                 'Lead Java developer', 'Java API developer', 'Spring Boot engineer',
-                 # Boolean: precise CV match, exclude off-CV noise (.NET/Azure architect/test)
-                 'Java AND (Spring OR "Spring Boot") NOT .NET',
-                 'Java AND (Kafka OR microservices) AND (AWS OR Kubernetes) NOT Azure',
-                 '(Java OR "Core Java") AND (backend OR "REST API") NOT (test OR QA)',
-                 'Java Kubernetes microservices', 'Java Spring developer', 'backend Java engineer']
-        # rotate the pool start each run (persist cursor) so runs cover DIFFERENT queries first
+        _pool = [
+            # broad high-yield (each surfaces a large, partly-unique pool)
+            'Java developer', 'Java backend developer', 'Java software engineer',
+            'Senior Java developer', 'Java engineer', 'Java programmer',
+            'Spring Boot developer', 'Spring Boot microservices', 'Spring developer',
+            'Java microservices', 'Java REST API developer', 'Java full stack developer',
+            'backend developer Java', 'Java web services', 'Java application developer',
+            'Lead Java developer', 'Java architect', 'Java consultant',
+            'Java AWS developer', 'Java cloud developer', 'Java API developer',
+            'software engineer Java', 'backend engineer', 'microservices developer',
+            # boolean: precise CV match, exclude off-CV noise
+            'Java AND (Spring OR "Spring Boot") NOT .NET',
+            'Java AND (Kafka OR microservices OR AWS) NOT Azure',
+            '(Java OR "Core Java") AND (backend OR "REST API") NOT (test OR QA)',
+            'Java AND (Kubernetes OR Docker OR AWS) NOT (Python OR .NET)',
+        ]
+        _POOL_N = len(_pool)
+        # rotate the pool start each run (persist cursor) so runs prioritize DIFFERENT queries
         _cur_file = 'data/dice_query_cursor.json'
         try:
-            _cur = json.load(open(_cur_file)).get('i', 0)
+            _cur = int(json.load(open(_cur_file)).get('i', 0))
         except Exception:
             _cur = 0
-        _pool = _pool[_cur % len(_pool):] + _pool[:_cur % len(_pool)]
+        _pool = _pool[_cur % _POOL_N:] + _pool[:_cur % _POOL_N]
         try:
             os.makedirs('data', exist_ok=True)
-            json.dump({'i': (_cur + 3) % 22}, open(_cur_file, 'w'))
+            json.dump({'i': (_cur + 5) % _POOL_N}, open(_cur_file, 'w'))
         except Exception:
             pass
         # custom term (dispatch input) always leads if provided; else default Java Spring Boot
         terms = ([_custom] if _custom else ['Java Spring Boot']) + _pool
-        _pages = int(os.environ.get('DICE_SEARCH_PAGES', '3'))
+        _pages = min(int(os.environ.get('DICE_SEARCH_PAGES', '4')), 4)  # data: page 5+ = 0 results
         jobs = []
         seen = set()
         for term in terms:
+            _before = len(jobs)
             for url, title in _search_urls(page, term, pages=_pages):
                 jid = _job_id(url)
                 if jid and jid not in seen:
                     seen.add(jid)
                     jobs.append((url, title, jid))
-            # collect a big pool (deeper coverage) — stop only when we have plenty
-            if len(jobs) >= max(300, target * 12):
+            _new = len(jobs) - _before
+            if _new:
+                print(f"  🔎 '{term[:40]}' → +{_new} new (pool={len(jobs)})")
+            # collect a BIG pool for deep coverage — cap high so many varied queries run.
+            # (data: each query ~100-130 jobs, low overlap → more queries = more unique jobs)
+            if len(jobs) >= max(600, target * 25):
                 break
         print(f"🔍 {len(jobs)} unique Dice easy-apply jobs found")
 
