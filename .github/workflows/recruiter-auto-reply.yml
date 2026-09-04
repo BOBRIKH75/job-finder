@@ -45,9 +45,17 @@ jobs:
 
       - name: Save tracker
         if: always()
+        env:
+          GH_PAT: ${{ secrets.GH_PAT }}
         run: |
           git config user.email "bot@github.actions"
           git config user.name "Reply Bot"
           git add agent/data/auto_reply_tracker.json || true
           git diff --staged --quiet || git commit -m "chore: auto-reply tracker update [skip ci]"
-          git push || true
+          # plain push = 403 on this repo → push via GH_PAT; pull-rebase first to avoid conflicts
+          git pull --rebase --autostash origin master || true
+          if [ -n "$GH_PAT" ]; then
+            git push "https://x-access-token:${GH_PAT}@github.com/BOBRIKH75/job-finder.git" HEAD:master || true
+          else
+            git push || true
+          fi

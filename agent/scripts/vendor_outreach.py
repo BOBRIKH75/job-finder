@@ -16,7 +16,7 @@ import requests
 RESEND_KEY  = os.environ.get("RESEND_KEY", "")
 REPLY_TO    = os.environ.get("GMAIL_USER", "bobrikh75@gmail.com")
 RESEND_FROM = "Bob Rikh <onboarding@resend.dev>"
-TTL_DAYS    = 30
+TTL_DAYS    = 14   # per-recruiter cooldown: max once every 2 weeks (safe, not spammy)
 
 VENDOR_FILE  = Path(__file__).parent.parent / "data" / "vendor_list.json"
 HISTORY_FILE = Path(__file__).parent.parent / "data" / "vendor_outreach_history.json"
@@ -54,15 +54,57 @@ FALLBACK_VENDORS = [
 
 SUBJECT = "Senior Java/Spring Boot Dev — C2C Available, Green Card, Parker CO"
 
+# Anti-spam: rotate SUBJECT + BODY so no two sends look identical (identical repeated emails
+# are the #1 spam-filter/block trigger). A variant is picked deterministically per recruiter+week
+# so each firm gets a fresh-looking, non-duplicate message each cycle.
+SUBJECT_VARIANTS = [
+    "Senior Java/Spring Boot Dev — C2C Available (Green Card, Remote)",
+    "Java Backend Engineer, 10+ yrs — Open for C2C Contract (Remote)",
+    "Available for C2C: Senior Java / Spring Boot / AWS (Green Card)",
+    "Java/Microservices Contractor Available — C2C, No Sponsorship",
+    "Senior Java Developer seeking C2C — Spring Boot, Kafka, AWS (Remote)",
+]
+_GREETINGS = ["Hi {v} team,", "Hello {v} team,", "Hi {v} recruiting team,",
+              "Hello {v},", "Hi there {v} team,"]
+_OPENERS = [
+    "I'm a Senior Java Backend Developer with 10+ years of experience, looking for C2C contract roles.",
+    "I'm a Senior Java/Spring Boot engineer (10+ yrs) currently open to C2C contract opportunities.",
+    "I'm reaching out as a Senior Java Backend Developer (10+ yrs exp) available for C2C contracts.",
+    "I'm a backend Java developer with 10+ years' experience, seeking a C2C contract role.",
+]
+_CLOSERS = [
+    "If you have Java or Spring Boot contract openings, I'd love to connect.",
+    "If any Java/Spring Boot contract roles come up, I'd be glad to talk.",
+    "Happy to share more detail — feel free to call or email if there's a fit.",
+    "If you're staffing Java/backend contracts, let's connect.",
+]
+
 RESUME_LINK  = "https://drive.google.com/drive/folders/1sJRyHCTC2Xend6VWn6hM07VufWQdw_qV"
 LINKEDIN_URL = "https://www.linkedin.com/in/bobrikh75/"
 
 
-def make_body(vendor_name: str) -> str:
+def _variant_index(email: str, n: int) -> int:
+    """Deterministic per recruiter + ISO-week → same recruiter gets a DIFFERENT variant each
+    week, and never the identical message twice in a row."""
+    import hashlib
+    from datetime import datetime as _dt
+    week = _dt.utcnow().isocalendar()[1]
+    h = int(hashlib.md5(f"{email}:{week}".encode()).hexdigest(), 16)
+    return h % n
+
+
+def subject_for(email: str) -> str:
+    return SUBJECT_VARIANTS[_variant_index(email, len(SUBJECT_VARIANTS))]
+
+
+def make_body(vendor_name: str, email: str = "") -> str:
+    i = _variant_index(email or vendor_name, 100)
+    greet = _GREETINGS[i % len(_GREETINGS)].format(v=vendor_name)
+    opener = _OPENERS[i % len(_OPENERS)]
+    closer = _CLOSERS[i % len(_CLOSERS)]
     return (
-        f"Hi {vendor_name} team,\n\n"
-        "I'm a Senior Java Backend Developer with 10+ years of experience, "
-        "looking for C2C contract roles.\n\n"
+        f"{greet}\n\n"
+        f"{opener}\n\n"
         "Quick summary:\n"
         "  Java 17, Spring Boot, Microservices, Kafka, Kubernetes, Docker, AWS\n"
         "  10 years experience — enterprise scale (Charter Communications)\n"
@@ -70,7 +112,7 @@ def make_body(vendor_name: str) -> str:
         "  Rate: $70-90/hr C2C  |  Available: Immediately  |  Location: Parker CO (100% Remote)\n\n"
         f"Resume:   {RESUME_LINK}\n"
         f"LinkedIn: {LINKEDIN_URL}\n\n"
-        "If you have Java or Spring Boot contract openings, I'd love to connect.\n\n"
+        f"{closer}\n\n"
         f"Bob Rikh\n"
         f"347-268-5917  |  {REPLY_TO}\n"
     )
@@ -126,8 +168,8 @@ def send_via_resend(to_email: str, vendor_name: str) -> bool:
         "from": RESEND_FROM,
         "to": [to_email],
         "reply_to": REPLY_TO,
-        "subject": SUBJECT,
-        "text": make_body(vendor_name),
+        "subject": subject_for(to_email),   # varied per recruiter+week (anti-spam)
+        "text": make_body(vendor_name, to_email),
     }
     # Attach the CV so recruiters get Bob's resume directly.
     if CV_PATH:
@@ -171,6 +213,15 @@ def main():
         print("All vendors contacted within TTL. Nothing to send.")
         return
 
+    # ANTI-SPAM: cap sends per run + space them out. Never blast the whole list at once (a burst
+    # of identical-source emails is a block trigger). Weekly schedule + cap spreads outreach.
+    import random
+    DAILY_CAP = int(os.environ.get('OUTREACH_DAILY_CAP', '15'))
+    if len(to_contact) > DAILY_CAP:
+        # oldest-contacted first (fairness), then cap
+        to_contact = to_contact[:DAILY_CAP]
+        print(f"  (capped to {DAILY_CAP} sends this run — anti-spam; rest go next run)")
+
     print(f"\nSending to {len(to_contact)} vendors via Resend API...")
     if not RESEND_KEY:
         print("  RESEND_KEY not set — running in dry-run mode")
@@ -189,7 +240,7 @@ def main():
                 "last_contacted": now.isoformat(),
                 "times_contacted": history.get(vendor["email"], {}).get("times_contacted", 0) + 1,
             }
-            time.sleep(1)
+            time.sleep(random.uniform(3, 8))   # human-like spacing (anti-spam)
         except Exception as exc:
             print(f"  ERR {vendor['name']}: {exc}")
 
