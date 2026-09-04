@@ -828,11 +828,13 @@ def submit_one(pg, url, db, profile):
                 _jd = pg.evaluate(
                     """() => {
                         const el = document.querySelector('#jobDescriptionText, [data-testid*="jobDescription" i], .jobsearch-JobComponent-description');
-                        return el ? el.textContent.slice(0, 1500) : '';
+                        return el ? el.textContent.slice(0, 4000) : '';
                     }""") or ''
             except Exception:
                 _jd = ''
             _ok, _score, _why = should_apply(job_title, _jd, '')
+            if _ok and _score is not None and _score < 5:
+                print(f"  ✅ CV-fit via full description: '{job_title[:45]}' (score={_score})")
             if not _ok:
                 print(f"  ⏭️ off-CV job — skipping before apply: '{job_title[:45]}' "
                       f"(score={_score} {','.join(_why)})")
@@ -1513,6 +1515,18 @@ def main():
                     kept.append(u)
                     if len(nt) >= 12:
                         _seen_titles.add(nt)
+                elif (score is not None and score >= -5
+                      and os.environ.get('INDEED_DEEP_CV', '1') == '1'):
+                    # Generic-title SOFT reject (e.g. "Software Engineer"): search-result desc is
+                    # often empty/truncated, so the TITLE lacks a Java signal but the FULL job page
+                    # may be Java. KEEP the url → it gets opened, and the pre-apply gate (which reads
+                    # the full #jobDescriptionText) makes the real call. Hard negatives (.NET/Python/
+                    # C++/Go, score<=-10) still skip here (no wasted open). Mirrors the Dice fix.
+                    kept.append(u)
+                    if len(nt) >= 12:
+                        _seen_titles.add(nt)
+                    if title:
+                        print(f"    🔎 generic title kept for description check: '{title[:45]}' (score={score})")
                 else:
                     skipped += 1
                     if title:
