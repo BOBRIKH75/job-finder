@@ -1235,3 +1235,24 @@ CANNOT auto-fix: the encrypted Dice session tokens can't be extracted, and login
 ### IMPORTANT for next session — do NOT trust "SUBMITTED N" from logs alone.
 ALWAYS verify against applyonline@dice.com emails in [Gmail]/All Mail (inbox has a filter that
 archives them — only 2 in inbox, 144 in All Mail). Email is the ONLY ground truth for real submits.
+
+---
+## 2026-09-04 — DICE FULLY FIXED (login was the blocker all along)
+**RESULT: 25 real email-confirmed applies in 1 hour after fixes (was 0-2). Ground truth: applyonline@dice.com in [Gmail]/All Mail.**
+
+### Root causes found + fixed (in order):
+1. **Profile path** — was relative to script = INSIDE git checkout (gitignored/fresh each run = always logged out). Fixed: `PROFILE_DIR` uses REAL home via `pwd.getpwuid(getuid()).pw_dir` (NOT `expanduser('~')` — actions/checkout OVERRIDES $HOME to a temp dir!). Runner home = `/Users/rikhsiboevgmail.com`.
+2. **Chrome install failed on runner** — Fixed: workflow detects system Chrome (`/Applications/Google Chrome.app`) and uses `channel=chrome`, doesn't fail. Runner (bobur-laptop / Boburs-MBP) has Chrome.
+3. **LOGIN = the real blocker** — Bob's Dice account is **GOOGLE-LINKED (SSO)**. Email/password auto-login could NEVER work (no password exists). Fixed: `_try_google_login()` clicks "Continue with Google" FIRST → works because the runner's `~/.dice-profile` Chrome is signed into Google. Log: `✅ Google login result: /home-feed` → `✅ auto-login succeeded`. **THIS was why every prior attempt failed.**
+4. **CV filter too strict on generic titles** — judged by TITLE only, so "Software Engineer" (Java in DESCRIPTION) was wrongly skipped. Fixed: soft rejects (score>=-5, not hard negatives) open the job + re-check with real description (`DICE_DEEP_CV=1`). Hard negatives (.NET/Python/C++/Go score<=-10) still skip fast. Verified: 'Software Engineer'+Java desc -> (True,14).
+
+### Advanced search (already built + enhanced):
+- URL filters: `filters.easyApply=true`, `filters.workplaceTypes=Remote`, `filters.postedDate` (freshness: burst 1st week, then last-7-days).
+- Query pool = 22 CV-matched terms + 3 BOOLEAN queries (Java AND (Spring OR "Spring Boot") NOT .NET, etc). Dice supports boolean in q=.
+- Query rotation: cursor in `data/dice_query_cursor.json` rotates pool start +3 each run (variety).
+
+### KEY LESSONS (don't repeat):
+- Dice = GOOGLE SSO. Never chase email/password login. The `~/.dice-profile` on the runner must be signed into Google ONCE (manual), then auto Google-login reuses it.
+- actions/checkout OVERRIDES $HOME → always use pwd.getpwuid for real home in CI.
+- "SUBMITTED 0" with lots of off-CV/dup is CORRECT behavior, not a bug — verify via email, not logs.
+- Commits: b03698f (home path), ab40e4a (real home/pwd), b5ca1e1 (chrome+debug+rotation), ab40223 (Google SSO), 80a64db (desc-recovery).
