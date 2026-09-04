@@ -630,6 +630,84 @@ def _try_auto_captcha_solve(page, captured_sitekey: str = "") -> bool:
     return True
 
 
+def _fill_date_fields(page) -> int:
+    """Fill education/employment Start/End month+year fields that Greenhouse requires.
+
+    Root cause of 'End year is required.'/'Start year is required.' submit failures: these are
+    <select> (or text) date fields the generic matcher didn't recognize. This targets any EMPTY
+    date select/input by its label/name containing month/year + start/end, and fills a sensible
+    default (Bob: BS ~2010; work start 2015, end = current/present). Only touches empty ones.
+    """
+    filled = 0
+    # sensible defaults (education graduation ~2010; a generic prior-role window)
+    START_YEAR, END_YEAR = "2015", "2024"
+    EDU_START_YEAR, EDU_END_YEAR = "2006", "2010"
+    START_MONTH, END_MONTH = "June", "May"
+    try:
+        selects = page.locator("select").all()
+    except Exception:
+        selects = []
+    for sel in selects:
+        try:
+            if not sel.is_visible():
+                continue
+            # already has a non-empty value? skip
+            val = (sel.input_value() or "").strip().lower()
+            if val and val not in ("", "select", "month", "year", "--", "mm", "yyyy"):
+                continue
+            # identify by nearby label / name / id / aria
+            meta = (sel.evaluate(
+                "(el)=>((el.getAttribute('aria-label')||'')+' '+(el.getAttribute('name')||'')"
+                "+' '+(el.id||'')+' '+((el.labels&&el.labels[0])?el.labels[0].innerText:'')).toLowerCase()"
+            ) or "")
+            is_year = "year" in meta or "yyyy" in meta
+            is_month = "month" in meta or "mm" in meta
+            if not (is_year or is_month):
+                continue
+            is_edu = any(w in meta for w in ("school", "education", "degree", "university", "college", "graduat"))
+            is_end = any(w in meta for w in ("end", "to ", "graduat", "completion"))
+            # choose the target value
+            if is_year:
+                target = (EDU_END_YEAR if is_end else EDU_START_YEAR) if is_edu else (END_YEAR if is_end else START_YEAR)
+            else:
+                target = END_MONTH if is_end else START_MONTH
+            # try select by value, then by label (match option containing target)
+            done = False
+            try:
+                sel.select_option(value=target); done = True
+            except Exception:
+                pass
+            if not done:
+                try:
+                    opts = sel.evaluate("(el)=>Array.from(el.options).map(o=>o.text)")
+                    for o in opts:
+                        if target.lower() in (o or "").lower() or (is_month and target[:3].lower() in (o or "").lower()):
+                            sel.select_option(label=o); done = True; break
+                except Exception:
+                    pass
+            if done:
+                filled += 1
+        except Exception:
+            continue
+    # text-style date inputs (name/placeholder has year)
+    try:
+        for inp in page.locator("input:visible").all():
+            try:
+                meta = (inp.evaluate(
+                    "(el)=>((el.getAttribute('name')||'')+' '+(el.getAttribute('placeholder')||'')"
+                    "+' '+(el.getAttribute('aria-label')||'')+' '+(el.id||'')).toLowerCase()") or "")
+                if ("year" in meta or "yyyy" in meta) and not (inp.input_value() or "").strip():
+                    is_edu = any(w in meta for w in ("school", "education", "degree", "university", "college"))
+                    is_end = any(w in meta for w in ("end", "graduat", "completion"))
+                    inp.fill((EDU_END_YEAR if is_end else EDU_START_YEAR) if is_edu else (END_YEAR if is_end else START_YEAR))
+                    filled += 1
+            except Exception:
+                continue
+    except Exception:
+        pass
+    return filled
+
+
 def _fill_remaining_required(page, profile: dict) -> int:
     """Dynamic adaptation — find and fill ANY remaining empty required fields.
     
@@ -1674,6 +1752,16 @@ def apply_to_job(page, profile, job, learned, dry_run=False, db=None, site_needs
             if gh_filled:
                 attempt_result["filled"] += gh_filled
                 print(f"      🔽 Filled {gh_filled} custom dropdowns (Greenhouse)")
+
+            # Fill education/employment DATE fields (Start/End month+year) — these caused
+            # 'End year is required' / 'Start year is required' submit failures on Greenhouse.
+            try:
+                date_filled = _fill_date_fields(page)
+                if date_filled:
+                    attempt_result["filled"] += date_filled
+                    print(f"      📅 Filled {date_filled} date field(s) (start/end month/year)")
+            except Exception as _de:
+                print(f"      ⚠️ date fill skipped: {str(_de)[:50]}")
 
             # DYNAMIC ADAPTATION: catch any remaining unfilled required fields
             # This handles page changes, new questions, non-standard forms
