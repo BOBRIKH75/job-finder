@@ -13,11 +13,12 @@ from email.header import decode_header
 from email.utils import parsedate_to_datetime
 from datetime import datetime, timezone, timedelta
 
-for line in open('.env'):
-    line = line.strip()
-    if line and not line.startswith('#') and '=' in line:
-        k, v = line.split('=', 1)
-        os.environ.setdefault(k.strip(), v.strip().strip('"').strip("'"))
+if os.path.exists('.env'):
+    for line in open('.env'):
+        line = line.strip()
+        if line and not line.startswith('#') and '=' in line:
+            k, v = line.split('=', 1)
+            os.environ.setdefault(k.strip(), v.strip().strip('"').strip("'"))
 
 user = os.environ.get('GMAIL_USER', '')
 pw = os.environ.get('GMAIL_APP_PASSWORD', '')
