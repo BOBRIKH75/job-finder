@@ -59,11 +59,22 @@ except Exception:
     except Exception:
         fill_questions_page = is_questions_page = None
 
-# Profile lives in the RUNNER'S HOME (fixed path), NOT the git checkout — so a manual login
-# persists across CI runs (the checkout's .dice-profile is gitignored/fresh each run = always
-# logged out; that's why CI couldn't log in). Log in ONCE into this profile and CI reuses it.
-PROFILE_DIR = os.environ.get('DICE_PROFILE_DIR', os.path.expanduser('~/.dice-profile'))
-COOKIE_FILE = os.environ.get('DICE_COOKIE_FILE', os.path.expanduser('~/.dice-profile/dice_cookies.json'))
+# Profile lives in the RUNNER'S REAL HOME. NOTE: actions/checkout TEMPORARILY OVERRIDES $HOME
+# to a temp dir, so os.path.expanduser('~') is WRONG under CI (points to a temp folder → always
+# logged out — this is why CI couldn't see the manual login). Resolve the REAL home via the
+# login user (pwd) so manual login + every CI run share ONE persistent ~/.dice-profile.
+def _real_home():
+    if os.environ.get('DICE_PROFILE_DIR'):
+        return None  # explicit override wins
+    try:
+        import pwd as _pwd
+        return _pwd.getpwuid(os.getuid()).pw_dir   # real home, ignores $HOME override
+    except Exception:
+        return os.path.expanduser('~')
+
+_HOME = _real_home()
+PROFILE_DIR = os.environ.get('DICE_PROFILE_DIR') or os.path.join(_HOME, '.dice-profile')
+COOKIE_FILE = os.environ.get('DICE_COOKIE_FILE') or os.path.join(PROFILE_DIR, 'dice_cookies.json')
 APPLIED_FILE = 'agent/data/dice_applied.json' if os.path.isdir('agent') else 'data/dice_applied.json'
 JK_FILE = 'data/dice_applied_ids.json'
 FAILED_FILE = 'data/dice_failed_ids.json'
