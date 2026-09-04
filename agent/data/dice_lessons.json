@@ -4,7 +4,11 @@
     "fix": "more_wizard_steps"
   },
   "login_redirect": {
-    "count": 21,
+    "count": 55,
     "fix": "need_fresh_login"
+  },
+  "error": {
+    "count": 19,
+    "fix": "reload_retry"
   }
 }
