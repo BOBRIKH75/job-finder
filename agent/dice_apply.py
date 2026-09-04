@@ -293,9 +293,29 @@ def _apply_one(page, url, title):
     if not clicked:
         return 'no_apply_button', company
     time.sleep(4)
-    _clicked_submit = False
     _wizard_steps = int(os.environ.get('DICE_WIZARD_STEPS', '8'))
     _step_settle = int(os.environ.get('DICE_STEP_SETTLE', '2'))
+
+    def _real_confirmation(pg):
+        """STRICT: only a genuine Dice post-submit confirmation counts (email is ground truth).
+        Loose signals like bare 'applied'/'success' or a clicked button caused ~23 FALSE
+        positives (logged 25, only 2 real emails). Require an explicit confirmation phrase or
+        the /application-submitted URL."""
+        try:
+            body = (pg.locator('body').inner_text(timeout=2500) or '').lower()
+            u = (pg.url or '').lower()
+        except Exception:
+            return False
+        STRONG = ('application submitted', 'your application has been submitted',
+                  'thank you for applying', "we've sent your application",
+                  'application was sent', 'successfully submitted', 'application complete',
+                  'you have successfully applied')
+        if any(s in body for s in STRONG):
+            return True
+        if 'application-submitted' in u or 'applysuccess' in u or '/applied' in u:
+            return True
+        return False
+
     # multi-step easy-apply modal: fill questions + click Next/Submit up to N steps
     for _step in range(_wizard_steps):
         try:
@@ -303,28 +323,22 @@ def _apply_one(page, url, title):
                 fill_questions_page(page, None, {}, company or 'Employer')
         except Exception:
             pass
-        # confirmation? (broadened — Dice shows several variants + URL changes)
-        try:
-            body = (page.locator('body').inner_text(timeout=2500) or '').lower()
-            u = (page.url or '').lower()
-        except Exception:
-            body, u = '', ''
-        if any(p in body for p in ('application submitted', 'application sent', 'applied',
-                                   'thank you for applying', 'your application has been submitted',
-                                   'successfully applied', "we've sent your application",
-                                   'application complete')) \
-                or 'applied' in u or 'confirmation' in u or 'success' in u:
+        if _real_confirmation(page):
             return 'submitted', company
-        # click Next / Submit / Review (track if we pressed a final Submit)
+        # login wall mid-wizard = NOT submitted (session lost)
+        try:
+            if 'login' in (page.url or '').lower() or 'sign in to continue' in \
+                    (page.locator('body').inner_text(timeout=1500) or '').lower():
+                return 'login_redirect', company
+        except Exception:
+            pass
+        # click Next / Submit / Review
         advanced = False
         for sel in ['button:has-text("Submit")', 'button:has-text("Next")',
-                    'button:has-text("Review")', 'button:has-text("Continue")',
-                    'button:has-text("Apply")']:
+                    'button:has-text("Review")', 'button:has-text("Continue")']:
             try:
                 loc = page.locator(sel)
                 if loc.count() and loc.first.is_visible(timeout=1500):
-                    if 'submit' in sel.lower() or 'apply' in sel.lower():
-                        _clicked_submit = True
                     loc.first.click(timeout=3000)
                     advanced = True
                     time.sleep(_step_settle)
@@ -333,24 +347,9 @@ def _apply_one(page, url, title):
                 continue
         if not advanced:
             break
-    # final confirmation check (broadened)
-    try:
-        body = (page.locator('body').inner_text(timeout=2500) or '').lower()
-        u = (page.url or '').lower()
-        if any(p in body for p in ('submitted', 'application sent', 'thank you for applying',
-                                   'successfully applied', 'application complete')) \
-                or 'applied' in u or 'success' in u:
-            return 'submitted', company
-    except Exception:
-        pass
-    # If we pressed a final Submit and no error/questions remain, treat as submitted —
-    # Dice's confirmation text/DOM varies; the email (applyonline@dice.com) is the ground truth.
-    if _clicked_submit:
-        try:
-            if is_questions_page and not is_questions_page(page):
-                return 'submitted', company
-        except Exception:
-            return 'submitted', company
+    # final STRICT confirmation check — no click-only fallback (that caused false positives)
+    if _real_confirmation(page):
+        return 'submitted', company
     return 'incomplete', company
 
 

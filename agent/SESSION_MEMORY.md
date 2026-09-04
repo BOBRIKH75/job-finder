@@ -1192,3 +1192,46 @@ logically sound.
 - LINKEDIN_COOKIES: refresh from a logged-in Chrome (li_at + JSESSIONID) → fixes keep-alive +
   refresh-linkedin + keeps linkedin-apply working. Same pattern as Dice.
 - Optionally move dice/linkedin cookie refresh onto the RUNNER (bobur-laptop) where the login lives.
+
+
+---
+## Session: 2026-09-03 PM — CRITICAL: Dice was FALSE-counting submits (fixed) + login blocker
+
+### Deep check (Bobur: "are you sure? check deeply") — found a REAL bug
+- Bot logged "SUBMITTED 25" today (Sep 3) but Gmail (All Mail, ground truth) shows only 2 real
+  applyonline@dice.com confirmations today. YESTERDAY (Sep 2) had 64 real. So today's 25 were
+  ~23 FALSE POSITIVES.
+- ROOT CAUSE: the broadened detection I added (_clicked_submit fallback + loose 'applied'/'success'
+  matches) counted login_redirect / clicked-but-not-submitted as 'submitted'. Email = truth.
+- Worse: false 'submitted' jobs were saved to dedup as applied → falsely skipped forever.
+
+### FIX applied
+- dice_apply.py _apply_one: STRICT _real_confirmation() — only explicit confirmation phrases
+  ('application submitted','thank you for applying','application-submitted' URL...) count.
+  Removed the _clicked_submit fallback and loose 'applied'/'success' substring matches.
+  Also detects login_redirect / 'sign in to continue' mid-wizard → returns login_redirect (not submitted).
+- Reconciled dedup vs email: dice_applied.json 67 → 42 email-confirmed (removed 25 false).
+  dice_applied_ids.json reset to [] so strict re-runs re-verify (title dedup keeps the 42 real).
+
+### THE CURRENT BLOCKER (honest — could not resolve without Bobur)
+Every apply now returns login_redirect: Dice's APPLY WIZARD needs a full authenticated session;
+the current session is stale/logged-out FOR APPLYING (search still works with partial session).
+Tried 3 ways, all failed:
+1. DICE_MANUAL_LOGIN window → "login not detected within 180s" (login-detection too strict OR
+   Bobur didn't complete login in the window).
+2. browser_cookie3 from real Chrome → only got 38 cookies with DLI/_gd_visitor; MISSING the
+   encrypted session tokens (SERVERID/_gd_session) Chrome encrypts → half-session → still redirects.
+3. persistent .dice-profile session → stale.
+CANNOT auto-fix: the encrypted Dice session tokens can't be extracted, and login needs Bobur.
+
+### WHAT UNBLOCKS IT (next session / Bobur action)
+- Bobur logs into Dice in the DICE_MANUAL_LOGIN Chrome window and COMPLETES it (reach dashboard),
+  keeping the window until "login detected" prints. Then session persists in .dice-profile and
+  apply works (that's how the 64 real ones on Sep 2 happened).
+- OR fix the login-detection in dice_apply (_logged_in / manual-login check) to recognize Dice's
+  actual logged-in DOM so it captures the login reliably.
+- Until then: Dice apply produces login_redirect (0 real). Indeed/Greenhouse unaffected.
+
+### IMPORTANT for next session — do NOT trust "SUBMITTED N" from logs alone.
+ALWAYS verify against applyonline@dice.com emails in [Gmail]/All Mail (inbox has a filter that
+archives them — only 2 in inbox, 144 in All Mail). Email is the ONLY ground truth for real submits.
