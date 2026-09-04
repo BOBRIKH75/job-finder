@@ -576,6 +576,8 @@ def main():
                   "Set DICE_EMAIL+DICE_PASSWORD in agent/.env, or run DICE_MANUAL_LOGIN=1 and log in.")
 
         # CV-matched query pool (Java/Spring/backend/remote — all close to Bob's CV).
+        # Includes Dice BOOLEAN queries (AND/OR/NOT) for precise CV targeting — Dice supports
+        # boolean operators in q= (verified via Dice career-advice boolean-search docs).
         _custom = os.environ.get('DICE_TERM', '').strip()
         _pool = ['Java backend developer', 'Java microservices',
                  'Senior Java developer', 'Java developer remote',
@@ -584,6 +586,10 @@ def main():
                  'Core Java developer', 'Java full stack developer',
                  'Java Kafka developer', 'Java Spring Cloud', 'Java backend engineer',
                  'Lead Java developer', 'Java API developer', 'Spring Boot engineer',
+                 # Boolean: precise CV match, exclude off-CV noise (.NET/Azure architect/test)
+                 'Java AND (Spring OR "Spring Boot") NOT .NET',
+                 'Java AND (Kafka OR microservices) AND (AWS OR Kubernetes) NOT Azure',
+                 '(Java OR "Core Java") AND (backend OR "REST API") NOT (test OR QA)',
                  'Java Kubernetes microservices', 'Java Spring developer', 'backend Java engineer']
         # rotate the pool start each run (persist cursor) so runs cover DIFFERENT queries first
         _cur_file = 'data/dice_query_cursor.json'
@@ -594,7 +600,7 @@ def main():
         _pool = _pool[_cur % len(_pool):] + _pool[:_cur % len(_pool)]
         try:
             os.makedirs('data', exist_ok=True)
-            json.dump({'i': (_cur + 3) % 19}, open(_cur_file, 'w'))
+            json.dump({'i': (_cur + 3) % 22}, open(_cur_file, 'w'))
         except Exception:
             pass
         # custom term (dispatch input) always leads if provided; else default Java Spring Boot
