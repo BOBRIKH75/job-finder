@@ -3,7 +3,7 @@
 Gmail Auto-Organizer — Labels/folders for job search emails.
 
 MOVE semantics: emails are copied to the correct label AND removed from inbox
-(archived). In Gmail IMAP, marking \Deleted in INBOX removes the Inbox label
+(archived). In Gmail IMAP, marking \\Deleted in INBOX removes the Inbox label
 while keeping the message in All Mail + the destination label.
 
 Run modes:
@@ -224,7 +224,7 @@ def organize_inbox(conn, recruiter_emails: set, applied_companies: set,
                    days_back: int = 7, batch_limit: int = 200):
     """Scan INBOX, classify each email, MOVE it to the correct label folder.
 
-    MOVE = copy to label + mark \Deleted in INBOX + expunge.
+    MOVE = copy to label + mark \\Deleted in INBOX + expunge.
     In Gmail IMAP this removes the Inbox label while keeping the message
     in All Mail and the destination label — same as Gmail's archive+label.
     """
