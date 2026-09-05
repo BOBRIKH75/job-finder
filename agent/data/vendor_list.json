@@ -3374,5 +3374,56 @@
     "source": "recruiter-email-lead",
     "last_subject": "Job Application Update for Java Microservices  |  AWS  |  Ka",
     "verified": "2026-09-04"
+  },
+  {
+    "name": "HR Case Management",
+    "company": "Service-Now",
+    "email": "docusign@service-now.com",
+    "position": "recruiter (emailed Bob)",
+    "source": "inbox-harvest",
+    "last_subject": "HRC0325669 - [EXTERNAL] Senior Software Engineer \u2014 C2C Avail",
+    "verified": "2026-09-05"
+  },
+  {
+    "name": "Meridiansoft",
+    "email": "careers@meridiansoft.com",
+    "position": "careers (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "meridiansoft.com"
+  },
+  {
+    "name": "Meridiansoft",
+    "email": "recruiting@meridiansoft.com",
+    "position": "recruiting (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "meridiansoft.com"
+  },
+  {
+    "name": "Meridiansoft",
+    "email": "talent@meridiansoft.com",
+    "position": "talent (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "meridiansoft.com"
+  },
+  {
+    "name": "Meridiansoft",
+    "email": "jobs@meridiansoft.com",
+    "position": "jobs (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "meridiansoft.com"
+  },
+  {
+    "name": "Meridiansoft",
+    "email": "hr@meridiansoft.com",
+    "position": "hr (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "meridiansoft.com"
+  },
+  {
+    "name": "Meridiansoft",
+    "email": "recruitment@meridiansoft.com",
+    "position": "recruitment (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "meridiansoft.com"
   }
 ]
