@@ -270,15 +270,24 @@ def _posted_date_filter():
 
 
 def _search_urls(page, term, want=50, pages=3):
-    """Return [(url, title)] of easy-apply jobs from a Dice search, across N pages."""
+    """Return [(url, title)] of jobs from a Dice search, across N pages.
+
+    Easy-Apply filter is OPTIONAL (DICE_EASY_APPLY):
+      - default '1'/'true'  -> filters.easyApply=true (Dice 1-click only; bot can submit)
+      - '0'/'false'         -> NO easyApply filter (covers ALL jobs incl. external-site
+                               applies — the bot may not complete external ATS forms, but
+                               nothing is MISSED from the search).
+    """
     q = term.replace(' ', '%20')
     posted = _posted_date_filter()
     pd = f'&filters.postedDate={posted}' if posted else ''
+    _easy = os.environ.get('DICE_EASY_APPLY', '1').strip().lower() not in ('0', 'false', 'no', 'off')
+    ea = '&filters.easyApply=true' if _easy else ''
     out = []
     for pg_num in range(1, pages + 1):
         try:
             page.goto(f'https://www.dice.com/jobs?q={q}&countryCode=US&page={pg_num}&pageSize={want}'
-                      f'&filters.easyApply=true&filters.workplaceTypes=Remote{pd}',
+                      f'{ea}&filters.workplaceTypes=Remote{pd}',
                       wait_until='domcontentloaded', timeout=30000)
             time.sleep(4)
             rows = page.evaluate(r"""() => {
