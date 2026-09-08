@@ -41,9 +41,16 @@ MAX_APPLICANTS_TO_SKIP = 200     # skip jobs with 200+ applicants (buried anyway
 MAX_JOB_AGE_HOURS = 48           # only apply to jobs posted in last 48 hours
 
 SEARCH_KEYWORDS = [
-    "Java Developer contract remote",
-    "Java Spring Boot developer C2C",
-    "Senior Java Backend Engineer contract",
+    "Java Developer",
+    "Java Backend Developer",
+    "Java Spring Boot",
+    "Senior Java Developer",
+    "Java Microservices",
+    "Java Software Engineer",
+    "Spring Boot Developer",
+    "Java AWS Developer",
+    "Java Kafka Developer",
+    "Backend Software Engineer Java",
 ]
 
 # Only run during US business hours MT (avoid 3 AM bot signature)
@@ -598,11 +605,12 @@ def main():
                 break
 
             print(f"\n  🔍 Searching: '{keyword}'")
-            # f_AL=true = Easy Apply only, f_WT=2 = remote, f_TPR=r172800 = last 48h, sortBy=DD = newest first
+            # f_AL=true = Easy Apply only, f_WT=2 = remote, f_TPR=r604800 = last 7 days, sortBy=DD = newest first
+            # (48h was too tight — search returned 0 jobs. 7 days surfaces enough fresh Easy Apply roles.)
             search_url = (
                 f"https://www.linkedin.com/jobs/search/"
                 f"?keywords={keyword.replace(' ', '%20')}"
-                f"&f_AL=true&f_WT=2&f_TPR=r172800&sortBy=DD"
+                f"&f_AL=true&f_WT=2&f_TPR=r604800&sortBy=DD"
             )
             driver.get(search_url)
             time.sleep(5)
@@ -613,7 +621,7 @@ def main():
             # Find job cards
             try:
                 job_cards = driver.find_elements("css selector", ".job-card-container")
-                print(f"    Found {len(job_cards)} jobs (last 48h, Easy Apply, Remote)")
+                print(f"    Found {len(job_cards)} jobs (last 7d, Easy Apply, Remote)")
 
                 for card in job_cards[:8]:  # check up to 8, apply to max 5 per keyword
                     if applied_count >= MAX_APPLICATIONS_PER_RUN:
