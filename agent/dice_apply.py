@@ -124,6 +124,36 @@ def _load_dead():
         return {}
 
 
+# TTL for transient failures: a job that failed (often a timeout / anti-bot glitch) is
+# retried again after this many days instead of being retired forever. This prevents the
+# failed-id list from permanently starving the apply queue. True-dead jobs (>= MAX_FAILS
+# within the window) still stay blocked until they expire.
+FAIL_TTL_DAYS = int(os.environ.get('FAIL_TTL_DAYS', '7'))
+
+
+def _load_failed_fresh():
+    """Return the set of failed job-ids that are still WITHIN the TTL window.
+
+    Backward compatible:
+      - new format: {id: last_fail_epoch}  -> keep only if age < FAIL_TTL_DAYS
+      - old format: [id, id, ...]          -> no timestamp; treat as fresh ONCE, then the
+        next _save_failed writes the timestamped form so it can expire later.
+    """
+    try:
+        raw = json.load(open(FAILED_FILE))
+    except Exception:
+        return set()
+    now = time.time()
+    ttl = FAIL_TTL_DAYS * 86400
+    if isinstance(raw, dict):
+        return {jid for jid, ts in raw.items()
+                if (now - float(ts)) < ttl}
+    if isinstance(raw, list):
+        # legacy list — no timestamps; honor them this run (they migrate on next save)
+        return set(str(x) for x in raw)
+    return set()
+
+
 LESSONS_FILE = 'data/dice_lessons.json'
 
 
@@ -407,7 +437,7 @@ def main():
     _ = load_profile()
 
     applied_ids = _load_json_set(JK_FILE)
-    failed_ids = _load_json_set(FAILED_FILE)
+    failed_ids = _load_failed_fresh()
     dead = {k for k, c in _load_dead().items() if int(c) >= MAX_FAILS}
     applied_titles = _load_json_set(APPLIED_FILE)
     _apply_lessons_to_env()   # SELF-LEARNING: apply fixes learned from past failures
@@ -415,7 +445,23 @@ def main():
           f"{len(dead)} retired")
 
     def _save_failed(jid):
-        s = _load_json_set(FAILED_FILE); s.add(jid); _save_json_set(FAILED_FILE, s)
+        # Write the failed-id with a timestamp so it can EXPIRE after FAIL_TTL_DAYS
+        # (transient failures get retried later instead of blocked forever). Migrates the
+        # legacy list format to {id: epoch} on first write.
+        try:
+            raw = json.load(open(FAILED_FILE))
+        except Exception:
+            raw = {}
+        if isinstance(raw, list):
+            raw = {str(x): time.time() for x in raw}
+        elif not isinstance(raw, dict):
+            raw = {}
+        raw[jid] = time.time()
+        try:
+            os.makedirs(os.path.dirname(FAILED_FILE), exist_ok=True)
+            json.dump(raw, open(FAILED_FILE, 'w'), indent=0)
+        except Exception:
+            pass
         d = _load_dead(); d[jid] = int(d.get(jid, 0)) + 1
         try:
             json.dump(d, open(DEAD_FILE, 'w'))
@@ -667,9 +713,16 @@ def main():
                 print(f"  ⏭️ already applied (id={jid[:8]}) — skip"); continue
             if jid and jid in failed_ids and os.environ.get('RETRY_FAILED') != '1':
                 print(f"  ⏭️ previously failed (id={jid[:8]}) — skip"); continue
-            nt = _title_key('', title)
-            if nt and (nt in applied_titles or nt in _seen_titles):
-                print(f"  ⏭️ dup/applied title — skip: {title[:40]}"); continue
+            # PRE-OPEN title dedup: company is unknown until the detail page opens, so only
+            # block an EXACT title already tried IN THIS RUN (prevents wasting opens on the
+            # same generic title twice). The persistent cross-company block (company|title)
+            # runs AFTER the company is known — see the company|title check below. This stops
+            # generic titles like "Backend Developer" from globally starving fresh jobs.
+            _run_title = _norm_title(title)
+            if _run_title and _run_title in _seen_titles:
+                print(f"  ⏭️ dup title this run — skip: {title[:40]}"); continue
+            if _run_title:
+                _seen_titles.add(_run_title)
             # ---- CV-fit gate ----
             if should_apply and os.environ.get('CV_MATCH_OFF') != '1':
                 ok, score, why = should_apply(title, '', 'Remote')
@@ -709,11 +762,15 @@ def main():
             except Exception as e:
                 result, company = 'error', ''
                 print(f"    ERR {str(e)[:70]}")
+            # Company-aware persistent title key (company|title). Used to record what we
+            # applied to so we never re-apply to the SAME title at the SAME company — while
+            # still allowing the same title at a DIFFERENT company (fixes global starvation).
+            nt = _title_key(company, title)
             if result == 'submitted':
                 submitted += 1
                 applied_ids.add(jid); _save_json_set(JK_FILE, applied_ids)
                 if nt:
-                    applied_titles.add(nt); _save_json_set(APPLIED_FILE, applied_titles); _seen_titles.add(nt)
+                    applied_titles.add(nt); _save_json_set(APPLIED_FILE, applied_titles)
                 try:
                     upsert_application(db, company=company or 'Dice Employer', job_title=title or 'Dice Job',
                                        job_url=url, ats_type='dice', status='applied', match_score=75)
@@ -726,7 +783,7 @@ def main():
                 if jid:
                     applied_ids.add(jid); _save_json_set(JK_FILE, applied_ids)
                 if nt:
-                    applied_titles.add(nt); _save_json_set(APPLIED_FILE, applied_titles); _seen_titles.add(nt)
+                    applied_titles.add(nt); _save_json_set(APPLIED_FILE, applied_titles)
             else:
                 release_claim(db, 'dice:' + (title or ''), title)   # not applied → free claim
                 if jid:

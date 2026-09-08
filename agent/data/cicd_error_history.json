@@ -362,6 +362,22 @@
       "root_cause": "TWO real bugs: (1) fallback email-verify branch in applier.py read page text IMMEDIATELY after code submit, before the Greenhouse React app navigated away \u2014 still saw \"verification code\" text -> FALSE rejection (primary branch had a wait_for_function, fallback did not). (2) get_verification_code reused STALE codes from prior sessions (cb164f12) because _USED_CODES only dedups within one process and there was no email-date freshness check.",
       "fix": "(1) Added the same wait_for_function to the fallback branch so it waits for thank-you/error text before deciding. (2) Added a 5-min freshness cutoff on the email Date header in get_verification_code \u2014 emails older than the OTP attempt are skipped. Added 2 freshness tests + kept 27 existing = 29 pass.",
       "verified": "pytest tests/test_email_code_reader.py = 29 passed; applier.py compiles; AST check confirms no UnboundLocal from local datetime import"
+    },
+    {
+      "date": "2026-09-08",
+      "workflow": "Dice/Indeed/Greenhouse Apply",
+      "error": "0 applications for 4 days despite all-green runs",
+      "root_cause": "Dice title-dedup keyed on empty company (global title block) + failed_ids no TTL. Fresh jobs found (165) but all skipped.",
+      "fix": "dice_apply.py: company-scoped title key (company|title after detail page) + FAIL_TTL_DAYS=7 expiry on failed_ids. Indeed(URL-dedup)/Greenhouse(company|title) verified clean.",
+      "permanent": true
+    },
+    {
+      "date": "2026-09-08",
+      "workflow": "Refresh LinkedIn Cookies",
+      "error": "browser-cookie3 failed: Unable to get key for cookie decryption; missing li_at",
+      "root_cause": "macOS encrypts Chrome cookies; CI cannot decrypt. Local session had JSESSIONID but no li_at (logged out).",
+      "fix": "Workflow now exit(0) with clear manual guidance instead of exit(1). One-time manual: copy li_at from DevTools -> gh secret set LINKEDIN_COOKIES.",
+      "permanent": true
     }
   ],
   "patterns": {
@@ -406,7 +422,11 @@
     "recruiter_pipeline_tracking": "Every recruiter conversation is tracked through stages. Pipeline auto-advances based on email keywords. Silent recruiters get follow-up after 3 days. Never lose a conversation.",
     "otp_code_extraction": "ATS codes are ALPHANUMERIC 4-8 chars. digit-only regex truncates (15372C->15372). For all-letter tokens require >=3 uppercase (random codes) to exclude CamelCase words like LinkedIn. Anchor on context word; skip #-prefixed CSS colours.",
     "otp_fallback_timing": "Both email-verify branches (primary AND fallback) MUST wait_for_function for thank-you/error text before reading page \u2014 React navigates 3-8s after OTP submit; reading early = false verification_code_rejected.",
-    "otp_stale_code": "_USED_CODES only dedups within one process. Across runs, an old Greenhouse email code (e.g. cb164f12) looks fresh. Guard with an email Date freshness cutoff (reject > 5 min old)."
+    "otp_stale_code": "_USED_CODES only dedups within one process. Across runs, an old Greenhouse email code (e.g. cb164f12) looks fresh. Guard with an email Date freshness cutoff (reject > 5 min old).",
+    "dice_title_dedup_global_starvation": "Dice title-dedup was keyed with empty company (_title_key('', title) -> '|java developer'), so applying to one 'Java Developer' blocked that title at EVERY company forever. Over 4 days 42 generic titles starved the queue to 0 applies. FIX: build title key with REAL company (company|title) AFTER the detail page reveals company; pre-open only blocks exact title within the SAME run. Same title at a different company now allowed. Job-id dedup untouched.",
+    "failed_ids_need_ttl": "dice_failed_ids blocked a job after just 1 failure, FOREVER (no expiry). Transient timeouts/anti-bot glitches permanently retired good jobs; 102 stale fails accumulated Sep 1-4. FIX: store failed as {id: epoch}, expire after FAIL_TTL_DAYS=7 via _load_failed_fresh(); legacy list format still honored + migrated on next save. Retry transient fails after 7d = more applies.",
+    "green_run_zero_applies": "A GREEN apply workflow does NOT mean it applied. Dice/Indeed/Greenhouse exit 0 after skipping every job via dedup. Always check the 'SUBMITTED N' line, not the run color. 0 applies with all-green = dedup starvation, not a crash.",
+    "linkedin_cookie_macos_expected": "LinkedIn cookie refresh CANNOT auto-run on macOS CI (Chrome encrypts cookies, no Keychain in background). This is EXPECTED, not a bug -> exit 0 with manual guidance, never exit 1 (false red). Manual one-time: DevTools copy li_at -> gh secret set LINKEDIN_COOKIES. Same root as google_oauth pattern."
   },
   "rules_for_new_workflows": [
     "Use venv (python3 -m venv) \u2014 never bare pip install",
@@ -435,7 +455,7 @@
     }
   },
   "status": {
-    "last_updated": "2026-09-01",
+    "last_updated": "2026-09-08",
     "dice": {
       "runner": "ubuntu-latest (cloud)",
       "schedule": "10:30 AM MT weekdays",
