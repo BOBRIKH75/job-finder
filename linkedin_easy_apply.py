@@ -624,10 +624,37 @@ def main():
             if check_for_restrictions(driver):
                 break
 
-            # Find job cards
+            # Scroll the results list to trigger LinkedIn's lazy-loading (cards render on
+            # scroll — without this the container is empty and we "find 0 jobs").
             try:
-                job_cards = driver.find_elements("css selector", ".job-card-container")
-                print(f"    Found {len(job_cards)} jobs (last 7d, Easy Apply, Remote)")
+                for _ in range(3):
+                    driver.execute_script("window.scrollBy(0, 800);")
+                    time.sleep(1.2)
+                driver.execute_script("window.scrollTo(0, 0);")
+                time.sleep(1)
+            except Exception:
+                pass
+
+            # Find job cards — LinkedIn changes markup often, so try several current
+            # selectors and use the first that returns cards (fallback chain).
+            try:
+                _card_selectors = [
+                    ".job-card-container",
+                    "li.jobs-search-results__list-item",
+                    "div.job-card-container--clickable",
+                    "li.scaffold-layout__list-item",
+                    "[data-job-id]",
+                    ".base-card",
+                ]
+                job_cards = []
+                _used = ""
+                for _sel in _card_selectors:
+                    job_cards = driver.find_elements("css selector", _sel)
+                    if job_cards:
+                        _used = _sel
+                        break
+                print(f"    Found {len(job_cards)} jobs (last 7d, Easy Apply, Remote)"
+                      + (f" [selector: {_used}]" if _used else " [no selector matched]"))
 
                 for card in job_cards[:8]:  # check up to 8, apply to max 5 per keyword
                     if applied_count >= MAX_APPLICATIONS_PER_RUN:
