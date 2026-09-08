@@ -3803,5 +3803,450 @@
     "position": "recruitment (role inbox)",
     "source": "deep/role-mx",
     "domain": "healthstream.onmicrosoft.com"
+  },
+  {
+    "name": "",
+    "company": "CAI",
+    "email": "careers@cai.com",
+    "position": "careers (role inbox)",
+    "source": "free/role-mx",
+    "verified": "2026-09-08"
+  },
+  {
+    "name": "",
+    "company": "CAI",
+    "email": "recruiting@cai.com",
+    "position": "recruiting (role inbox)",
+    "source": "free/role-mx",
+    "verified": "2026-09-08"
+  },
+  {
+    "name": "",
+    "company": "CVS Health",
+    "email": "careers@cvshealth.com",
+    "position": "careers (role inbox)",
+    "source": "free/role-mx",
+    "verified": "2026-09-08"
+  },
+  {
+    "name": "",
+    "company": "CVS Health",
+    "email": "recruiting@cvshealth.com",
+    "position": "recruiting (role inbox)",
+    "source": "free/role-mx",
+    "verified": "2026-09-08"
+  },
+  {
+    "name": "",
+    "company": "Filevine",
+    "email": "careers@filevine.com",
+    "position": "careers (role inbox)",
+    "source": "free/role-mx",
+    "verified": "2026-09-08"
+  },
+  {
+    "name": "",
+    "company": "Filevine",
+    "email": "recruiting@filevine.com",
+    "position": "recruiting (role inbox)",
+    "source": "free/role-mx",
+    "verified": "2026-09-08"
+  },
+  {
+    "name": "",
+    "company": "Garmin",
+    "email": "careers@garmin.com",
+    "position": "careers (role inbox)",
+    "source": "free/role-mx",
+    "verified": "2026-09-08"
+  },
+  {
+    "name": "",
+    "company": "Garmin",
+    "email": "recruiting@garmin.com",
+    "position": "recruiting (role inbox)",
+    "source": "free/role-mx",
+    "verified": "2026-09-08"
+  },
+  {
+    "name": "",
+    "company": "JC CORPORATIONS",
+    "email": "careers@jcs.com",
+    "position": "careers (role inbox)",
+    "source": "free/role-mx",
+    "verified": "2026-09-08"
+  },
+  {
+    "name": "",
+    "company": "JC CORPORATIONS",
+    "email": "recruiting@jcs.com",
+    "position": "recruiting (role inbox)",
+    "source": "free/role-mx",
+    "verified": "2026-09-08"
+  },
+  {
+    "name": "",
+    "company": "Vertisystem Inc.",
+    "email": "careers@vertisystem.com",
+    "position": "careers (role inbox)",
+    "source": "free/role-mx",
+    "verified": "2026-09-08"
+  },
+  {
+    "name": "",
+    "company": "Vertisystem Inc.",
+    "email": "recruiting@vertisystem.com",
+    "position": "recruiting (role inbox)",
+    "source": "free/role-mx",
+    "verified": "2026-09-08"
+  },
+  {
+    "name": "RK",
+    "company": "Cscs",
+    "email": "raja.kumar@cscs.io",
+    "position": "recruiter (emailed Bob)",
+    "source": "inbox-harvest",
+    "last_subject": "Re: HOTLIST \u2013 Senior Java/Spring Boot Developer Available C2",
+    "verified": "2026-09-08"
+  },
+  {
+    "name": "Recruiting Shared",
+    "company": "Usbank",
+    "email": "recruiting@usbank.com",
+    "position": "recruiter (emailed Bob)",
+    "source": "inbox-harvest",
+    "last_subject": " RE:  Java Developer / C2C opportunities \u2014 C2C Available \u2014 B",
+    "verified": "2026-09-08"
+  },
+  {
+    "name": "Chase, Liz",
+    "company": "Fnbo",
+    "email": "lchase@fnbo.com",
+    "position": "recruiter (emailed Bob)",
+    "source": "inbox-harvest",
+    "last_subject": "RE:  Java Developer / C2C opportunities \u2014 C2C Available \u2014 Bo",
+    "verified": "2026-09-08"
+  },
+  {
+    "name": "Cscs",
+    "email": "careers@cscs.io",
+    "position": "careers (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "cscs.io"
+  },
+  {
+    "name": "Cscs",
+    "email": "recruiting@cscs.io",
+    "position": "recruiting (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "cscs.io"
+  },
+  {
+    "name": "Cscs",
+    "email": "talent@cscs.io",
+    "position": "talent (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "cscs.io"
+  },
+  {
+    "name": "Cscs",
+    "email": "jobs@cscs.io",
+    "position": "jobs (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "cscs.io"
+  },
+  {
+    "name": "Cscs",
+    "email": "hr@cscs.io",
+    "position": "hr (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "cscs.io"
+  },
+  {
+    "name": "Cscs",
+    "email": "recruitment@cscs.io",
+    "position": "recruitment (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "cscs.io"
+  },
+  {
+    "name": "Cscs",
+    "email": "contact@cscs.io",
+    "position": "published contact",
+    "source": "deep/careers-page",
+    "domain": "cscs.io"
+  },
+  {
+    "name": "Cscs",
+    "email": "info@cscs.io",
+    "position": "published contact",
+    "source": "deep/careers-page",
+    "domain": "cscs.io"
+  },
+  {
+    "name": "Usbank",
+    "email": "careers@usbank.com",
+    "position": "careers (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "usbank.com"
+  },
+  {
+    "name": "Usbank",
+    "email": "talent@usbank.com",
+    "position": "talent (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "usbank.com"
+  },
+  {
+    "name": "Usbank",
+    "email": "jobs@usbank.com",
+    "position": "jobs (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "usbank.com"
+  },
+  {
+    "name": "Usbank",
+    "email": "hr@usbank.com",
+    "position": "hr (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "usbank.com"
+  },
+  {
+    "name": "Usbank",
+    "email": "recruitment@usbank.com",
+    "position": "recruitment (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "usbank.com"
+  },
+  {
+    "name": "Usbank",
+    "email": "rewardscommunication@usbank.com",
+    "position": "published contact",
+    "source": "deep/careers-page",
+    "domain": "usbank.com"
+  },
+  {
+    "name": "Usbank",
+    "email": "portaldotcom@usbank.com",
+    "position": "published contact",
+    "source": "deep/careers-page",
+    "domain": "usbank.com"
+  },
+  {
+    "name": "Fnbo",
+    "email": "careers@fnbo.com",
+    "position": "careers (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "fnbo.com"
+  },
+  {
+    "name": "Fnbo",
+    "email": "recruiting@fnbo.com",
+    "position": "recruiting (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "fnbo.com"
+  },
+  {
+    "name": "Fnbo",
+    "email": "talent@fnbo.com",
+    "position": "talent (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "fnbo.com"
+  },
+  {
+    "name": "Fnbo",
+    "email": "jobs@fnbo.com",
+    "position": "jobs (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "fnbo.com"
+  },
+  {
+    "name": "Fnbo",
+    "email": "hr@fnbo.com",
+    "position": "hr (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "fnbo.com"
+  },
+  {
+    "name": "Fnbo",
+    "email": "recruitment@fnbo.com",
+    "position": "recruitment (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "fnbo.com"
+  },
+  {
+    "name": "Fnbo",
+    "email": "mkyle@fnbo.com",
+    "position": "published contact",
+    "source": "deep/careers-page",
+    "domain": "fnbo.com"
+  },
+  {
+    "name": "Fnbo",
+    "email": "jweatherly@fnbo.com",
+    "position": "published contact",
+    "source": "deep/careers-page",
+    "domain": "fnbo.com"
+  },
+  {
+    "name": "Fnbo",
+    "email": "mvance@fnbo.com",
+    "position": "published contact",
+    "source": "deep/careers-page",
+    "domain": "fnbo.com"
+  },
+  {
+    "name": "Fnbo",
+    "email": "mwahrman@fnbo.com",
+    "position": "published contact",
+    "source": "deep/careers-page",
+    "domain": "fnbo.com"
+  },
+  {
+    "name": "Fnbo",
+    "email": "sgeiter@fnbo.com",
+    "position": "published contact",
+    "source": "deep/careers-page",
+    "domain": "fnbo.com"
+  },
+  {
+    "name": "Fnbo",
+    "email": "lremond@fnbo.com",
+    "position": "published contact",
+    "source": "deep/careers-page",
+    "domain": "fnbo.com"
+  },
+  {
+    "name": "Fnbo",
+    "email": "dtaylor@fnbo.com",
+    "position": "published contact",
+    "source": "deep/careers-page",
+    "domain": "fnbo.com"
+  },
+  {
+    "name": "Fnbo",
+    "email": "jengel@fnbo.com",
+    "position": "published contact",
+    "source": "deep/careers-page",
+    "domain": "fnbo.com"
+  },
+  {
+    "name": "Fnbo",
+    "email": "atemple@fnbo.com",
+    "position": "published contact",
+    "source": "deep/careers-page",
+    "domain": "fnbo.com"
+  },
+  {
+    "name": "Netflix",
+    "email": "careers@netflix.com",
+    "position": "careers (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "netflix.com"
+  },
+  {
+    "name": "Netflix",
+    "email": "recruiting@netflix.com",
+    "position": "recruiting (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "netflix.com"
+  },
+  {
+    "name": "Netflix",
+    "email": "talent@netflix.com",
+    "position": "talent (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "netflix.com"
+  },
+  {
+    "name": "Netflix",
+    "email": "jobs@netflix.com",
+    "position": "jobs (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "netflix.com"
+  },
+  {
+    "name": "Netflix",
+    "email": "hr@netflix.com",
+    "position": "hr (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "netflix.com"
+  },
+  {
+    "name": "Netflix",
+    "email": "recruitment@netflix.com",
+    "position": "recruitment (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "netflix.com"
+  },
+  {
+    "name": "Prenuvo",
+    "email": "careers@prenuvo.com",
+    "position": "careers (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "prenuvo.com"
+  },
+  {
+    "name": "Prenuvo",
+    "email": "recruiting@prenuvo.com",
+    "position": "recruiting (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "prenuvo.com"
+  },
+  {
+    "name": "Prenuvo",
+    "email": "talent@prenuvo.com",
+    "position": "talent (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "prenuvo.com"
+  },
+  {
+    "name": "Prenuvo",
+    "email": "jobs@prenuvo.com",
+    "position": "jobs (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "prenuvo.com"
+  },
+  {
+    "name": "Prenuvo",
+    "email": "hr@prenuvo.com",
+    "position": "hr (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "prenuvo.com"
+  },
+  {
+    "name": "Prenuvo",
+    "email": "recruitment@prenuvo.com",
+    "position": "recruitment (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "prenuvo.com"
+  },
+  {
+    "name": "Prenuvo",
+    "email": "hello@prenuvo.com",
+    "position": "published contact",
+    "source": "deep/careers-page",
+    "domain": "prenuvo.com"
+  },
+  {
+    "name": "Prenuvo",
+    "email": "feedback@prenuvo.com",
+    "position": "published contact",
+    "source": "deep/careers-page",
+    "domain": "prenuvo.com"
+  },
+  {
+    "name": "Prenuvo",
+    "email": "media@prenuvo.com",
+    "position": "published contact",
+    "source": "deep/careers-page",
+    "domain": "prenuvo.com"
+  },
+  {
+    "name": "Prenuvo",
+    "email": "ambassador@prenuvo.com",
+    "position": "published contact",
+    "source": "deep/careers-page",
+    "domain": "prenuvo.com"
   }
 ]
