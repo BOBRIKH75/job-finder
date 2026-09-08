@@ -719,6 +719,12 @@ def main():
         _pages = min(int(os.environ.get('DICE_SEARCH_PAGES', '4')), 4)  # data: page 5+ = 0 results
         jobs = []
         seen = set()
+        # Count FRESH jobs (not already applied / not failed) during search so we can stop
+        # early once we have enough to fill the apply target. Prevents wasting 20+ min
+        # searching 77 queries when you're already caught up on Dice's Java inventory.
+        # DICE_FRESH_TARGET (default target*3) = how many fresh jobs is "enough" to stop.
+        _fresh_needed = int(os.environ.get('DICE_FRESH_TARGET', str(max(target * 3, 30))))
+        _fresh = 0
         for term in terms:
             _before = len(jobs)
             for url, title in _search_urls(page, term, pages=_pages):
@@ -726,14 +732,21 @@ def main():
                 if jid and jid not in seen:
                     seen.add(jid)
                     jobs.append((url, title, jid))
+                    # is this one FRESH (worth applying)? not applied, not failed, not dead
+                    if jid and jid not in applied_ids and jid not in failed_ids and jid not in dead:
+                        _fresh += 1
             _new = len(jobs) - _before
             if _new:
-                print(f"  🔎 '{term[:40]}' → +{_new} new (pool={len(jobs)})")
-            # collect a BIG pool for deep coverage — cap high so many varied queries run.
-            # (data: each query ~100-130 jobs, low overlap → more queries = more unique jobs)
+                print(f"  🔎 '{term[:40]}' → +{_new} new ({_fresh} fresh, pool={len(jobs)})")
+            # STOP EARLY once we have enough FRESH jobs to fill the target — no point
+            # searching more queries if we already have plenty of new jobs to apply to.
+            if _fresh >= _fresh_needed:
+                print(f"  ✅ enough fresh jobs ({_fresh} >= {_fresh_needed}) — stop searching")
+                break
+            # Hard cap so a caught-up state (few fresh) still can't run forever.
             if len(jobs) >= max(600, target * 25):
                 break
-        print(f"🔍 {len(jobs)} unique Dice easy-apply jobs found")
+        print(f"🔍 {len(jobs)} unique Dice jobs found ({_fresh} fresh to apply)")
 
         submitted = 0
         _seen_titles = set()
