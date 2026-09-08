@@ -659,12 +659,35 @@ def main():
             'backend developer Java', 'Java web services', 'Java application developer',
             'Lead Java developer', 'Java architect', 'Java consultant',
             'Java AWS developer', 'Java cloud developer', 'Java API developer',
-            'software engineer Java', 'backend engineer', 'microservices developer',
+            'software engineer Java', 'Java backend engineer', 'Java microservices developer',
+            # skill-specific Java (each surfaces a different slice — CV skills)
+            'Java Kafka developer', 'Java Kubernetes developer', 'Java Docker developer',
+            'Java Spring Cloud developer', 'Java Spring Security developer',
+            'Java Hibernate developer', 'Java JPA developer', 'Java SQL developer',
+            'Java PostgreSQL developer', 'Java MongoDB developer', 'Java Cassandra developer',
+            'Java Redis developer', 'Java GraphQL developer', 'Java Maven developer',
+            'Java CI CD developer', 'Java Jenkins developer', 'Java JUnit developer',
+            'Java multithreading developer', 'Java distributed systems developer',
+            'Java event driven developer', 'Java API gateway developer',
+            'core Java developer', 'Java 17 developer', 'Java 21 developer',
+            'Java Spring MVC developer', 'Java Angular developer', 'Java React developer',
+            'Java Tomcat developer', 'Java OAuth developer', 'Java JWT developer',
+            'Java Terraform developer', 'Java Lambda developer', 'Java Elasticsearch developer',
+            'Java RabbitMQ developer', 'Java Splunk DataDog developer',
+            # seniority + role variations (same CV, different title wording)
+            'Principal Java developer', 'Staff Java engineer', 'Java tech lead',
+            'Java backend software engineer', 'Java platform engineer',
+            'Java services developer', 'Java integration developer',
+            'Java enterprise developer', 'J2EE developer', 'Java EE developer',
             # boolean: precise CV match, exclude off-CV noise
             'Java AND (Spring OR "Spring Boot") NOT .NET',
             'Java AND (Kafka OR microservices OR AWS) NOT Azure',
             '(Java OR "Core Java") AND (backend OR "REST API") NOT (test OR QA)',
             'Java AND (Kubernetes OR Docker OR AWS) NOT (Python OR .NET)',
+            'Java AND (Spring OR Hibernate OR JPA) NOT (frontend OR UI)',
+            '("Spring Boot" OR "Spring Cloud") AND (microservices OR REST) NOT .NET',
+            'Java AND (PostgreSQL OR MongoDB OR Cassandra) NOT (DBA OR admin)',
+            '(Java OR J2EE OR "Java EE") AND (developer OR engineer) NOT (QA OR test OR support)',
         ]
         _POOL_N = len(_pool)
         # rotate the pool start each run (persist cursor) so runs prioritize DIFFERENT queries
@@ -674,9 +697,12 @@ def main():
         except Exception:
             _cur = 0
         _pool = _pool[_cur % _POOL_N:] + _pool[:_cur % _POOL_N]
+        # Advance the priority window each run. Larger step = the 77-query pool is covered
+        # in fewer runs so we don't keep hammering the same head queries and miss the tail.
+        _rot = int(os.environ.get('DICE_QUERY_ROTATE', '12'))
         try:
             os.makedirs('data', exist_ok=True)
-            json.dump({'i': (_cur + 5) % _POOL_N}, open(_cur_file, 'w'))
+            json.dump({'i': (_cur + _rot) % _POOL_N}, open(_cur_file, 'w'))
         except Exception:
             pass
         # custom term (dispatch input) always leads if provided; else default Java Spring Boot
