@@ -42,6 +42,8 @@ jobs:
           RESEND_KEY: ${{ secrets.RESEND_KEY }}
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          # Manual "Run workflow" bypasses the business-hours gate; scheduled runs stay gated.
+          LINKEDIN_FORCE_RUN: ${{ github.event_name == 'workflow_dispatch' && '1' || '0' }}
         run: |
           python3 linkedin_easy_apply.py
 

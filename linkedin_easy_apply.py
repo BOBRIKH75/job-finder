@@ -80,7 +80,13 @@ def human_delay():
 
 
 def is_safe_run_time() -> tuple[bool, str]:
-    """Return (ok, reason) — only allow runs during US business hours on weekdays."""
+    """Return (ok, reason) — only allow runs during US business hours on weekdays.
+
+    Manual override: set LINKEDIN_FORCE_RUN=1 (wired to the workflow_dispatch button) to
+    bypass the hour/weekend gate — when YOU click Run, you mean it. Scheduled runs still
+    respect business hours to keep a human-like signature (anti-restriction)."""
+    if os.environ.get('LINKEDIN_FORCE_RUN', '').strip().lower() in ('1', 'true', 'yes', 'on'):
+        return True, "OK (manual force-run — business-hours gate bypassed)"
     now_utc = datetime.utcnow()
     # MT is UTC-6 (MDT) / UTC-7 (MST) — use UTC-6 (summer)
     hour_mt = (now_utc.hour - 6) % 24
