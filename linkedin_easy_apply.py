@@ -535,8 +535,10 @@ def main():
 
     applied_data = load_applied()
 
-    # Safety: only once per day (not twice — datacenter IPs need conservative rate)
-    if applied_data.get("last_run"):
+    # Safety: only once per day (not twice — datacenter IPs need conservative rate).
+    # Manual force-run bypasses this too (you clicked Run on purpose). Scheduled runs keep it.
+    _force = os.environ.get('LINKEDIN_FORCE_RUN', '').strip().lower() in ('1', 'true', 'yes', 'on')
+    if applied_data.get("last_run") and not _force:
         from datetime import timedelta
         last = datetime.fromisoformat(applied_data["last_run"])
         if datetime.now() - last < timedelta(hours=20):
