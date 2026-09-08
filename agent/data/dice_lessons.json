@@ -10,5 +10,9 @@
   "error": {
     "count": 24,
     "fix": "reload_retry"
+  },
+  "no_apply_button": {
+    "count": 1,
+    "fix": "longer_button_wait"
   }
 }
