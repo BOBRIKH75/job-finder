@@ -584,6 +584,69 @@ def scan_himalayas() -> list[dict]:
     return jobs
 
 
+def scan_jobicy() -> list[dict]:
+    """Search Jobicy via their free public JSON API (no auth). Remote tech jobs."""
+    jobs = []
+    try:
+        resp = httpx.get(
+            "https://jobicy.com/api/v2/remote-jobs?count=50&tag=java",
+            headers={"User-Agent": "Mozilla/5.0"},
+            timeout=15,
+        )
+        if resp.status_code != 200:
+            return []
+        for item in resp.json().get("jobs", []):
+            title = item.get("jobTitle", "")
+            desc = item.get("jobExcerpt", "") or item.get("jobDescription", "")
+            url = item.get("url", "")
+            if not url or not matches_skills(title, desc):
+                continue
+            jobs.append({
+                "title": title,
+                "company": item.get("companyName", ""),
+                "url": url,
+                "location": item.get("jobGeo", "Remote") or "Remote",
+                "description": desc[:1000],
+                "source": "jobicy",
+                "ats_type": "unknown",
+            })
+    except Exception as e:
+        print(f"    Jobicy scan failed: {e}")
+    return jobs
+
+
+def scan_arbeitnow() -> list[dict]:
+    """Search Arbeitnow via their free public JSON API (no auth). Global + remote."""
+    jobs = []
+    try:
+        resp = httpx.get(
+            "https://www.arbeitnow.com/api/job-board-api",
+            headers={"User-Agent": "Mozilla/5.0"},
+            timeout=15,
+        )
+        if resp.status_code != 200:
+            return []
+        for item in resp.json().get("data", []):
+            title = item.get("title", "")
+            desc = item.get("description", "")
+            tags = " ".join(item.get("tags", []) or [])
+            url = item.get("url", "")
+            if not url or not matches_skills(title, desc + " " + tags):
+                continue
+            jobs.append({
+                "title": title,
+                "company": item.get("company_name", ""),
+                "url": url,
+                "location": item.get("location", "Remote") or "Remote",
+                "description": desc[:1000],
+                "source": "arbeitnow",
+                "ats_type": "unknown",
+            })
+    except Exception as e:
+        print(f"    Arbeitnow scan failed: {e}")
+    return jobs
+
+
 SEED_ASHBY = ["anthropic", "notion", "ramp", "retool", "linear", "vercel", "supabase",
               "resend", "cal-com", "dbt-labs", "airbyte", "temporal", "neon"]
 SEED_WORKABLE = ["twilio", "elastic", "n8n", "zapier", "talkdesk", "genesys"]
@@ -685,6 +748,18 @@ def scan_all_companies(max_companies: int = 30, found_jobs: list = None) -> list
     if him_jobs:
         all_jobs.extend(him_jobs)
         print(f"    ✅ Himalayas: {len(him_jobs)} jobs")
+    time.sleep(random.uniform(1.0, 2.0))
+
+    jic_jobs = scan_jobicy()
+    if jic_jobs:
+        all_jobs.extend(jic_jobs)
+        print(f"    ✅ Jobicy: {len(jic_jobs)} jobs")
+    time.sleep(random.uniform(1.0, 2.0))
+
+    arb_jobs = scan_arbeitnow()
+    if arb_jobs:
+        all_jobs.extend(arb_jobs)
+        print(f"    ✅ Arbeitnow: {len(arb_jobs)} jobs")
 
     save_companies(companies)
 
