@@ -125,8 +125,22 @@ def main():
             _names = set()
             try:
                 from jobspy import scrape_jobs as _sj
-                for _q in (os.environ.get('GH_DISCOVER_TERM', 'Java Spring Boot developer remote'),
-                           'Senior Java backend engineer remote'):
+                # Rotate through diverse discovery terms so each cycle surfaces
+                # companies from a DIFFERENT slice (domains/seniority/work-type),
+                # not just the same 2. Pick 3 per run based on scan offset.
+                _disc_pool = [
+                    os.environ.get('GH_DISCOVER_TERM', 'Java Spring Boot developer remote'),
+                    'Senior Java backend engineer remote',
+                    'Java microservices engineer',
+                    'Java developer fintech',
+                    'Java developer healthcare',
+                    'Java AWS Kafka engineer',
+                    'Java full stack developer hybrid',
+                    'Java software engineer contract',
+                ]
+                _di = (_offset // max(_scan_count, 1)) % len(_disc_pool)
+                _disc_terms = [_disc_pool[(_di + k) % len(_disc_pool)] for k in range(3)]
+                for _q in _disc_terms:
                     try:
                         _df = _sj(site_name=['indeed', 'linkedin'], search_term=_q,
                                   location='USA', results_wanted=25)
