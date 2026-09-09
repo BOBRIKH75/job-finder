@@ -283,11 +283,16 @@ def _search_urls(page, term, want=50, pages=3):
     pd = f'&filters.postedDate={posted}' if posted else ''
     _easy = os.environ.get('DICE_EASY_APPLY', '1').strip().lower() not in ('0', 'false', 'no', 'off')
     ea = '&filters.easyApply=true' if _easy else ''
+    # Workplace types: default Remote+Hybrid (many "hybrid" roles are effectively remote
+    # and unlock a much larger pool). Override via DICE_WORKPLACE, e.g. "Remote" (strict)
+    # or "Remote,Hybrid,Onsite" (widest). Dice accepts comma-separated values.
+    _wp = os.environ.get('DICE_WORKPLACE', 'Remote,Hybrid').strip()
+    wp = f"&filters.workplaceTypes={_wp.replace(',', '%2C')}" if _wp else ''
     out = []
     for pg_num in range(1, pages + 1):
         try:
             page.goto(f'https://www.dice.com/jobs?q={q}&countryCode=US&page={pg_num}&pageSize={want}'
-                      f'{ea}&filters.workplaceTypes=Remote{pd}',
+                      f'{ea}{wp}{pd}',
                       wait_until='domcontentloaded', timeout=30000)
             time.sleep(4)
             rows = page.evaluate(r"""() => {
