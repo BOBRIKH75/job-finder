@@ -13,6 +13,11 @@ from jobspy import scrape_jobs
 import pandas as pd
 EMAIL = 'bobrikh75@gmail.com'
 RESEND_KEY = os.environ.get('RESEND_KEY', '')
+# Sender for self-reports. Defaults to the Resend sandbox (only delivers to
+# your own verified address). Once you verify a domain in Resend (e.g.
+# bobrikh.dev), set the RESEND_FROM secret to 'Job Finder <bob@bobrikh.dev>'
+# and all self-emails switch over with no code change.
+RESEND_FROM = os.environ.get('RESEND_FROM', 'Job Finder <onboarding@resend.dev>')
 SEEN_FILE = 'seen_jobs.json'
 LEARNED_FILE = 'learned.json'  # dynamic vendors + keywords discovered from postings
 
@@ -157,6 +162,16 @@ def build_searches(learned_vendors, learned_keywords):
         {'term': 'Java AWS Docker Kubernetes contract', 'location': 'USA'},
         # C2C-specific sites via Google
         {'term': 'site:dice.com Java Spring Boot C2C contract', 'location': 'USA'},
+        # Widened net (added to increase fresh job supply after Dice/Indeed saturation)
+        {'term': 'Senior Java developer contract remote', 'location': 'USA'},
+        {'term': 'Java Spring Boot REST API contract', 'location': 'USA'},
+        {'term': 'Java full stack developer contract remote', 'location': 'USA'},
+        {'term': 'Java software engineer contract', 'location': 'Texas'},
+        {'term': 'Java developer contract', 'location': 'Florida'},
+        {'term': 'Java developer contract remote', 'location': 'New York'},
+        {'term': 'site:builtin.com Java contract remote', 'location': 'USA'},
+        {'term': 'site:wellfound.com Java backend contract', 'location': 'USA'},
+        {'term': 'site:monster.com Java Spring Boot C2C contract', 'location': 'USA'},
     ]
     # Dynamic vendor searches (from learned vendors)
     all_vendors = list(SEED_VENDORS) + list(learned_vendors)
@@ -360,7 +375,9 @@ def search_all(learned):
     for s in searches:
         try:
             jobs = scrape_jobs(
-                site_name=['indeed', 'linkedin', 'google', 'zip_recruiter', 'glassdoor'],
+                # zip_recruiter + glassdoor removed: both return HTTP 403
+                # (Cloudflare WAF) on the runner every call — wasted time + log noise.
+                site_name=['indeed', 'linkedin', 'google'],
                 search_term=s['term'], google_search_term=s['term'] + ' jobs',
                 location=s['location'], results_wanted=15,
                 hours_old=336, country_indeed='USA', verbose=0,
@@ -435,7 +452,7 @@ def send_email(html, count):
         print('⚠️  No RESEND_KEY'); return False
     short = datetime.now().strftime('%b %d')
     payload = json.dumps({
-        'from': 'Job Finder <onboarding@resend.dev>', 'to': [EMAIL],
+        'from': RESEND_FROM, 'to': [EMAIL],
         'subject': f'🔍 {count} C2C Java Jobs — {short}', 'html': html,
     })
     with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
@@ -489,23 +506,43 @@ def main():
                 vendor_data = json.load(f)
         existing_emails = {v['email'] for v in vendor_data.get('vendors', [])}
         
-        # Add newly discovered vendors with guessed emails
+        # Add newly discovered vendors — but NEVER fabricate an address.
+        # A guessed "info@{domain}.com" is (a) a non-person mailbox and
+        # (b) often a domain that does not exist, so it bounces and hurts
+        # sender reputation. Only add it if the mailbox actually verifies.
+        try:
+            from outreach import verify_email_smtp
+        except Exception:
+            verify_email_smtp = None
         added = 0
+        skipped = 0
         for vendor_name in learned.get('vendors', set()):
             # Construct domain from vendor name
             domain = vendor_name.lower().replace(' ', '').replace(',', '').replace('.', '').replace('inc', '').replace('llc', '').replace('corp', '').strip()
             if len(domain) < 3:
                 continue
             guessed_email = f"info@{domain}.com"
-            if guessed_email not in existing_emails:
-                vendor_data.setdefault('vendors', []).append({
-                    'name': vendor_name,
-                    'email': guessed_email,
-                    'source': 'auto_discovered',
-                    'discovered': datetime.now().isoformat(),
-                })
-                existing_emails.add(guessed_email)
-                added += 1
+            if guessed_email in existing_emails:
+                continue
+            # Verify before trusting the guess. Skip if we can't confirm it is
+            # real (None = cannot check, False = rejected → both skipped here,
+            # because this is a stored guess, not a scraped real address).
+            verified = verify_email_smtp(guessed_email) if verify_email_smtp else None
+            if verified is not True:
+                skipped += 1
+                continue
+            vendor_data.setdefault('vendors', []).append({
+                'name': vendor_name,
+                'email': guessed_email,
+                'source': 'auto_discovered',
+                'smtp_verified': True,
+                'discovered': datetime.now().isoformat(),
+            })
+            existing_emails.add(guessed_email)
+            added += 1
+
+        if skipped:
+            print(f'  🚫 Skipped {skipped} unverified guessed vendor emails (not fabricating)')
         
         if added > 0:
             with open(vendor_file, 'w') as f:

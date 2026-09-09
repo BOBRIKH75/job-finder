@@ -38,4 +38,5 @@ jobs:
           git config user.name "Portal Upload Bot"
           git add ../data/portal_upload_history.json || true
           git diff --staged --quiet || git commit -m "chore: vendor portal upload history $(date +%Y-%m-%d)"
+          git pull --rebase --autostash origin master || true
           git push || true

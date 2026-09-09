@@ -107,6 +107,7 @@ jobs:
           git config user.email "bobrikh75@gmail.com"
           git add found_jobs.json 2>/dev/null || true
           git diff --cached --quiet || git commit -m "Update found_jobs.json [skip ci]"
+          git pull --rebase --autostash origin master || true
           git push || true
 
       - name: Resolve LinkedIn URLs to company apply pages
@@ -118,6 +119,7 @@ jobs:
           python resolve_urls.py
           git add found_jobs.json 2>/dev/null || true
           git diff --cached --quiet || git commit -m "Resolve LinkedIn URLs to apply pages [skip ci]"
+          git pull --rebase --autostash origin master || true
           git push || true
 
       - name: Trigger auto-apply agent

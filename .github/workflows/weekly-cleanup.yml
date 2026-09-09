@@ -88,6 +88,7 @@ jobs:
             echo "Nothing changed — no commit needed"
           else
             git commit -m "chore: weekly cleanup [$(date '+%Y-%m-%d')]"
+            git pull --rebase --autostash origin master || true
             git push
             echo "✅ Cleanup committed and pushed"
           fi

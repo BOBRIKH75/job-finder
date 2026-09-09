@@ -54,4 +54,5 @@ jobs:
           git config user.name "LinkedIn Bot"
           git add linkedin_applied.json 2>/dev/null || true
           git diff --staged --quiet || git commit -m "chore: update LinkedIn applied IDs [skip ci]"
+          git pull --rebase --autostash origin master || true
           git push || true

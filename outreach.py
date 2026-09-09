@@ -391,6 +391,15 @@ def process_jobs(jobs_list):
                 print(f'  ⏭️  Already contacted: {email}')
                 continue
 
+            # Mandatory mailbox check — block only addresses the mail server
+            # explicitly REJECTS (False). Allow verified (True) and unverifiable
+            # (None, e.g. port 25 blocked on the runner) so real recruiters still
+            # get contacted, but dead/guessed domains are stopped.
+            smtp_status = verify_email_smtp(email)
+            if smtp_status is False:
+                print(f'  🚫 SMTP rejected — skip dead mailbox: {email}')
+                continue
+
             subject, html = build_outreach_email(recruiter_name, title, company)
             print(f'  📧 Sending to {email} for "{title}" @ {company}...')
 
@@ -399,6 +408,7 @@ def process_jobs(jobs_list):
                     'email': email, 'date': datetime.now().isoformat(),
                     'job': title, 'company': company, 'url': url,
                     'recruiter': recruiter_name,
+                    'smtp_verified': smtp_status is True,
                 }
                 sent_count += 1
                 results.append({
@@ -522,6 +532,14 @@ def send_followups():
         recruiter = info.get('recruiter', '')
 
         if not email or not job:
+            continue
+
+        # Skip stored junk/non-person addresses (e.g. scraped 'origin.allow@',
+        # 'info@', 'noreply@') that were saved before validation was added.
+        if not _looks_like_person_email(email.split('@')[0]):
+            print(f'  🚫 skip invalid stored email: {email}')
+            info['bounced'] = True  # mark so it is never retried
+            contacted[key] = info
             continue
 
         try:

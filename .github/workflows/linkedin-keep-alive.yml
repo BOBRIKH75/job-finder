@@ -201,4 +201,5 @@ jobs:
           git config user.name "LinkedIn Bot"
           git add data/linkedin_cookies_latest.json 2>/dev/null || true
           git diff --staged --quiet || git commit -m "chore: LinkedIn cookies refreshed $(date +%Y-%m-%d) [skip ci]"
+          git pull --rebase --autostash origin master || true
           git push || true

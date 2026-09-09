@@ -30,4 +30,5 @@ jobs:
           git config user.name "Hotlist Bot"
           git add data/hotlist_post_history.json || true
           git diff --staged --quiet || git commit -m "chore: hotlist posted $(date +%Y-%m-%d)"
+          git pull --rebase --autostash origin master || true
           git push || true
