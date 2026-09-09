@@ -697,6 +697,26 @@ def main():
             '("Spring Boot" OR "Spring Cloud") AND (microservices OR REST) NOT .NET',
             'Java AND (PostgreSQL OR MongoDB OR Cassandra) NOT (DBA OR admin)',
             '(Java OR J2EE OR "Java EE") AND (developer OR engineer) NOT (QA OR test OR support)',
+            # ── WIDENED 2026-09-09: adjacent titles + domains + contract phrasings to
+            #    surface jobs the existing pool never returned (anti-saturation) ──
+            'Java developer contract', 'Java developer C2C', 'Java corp to corp',
+            'Java developer W2', 'Java developer 1099', 'Java contract to hire',
+            'Java developer hybrid', 'Java developer onsite', 'Java developer remote USA',
+            # domain-specific Java (finance/health/insurance/telecom hire heavily in Java)
+            'Java developer finance', 'Java developer banking', 'Java developer fintech',
+            'Java developer healthcare', 'Java developer insurance', 'Java developer payments',
+            'Java developer telecom', 'Java developer ecommerce', 'Java developer retail',
+            'Java developer trading', 'Java developer capital markets',
+            # adjacent role titles that map to the same CV
+            'backend engineer Spring Boot', 'API developer Java', 'microservices engineer',
+            'distributed systems engineer Java', 'cloud engineer Java', 'SDE Java',
+            'software developer Java Spring', 'server side Java developer',
+            'Java developer AI', 'Java developer generative AI', 'Java developer LLM',
+            # boolean nets into unseen slices
+            'Java AND (contract OR "corp to corp" OR C2C) NOT (fulltime AND "no c2c")',
+            'Java AND (finance OR banking OR fintech OR payments) NOT (manager OR lead)',
+            '("Spring Boot" OR microservices) AND (remote OR hybrid) AND (contract OR C2C)',
+            'Java AND (AWS OR GCP OR Azure) AND (Spring OR microservices) NOT (devops AND SRE)',
         ]
         _POOL_N = len(_pool)
         # rotate the pool start each run (persist cursor) so runs prioritize DIFFERENT queries
