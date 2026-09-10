@@ -285,9 +285,10 @@ def _search_urls(page, term, want=50, pages=3):
     ea = '&filters.easyApply=true' if _easy else ''
     # Workplace types: default Remote+Hybrid (many "hybrid" roles are effectively remote
     # and unlock a much larger pool). Override via DICE_WORKPLACE, e.g. "Remote" (strict)
-    # or "Remote,Hybrid,Onsite" (widest). Dice accepts comma-separated values.
+    # or "Remote,Hybrid,Onsite" (widest). Dice needs PIPE-separated values in the URL
+    # (verified: comma returns a near-empty page; pipe %7C returns full results).
     _wp = os.environ.get('DICE_WORKPLACE', 'Remote,Hybrid').strip()
-    wp = f"&filters.workplaceTypes={_wp.replace(',', '%2C')}" if _wp else ''
+    wp = f"&filters.workplaceTypes={_wp.replace(',', '%7C')}" if _wp else ''
     out = []
     for pg_num in range(1, pages + 1):
         try:
