@@ -22,8 +22,6 @@ __pycache__/
 agent/data/*_cookies.json
 agent/data/apollo_cookies.json
 agent/data/apollo_contacted.json
-agent/data/contacted.json
-contacted.json
 **/cookies.json
 **/credentials.json
 **/secrets.json
