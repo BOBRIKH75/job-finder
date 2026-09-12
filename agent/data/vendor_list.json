@@ -5104,5 +5104,506 @@
     "position": "recruitment (role inbox)",
     "source": "deep/role-mx",
     "domain": "stripe.com"
+  },
+  {
+    "name": "Sammie Recruiter",
+    "company": "Ssipeople",
+    "email": "sammie.recruiter@ssipeople.com",
+    "position": "recruiter (emailed Bob)",
+    "source": "inbox-harvest",
+    "last_subject": "Senior Back End Developer opportunity",
+    "verified": "2026-09-12"
+  },
+  {
+    "name": "Pearson Talent Acquisition",
+    "company": "Workflow",
+    "email": "hccz.fa.sender@workflow.mail.em3.oraclecloud.com",
+    "position": "recruiter (emailed Bob)",
+    "source": "inbox-harvest",
+    "last_subject": "Your recent job application for Senior Software Engineer - 2",
+    "verified": "2026-09-12"
+  },
+  {
+    "name": "Ssipeople",
+    "email": "careers@ssipeople.com",
+    "position": "careers (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "ssipeople.com"
+  },
+  {
+    "name": "Ssipeople",
+    "email": "recruiting@ssipeople.com",
+    "position": "recruiting (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "ssipeople.com"
+  },
+  {
+    "name": "Ssipeople",
+    "email": "talent@ssipeople.com",
+    "position": "talent (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "ssipeople.com"
+  },
+  {
+    "name": "Ssipeople",
+    "email": "jobs@ssipeople.com",
+    "position": "jobs (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "ssipeople.com"
+  },
+  {
+    "name": "Ssipeople",
+    "email": "hr@ssipeople.com",
+    "position": "hr (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "ssipeople.com"
+  },
+  {
+    "name": "Ssipeople",
+    "email": "recruitment@ssipeople.com",
+    "position": "recruitment (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "ssipeople.com"
+  },
+  {
+    "name": "Ssipeople",
+    "email": "info@ssipeople.com",
+    "position": "published contact",
+    "source": "deep/careers-page",
+    "domain": "ssipeople.com"
+  },
+  {
+    "name": "Ssipeople",
+    "email": "bpalughi@ssipeople.com",
+    "position": "published contact",
+    "source": "deep/careers-page",
+    "domain": "ssipeople.com"
+  },
+  {
+    "name": "Otp",
+    "email": "careers@otp.workday.com",
+    "position": "careers (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "otp.workday.com"
+  },
+  {
+    "name": "Otp",
+    "email": "recruiting@otp.workday.com",
+    "position": "recruiting (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "otp.workday.com"
+  },
+  {
+    "name": "Otp",
+    "email": "talent@otp.workday.com",
+    "position": "talent (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "otp.workday.com"
+  },
+  {
+    "name": "Otp",
+    "email": "jobs@otp.workday.com",
+    "position": "jobs (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "otp.workday.com"
+  },
+  {
+    "name": "Otp",
+    "email": "hr@otp.workday.com",
+    "position": "hr (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "otp.workday.com"
+  },
+  {
+    "name": "Otp",
+    "email": "recruitment@otp.workday.com",
+    "position": "recruitment (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "otp.workday.com"
+  },
+  {
+    "name": "Workflow",
+    "email": "careers@workflow.mail.us2.cloud.oracle.com",
+    "position": "careers (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "workflow.mail.us2.cloud.oracle.com"
+  },
+  {
+    "name": "Workflow",
+    "email": "recruiting@workflow.mail.us2.cloud.oracle.com",
+    "position": "recruiting (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "workflow.mail.us2.cloud.oracle.com"
+  },
+  {
+    "name": "Workflow",
+    "email": "talent@workflow.mail.us2.cloud.oracle.com",
+    "position": "talent (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "workflow.mail.us2.cloud.oracle.com"
+  },
+  {
+    "name": "Workflow",
+    "email": "jobs@workflow.mail.us2.cloud.oracle.com",
+    "position": "jobs (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "workflow.mail.us2.cloud.oracle.com"
+  },
+  {
+    "name": "Workflow",
+    "email": "hr@workflow.mail.us2.cloud.oracle.com",
+    "position": "hr (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "workflow.mail.us2.cloud.oracle.com"
+  },
+  {
+    "name": "Workflow",
+    "email": "recruitment@workflow.mail.us2.cloud.oracle.com",
+    "position": "recruitment (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "workflow.mail.us2.cloud.oracle.com"
+  },
+  {
+    "name": "Hackajob",
+    "email": "careers@hackajob.com",
+    "position": "careers (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "hackajob.com"
+  },
+  {
+    "name": "Hackajob",
+    "email": "recruiting@hackajob.com",
+    "position": "recruiting (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "hackajob.com"
+  },
+  {
+    "name": "Hackajob",
+    "email": "talent@hackajob.com",
+    "position": "talent (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "hackajob.com"
+  },
+  {
+    "name": "Hackajob",
+    "email": "jobs@hackajob.com",
+    "position": "jobs (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "hackajob.com"
+  },
+  {
+    "name": "Hackajob",
+    "email": "hr@hackajob.com",
+    "position": "hr (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "hackajob.com"
+  },
+  {
+    "name": "Hackajob",
+    "email": "recruitment@hackajob.com",
+    "position": "recruitment (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "hackajob.com"
+  },
+  {
+    "name": "Crowdstrike",
+    "email": "careers@crowdstrike.com",
+    "position": "careers (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "crowdstrike.com"
+  },
+  {
+    "name": "Crowdstrike",
+    "email": "recruiting@crowdstrike.com",
+    "position": "recruiting (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "crowdstrike.com"
+  },
+  {
+    "name": "Crowdstrike",
+    "email": "talent@crowdstrike.com",
+    "position": "talent (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "crowdstrike.com"
+  },
+  {
+    "name": "Crowdstrike",
+    "email": "jobs@crowdstrike.com",
+    "position": "jobs (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "crowdstrike.com"
+  },
+  {
+    "name": "Crowdstrike",
+    "email": "hr@crowdstrike.com",
+    "position": "hr (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "crowdstrike.com"
+  },
+  {
+    "name": "Crowdstrike",
+    "email": "recruitment@crowdstrike.com",
+    "position": "recruitment (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "crowdstrike.com"
+  },
+  {
+    "name": "Careerplug",
+    "email": "careers@careerplug.com",
+    "position": "careers (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "careerplug.com"
+  },
+  {
+    "name": "Careerplug",
+    "email": "recruiting@careerplug.com",
+    "position": "recruiting (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "careerplug.com"
+  },
+  {
+    "name": "Careerplug",
+    "email": "talent@careerplug.com",
+    "position": "talent (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "careerplug.com"
+  },
+  {
+    "name": "Careerplug",
+    "email": "jobs@careerplug.com",
+    "position": "jobs (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "careerplug.com"
+  },
+  {
+    "name": "Careerplug",
+    "email": "hr@careerplug.com",
+    "position": "hr (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "careerplug.com"
+  },
+  {
+    "name": "Careerplug",
+    "email": "recruitment@careerplug.com",
+    "position": "recruitment (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "careerplug.com"
+  },
+  {
+    "name": "Zoominfo",
+    "email": "careers@zoominfo.com",
+    "position": "careers (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "zoominfo.com"
+  },
+  {
+    "name": "Zoominfo",
+    "email": "recruiting@zoominfo.com",
+    "position": "recruiting (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "zoominfo.com"
+  },
+  {
+    "name": "Zoominfo",
+    "email": "talent@zoominfo.com",
+    "position": "talent (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "zoominfo.com"
+  },
+  {
+    "name": "Zoominfo",
+    "email": "jobs@zoominfo.com",
+    "position": "jobs (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "zoominfo.com"
+  },
+  {
+    "name": "Zoominfo",
+    "email": "hr@zoominfo.com",
+    "position": "hr (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "zoominfo.com"
+  },
+  {
+    "name": "Zoominfo",
+    "email": "recruitment@zoominfo.com",
+    "position": "recruitment (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "zoominfo.com"
+  },
+  {
+    "name": "Bah",
+    "email": "careers@bah.com",
+    "position": "careers (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "bah.com"
+  },
+  {
+    "name": "Bah",
+    "email": "recruiting@bah.com",
+    "position": "recruiting (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "bah.com"
+  },
+  {
+    "name": "Bah",
+    "email": "talent@bah.com",
+    "position": "talent (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "bah.com"
+  },
+  {
+    "name": "Bah",
+    "email": "jobs@bah.com",
+    "position": "jobs (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "bah.com"
+  },
+  {
+    "name": "Bah",
+    "email": "hr@bah.com",
+    "position": "hr (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "bah.com"
+  },
+  {
+    "name": "Bah",
+    "email": "recruitment@bah.com",
+    "position": "recruitment (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "bah.com"
+  },
+  {
+    "name": "Dahlconsulting",
+    "email": "careers@dahlconsulting.com",
+    "position": "careers (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "dahlconsulting.com"
+  },
+  {
+    "name": "Dahlconsulting",
+    "email": "recruiting@dahlconsulting.com",
+    "position": "recruiting (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "dahlconsulting.com"
+  },
+  {
+    "name": "Dahlconsulting",
+    "email": "talent@dahlconsulting.com",
+    "position": "talent (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "dahlconsulting.com"
+  },
+  {
+    "name": "Dahlconsulting",
+    "email": "jobs@dahlconsulting.com",
+    "position": "jobs (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "dahlconsulting.com"
+  },
+  {
+    "name": "Dahlconsulting",
+    "email": "hr@dahlconsulting.com",
+    "position": "hr (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "dahlconsulting.com"
+  },
+  {
+    "name": "Dahlconsulting",
+    "email": "recruitment@dahlconsulting.com",
+    "position": "recruitment (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "dahlconsulting.com"
+  },
+  {
+    "name": "Solomonpage",
+    "email": "careers@solomonpage.com",
+    "position": "careers (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "solomonpage.com"
+  },
+  {
+    "name": "Solomonpage",
+    "email": "recruiting@solomonpage.com",
+    "position": "recruiting (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "solomonpage.com"
+  },
+  {
+    "name": "Solomonpage",
+    "email": "talent@solomonpage.com",
+    "position": "talent (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "solomonpage.com"
+  },
+  {
+    "name": "Solomonpage",
+    "email": "jobs@solomonpage.com",
+    "position": "jobs (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "solomonpage.com"
+  },
+  {
+    "name": "Solomonpage",
+    "email": "hr@solomonpage.com",
+    "position": "hr (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "solomonpage.com"
+  },
+  {
+    "name": "Solomonpage",
+    "email": "recruitment@solomonpage.com",
+    "position": "recruitment (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "solomonpage.com"
+  },
+  {
+    "name": "Solomonpage",
+    "email": "hello@solomonpage.com",
+    "position": "published contact",
+    "source": "deep/careers-page",
+    "domain": "solomonpage.com"
+  },
+  {
+    "name": "Accountprotection",
+    "email": "careers@accountprotection.microsoft.com",
+    "position": "careers (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "accountprotection.microsoft.com"
+  },
+  {
+    "name": "Accountprotection",
+    "email": "recruiting@accountprotection.microsoft.com",
+    "position": "recruiting (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "accountprotection.microsoft.com"
+  },
+  {
+    "name": "Accountprotection",
+    "email": "talent@accountprotection.microsoft.com",
+    "position": "talent (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "accountprotection.microsoft.com"
+  },
+  {
+    "name": "Accountprotection",
+    "email": "jobs@accountprotection.microsoft.com",
+    "position": "jobs (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "accountprotection.microsoft.com"
+  },
+  {
+    "name": "Accountprotection",
+    "email": "hr@accountprotection.microsoft.com",
+    "position": "hr (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "accountprotection.microsoft.com"
+  },
+  {
+    "name": "Accountprotection",
+    "email": "recruitment@accountprotection.microsoft.com",
+    "position": "recruitment (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "accountprotection.microsoft.com"
   }
 ]
