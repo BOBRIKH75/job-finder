@@ -172,11 +172,14 @@ def main():
 </div>
 <div style="padding:6px 16px;border:1px solid #ddd;border-top:0">
 <p style="font-size:12px;color:#666">These are jobs CI/CD could NOT auto-apply to. Open them in tabs, apply, close each. When you finish the whole list, click "I'm Done" — it marks them all so tomorrow shows ONLY new jobs (no duplicates).</p>
-<p style="font-size:12px;background:#fff8e1;border:1px solid #ffe082;padding:8px 12px;border-radius:6px;color:#795548">💡 The <b>Open All / Done buttons work in the browser file</b> (email hides buttons for security). Apply links below work anywhere. Browser file: <code>~/Downloads/CV/job-finder/manual_apply_list.html</code></p>
+<p style="font-size:12px;background:#fff8e1;border:1px solid #ffe082;padding:8px 12px;border-radius:6px;color:#795548">💡 In <b>email</b>: use the green "I'm Done" LINK below (works anywhere). The buttons work in the browser file. Apply links work everywhere.</p>
+<div style="text-align:center;margin:14px 0">
+<a href="https://github.com/BOBRIKH75/job-finder/actions/workflows/mark-done.yml" style="background:#34a853;color:#fff;padding:14px 24px;border-radius:8px;font-size:15px;font-weight:bold;text-decoration:none;display:inline-block;margin:4px">✓ I'm Done — Mark All Applied (click → Run workflow)</a>
+</div>
 <div style="text-align:center;margin:14px 0">
 <button onclick="openAll()" style="background:#1a73e8;color:#fff;border:0;padding:14px 24px;border-radius:8px;font-size:15px;font-weight:bold;cursor:pointer;margin:4px">🌐 Open All {len(pending)} in Chrome Tabs</button>
 <button onclick="openBatch()" style="background:#fbbc04;color:#222;border:0;padding:14px 24px;border-radius:8px;font-size:15px;font-weight:bold;cursor:pointer;margin:4px">📑 Open Next 10 Tabs</button>
-<button onclick="cvDone()" style="background:#34a853;color:#fff;border:0;padding:14px 24px;border-radius:8px;font-size:15px;font-weight:bold;cursor:pointer;margin:4px">✓ I'm Done — Mark All Applied</button>
+<button onclick="cvDone()" style="background:#34a853;color:#fff;border:0;padding:14px 24px;border-radius:8px;font-size:15px;font-weight:bold;cursor:pointer;margin:4px">✓ I'm Done (browser)</button>
 <div id="cvmsg" style="margin-top:10px;font-size:13px;color:#333"></div>
 </div>
 <script>
@@ -213,12 +216,37 @@ function cvDone() {{
         f.write(html_doc)
     print(f'📄 Saved {OUT_HTML}')
 
-    if RESEND_KEY and pending:
-        payload = json.dumps({
-            'from': RESEND_FROM, 'to': [EMAIL],
-            'subject': f'📋 {len(pending)} Jobs to Apply Yourself — {datetime.now().strftime("%b %d")}',
-            'html': html_doc,
-        })
+    if not pending:
+        print('(nothing pending to email)'); return
+
+    subject = f'📋 {len(pending)} Jobs to Apply Yourself — {datetime.now().strftime("%b %d")}'
+    sent = False
+
+    # PRIMARY: Gmail SMTP (from your real address — reliable, not spam)
+    gmail_user = os.environ.get('GMAIL_USER', '')
+    gmail_pw = os.environ.get('GMAIL_APP_PASSWORD', '')
+    if gmail_user and gmail_pw:
+        try:
+            import smtplib
+            from email.mime.text import MIMEText
+            from email.mime.multipart import MIMEMultipart
+            msg = MIMEMultipart('alternative')
+            msg['From'] = f'Job Finder <{gmail_user}>'
+            msg['To'] = EMAIL
+            msg['Subject'] = subject
+            msg['Reply-To'] = gmail_user
+            msg.attach(MIMEText('Your pending jobs are below — open on any laptop, click Apply on each.', 'plain'))
+            msg.attach(MIMEText(html_doc, 'html'))
+            with smtplib.SMTP('smtp.gmail.com', 587) as s:
+                s.starttls(); s.login(gmail_user, gmail_pw); s.send_message(msg)
+            print(f'📧 Emailed {len(pending)} jobs via Gmail to {EMAIL}')
+            sent = True
+        except Exception as e:
+            print(f'⚠️ Gmail send failed: {str(e)[:80]}')
+
+    # FALLBACK: Resend
+    if not sent and RESEND_KEY:
+        payload = json.dumps({'from': RESEND_FROM, 'to': [EMAIL], 'subject': subject, 'html': html_doc})
         with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
             f.write(payload); tmp = f.name
         try:
@@ -226,11 +254,13 @@ function cvDone() {{
                 '-H', f'Authorization: Bearer {RESEND_KEY}', '-H', 'Content-Type: application/json',
                 '-d', f'@{tmp}'], capture_output=True, text=True, timeout=30)
             os.unlink(tmp)
-            print('📧 Emailed the pending list' if '"id"' in r.stdout else f'⚠️ email: {r.stdout[:80]}')
+            print('📧 Emailed via Resend' if '"id"' in r.stdout else f'⚠️ resend: {r.stdout[:80]}')
+            sent = True
         except Exception as e:
-            print(f'⚠️ email error: {e}')
-    else:
-        print('(no RESEND_KEY — open manual_apply_list.html / manual_apply_master.csv locally)')
+            print(f'⚠️ resend error: {e}')
+
+    if not sent:
+        print('(no email creds — open manual_apply_list.html / manual_apply_master.csv)')
 
 
 if __name__ == '__main__':

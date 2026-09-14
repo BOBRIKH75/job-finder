@@ -1,0 +1,46 @@
+name: Mark Jobs Applied (I'm Done)
+
+# Bob clicks "I'm Done" — mark all PENDING manual-apply jobs as applied,
+# so the next daily list shows ONLY new jobs (no duplicates).
+# Trigger from ANY device (GitHub UI button, or the link in the email).
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  mark-done:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GH_PAT }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Mark all pending -> applied
+        run: |
+          python3 - <<'PY'
+          import csv, os
+          from datetime import datetime
+          f = 'agent/data/manual_apply_master.csv'
+          if not os.path.exists(f):
+              print('no master list yet'); raise SystemExit(0)
+          rows = list(csv.DictReader(open(f)))
+          pending = [r for r in rows if (r.get('status') or 'pending').strip().lower() == 'pending']
+          for r in pending:
+              r['status'] = 'applied'
+          if rows:
+              with open(f, 'w', newline='') as out:
+                  w = csv.DictWriter(out, fieldnames=rows[0].keys()); w.writeheader(); w.writerows(rows)
+          print(f"Marked {len(pending)} jobs applied ({datetime.now():%Y-%m-%d}). Next list = only new jobs.")
+          PY
+      - name: Commit
+        run: |
+          git config user.name "Bob Rikh"
+          git config user.email "bobrikh75@gmail.com"
+          git add agent/data/manual_apply_master.csv 2>/dev/null || true
+          git diff --cached --quiet || git commit -m "manual: batch marked applied (I'm Done) [skip ci]"
+          git pull --rebase --autostash origin master || true
+          git push || true

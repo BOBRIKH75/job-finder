@@ -67,10 +67,12 @@ jobs:
         continue-on-error: true
         env:
           RESEND_KEY: ${{ secrets.RESEND_KEY }}
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
         run: |
           python manual_apply_list.py
-          git add manual_apply_list.html agent/data/manual_shown.json 2>/dev/null || true
-          git diff --cached --quiet || git commit -m "manual apply list + shown state [skip ci]" || true
+          git add manual_apply_list.html agent/data/manual_apply_master.csv found_jobs.json 2>/dev/null || true
+          git diff --cached --quiet || git commit -m "manual apply list + master state [skip ci]" || true
           git pull --rebase --autostash origin master || true
           git push || true
 
