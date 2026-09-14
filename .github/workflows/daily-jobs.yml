@@ -62,6 +62,18 @@ jobs:
           RESEND_KEY: ${{ secrets.RESEND_KEY }}
         run: python linkedin_posts.py
 
+      - name: Email ranked manual-apply list (apply yourself, one by one)
+        if: always()
+        continue-on-error: true
+        env:
+          RESEND_KEY: ${{ secrets.RESEND_KEY }}
+        run: |
+          python manual_apply_list.py
+          git add manual_apply_list.html agent/data/manual_shown.json 2>/dev/null || true
+          git diff --cached --quiet || git commit -m "manual apply list + shown state [skip ci]" || true
+          git pull --rebase --autostash origin master || true
+          git push || true
+
       - name: Email manual apply links
         if: always()
         env:
