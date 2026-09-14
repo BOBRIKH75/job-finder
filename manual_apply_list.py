@@ -178,31 +178,43 @@ def main():
 </div>
 <div style="text-align:center;margin:14px 0">
 <button onclick="openAll()" style="background:#1a73e8;color:#fff;border:0;padding:14px 24px;border-radius:8px;font-size:15px;font-weight:bold;cursor:pointer;margin:4px">🌐 Open All {len(pending)} in Chrome Tabs</button>
-<button onclick="openBatch()" style="background:#fbbc04;color:#222;border:0;padding:14px 24px;border-radius:8px;font-size:15px;font-weight:bold;cursor:pointer;margin:4px">📑 Open Next 10 Tabs</button>
+<button onclick="openBatch()" style="background:#fbbc04;color:#222;border:0;padding:14px 24px;border-radius:8px;font-size:15px;font-weight:bold;cursor:pointer;margin:4px">📑 Open Next 5 Tabs</button>
 <button onclick="cvDone()" style="background:#34a853;color:#fff;border:0;padding:14px 24px;border-radius:8px;font-size:15px;font-weight:bold;cursor:pointer;margin:4px">✓ I'm Done (browser)</button>
 <div id="cvmsg" style="margin-top:10px;font-size:13px;color:#333"></div>
 </div>
 <script>
 var JOB_URLS = {urls_js};
 var batchStart = 0;
+function msg(t) {{ document.getElementById('cvmsg').innerHTML = t; }}
 function openAll() {{
-  if (!confirm('Open all ' + JOB_URLS.length + ' jobs in new Chrome tabs? (Allow pop-ups if asked.)')) return;
-  JOB_URLS.forEach(function(u, i) {{ setTimeout(function() {{ window.open(u, '_blank'); }}, i * 300); }});
-  document.getElementById('cvmsg').innerHTML = '🌐 Opening ' + JOB_URLS.length + ' tabs (staggered). Close each after applying.';
+  // open synchronously inside the click (setTimeout would be blocked as pop-up).
+  // First time, the browser asks to allow pop-ups — click "Always allow", then click again.
+  var opened = 0;
+  for (var i = 0; i < JOB_URLS.length; i++) {{
+    var w = window.open(JOB_URLS[i], '_blank');
+    if (w) opened++;
+  }}
+  if (opened <= 1 && JOB_URLS.length > 1) {{
+    msg('⚠️ Pop-ups blocked. Click the pop-up icon in the address bar → <b>Always allow</b> → then click "Open All" again. (Or use "Open Next 5" — smaller batches are allowed.)');
+  }} else {{
+    msg('🌐 Opened ' + opened + ' tabs. Apply in each, close it. Then click "I\\'m Done".');
+  }}
 }}
 function openBatch() {{
-  var end = Math.min(batchStart + 10, JOB_URLS.length);
-  for (var i = batchStart; i < end; i++) {{ window.open(JOB_URLS[i], '_blank'); }}
-  document.getElementById('cvmsg').innerHTML = '📑 Opened jobs ' + (batchStart+1) + '–' + end + ' of ' + JOB_URLS.length + '. Click again for the next 10.';
+  var end = Math.min(batchStart + 5, JOB_URLS.length);
+  var opened = 0;
+  for (var i = batchStart; i < end; i++) {{ if (window.open(JOB_URLS[i], '_blank')) opened++; }}
+  if (opened === 0) {{
+    msg('⚠️ Pop-ups blocked. Allow pop-ups for this page (icon in address bar), then click again.');
+    return;
+  }}
+  msg('📑 Opened jobs ' + (batchStart+1) + '–' + (batchStart+opened) + ' of ' + JOB_URLS.length + '. Click again for the next 5.');
   batchStart = end >= JOB_URLS.length ? 0 : end;
 }}
 function cvDone() {{
   var cmd = 'cds-cv-done';
   try {{ navigator.clipboard.writeText(cmd); }} catch(e) {{}}
-  document.getElementById('cvmsg').innerHTML =
-    '✅ Command copied. Paste this in your terminal to finish the batch:<br>' +
-    '<code style="background:#eee;padding:6px 10px;border-radius:4px;display:inline-block;margin-top:6px;font-size:15px">cds-cv-done</code><br>' +
-    '<span style="color:#888">This marks all as applied → tomorrow only NEW jobs appear.</span>';
+  msg('✅ Copied. Run <code style="background:#eee;padding:4px 8px;border-radius:4px">cds-cv-done</code> in terminal, OR click the green "I\\'m Done" LINK above (works from anywhere).');
 }}
 </script>
 <table style="border-collapse:collapse;width:100%">
