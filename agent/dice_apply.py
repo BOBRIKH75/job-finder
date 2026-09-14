@@ -865,6 +865,14 @@ def main():
                 _record_dice_lesson(result)   # SELF-LEARNING: next run auto-applies the fix
                 if result == 'login_redirect':
                     _login_redirect_seen = True
+                # Bot could not submit → add to Bob's manual-apply list (nothing missed)
+                try:
+                    import sys as _sys, os as _os
+                    _sys.path.insert(0, _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))))
+                    from bridge import export_missed_job
+                    export_missed_job(title, company, url, source='dice', score=45)
+                except Exception:
+                    pass
                 print(f"  -> {result}: {title[:40]}")
             time.sleep(2)
 

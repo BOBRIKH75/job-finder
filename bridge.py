@@ -50,3 +50,40 @@ def import_jobs_from_finder(input_path: str = JOBS_FILE) -> list[dict]:
     with open(input_path) as f:
         data = json.load(f)
     return data.get("jobs", [])
+
+
+def export_missed_job(title, company, url, source, location="", score=40,
+                      is_c2c=False, rate="", jobs_file: str = None):
+    """Add a job the bot could NOT auto-apply to → found_jobs.json (the manual list).
+
+    Called by dice/indeed/greenhouse apply scripts at their 'not applied' point so
+    EVERY channel's misses land in Bob's manual-apply list. Deduped by URL. Safe:
+    resolves the file whether run from repo root or agent/, never raises.
+    """
+    if not url or not title:
+        return False
+    # Always target the repo-root found_jobs.json (next to this bridge.py),
+    # regardless of the caller's working directory (dice runs from agent/).
+    path = jobs_file or os.path.join(os.path.dirname(os.path.abspath(__file__)), JOBS_FILE)
+    try:
+        data = {"jobs": [], "count": 0}
+        if os.path.exists(path):
+            with open(path) as f:
+                data = json.load(f)
+        jobs = data.get("jobs", [])
+        if any(j.get("url") == url for j in jobs):
+            return False  # already listed
+        jobs.append({
+            "title": str(title), "company": str(company or "?"), "url": str(url),
+            "linkedin_url": str(url) if "linkedin" in str(url) else "",
+            "location": str(location or "Remote"), "description": "",
+            "score": int(score or 40), "is_c2c": bool(is_c2c), "rate": str(rate or ""),
+            "source": str(source), "found_at": datetime.now().isoformat(),
+        })
+        data["jobs"] = jobs
+        data["count"] = len(jobs)
+        with open(path, "w") as f:
+            json.dump(data, f, indent=2)
+        return True
+    except Exception:
+        return False

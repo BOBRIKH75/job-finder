@@ -96,6 +96,19 @@ def main():
     if not jobs:
         print('No jobs in found_jobs.json'); return
 
+    # ── Pull in misses from Indeed/Greenhouse too (they save to failed_jobs.json) ──
+    # so EVERY channel's un-applied jobs land in the manual list, nothing missed.
+    failed = _load(os.path.join(ROOT, 'agent', 'data', 'failed_jobs.json'), [])
+    for fj in (failed if isinstance(failed, list) else []):
+        if isinstance(fj, dict) and fj.get('url') and fj.get('title'):
+            u = str(fj['url'])
+            if not any(str(j.get('url') or j.get('job_url') or '') == u for j in jobs):
+                src = 'indeed' if 'indeed' in u else 'greenhouse' if 'greenhouse' in u else 'ats'
+                jobs.append({'title': fj.get('title', ''), 'company': fj.get('company', ''),
+                             'url': u, 'location': fj.get('location', ''),
+                             'score': int(fj.get('score', 40) or 40),
+                             'is_c2c': bool(fj.get('is_c2c')), 'source': src})
+
     applied = _applied_keys()
     master = _load_master()
 
