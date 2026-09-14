@@ -4,7 +4,37 @@
 <p style="margin:6px 0 0;opacity:.9">Monday, September 14 2026 · ranked best-first · 0 already applied · nothing drops off until you apply</p>
 </div>
 <div style="padding:6px 16px;border:1px solid #ddd;border-top:0">
-<p style="font-size:12px;color:#666">These are jobs CI/CD could NOT auto-apply to. Apply one by one. Master file: <code>manual_apply_master.csv</code> — set status to <b>applied</b> when done and it leaves this list.</p>
+<p style="font-size:12px;color:#666">These are jobs CI/CD could NOT auto-apply to. Open them in tabs, apply, close each. When you finish the whole list, click "I'm Done" — it marks them all so tomorrow shows ONLY new jobs (no duplicates).</p>
+<p style="font-size:12px;background:#fff8e1;border:1px solid #ffe082;padding:8px 12px;border-radius:6px;color:#795548">💡 The <b>Open All / Done buttons work in the browser file</b> (email hides buttons for security). Apply links below work anywhere. Browser file: <code>~/Downloads/CV/job-finder/manual_apply_list.html</code></p>
+<div style="text-align:center;margin:14px 0">
+<button onclick="openAll()" style="background:#1a73e8;color:#fff;border:0;padding:14px 24px;border-radius:8px;font-size:15px;font-weight:bold;cursor:pointer;margin:4px">🌐 Open All 171 in Chrome Tabs</button>
+<button onclick="openBatch()" style="background:#fbbc04;color:#222;border:0;padding:14px 24px;border-radius:8px;font-size:15px;font-weight:bold;cursor:pointer;margin:4px">📑 Open Next 10 Tabs</button>
+<button onclick="cvDone()" style="background:#34a853;color:#fff;border:0;padding:14px 24px;border-radius:8px;font-size:15px;font-weight:bold;cursor:pointer;margin:4px">✓ I'm Done — Mark All Applied</button>
+<div id="cvmsg" style="margin-top:10px;font-size:13px;color:#333"></div>
+</div>
+<script>
+var JOB_URLS = ["https://www.indeed.com/cmp/Ontrac-Solutions", "https://www.indeed.com/cmp/Technica-Corporation", "https://www.linkedin.com/jobs/view/4466460301", "https://www.linkedin.com/jobs/view/4466414768", "https://www.linkedin.com/jobs/view/4466459984", "https://www.linkedin.com/jobs/view/4464210111", "https://www.linkedin.com/jobs/view/4466311523", "https://www.linkedin.com/jobs/view/4464253066", "https://www.linkedin.com/jobs/view/4466323586", "https://www.linkedin.com/jobs/view/4465100049", "https://www.linkedin.com/jobs/view/4465170204", "https://www.linkedin.com/jobs/view/4465336215", "https://www.linkedin.com/jobs/view/4444178548", "https://www.linkedin.com/jobs/view/4456344911", "https://www.linkedin.com/jobs/view/4465816950", "https://www.linkedin.com/jobs/view/4463908463", "https://www.linkedin.com/jobs/view/4463905676", "https://www.linkedin.com/jobs/view/4465340068", "https://www.linkedin.com/jobs/view/4465338796", "https://www.linkedin.com/jobs/view/4464904388", "https://www.linkedin.com/jobs/view/4462539980", "https://www.linkedin.com/jobs/view/4464619072", "https://www.linkedin.com/jobs/view/4387872942", "https://www.linkedin.com/jobs/view/4464636821", "https://www.linkedin.com/jobs/view/4466034903", "https://www.linkedin.com/jobs/view/4466386919", "https://www.linkedin.com/jobs/view/4463497373", "https://www.linkedin.com/jobs/view/4463495370", "https://www.linkedin.com/jobs/view/4463477940", "https://www.linkedin.com/jobs/view/4464922951", "https://www.linkedin.com/jobs/view/4464105127", "https://www.linkedin.com/jobs/view/4463550476", "https://www.linkedin.com/jobs/view/4464497835", "https://www.linkedin.com/jobs/view/4462243479", "https://www.linkedin.com/jobs/view/4466721260", "https://www.linkedin.com/jobs/view/4466459881", "https://www.linkedin.com/jobs/view/4466458781", "https://www.linkedin.com/jobs/view/4466452696", "https://www.linkedin.com/jobs/view/4466017198", "https://www.linkedin.com/jobs/view/4460060768", "https://www.linkedin.com/jobs/view/4464207300", "https://www.linkedin.com/jobs/view/4466330004", "https://www.linkedin.com/jobs/view/4466385012", "https://www.linkedin.com/jobs/view/4465802368", "https://www.linkedin.com/jobs/view/4464804019", "https://www.linkedin.com/jobs/view/4462547926", "https://www.linkedin.com/jobs/view/4464508670", "https://www.linkedin.com/jobs/view/4457617421", "https://www.linkedin.com/jobs/view/4453903078", "https://www.linkedin.com/jobs/view/4465332389", "https://www.linkedin.com/jobs/view/4464399779", "https://www.linkedin.com/jobs/view/4463534838", "https://www.linkedin.com/jobs/view/4446937316", "https://www.linkedin.com/jobs/view/4466465229", "https://www.linkedin.com/jobs/view/4465100469", "https://www.linkedin.com/jobs/view/4446442634", "https://www.linkedin.com/jobs/view/4463913798", "https://www.linkedin.com/jobs/view/4465813833", "https://www.linkedin.com/jobs/view/4462525622", "https://www.linkedin.com/jobs/view/4464057190", "https://www.linkedin.com/jobs/view/4465195649", "https://www.linkedin.com/jobs/view/4465145247", "https://www.linkedin.com/jobs/view/4463939126", "https://www.linkedin.com/jobs/view/4465152546", "https://www.linkedin.com/jobs/view/4466091757", "https://www.linkedin.com/jobs/view/4465371201", "https://www.linkedin.com/jobs/view/4453444960", "https://www.linkedin.com/jobs/view/4464817029", "https://www.linkedin.com/jobs/view/4463524691", "https://www.linkedin.com/jobs/view/4463558100", "https://www.linkedin.com/jobs/view/4417621973", "https://www.linkedin.com/jobs/view/4465470603", "https://www.linkedin.com/jobs/view/4466369082", "https://www.linkedin.com/jobs/view/4464889240", "https://www.linkedin.com/jobs/view/4463504865", "https://www.linkedin.com/jobs/view/4465184655", "https://www.linkedin.com/jobs/view/4465176686", "https://www.linkedin.com/jobs/view/4466491766", "https://www.linkedin.com/jobs/view/4466429298", "https://www.linkedin.com/jobs/view/4466463176", "https://www.linkedin.com/jobs/view/4465856101", "https://www.linkedin.com/jobs/view/4463988628", "https://www.linkedin.com/jobs/view/4387575426", "https://www.linkedin.com/jobs/view/4466021460", "https://www.linkedin.com/jobs/view/4466324780", "https://www.linkedin.com/jobs/view/4464883258", "https://www.linkedin.com/jobs/view/4463921188", "https://www.linkedin.com/jobs/view/4446520294", "https://www.linkedin.com/jobs/view/4465051867", "https://www.linkedin.com/jobs/view/4465300483", "https://www.linkedin.com/jobs/view/4464148336", "https://www.linkedin.com/jobs/view/4462547498", "https://www.linkedin.com/jobs/view/4377654521", "https://www.linkedin.com/jobs/view/4408591798", "https://www.linkedin.com/jobs/view/4466768720", "https://www.linkedin.com/jobs/view/4466771952", "https://www.linkedin.com/jobs/view/4466461310", "https://www.linkedin.com/jobs/view/4466471081", "https://www.linkedin.com/jobs/view/4465151511", "https://www.linkedin.com/jobs/view/4464255428", "https://www.linkedin.com/jobs/view/4464238089", "https://www.linkedin.com/jobs/view/4464888600", "https://www.linkedin.com/jobs/view/4465810500", "https://www.linkedin.com/jobs/view/4464520752", "https://www.linkedin.com/jobs/view/4463907637", "https://www.linkedin.com/jobs/view/4463117928", "https://www.linkedin.com/jobs/view/4459732461", "https://www.linkedin.com/jobs/view/4466374059", "https://www.linkedin.com/jobs/view/4466410019", "https://www.linkedin.com/jobs/view/4444509582", "https://www.linkedin.com/jobs/view/4463912215", "https://www.linkedin.com/jobs/view/4465329643", "https://www.linkedin.com/jobs/view/4466095196", "https://www.linkedin.com/jobs/view/4464133273", "https://www.linkedin.com/jobs/view/4452873062", "https://www.linkedin.com/jobs/view/4417775049", "https://www.linkedin.com/jobs/view/4465336801", "https://www.linkedin.com/jobs/view/4457812100", "https://www.linkedin.com/jobs/view/4444172651", "https://www.linkedin.com/jobs/view/4466393271", "https://www.linkedin.com/jobs/view/4457005695", "https://www.linkedin.com/jobs/view/4466318137", "https://www.linkedin.com/jobs/view/4463474905", "https://www.linkedin.com/jobs/view/4465862996", "https://www.linkedin.com/jobs/view/4277241332", "https://www.linkedin.com/jobs/view/4445764192", "https://www.linkedin.com/jobs/view/4452197415", "https://www.linkedin.com/jobs/view/4454938079", "https://www.linkedin.com/jobs/view/4456128235", "https://www.linkedin.com/jobs/view/4464984072", "https://www.linkedin.com/jobs/view/4463560539", "https://www.linkedin.com/jobs/view/4451473127", "https://www.linkedin.com/jobs/view/4463565156", "https://www.linkedin.com/jobs/view/4438770388", "https://www.linkedin.com/jobs/view/4455378903", "https://www.linkedin.com/jobs/view/4464607411", "https://www.linkedin.com/jobs/view/4454445359", "https://www.linkedin.com/jobs/view/4457507136", "https://www.linkedin.com/jobs/view/4464348759", "https://www.linkedin.com/jobs/view/4462228677", "https://www.linkedin.com/jobs/view/4464356986", "https://www.linkedin.com/jobs/view/4464573541", "https://www.linkedin.com/jobs/view/4434572142", "https://www.linkedin.com/jobs/view/4465065823", "https://www.linkedin.com/jobs/view/4465341090", "https://www.linkedin.com/jobs/view/4464667257", "https://www.linkedin.com/jobs/view/4462242511", "https://www.linkedin.com/jobs/view/4463563509", "https://www.linkedin.com/jobs/view/4464256078", "https://www.linkedin.com/jobs/view/4464236190", "https://www.linkedin.com/jobs/view/4465112233", "https://www.linkedin.com/jobs/view/4444392453", "https://www.linkedin.com/jobs/view/4457080145", "https://www.linkedin.com/jobs/view/4463090195", "https://www.linkedin.com/jobs/view/4454842240", "https://www.linkedin.com/jobs/view/4387810505", "https://www.linkedin.com/jobs/view/4378740295", "https://www.linkedin.com/jobs/view/4463022197", "https://www.linkedin.com/jobs/view/4417756030", "https://www.linkedin.com/jobs/view/4439355784", "https://www.indeed.com/cmp/Auria-7", "https://www.indeed.com/cmp/Align-Technology", "https://www.indeed.com/cmp/Booz-Allen-Hamilton", "https://www.linkedin.com/jobs/view/4465457654", "https://www.linkedin.com/jobs/view/4464593756", "https://motionrecruitment.com/tech-jobs/red-team", "https://www.linkedin.com/jobs/view/4466748930", "https://www.linkedin.com/jobs/view/4465456042", "https://www.linkedin.com/jobs/view/4465457969", "https://www.linkedin.com/jobs/view/4464741104", "https://www.linkedin.com/jobs/view/4465442175"];
+var batchStart = 0;
+function openAll() {
+  if (!confirm('Open all ' + JOB_URLS.length + ' jobs in new Chrome tabs? (Allow pop-ups if asked.)')) return;
+  JOB_URLS.forEach(function(u, i) { setTimeout(function() { window.open(u, '_blank'); }, i * 300); });
+  document.getElementById('cvmsg').innerHTML = '🌐 Opening ' + JOB_URLS.length + ' tabs (staggered). Close each after applying.';
+}
+function openBatch() {
+  var end = Math.min(batchStart + 10, JOB_URLS.length);
+  for (var i = batchStart; i < end; i++) { window.open(JOB_URLS[i], '_blank'); }
+  document.getElementById('cvmsg').innerHTML = '📑 Opened jobs ' + (batchStart+1) + '–' + end + ' of ' + JOB_URLS.length + '. Click again for the next 10.';
+  batchStart = end >= JOB_URLS.length ? 0 : end;
+}
+function cvDone() {
+  var cmd = 'cds-cv-done';
+  try { navigator.clipboard.writeText(cmd); } catch(e) {}
+  document.getElementById('cvmsg').innerHTML =
+    '✅ Command copied. Paste this in your terminal to finish the batch:<br>' +
+    '<code style="background:#eee;padding:6px 10px;border-radius:4px;display:inline-block;margin-top:6px;font-size:15px">cds-cv-done</code><br>' +
+    '<span style="color:#888">This marks all as applied → tomorrow only NEW jobs appear.</span>';
+}
+</script>
 <table style="border-collapse:collapse;width:100%">
 <tr style="background:#333;color:#fff"><th style="padding:8px;width:30px">#</th><th style="padding:8px;text-align:left">Job</th><th style="padding:8px;width:90px">Action</th></tr>
 <tr style="border-bottom:1px solid #eee">
@@ -12,857 +42,857 @@
 <td style="padding:10px;font-size:13px">🔥 <b>Sr. Software Engineer – Backend / API Engineering</b><br>
 <span style="color:#666">Ontrac Solutions · Remote, US · <b style="color:#1a73e8">$110.0-$120.0/hourly</b></span>
 <br><span style="color:#aaa;font-size:11px">Match 75% · indeed · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.indeed.com/cmp/Ontrac-Solutions" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.indeed.com/cmp/Ontrac-Solutions" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">2</td>
 <td style="padding:10px;font-size:13px">🔥 <b>Full Stack Developer, Senior</b><br>
 <span style="color:#666">Technica Corporation · Washington, DC, US · <b style="color:#1a73e8">$131000.0-$175000.0/yearly</b></span>
 <br><span style="color:#aaa;font-size:11px">Match 51% · indeed · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.indeed.com/cmp/Technica-Corporation" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.indeed.com/cmp/Technica-Corporation" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">3</td>
 <td style="padding:10px;font-size:13px">✅ <b>Software Developer (Microservices)</b><br>
 <span style="color:#666">PlanIT Group, LLC · Reston, VA</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4466460301" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4466460301" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">4</td>
 <td style="padding:10px;font-size:13px">✅ <b>Java Developer</b><br>
 <span style="color:#666">Stefanini North America and APAC · Richmond, VA</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4466414768" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4466414768" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">5</td>
 <td style="padding:10px;font-size:13px">✅ <b>Senior Software Engineer</b><br>
 <span style="color:#666">Dale WorkForce Solutions · Philadelphia, PA</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4466459984" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4466459984" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">6</td>
 <td style="padding:10px;font-size:13px">✅ <b>Google Commerce Engineer / Developer</b><br>
 <span style="color:#666">CoSourcing Partners - Enterprise-AI and IT Services Company · Illinois, United States</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4464210111" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4464210111" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">7</td>
 <td style="padding:10px;font-size:13px">✅ <b>Sr. Software Engineer (Java) W2 with strong Financials experience</b><br>
 <span style="color:#666">GTECH LLC · Dallas, TX</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4466311523" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4466311523" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">8</td>
 <td style="padding:10px;font-size:13px">✅ <b>Sr Full Stack Java Engineer</b><br>
 <span style="color:#666">Horizontal Talent · Rochester, MN</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4464253066" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4464253066" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">9</td>
 <td style="padding:10px;font-size:13px">✅ <b>Full Stack Java Developer</b><br>
 <span style="color:#666">Korn Ferry · Wilmington, DE</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4466323586" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4466323586" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">10</td>
 <td style="padding:10px;font-size:13px">✅ <b>Java / Python AWS Full Stack Developer</b><br>
 <span style="color:#666">Smart IT Frame LLC · Plano, TX</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4465100049" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4465100049" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">11</td>
 <td style="padding:10px;font-size:13px">✅ <b>Java Software Engineer</b><br>
 <span style="color:#666">Capstone IT · Remote</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4465170204" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4465170204" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">12</td>
 <td style="padding:10px;font-size:13px">✅ <b>Senior Software Engineer – Java / Distributed Systems</b><br>
 <span style="color:#666">AMISEQ · Draper, UT</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4465336215" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4465336215" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">13</td>
 <td style="padding:10px;font-size:13px">✅ <b>Software Engineer</b><br>
 <span style="color:#666">Solomon Page · New York, NY</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4444178548" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4444178548" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">14</td>
 <td style="padding:10px;font-size:13px">✅ <b>Senior Developer (J2EE)</b><br>
 <span style="color:#666">Kavaliro · Salem, OR</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4456344911" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4456344911" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">15</td>
 <td style="padding:10px;font-size:13px">✅ <b>Java/NodeJS Developer - 100% Remote</b><br>
 <span style="color:#666">ConsultNet Technology Services and Solutions · Jacksonville, FL</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4465816950" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4465816950" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">16</td>
 <td style="padding:10px;font-size:13px">✅ <b>Java Full Stack Technical Specialist</b><br>
 <span style="color:#666">HMG AMERICA LLC · Remote</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4463908463" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4463908463" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">17</td>
 <td style="padding:10px;font-size:13px">✅ <b>Sr. Java Software Engineer III</b><br>
 <span style="color:#666">Lighthouse Technology Services · Remote</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4463905676" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4463905676" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">18</td>
 <td style="padding:10px;font-size:13px">✅ <b>AWS - Software Engineer</b><br>
 <span style="color:#666">Korn Ferry · Wilmington, DE</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4465340068" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4465340068" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">19</td>
 <td style="padding:10px;font-size:13px">✅ <b>Senior Java Developer</b><br>
 <span style="color:#666">Kforce Inc · Atlanta, GA</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4465338796" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4465338796" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">20</td>
 <td style="padding:10px;font-size:13px">✅ <b>Java Developer</b><br>
 <span style="color:#666">Apex Systems · Bentonville, AR</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4464904388" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4464904388" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">21</td>
 <td style="padding:10px;font-size:13px">✅ <b>Java Developer</b><br>
 <span style="color:#666">Georgia IT, Inc. · Remote</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4462539980" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4462539980" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">22</td>
 <td style="padding:10px;font-size:13px">✅ <b>Sr. Software Engineer</b><br>
 <span style="color:#666">Feuji · Remote</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4464619072" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4464619072" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">23</td>
 <td style="padding:10px;font-size:13px">✅ <b>Java Developer</b><br>
 <span style="color:#666">New Resources Consulting · Milwaukee, WI</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4387872942" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4387872942" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">24</td>
 <td style="padding:10px;font-size:13px">✅ <b>Java Backend Engineer</b><br>
 <span style="color:#666">GDH · Tulsa, OK</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4464636821" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4464636821" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">25</td>
 <td style="padding:10px;font-size:13px">✅ <b>Senior Java Developer</b><br>
 <span style="color:#666">TEKsystems · Kansas City, MO</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4466034903" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4466034903" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">26</td>
 <td style="padding:10px;font-size:13px">✅ <b>Full Stack Developer</b><br>
 <span style="color:#666">Turnberry Solutions · Rochester, MN</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4466386919" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4466386919" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">27</td>
 <td style="padding:10px;font-size:13px">✅ <b>Senior Backend Engineer - Generative AI / Personalization [SK-17222]</b><br>
 <span style="color:#666">Skill · New York, NY</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4463497373" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4463497373" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">28</td>
 <td style="padding:10px;font-size:13px">✅ <b>Senior Back End Software Engineer (w2 only)</b><br>
 <span style="color:#666">SSi People · Remote</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4463495370" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4463495370" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">29</td>
 <td style="padding:10px;font-size:13px">✅ <b>Java Developer</b><br>
 <span style="color:#666">LingaTech · Harrisburg, PA</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4463477940" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4463477940" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">30</td>
 <td style="padding:10px;font-size:13px">✅ <b>Back End Developer (AI Infrastructure)</b><br>
 <span style="color:#666">Alignerr · Seattle, WA</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4464922951" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4464922951" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">31</td>
 <td style="padding:10px;font-size:13px">✅ <b>Staff Engineer</b><br>
 <span style="color:#666">Optomi · Remote</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4464105127" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4464105127" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">32</td>
 <td style="padding:10px;font-size:13px">✅ <b>Back End Developer</b><br>
 <span style="color:#666">Intelletec · Remote</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4463550476" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4463550476" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">33</td>
 <td style="padding:10px;font-size:13px">✅ <b>Sr. Development Engineer | Kotlin</b><br>
 <span style="color:#666">Dahl Consulting · Minnesota, United States</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4464497835" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4464497835" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">34</td>
 <td style="padding:10px;font-size:13px">✅ <b>Development Engineer</b><br>
 <span style="color:#666">Horizontal Talent · East Bethel, MN</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4462243479" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4462243479" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">35</td>
 <td style="padding:10px;font-size:13px">✅ <b>: Java Developer</b><br>
 <span style="color:#666">Inherent Technologies · New Jersey, United States</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4466721260" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4466721260" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">36</td>
 <td style="padding:10px;font-size:13px">✅ <b>Senior Java with AI Experience</b><br>
 <span style="color:#666">Pozent Corporation · Chicago, IL</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4466459881" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4466459881" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">37</td>
 <td style="padding:10px;font-size:13px">✅ <b>Sr, Java Developer</b><br>
 <span style="color:#666">UNICON International Inc. · Torrance, CA</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4466458781" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4466458781" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">38</td>
 <td style="padding:10px;font-size:13px">✅ <b>Java Developer / Microservices</b><br>
 <span style="color:#666">Danta Technologies · Rancho Cordova, CA</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4466452696" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4466452696" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">39</td>
 <td style="padding:10px;font-size:13px">✅ <b>Senior JAVA Engineer Java/Rest/CICD/Azure</b><br>
 <span style="color:#666">Motion Recruitment · Tempe, AZ</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4466017198" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4466017198" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">40</td>
 <td style="padding:10px;font-size:13px">✅ <b>Sr. Java Software Engineer -Payments/GCP/AWS (W2/ Contract/Onsite/Columbus, OH)</b><br>
 <span style="color:#666">TRIMAH TECHNOLOGIES LLC · Columbus, OH</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4460060768" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4460060768" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">41</td>
 <td style="padding:10px;font-size:13px">✅ <b>Senior Software Engineer( Java/AWS)</b><br>
 <span style="color:#666">Pacer Group · Plano, TX</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4464207300" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4464207300" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">42</td>
 <td style="padding:10px;font-size:13px">✅ <b>Kafka Specialist</b><br>
 <span style="color:#666">Euclid Innovations · Charlotte, NC</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4466330004" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4466330004" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">43</td>
 <td style="padding:10px;font-size:13px">✅ <b>Software Engineer 5</b><br>
 <span style="color:#666">Accord Technologies Inc · Illinois, United States</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4466385012" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4466385012" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">44</td>
 <td style="padding:10px;font-size:13px">✅ <b>Senior Java Software Engineer</b><br>
 <span style="color:#666">Matlen Silver · Charlotte, NC</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4465802368" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4465802368" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">45</td>
 <td style="padding:10px;font-size:13px">✅ <b>Senior Java Software Engineer  AWS Cloud &amp; Gen AI</b><br>
 <span style="color:#666">RibbitZ LLC · Peoria, IL</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4464804019" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4464804019" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">46</td>
 <td style="padding:10px;font-size:13px">✅ <b>Back-end Engineer (Java/Kafka/Springboot)  - w2 only</b><br>
 <span style="color:#666">Redolent, Inc · Bentonville, AR</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4462547926" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4462547926" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">47</td>
 <td style="padding:10px;font-size:13px">✅ <b>Distinguished Engineer (Fintech)</b><br>
 <span style="color:#666">Intellibus · Columbus, GA</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4464508670" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4464508670" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">48</td>
 <td style="padding:10px;font-size:13px">✅ <b>Java Technical Lead</b><br>
 <span style="color:#666">iSpace, Inc. · Torrance, CA</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4457617421" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4457617421" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">49</td>
 <td style="padding:10px;font-size:13px">✅ <b>Senior Java Software Engineer</b><br>
 <span style="color:#666">Accenture · Minneapolis, MN</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4453903078" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4453903078" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">50</td>
 <td style="padding:10px;font-size:13px">✅ <b>Senior Java Full Stack / Backend Engineer-12- Months Contract-Onsite position at Roanoke, VA</b><br>
 <span style="color:#666">Accion Labs · Roanoke, VA</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4465332389" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4465332389" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">51</td>
 <td style="padding:10px;font-size:13px">✅ <b>Senior Software Engineer</b><br>
 <span style="color:#666">Vertisystem (A MOURI Tech Company) · Remote</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4464399779" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4464399779" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">52</td>
 <td style="padding:10px;font-size:13px">✅ <b>Senior Kafka Engineer</b><br>
 <span style="color:#666">Solugenix · Irvine, CA</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4463534838" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4463534838" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">53</td>
 <td style="padding:10px;font-size:13px">✅ <b>Sr. Software Engineer - Temporary - Java/SpringBoot/AWS</b><br>
 <span style="color:#666">Early Warning · Scottsdale, AZ</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4446937316" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4446937316" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">54</td>
 <td style="padding:10px;font-size:13px">✅ <b>IT - Software Developer IV</b><br>
 <span style="color:#666">PlanIT Group, LLC · Reston, VA</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4466465229" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4466465229" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">55</td>
 <td style="padding:10px;font-size:13px">✅ <b>SAP Commerce Cloud Hybris Lead/Developer -Remote (USA)</b><br>
 <span style="color:#666">Yochana · Remote</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4465100469" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4465100469" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">56</td>
 <td style="padding:10px;font-size:13px">✅ <b>Product Engineer Senior Java Springboot</b><br>
 <span style="color:#666">Allstate · Remote</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4446442634" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4446442634" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">57</td>
 <td style="padding:10px;font-size:13px">✅ <b>Sr Java Angular Developer</b><br>
 <span style="color:#666">Anagh Technologies Inc · New York, United States</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4463913798" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4463913798" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">58</td>
 <td style="padding:10px;font-size:13px">✅ <b>Senior Java Engineer with Low Latency exp - RTH-Use AI tools (Claude Code, Copilot)- financial services must-local to Boston</b><br>
 <span style="color:#666">Yoh, A Day &amp; Zimmermann Company · Boston, MA</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4465813833" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4465813833" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">59</td>
 <td style="padding:10px;font-size:13px">✅ <b>Senior Software Engineer</b><br>
 <span style="color:#666">LT Harper Recruitment Group · Remote</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4462525622" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4462525622" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">60</td>
 <td style="padding:10px;font-size:13px">✅ <b>Senior Full Stack Java Developer</b><br>
 <span style="color:#666">Red Cedar Consultancy, LLC · Randolph Air Force Base, TX</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4464057190" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4464057190" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">61</td>
 <td style="padding:10px;font-size:13px">✅ <b>Senior Full Stack Engineer</b><br>
 <span style="color:#666">Experis · New York, NY</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4465195649" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4465195649" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">62</td>
 <td style="padding:10px;font-size:13px">✅ <b>Senior Full Stack Angular/Java/AWS Engineer</b><br>
 <span style="color:#666">Experis · Rockville, MD</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4465145247" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4465145247" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">63</td>
 <td style="padding:10px;font-size:13px">✅ <b>Senior Java Software Engineer</b><br>
 <span style="color:#666">Rose International · Chicago, IL</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4463939126" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4463939126" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">64</td>
 <td style="padding:10px;font-size:13px">✅ <b>Full stack Java Developer (contract)</b><br>
 <span style="color:#666">Wells Fargo · Irving, TX</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4465152546" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4465152546" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">65</td>
 <td style="padding:10px;font-size:13px">✅ <b>Full Stack Java Developer</b><br>
 <span style="color:#666">BCforward · Manhattan, NY</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4466091757" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4466091757" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">66</td>
 <td style="padding:10px;font-size:13px">✅ <b>Sr Java Full Stack Developer</b><br>
 <span style="color:#666">Cayuse Holdings · Austin, TX</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4465371201" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4465371201" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">67</td>
 <td style="padding:10px;font-size:13px">✅ <b>Senior Software Engineer</b><br>
 <span style="color:#666">Eliassen Group · St Louis, MO</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4453444960" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4453444960" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">68</td>
 <td style="padding:10px;font-size:13px">✅ <b>Senior Software Engineer</b><br>
 <span style="color:#666">BayOne Solutions · San Jose, CA</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4464817029" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4464817029" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">69</td>
 <td style="padding:10px;font-size:13px">✅ <b>Java Engineer $80/hr (Scottsdale, AZ)</b><br>
 <span style="color:#666">GTN Technical Staffing · Scottsdale, AZ</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4463524691" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4463524691" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">70</td>
 <td style="padding:10px;font-size:13px">✅ <b>Java Software Engineer</b><br>
 <span style="color:#666">Confidential Careers · Phoenix, AZ</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4463558100" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4463558100" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">71</td>
 <td style="padding:10px;font-size:13px">✅ <b>Senior AWS Cloud Developer</b><br>
 <span style="color:#666">Eliassen Group · Westlake, TX</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4417621973" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4417621973" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">72</td>
 <td style="padding:10px;font-size:13px">✅ <b>Senior Full Stack Engineer (Java / AWS / React)</b><br>
 <span style="color:#666">Randstad Digital Americas · Whippany, NJ</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4465470603" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4465470603" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">73</td>
 <td style="padding:10px;font-size:13px">✅ <b>IT Software Engineer 4</b><br>
 <span style="color:#666">Accord Technologies Inc · Illinois, United States</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4466369082" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4466369082" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">74</td>
 <td style="padding:10px;font-size:13px">✅ <b>Java Developer with AI</b><br>
 <span style="color:#666">Holistic Partners, Inc · Charlotte, NC</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4464889240" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4464889240" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">75</td>
 <td style="padding:10px;font-size:13px">✅ <b>Java Programmer</b><br>
 <span style="color:#666">Collabera · Charlotte, NC</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4463504865" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4463504865" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">76</td>
 <td style="padding:10px;font-size:13px">✅ <b>Senior Java Backend Developer (Remote)</b><br>
 <span style="color:#666">Cognizant · Sunnyvale, CA</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4465184655" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4465184655" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">77</td>
 <td style="padding:10px;font-size:13px">✅ <b>Sr. Java BED – Remote Allowed in US</b><br>
 <span style="color:#666">Cognizant · Sunnyvale, CA</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4465176686" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4465176686" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">78</td>
 <td style="padding:10px;font-size:13px">✅ <b>Mid-Level Java Developer – AWS and AI Solutions</b><br>
 <span style="color:#666">SAIC · District of Columbia, United States</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4466491766" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4466491766" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">79</td>
 <td style="padding:10px;font-size:13px">✅ <b>Software Engineer</b><br>
 <span style="color:#666">Serco · Jacksonville, FL</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4466429298" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4466429298" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">80</td>
 <td style="padding:10px;font-size:13px">✅ <b>154903  Java BE developer - ECG/Snowflake Hasura/GraphQL</b><br>
 <span style="color:#666">JSM Consulting Inc. · Minneapolis, MN</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4466463176" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4466463176" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">81</td>
 <td style="padding:10px;font-size:13px">✅ <b>Java Developer</b><br>
 <span style="color:#666">NTT DATA North America · New Jersey, United States</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4465856101" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4465856101" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">82</td>
 <td style="padding:10px;font-size:13px">✅ <b>Software Engineer</b><br>
 <span style="color:#666">Haystack · Appleton, WI</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4463988628" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4463988628" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">83</td>
 <td style="padding:10px;font-size:13px">✅ <b>Senior Java Developer</b><br>
 <span style="color:#666">Conduent · Remote</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4387575426" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4387575426" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">84</td>
 <td style="padding:10px;font-size:13px">✅ <b>Senior Java Engineer - AWS (Remote)</b><br>
 <span style="color:#666">First Citizens Bank · Phoenix, AZ</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4466021460" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4466021460" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">85</td>
 <td style="padding:10px;font-size:13px">✅ <b>Java Backend Engineer (Remote)</b><br>
 <span style="color:#666">Quik Hire Staffing · Remote</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4466324780" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4466324780" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">86</td>
 <td style="padding:10px;font-size:13px">✅ <b>Senior Java Developer</b><br>
 <span style="color:#666">Precision Technologies · Remote</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4464883258" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4464883258" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">87</td>
 <td style="padding:10px;font-size:13px">✅ <b>REMOTE Senior Backend Engineer - Java</b><br>
 <span style="color:#666">CyberCoders · Remote</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4463921188" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4463921188" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">88</td>
 <td style="padding:10px;font-size:13px">✅ <b>Sr. Developer</b><br>
 <span style="color:#666">HealthStream · Nashville, TN</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4446520294" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4446520294" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">89</td>
 <td style="padding:10px;font-size:13px">✅ <b>Java Developer</b><br>
 <span style="color:#666">Marathon TS · Virginia, United States</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4465051867" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4465051867" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">90</td>
 <td style="padding:10px;font-size:13px">✅ <b>Senior Java Software Engineer</b><br>
 <span style="color:#666">Talent Groups · Remote</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4465300483" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4465300483" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">91</td>
 <td style="padding:10px;font-size:13px">✅ <b>Java Full-Stack Software Engineer</b><br>
 <span style="color:#666">Theron Partners Inc. · Irvine, CA</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4464148336" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4464148336" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">92</td>
 <td style="padding:10px;font-size:13px">✅ <b>Engineer III (Java, Spring Boot, RESTful APIs)</b><br>
 <span style="color:#666">Mutual of Omaha · Remote</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4462547498" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4462547498" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">93</td>
 <td style="padding:10px;font-size:13px">✅ <b>Senior Software Engineer</b><br>
 <span style="color:#666">Kobie · Washington, DC</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4377654521" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4377654521" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">94</td>
 <td style="padding:10px;font-size:13px">✅ <b>Software Engineer III — Full Stack (Backend-Focused, Core Platform Services)</b><br>
 <span style="color:#666">McKesson · Georgia, United States</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4408591798" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4408591798" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">95</td>
 <td style="padding:10px;font-size:13px">✅ <b>Software Developer</b><br>
 <span style="color:#666">Netrolynx AI · Remote</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4466768720" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4466768720" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">96</td>
 <td style="padding:10px;font-size:13px">✅ <b>Remote Backend Developer</b><br>
 <span style="color:#666">AgileGrid Solutions · Remote</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4466771952" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4466771952" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">97</td>
 <td style="padding:10px;font-size:13px">✅ <b>Senior Java Developer � SOA/Microservices)-Systems Developer ( HBITS-07-14461)</b><br>
 <span style="color:#666">JSM Consulting Inc. · Albany, NY</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4466461310" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4466461310" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">98</td>
 <td style="padding:10px;font-size:13px">✅ <b>Sr Full-stack Java Developer</b><br>
 <span style="color:#666">Dale WorkForce Solutions · Philadelphia, PA</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4466471081" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4466471081" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">99</td>
 <td style="padding:10px;font-size:13px">✅ <b>Senior Java Developer | Hybrid</b><br>
 <span style="color:#666">Zeektek · Alpharetta, GA</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4465151511" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4465151511" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">100</td>
 <td style="padding:10px;font-size:13px">✅ <b>Senior Java Developer | Hybrid - Seattle, WA| W2 ONLY</b><br>
 <span style="color:#666">Matlen Silver · Seattle, WA</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4464255428" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4464255428" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">101</td>
 <td style="padding:10px;font-size:13px">✅ <b>Senior Java Developer</b><br>
 <span style="color:#666">Cloud and Things · Albany, NY</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4464238089" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4464238089" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">102</td>
 <td style="padding:10px;font-size:13px">✅ <b>Sr. Java Developer / Lead | Contract W2</b><br>
 <span style="color:#666">Next Gen Software Solutions LLC · Alpharetta, GA</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4464888600" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4464888600" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">103</td>
 <td style="padding:10px;font-size:13px">✅ <b>Sr. Java Engineer with Low Latency Systems, Socket Programming in Java, Network Latency/Programming experience - Hybrid Onsite in Boston or Needham MA</b><br>
 <span style="color:#666">Yoh, A Day &amp; Zimmermann Company · Boston, MA</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4465810500" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4465810500" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">104</td>
 <td style="padding:10px;font-size:13px">✅ <b>Senior Java Backend Developer- (In-Person Interview)</b><br>
 <span style="color:#666">Envision Technology Solutions · Alpharetta, GA</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4464520752" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4464520752" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">105</td>
 <td style="padding:10px;font-size:13px">✅ <b>Senior Backend Java Engineer</b><br>
 <span style="color:#666">Rose International · Chicago, IL</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4463907637" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4463907637" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">106</td>
 <td style="padding:10px;font-size:13px">✅ <b>Senior Java Developer with CURAM Experience</b><br>
 <span style="color:#666">V Group Inc. · Raleigh, NC</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4463117928" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4463117928" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">107</td>
 <td style="padding:10px;font-size:13px">✅ <b>Sr. Software Engineer (Java)</b><br>
 <span style="color:#666">Ampcus Inc · Jersey City, NJ</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4459732461" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4459732461" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">108</td>
 <td style="padding:10px;font-size:13px">✅ <b>Software Development Engineer (Golang)</b><br>
 <span style="color:#666">Steneral Consulting · McLean, VA</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4466374059" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4466374059" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">109</td>
 <td style="padding:10px;font-size:13px">✅ <b>Java/J2EE Developer with Medicaid exp - Level II</b><br>
 <span style="color:#666">Sligo Software Solutions Inc. · Lake Mary, FL</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4466410019" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4466410019" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">110</td>
 <td style="padding:10px;font-size:13px">✅ <b>Full Stack Java Developer</b><br>
 <span style="color:#666">Turnberry Solutions · Camden, NJ</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4444509582" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4444509582" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">111</td>
 <td style="padding:10px;font-size:13px">✅ <b>Software Development Engineer</b><br>
 <span style="color:#666">The AES Group · Virginia, United States</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4463912215" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4463912215" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">112</td>
 <td style="padding:10px;font-size:13px">✅ <b>Full Stack Engineer</b><br>
 <span style="color:#666">Agile Tech Labs · Roanoke, VA</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4465329643" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4465329643" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">113</td>
 <td style="padding:10px;font-size:13px">✅ <b>Java Full stack Developer with Angular</b><br>
 <span style="color:#666">PETADATA · Rollingwood, TX</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4466095196" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4466095196" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">114</td>
 <td style="padding:10px;font-size:13px">✅ <b>Java Lead developer</b><br>
 <span style="color:#666">Aroha Technologies, Inc · San Antonio, TX</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4464133273" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4464133273" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">115</td>
 <td style="padding:10px;font-size:13px">✅ <b>Senior Java Full Stack Developer (contract)</b><br>
 <span style="color:#666">BNY · Pittsburgh, PA</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4452873062" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4452873062" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">116</td>
 <td style="padding:10px;font-size:13px">✅ <b>Senior Software Engineer II</b><br>
 <span style="color:#666">Kforce Inc · New York, NY</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4417775049" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4417775049" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">117</td>
 <td style="padding:10px;font-size:13px">✅ <b>Software Engineer III</b><br>
 <span style="color:#666">Kforce Inc · Mountain View, CA</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4465336801" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4465336801" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">118</td>
 <td style="padding:10px;font-size:13px">✅ <b>Java Backend Developer Senior</b><br>
 <span style="color:#666">SAIC · Ashburn, VA</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4457812100" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4457812100" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">119</td>
 <td style="padding:10px;font-size:13px">✅ <b>Senior Software Engineer (Java)– AI &amp; Agentic Systems</b><br>
 <span style="color:#666">Publicis Sapient · Chicago, IL</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4444172651" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4444172651" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">120</td>
 <td style="padding:10px;font-size:13px">✅ <b>Senior Software Engineer – Java &amp; Azure Microservices</b><br>
 <span style="color:#666">General Motors · Austin, TX</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4466393271" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4466393271" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">121</td>
 <td style="padding:10px;font-size:13px">✅ <b>Sr. Staff Software Engineer - Java/Spring/AWS</b><br>
 <span style="color:#666">Early Warning · San Francisco, CA</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4457005695" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4457005695" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">122</td>
 <td style="padding:10px;font-size:13px">✅ <b>Senior Java Engineer</b><br>
 <span style="color:#666">Man Group · Boston, MA</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4466318137" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4466318137" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">123</td>
 <td style="padding:10px;font-size:13px">✅ <b>Sr Backend Software Developer</b><br>
 <span style="color:#666">CACI International Inc · Denver, CO</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4463474905" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4463474905" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">124</td>
 <td style="padding:10px;font-size:13px">✅ <b>Java Developer</b><br>
 <span style="color:#666">BrickRed Systems · Seattle, WA</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4465862996" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4465862996" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">125</td>
 <td style="padding:10px;font-size:13px">✅ <b>Senior Java Developer</b><br>
 <span style="color:#666">ICE · Atlanta, GA</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4277241332" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4277241332" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">126</td>
 <td style="padding:10px;font-size:13px">✅ <b>Senior Software Engineer (Java Backend)</b><br>
 <span style="color:#666">Equifax · Alpharetta, GA</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4445764192" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4445764192" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">127</td>
 <td style="padding:10px;font-size:13px">✅ <b>Java Developer</b><br>
 <span style="color:#666">Sammons Financial Group Companies · Chicago, IL</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4452197415" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4452197415" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">128</td>
 <td style="padding:10px;font-size:13px">✅ <b>Java Spring Boot Engineer</b><br>
 <span style="color:#666">Tata Consultancy Services · Phoenix, AZ</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4454938079" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4454938079" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">129</td>
 <td style="padding:10px;font-size:13px">✅ <b>Senior Java Developer</b><br>
 <span style="color:#666">Cognizant · New York, NY</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4456128235" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4456128235" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">130</td>
 <td style="padding:10px;font-size:13px">✅ <b>Senior Software Engineer</b><br>
 <span style="color:#666">Mastercard · Arlington, VA</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4464984072" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4464984072" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">131</td>
 <td style="padding:10px;font-size:13px">✅ <b>Java Developer – Assistant Vice President</b><br>
 <span style="color:#666">Citi · Irving, TX</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4463560539" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4463560539" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">132</td>
 <td style="padding:10px;font-size:13px">✅ <b>Senior Java Software Engineer (Investment Banking Technology)</b><br>
 <span style="color:#666">Jefferies · New York, NY</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4451473127" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4451473127" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">133</td>
 <td style="padding:10px;font-size:13px">✅ <b>Senior Java Backend Developer</b><br>
 <span style="color:#666">Cognizant · Sunnyvale, CA</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4463565156" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4463565156" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">134</td>
 <td style="padding:10px;font-size:13px">✅ <b>Java Backend Engineer</b><br>
 <span style="color:#666">UST · Sunnyvale, CA</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4438770388" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4438770388" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">135</td>
 <td style="padding:10px;font-size:13px">✅ <b>Software Engineer (Hybrid) - 29368</b><br>
 <span style="color:#666">Enlighten · San Antonio, TX</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4455378903" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4455378903" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">136</td>
 <td style="padding:10px;font-size:13px">✅ <b>Senior Java Software Engineer</b><br>
 <span style="color:#666">Vestmark · Boston, MA</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4464607411" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4464607411" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">137</td>
 <td style="padding:10px;font-size:13px">✅ <b>Software Engineer (Hybrid) - 29368</b><br>
 <span style="color:#666">Mission Technologies, a division of HII · San Antonio, Texas Metropolitan Area</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4454445359" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4454445359" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">138</td>
 <td style="padding:10px;font-size:13px">✅ <b>Senior Java Software Engineer</b><br>
 <span style="color:#666">BridgeView · New York, NY</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4457507136" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4457507136" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">139</td>
 <td style="padding:10px;font-size:13px">✅ <b>Senior Software Engineer - Java, AWS &amp; Microservices</b><br>
 <span style="color:#666">The Depository Trust &amp; Clearing Corporation (DTCC) · Tampa, FL</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4464348759" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4464348759" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">140</td>
 <td style="padding:10px;font-size:13px">✅ <b>Senior Software Engineer</b><br>
 <span style="color:#666">Ritchie Bros. · Beverly Hills, CA</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4462228677" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4462228677" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">141</td>
 <td style="padding:10px;font-size:13px">✅ <b>Java Software Engineer</b><br>
 <span style="color:#666">CoreAi Consulting · Phoenix, AZ</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4464356986" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4464356986" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">142</td>
 <td style="padding:10px;font-size:13px">✅ <b>Java Developer Contract</b><br>
 <span style="color:#666">IMCS Group · Raleigh, NC</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4464573541" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4464573541" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">143</td>
 <td style="padding:10px;font-size:13px">✅ <b>Java backend Developer</b><br>
 <span style="color:#666">Vidorra Consulting Group · Mountain View, CA</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4434572142" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4434572142" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">144</td>
 <td style="padding:10px;font-size:13px">✅ <b>Java Developer</b><br>
 <span style="color:#666">Phaxis · Alpharetta, GA</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4465065823" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4465065823" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">145</td>
 <td style="padding:10px;font-size:13px">✅ <b>Senior Java Developer – Capital Markets</b><br>
 <span style="color:#666">PTR Global · McLean, VA</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4465341090" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4465341090" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">146</td>
 <td style="padding:10px;font-size:13px">✅ <b>Backend Software Engineer</b><br>
 <span style="color:#666">PTR Global · Phoenix, AZ</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4464667257" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4464667257" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">147</td>
 <td style="padding:10px;font-size:13px">✅ <b>Backend Developer</b><br>
 <span style="color:#666">Horizontal Talent · Pleasanton, CA</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4462242511" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4462242511" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">148</td>
 <td style="padding:10px;font-size:13px">✅ <b>Lead Java Developer</b><br>
 <span style="color:#666">Collabera · Charlotte, NC</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4463563509" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4463563509" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">149</td>
 <td style="padding:10px;font-size:13px">✅ <b>Senior Developer</b><br>
 <span style="color:#666">TALENT Software Services · Columbia, SC</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4464256078" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4464256078" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">150</td>
 <td style="padding:10px;font-size:13px">✅ <b>IT Software Engineer 4  Senior Backend Java Engineer  AWS</b><br>
 <span style="color:#666">The AES Group · Chicago, IL</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4464236190" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4464236190" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">151</td>
 <td style="padding:10px;font-size:13px">✅ <b>Senior Software Engineer - Mongo &amp; Elastic (Remote)</b><br>
 <span style="color:#666">The Home Depot · Atlanta, GA</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4465112233" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4465112233" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">152</td>
 <td style="padding:10px;font-size:13px">✅ <b>Sr Software Engineer</b><br>
 <span style="color:#666">QVC · Pennsylvania, United States</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4444392453" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4444392453" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">153</td>
 <td style="padding:10px;font-size:13px">✅ <b>Staff Software Engineer (Remote)</b><br>
 <span style="color:#666">Imply · Burlingame, CA</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4457080145" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4457080145" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">154</td>
 <td style="padding:10px;font-size:13px">✅ <b>Full Stack Engineer I/II (Java, APIs, AWS)</b><br>
 <span style="color:#666">Mutual of Omaha · Remote</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4463090195" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4463090195" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">155</td>
 <td style="padding:10px;font-size:13px">✅ <b>Associate Software Engineer - Java (Distributed Systems and Databases)</b><br>
 <span style="color:#666">New Relic · Portland, OR</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4454842240" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4454842240" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">156</td>
 <td style="padding:10px;font-size:13px">✅ <b>Senior Java Engineer - Distributed Systems, Serverless - Elasticsearch</b><br>
 <span style="color:#666">Elastic · Remote</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4387810505" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4387810505" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">157</td>
 <td style="padding:10px;font-size:13px">✅ <b>Senior Software Engineer(java)</b><br>
 <span style="color:#666">Conduent · Remote</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4378740295" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4378740295" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">158</td>
 <td style="padding:10px;font-size:13px">✅ <b>Backend Engineer - Data Infrastructure [SK-17031]</b><br>
 <span style="color:#666">Skill · New York, NY</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4463022197" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4463022197" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">159</td>
 <td style="padding:10px;font-size:13px">✅ <b>Senior Java Developer (Active TS/SCI with Poly Required - (SIGN-ON BONUS UP TO $30,000)</b><br>
 <span style="color:#666">General Dynamics Information Technology · Annapolis Junction, MD</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4417756030" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4417756030" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">160</td>
 <td style="padding:10px;font-size:13px">✅ <b>Java Engineer II – API Development</b><br>
 <span style="color:#666">First Citizens Bank · Austin, TX</span>
 <br><span style="color:#aaa;font-size:11px">Match 40% · linkedin_deep · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4439355784" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4439355784" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">161</td>
 <td style="padding:10px;font-size:13px">✅ <b>Software Engineer - BM/SRM</b><br>
 <span style="color:#666">Auria · Huntsville, AL, US · <b style="color:#1a73e8">$130000.0-$145000.0/yearly</b></span>
 <br><span style="color:#aaa;font-size:11px">Match 36% · indeed · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.indeed.com/cmp/Auria-7" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.indeed.com/cmp/Auria-7" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">162</td>
 <td style="padding:10px;font-size:13px">✅ <b>Business Analyst- Contractor</b><br>
 <span style="color:#666">Align Technology · Raleigh, NC, US · <b style="color:#1a73e8">$nan-$nan/nan</b></span>
 <br><span style="color:#aaa;font-size:11px">Match 36% · indeed · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.indeed.com/cmp/Align-Technology" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.indeed.com/cmp/Align-Technology" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">163</td>
 <td style="padding:10px;font-size:13px">📋 <b>University - Full-Stack Developer</b><br>
 <span style="color:#666">Booz Allen Hamilton · Huntsville, AL, US · <b style="color:#1a73e8">$52900.0-$108000.0/yearly</b></span>
 <br><span style="color:#aaa;font-size:11px">Match 23% · indeed · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.indeed.com/cmp/Booz-Allen-Hamilton" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.indeed.com/cmp/Booz-Allen-Hamilton" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">164</td>
 <td style="padding:10px;font-size:13px">📋 <b>Java GCP Technical Lead – Hands-on Development</b><br>
 <span style="color:#666">Confiar Services · Denver, CO · <b style="color:#1a73e8">$nan-$nan/nan</b></span>
 <br><span style="color:#aaa;font-size:11px">Match 10% · linkedin · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4465457654" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4465457654" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">165</td>
 <td style="padding:10px;font-size:13px">📋 <b>Sr. Java Full Stack Software Engineer (Python GoLang CI/CD AWS)</b><br>
 <span style="color:#666">Akkodis · Atkinson, NH · <b style="color:#1a73e8">$nan-$nan/None</b></span>
 <br><span style="color:#aaa;font-size:11px">Match 8% · linkedin · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4464593756" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4464593756" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">166</td>
 <td style="padding:10px;font-size:13px">📋 <b>Motion Recruitment Java Contract</b><br>
 <span style="color:#666">Motion Recruitment · USA · <b style="color:#1a73e8">$nan-$nan/nan</b></span>
 <br><span style="color:#aaa;font-size:11px">Match 8% · motion_recruitment · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://motionrecruitment.com/tech-jobs/red-team" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://motionrecruitment.com/tech-jobs/red-team" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">167</td>
 <td style="padding:10px;font-size:13px">📋 <b>Senior IT developer - JAVA</b><br>
 <span style="color:#666">PlanIT Group, LLC · Raleigh, NC · <b style="color:#1a73e8">$nan-$nan/None</b></span>
 <br><span style="color:#aaa;font-size:11px">Match 0% · linkedin · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4466748930" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4466748930" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">168</td>
 <td style="padding:10px;font-size:13px">📋 <b>Senior Java Software Engineer</b><br>
 <span style="color:#666">DRISHTICON Inc · Pleasanton, CA · <b style="color:#1a73e8">$nan-$nan/None</b></span>
 <br><span style="color:#aaa;font-size:11px">Match 0% · linkedin · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4465456042" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4465456042" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">169</td>
 <td style="padding:10px;font-size:13px">📋 <b>Senior Java Software Engineer</b><br>
 <span style="color:#666">TriCom Technical Services · Remote · <b style="color:#1a73e8">$nan-$nan/nan</b></span>
 <br><span style="color:#aaa;font-size:11px">Match 0% · linkedin · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4465457969" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4465457969" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">170</td>
 <td style="padding:10px;font-size:13px">📋 <b>Java Developer [AQ-17552]</b><br>
 <span style="color:#666">Aquent · Southlake, TX · <b style="color:#1a73e8">$nan-$nan/None</b></span>
 <br><span style="color:#aaa;font-size:11px">Match 0% · linkedin · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4464741104" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4464741104" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr><tr style="border-bottom:1px solid #eee">
 <td style="padding:10px;color:#999">171</td>
 <td style="padding:10px;font-size:13px">📋 <b>Full Stack Java Full Developer</b><br>
 <span style="color:#666">Ket Software · Lake Mary, FL · <b style="color:#1a73e8">$nan-$nan/None</b></span>
 <br><span style="color:#aaa;font-size:11px">Match 0% · linkedin · added 2026-09-14</span></td>
-<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4465442175" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr></table></div>
+<td style="padding:10px;text-align:center"><a href="https://www.linkedin.com/jobs/view/4465442175" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr></table></div>
 <div style="padding:10px 16px;background:#f8f9fa;border:1px solid #ddd;border-top:0;border-radius:0 0 8px 8px">
-<p style="color:#888;font-size:11px;margin:0">Persistent list — a job stays here until you mark it applied in the CSV. No job is ever missed.</p>
+<p style="color:#888;font-size:11px;margin:0">Persistent list — a job stays here until you mark it applied in the CSV. No job is ever missed. Finished? Run <code>cds-cv-done</code>.</p>
 </div></body></html>

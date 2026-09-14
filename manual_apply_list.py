@@ -148,21 +148,52 @@ def main():
 <td style="padding:10px;font-size:13px">{badge} <b>{html.escape(r['title'])}</b>{c2c}<br>
 <span style="color:#666">{html.escape(r['company'])} · {html.escape(r['location'])}{rate}</span>
 <br><span style="color:#aaa;font-size:11px">Match {sc}% · {html.escape(r.get('source',''))} · added {r.get('added','')}</span></td>
-<td style="padding:10px;text-align:center"><a href="{html.escape(r['url'])}" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr>'''
+<td style="padding:10px;text-align:center"><a href="{html.escape(r['url'])}" target="_blank" rel="noopener" style="background:#1a73e8;color:#fff;padding:9px 16px;border-radius:5px;text-decoration:none;font-size:13px;font-weight:bold">Apply →</a></td></tr>'''
 
     today = datetime.now().strftime('%A, %B %d %Y')
+    urls_js = json.dumps([r['url'] for r in pending])
     html_doc = f'''<!DOCTYPE html><html><body style="font-family:Helvetica,Arial,sans-serif;color:#222;max-width:760px;margin:0 auto">
 <div style="background:linear-gradient(135deg,#1a73e8,#34a853);color:#fff;padding:22px;border-radius:8px 8px 0 0">
 <h2 style="margin:0">📋 {len(pending)} Jobs to Apply Yourself</h2>
 <p style="margin:6px 0 0;opacity:.9">{today} · ranked best-first · {done} already applied · nothing drops off until you apply</p>
 </div>
 <div style="padding:6px 16px;border:1px solid #ddd;border-top:0">
-<p style="font-size:12px;color:#666">These are jobs CI/CD could NOT auto-apply to. Apply one by one. Master file: <code>manual_apply_master.csv</code> — set status to <b>applied</b> when done and it leaves this list.</p>
+<p style="font-size:12px;color:#666">These are jobs CI/CD could NOT auto-apply to. Open them in tabs, apply, close each. When you finish the whole list, click "I'm Done" — it marks them all so tomorrow shows ONLY new jobs (no duplicates).</p>
+<p style="font-size:12px;background:#fff8e1;border:1px solid #ffe082;padding:8px 12px;border-radius:6px;color:#795548">💡 The <b>Open All / Done buttons work in the browser file</b> (email hides buttons for security). Apply links below work anywhere. Browser file: <code>~/Downloads/CV/job-finder/manual_apply_list.html</code></p>
+<div style="text-align:center;margin:14px 0">
+<button onclick="openAll()" style="background:#1a73e8;color:#fff;border:0;padding:14px 24px;border-radius:8px;font-size:15px;font-weight:bold;cursor:pointer;margin:4px">🌐 Open All {len(pending)} in Chrome Tabs</button>
+<button onclick="openBatch()" style="background:#fbbc04;color:#222;border:0;padding:14px 24px;border-radius:8px;font-size:15px;font-weight:bold;cursor:pointer;margin:4px">📑 Open Next 10 Tabs</button>
+<button onclick="cvDone()" style="background:#34a853;color:#fff;border:0;padding:14px 24px;border-radius:8px;font-size:15px;font-weight:bold;cursor:pointer;margin:4px">✓ I'm Done — Mark All Applied</button>
+<div id="cvmsg" style="margin-top:10px;font-size:13px;color:#333"></div>
+</div>
+<script>
+var JOB_URLS = {urls_js};
+var batchStart = 0;
+function openAll() {{
+  if (!confirm('Open all ' + JOB_URLS.length + ' jobs in new Chrome tabs? (Allow pop-ups if asked.)')) return;
+  JOB_URLS.forEach(function(u, i) {{ setTimeout(function() {{ window.open(u, '_blank'); }}, i * 300); }});
+  document.getElementById('cvmsg').innerHTML = '🌐 Opening ' + JOB_URLS.length + ' tabs (staggered). Close each after applying.';
+}}
+function openBatch() {{
+  var end = Math.min(batchStart + 10, JOB_URLS.length);
+  for (var i = batchStart; i < end; i++) {{ window.open(JOB_URLS[i], '_blank'); }}
+  document.getElementById('cvmsg').innerHTML = '📑 Opened jobs ' + (batchStart+1) + '–' + end + ' of ' + JOB_URLS.length + '. Click again for the next 10.';
+  batchStart = end >= JOB_URLS.length ? 0 : end;
+}}
+function cvDone() {{
+  var cmd = 'cds-cv-done';
+  try {{ navigator.clipboard.writeText(cmd); }} catch(e) {{}}
+  document.getElementById('cvmsg').innerHTML =
+    '✅ Command copied. Paste this in your terminal to finish the batch:<br>' +
+    '<code style="background:#eee;padding:6px 10px;border-radius:4px;display:inline-block;margin-top:6px;font-size:15px">cds-cv-done</code><br>' +
+    '<span style="color:#888">This marks all as applied → tomorrow only NEW jobs appear.</span>';
+}}
+</script>
 <table style="border-collapse:collapse;width:100%">
 <tr style="background:#333;color:#fff"><th style="padding:8px;width:30px">#</th><th style="padding:8px;text-align:left">Job</th><th style="padding:8px;width:90px">Action</th></tr>
 {rows_html}</table></div>
 <div style="padding:10px 16px;background:#f8f9fa;border:1px solid #ddd;border-top:0;border-radius:0 0 8px 8px">
-<p style="color:#888;font-size:11px;margin:0">Persistent list — a job stays here until you mark it applied in the CSV. No job is ever missed.</p>
+<p style="color:#888;font-size:11px;margin:0">Persistent list — a job stays here until you mark it applied in the CSV. No job is ever missed. Finished? Run <code>cds-cv-done</code>.</p>
 </div></body></html>'''
 
     with open(OUT_HTML, 'w') as f:
