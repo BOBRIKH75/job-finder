@@ -5537,10 +5537,11 @@
     "company": "Volkswagen",
     "url": "https://www.indeed.com/viewjob?jk=22fceafd8afb8a44",
     "recruiter": "Chattanooga Operations",
-    "last_contact": "2026-09-07T22:14:50.311735",
+    "last_contact": "2026-09-14T22:42:52.851485",
     "followed_up": true,
     "followup_date": "2026-09-07T18:45:40.960290",
-    "touch2_sent": true
+    "touch2_sent": true,
+    "touch3_sent": true
   },
   "c972793e292f": {
     "email": "origin.allow@teamsoft.com",
@@ -6762,7 +6763,7 @@
   "2b0bafc13e0d": {
     "email": "recruiting@genesis10.com",
     "date": "2026-09-06T21:51:04.865828",
-    "last_contact": "2026-09-14T18:52:17.027985",
+    "last_contact": "2026-09-14T19:00:26.144712",
     "job": "Java Developer C2C",
     "company": "Genesis10",
     "recruiter": "Recruiting Team",
@@ -6779,7 +6780,7 @@
   "3e15d6e5f173": {
     "email": "recruiting@fulcronix.com",
     "date": "2026-09-06T21:51:07.162530",
-    "last_contact": "2026-09-14T18:52:17.027985",
+    "last_contact": "2026-09-14T19:00:26.144712",
     "job": "Java Developer C2C",
     "company": "Fulcronix",
     "recruiter": "Recruiting Team",
@@ -6820,7 +6821,7 @@
   "e5afd507945e": {
     "email": "recruiting@worldpay.com",
     "date": "2026-09-07T18:45:38.355603",
-    "last_contact": "2026-09-14T18:52:17.027985",
+    "last_contact": "2026-09-14T19:00:26.144712",
     "job": "Java Developer C2C",
     "company": "Worldpay",
     "recruiter": "Recruiting Team",
@@ -6837,7 +6838,7 @@
   "98a64f5efcc5": {
     "email": "recruiting@netflix.com",
     "date": "2026-09-07T18:45:40.900167",
-    "last_contact": "2026-09-14T18:52:17.027985",
+    "last_contact": "2026-09-14T19:00:26.144712",
     "job": "Java Developer C2C",
     "company": "Netflix",
     "recruiter": "Recruiting Team",
@@ -6854,7 +6855,7 @@
   "9e0846c24ce6": {
     "email": "recruiting@circle.com",
     "date": "2026-09-07T22:28:22.587033",
-    "last_contact": "2026-09-11T17:09:12.786231",
+    "last_contact": "2026-09-14T22:42:52.851485",
     "job": "Java Developer C2C",
     "company": "Circle",
     "recruiter": "Recruiting Team",
@@ -6865,12 +6866,13 @@
     "bounced": false,
     "re_engage_count": 0,
     "followed_up": true,
-    "followup_date": "2026-09-11T17:09:12.786231"
+    "followup_date": "2026-09-11T17:09:12.786231",
+    "touch2_sent": true
   },
   "861efc22e421": {
     "email": "recruiting@marchonpartners.com",
     "date": "2026-09-07T22:28:27.241263",
-    "last_contact": "2026-09-11T17:09:12.786231",
+    "last_contact": "2026-09-14T22:42:52.851485",
     "job": "Java Developer C2C",
     "company": "Marchon Partners",
     "recruiter": "Recruiting Team",
@@ -6881,12 +6883,13 @@
     "bounced": false,
     "re_engage_count": 0,
     "followed_up": true,
-    "followup_date": "2026-09-11T17:09:12.786231"
+    "followup_date": "2026-09-11T17:09:12.786231",
+    "touch2_sent": true
   },
   "be81218b1f6c": {
     "email": "recruiting@capgemini.com",
     "date": "2026-09-07T22:28:30.807448",
-    "last_contact": "2026-09-11T17:09:12.786231",
+    "last_contact": "2026-09-14T22:42:52.851485",
     "job": "Java Developer C2C",
     "company": "Capgemini",
     "recruiter": "Recruiting Team",
@@ -6897,12 +6900,13 @@
     "bounced": false,
     "re_engage_count": 0,
     "followed_up": true,
-    "followup_date": "2026-09-11T17:09:12.786231"
+    "followup_date": "2026-09-11T17:09:12.786231",
+    "touch2_sent": true
   },
   "ba8770198944": {
     "email": "recruiting@vantor.com",
     "date": "2026-09-07T22:28:33.866075",
-    "last_contact": "2026-09-11T17:23:41.382723",
+    "last_contact": "2026-09-14T22:42:52.851485",
     "job": "Java Developer C2C",
     "company": "Vantor",
     "recruiter": "Recruiting Team",
@@ -6913,7 +6917,8 @@
     "bounced": false,
     "re_engage_count": 0,
     "followed_up": true,
-    "followup_date": "2026-09-11T17:23:41.382723"
+    "followup_date": "2026-09-11T17:23:41.382723",
+    "touch2_sent": true
   },
   "29c76550957b": {
     "email": "origin.allow@bayforce.com",
@@ -7177,7 +7182,7 @@
   "c1c28e91e4d5": {
     "email": "staffing@real.com",
     "date": "2026-09-08T22:17:15.396143",
-    "last_contact": "2026-09-14T18:52:17.027985",
+    "last_contact": "2026-09-14T22:42:52.851485",
     "job": "Java Developer C2C",
     "company": "Real",
     "recruiter": "Recruiting Team",
@@ -7188,7 +7193,7 @@
     "bounced": false,
     "re_engage_count": 0,
     "followed_up": true,
-    "followup_date": "2026-09-14T18:52:17.027985"
+    "followup_date": "2026-09-14T22:42:52.851485"
   },
   "6f27c0dc5ed5": {
     "email": "origin.allow@collabera.com",
@@ -7391,7 +7396,7 @@
   "1649f3590fa7": {
     "email": "recruiting@volkswagen.com",
     "date": "2026-09-10T17:22:26.066241",
-    "last_contact": "2026-09-14T18:52:17.027985",
+    "last_contact": "2026-09-14T19:00:26.144712",
     "job": "Java Developer C2C",
     "company": "Volkswagen",
     "recruiter": "Recruiting Team",
@@ -7402,12 +7407,12 @@
     "bounced": false,
     "re_engage_count": 0,
     "followed_up": true,
-    "followup_date": "2026-09-14T18:52:17.027985"
+    "followup_date": "2026-09-14T19:00:26.144712"
   },
   "871dda157045": {
     "email": "recruiting@workday.com",
     "date": "2026-09-10T17:22:28.224839",
-    "last_contact": "2026-09-14T18:52:17.027985",
+    "last_contact": "2026-09-14T19:00:26.144712",
     "job": "Java Developer C2C",
     "company": "Workday",
     "recruiter": "Recruiting Team",
@@ -7418,12 +7423,12 @@
     "bounced": false,
     "re_engage_count": 0,
     "followed_up": true,
-    "followup_date": "2026-09-14T18:52:17.027985"
+    "followup_date": "2026-09-14T19:00:26.144712"
   },
   "be0a5316b993": {
     "email": "recruiting@solugenix.com",
     "date": "2026-09-10T17:22:30.679024",
-    "last_contact": "2026-09-14T18:52:17.027985",
+    "last_contact": "2026-09-14T19:00:26.144712",
     "job": "Java Developer C2C",
     "company": "Solugenix",
     "recruiter": "Recruiting Team",
@@ -7434,7 +7439,7 @@
     "bounced": false,
     "re_engage_count": 0,
     "followed_up": true,
-    "followup_date": "2026-09-14T18:52:17.027985"
+    "followup_date": "2026-09-14T19:00:26.144712"
   },
   "b0d27a9bd54f": {
     "email": "origin.allow@innovatechstaffing.com",
@@ -7483,7 +7488,7 @@
   "ba1ccb85e5cc": {
     "email": "recruiting@cayuseholdings.com",
     "date": "2026-09-10T17:39:01.064744",
-    "last_contact": "2026-09-14T18:52:17.027985",
+    "last_contact": "2026-09-14T19:00:26.144712",
     "job": "Java Developer C2C",
     "company": "Cayuse Holdings",
     "recruiter": "Recruiting Team",
@@ -7494,7 +7499,7 @@
     "bounced": false,
     "re_engage_count": 0,
     "followed_up": true,
-    "followup_date": "2026-09-14T18:52:17.027985"
+    "followup_date": "2026-09-14T19:00:26.144712"
   },
   "b0d5bfa74e0c": {
     "email": "hr@reqrouteinc.com",
@@ -7527,7 +7532,7 @@
   "2e302acf8359": {
     "email": "recruiting@gtntechnicalstaffing.com",
     "date": "2026-09-10T17:39:06.807108",
-    "last_contact": "2026-09-14T18:52:17.027985",
+    "last_contact": "2026-09-14T19:00:26.144712",
     "job": "Java Developer C2C",
     "company": "GTN Technical Staffing",
     "recruiter": "Recruiting Team",
@@ -7538,7 +7543,7 @@
     "bounced": false,
     "re_engage_count": 0,
     "followed_up": true,
-    "followup_date": "2026-09-14T18:52:17.027985"
+    "followup_date": "2026-09-14T19:00:26.144712"
   },
   "308dac071dd7": {
     "email": "origin.allow@ltharperrecruitmentgroup.com",
@@ -7563,7 +7568,7 @@
   "62842535ba50": {
     "email": "recruiting@hireinsolutions.com",
     "date": "2026-09-10T22:03:45.833649",
-    "last_contact": "2026-09-14T19:06:12.459801",
+    "last_contact": "2026-09-14T19:00:26.144712",
     "job": "Java Developer C2C",
     "company": "Hire'in Solutions",
     "recruiter": "Recruiting Team",
@@ -7574,12 +7579,12 @@
     "bounced": false,
     "re_engage_count": 0,
     "followed_up": true,
-    "followup_date": "2026-09-14T19:06:12.459801"
+    "followup_date": "2026-09-14T19:00:26.144712"
   },
   "dbbef2b1a5e5": {
     "email": "recruiting@unisys.com",
     "date": "2026-09-10T22:03:47.799688",
-    "last_contact": "2026-09-14T19:06:12.459801",
+    "last_contact": "2026-09-14T19:14:22.467685",
     "job": "Java Developer C2C",
     "company": "Unisys",
     "recruiter": "Recruiting Team",
@@ -7590,12 +7595,12 @@
     "bounced": false,
     "re_engage_count": 0,
     "followed_up": true,
-    "followup_date": "2026-09-14T19:06:12.459801"
+    "followup_date": "2026-09-14T19:14:22.467685"
   },
   "3193c7c81609": {
     "email": "recruiting@capitalone.com",
     "date": "2026-09-10T22:03:49.794378",
-    "last_contact": "2026-09-14T19:06:12.459801",
+    "last_contact": "2026-09-14T19:14:22.467685",
     "job": "Java Developer C2C",
     "company": "Capital One",
     "recruiter": "Recruiting Team",
@@ -7606,7 +7611,7 @@
     "bounced": false,
     "re_engage_count": 0,
     "followed_up": true,
-    "followup_date": "2026-09-14T19:06:12.459801"
+    "followup_date": "2026-09-14T19:14:22.467685"
   },
   "4ac6dd152a9d": {
     "email": "careers@amiseq.com",
@@ -7675,7 +7680,7 @@
   "b6b68d7e1dee": {
     "email": "recruiting@coloradostateuniversity.com",
     "date": "2026-09-11T17:23:16.462522",
-    "last_contact": "2026-09-14T19:06:12.459801",
+    "last_contact": "2026-09-14T19:14:22.467685",
     "job": "Java Developer C2C",
     "company": "Colorado State University",
     "recruiter": "Recruiting Team",
@@ -7686,7 +7691,7 @@
     "bounced": false,
     "re_engage_count": 0,
     "followed_up": true,
-    "followup_date": "2026-09-14T19:06:12.459801"
+    "followup_date": "2026-09-14T19:14:22.467685"
   },
   "81892e45425f": {
     "email": "hr@turnberrysolutions.com",
@@ -7719,7 +7724,7 @@
   "d3003e9f718d": {
     "email": "recruiting@conduent.com",
     "date": "2026-09-11T17:23:24.924881",
-    "last_contact": "2026-09-14T19:06:12.459801",
+    "last_contact": "2026-09-14T19:14:22.467685",
     "job": "Java Developer C2C",
     "company": "Conduent",
     "recruiter": "Recruiting Team",
@@ -7730,12 +7735,12 @@
     "bounced": false,
     "re_engage_count": 0,
     "followed_up": true,
-    "followup_date": "2026-09-14T19:06:12.459801"
+    "followup_date": "2026-09-14T19:14:22.467685"
   },
   "39abea4f5f1e": {
     "email": "recruiting@pacergroup.com",
     "date": "2026-09-11T17:23:27.526506",
-    "last_contact": "2026-09-14T19:06:12.459801",
+    "last_contact": "2026-09-14T19:14:22.467685",
     "job": "Java Developer C2C",
     "company": "Pacer Group",
     "recruiter": "Recruiting Team",
@@ -7746,7 +7751,7 @@
     "bounced": false,
     "re_engage_count": 0,
     "followed_up": true,
-    "followup_date": "2026-09-14T19:06:12.459801"
+    "followup_date": "2026-09-14T19:14:22.467685"
   },
   "cf89dee9774b": {
     "email": "jobs@tcwglobal.com",
@@ -7793,7 +7798,7 @@
   "fbc27a6f2d08": {
     "email": "recruiting@roseinternational.com",
     "date": "2026-09-11T17:23:41.315332",
-    "last_contact": "2026-09-14T19:06:12.459801",
+    "last_contact": "2026-09-14T19:14:22.467685",
     "job": "Java Developer C2C",
     "company": "Rose International",
     "recruiter": "Recruiting Team",
@@ -7804,7 +7809,7 @@
     "bounced": false,
     "re_engage_count": 0,
     "followed_up": true,
-    "followup_date": "2026-09-14T19:06:12.459801"
+    "followup_date": "2026-09-14T19:14:22.467685"
   },
   "247876050062": {
     "email": "origin.allow@hmgamericallc.com",
@@ -8019,56 +8024,12 @@
     "bounced": true,
     "re_engage_count": 0
   },
-  "8df2b9d33e24": {
-    "email": "origin.allow@veracityventuresinc.com",
-    "date": "2026-09-14T19:04:28.734282",
-    "job": "Senior Java Backend / Microservices Engineer",
-    "company": "Veracity Ventures Inc.",
-    "url": "https://www.linkedin.com/jobs/view/4465222224",
-    "recruiter": "origin allow",
-    "source": "linkedin+guess",
-    "bounced": true
-  },
-  "de6a0b23e212": {
-    "email": "origin.allow@eliosai.com",
-    "date": "2026-09-14T19:04:30.808643",
-    "job": "Senior Software Engineer",
-    "company": "Elios AI",
-    "url": "https://www.linkedin.com/jobs/view/4464799926",
-    "recruiter": "origin allow",
-    "source": "linkedin+guess",
-    "bounced": true
-  },
-  "d2e735a10b3f": {
-    "email": "origin.allow@arohatechnologiesinc.com",
-    "date": "2026-09-14T19:04:33.158840",
-    "job": "Java Lead developer",
-    "company": "Aroha Technologies, Inc",
-    "url": "https://www.linkedin.com/jobs/view/4464133273",
-    "recruiter": "origin allow",
-    "source": "linkedin+guess",
-    "bounced": true
-  },
-  "473b562b5776": {
-    "email": "careers@roseinternational.com",
-    "date": "2026-09-14T19:06:08.283341",
-    "last_contact": "2026-09-14T19:06:08.283341",
+  "6a1a5f772271": {
+    "email": "recruiting@bvteck.com",
+    "date": "2026-09-14T22:55:03.951654",
+    "last_contact": "2026-09-14T22:55:03.951654",
     "job": "Java Developer C2C",
-    "company": "Rose International",
-    "recruiter": "Recruiting Team",
-    "title": "Recruiter",
-    "source": "smtp_verified",
-    "url": "",
-    "replied": false,
-    "bounced": true,
-    "re_engage_count": 0
-  },
-  "ed54446e3dcf": {
-    "email": "recruiting@cybercoders.com",
-    "date": "2026-09-14T19:06:10.320872",
-    "last_contact": "2026-09-14T19:06:10.320872",
-    "job": "Java Developer C2C",
-    "company": "CyberCoders",
+    "company": "BV Teck",
     "recruiter": "Recruiting Team",
     "title": "Recruiter",
     "source": "smtp_verified",
@@ -8077,12 +8038,40 @@
     "bounced": false,
     "re_engage_count": 0
   },
-  "05a584791399": {
-    "email": "recruiting@eliosai.com",
-    "date": "2026-09-14T19:06:12.373978",
-    "last_contact": "2026-09-14T19:06:12.373978",
+  "4ea8fbe48f70": {
+    "email": "recruiting@peraton.com",
+    "date": "2026-09-14T22:55:06.425428",
+    "last_contact": "2026-09-14T22:55:06.425428",
     "job": "Java Developer C2C",
-    "company": "Elios AI",
+    "company": "Peraton",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": false,
+    "re_engage_count": 0
+  },
+  "5ef556f3f9aa": {
+    "email": "info@talentdomestaffing.com",
+    "date": "2026-09-14T22:55:08.522826",
+    "last_contact": "2026-09-14T22:55:08.522826",
+    "job": "Java Developer C2C",
+    "company": "TalentDome Staffing",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": true,
+    "re_engage_count": 0
+  },
+  "e507f1cbb8f4": {
+    "email": "recruiting@bcforward.com",
+    "date": "2026-09-14T22:55:10.736811",
+    "last_contact": "2026-09-14T22:55:10.736811",
+    "job": "Java Developer C2C",
+    "company": "BCforward",
     "recruiter": "Recruiting Team",
     "title": "Recruiter",
     "source": "smtp_verified",
