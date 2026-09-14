@@ -5787,5 +5787,41 @@
     "position": "recruitment (role inbox)",
     "source": "deep/role-mx",
     "domain": "turing.com"
+  },
+  {
+    "name": "Robert Russ",
+    "company": "Entegee",
+    "email": "bob.russ@entegee.com",
+    "position": "recruiter (emailed Bob)",
+    "source": "inbox-harvest",
+    "last_subject": "Re: New application: Sr. Java Full Stack Software Engineer (",
+    "verified": "2026-09-14"
+  },
+  {
+    "name": "RB Global Careers",
+    "company": "Workflow",
+    "email": "oraclerecruitingcloud@workflow.email.ca-toronto-1.ocs.oraclecloud.com",
+    "position": "recruiter (emailed Bob)",
+    "source": "inbox-harvest",
+    "last_subject": "Your recent job application for Senior Software\u00a0Engineer - 1",
+    "verified": "2026-09-14"
+  },
+  {
+    "name": "BridgeView",
+    "company": "Email",
+    "email": "bridgeview@email.boostie.jobs",
+    "position": "recruiter (emailed Bob)",
+    "source": "inbox-harvest",
+    "last_subject": "Thank you for applying to Sr. Software Engineer",
+    "verified": "2026-09-14"
+  },
+  {
+    "name": "Preeti Verma",
+    "company": "Ampstek",
+    "email": "preeti.verma@ampstek.com",
+    "position": "recruiter (emailed Bob)",
+    "source": "inbox-harvest",
+    "last_subject": "Java Developer || Phoenix AZ - Onsite",
+    "verified": "2026-09-14"
   }
 ]
