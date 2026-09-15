@@ -12,7 +12,7 @@
     "fix": "reload_retry"
   },
   "no_apply_button": {
-    "count": 1,
+    "count": 2,
     "fix": "longer_button_wait"
   }
 }
