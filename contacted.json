@@ -7343,7 +7343,11 @@
     "url": "https://www.indeed.com/viewjob?jk=8cdfd35d6677d2f1",
     "recruiter": null,
     "smtp_verified": true,
+<<<<<<< Updated upstream
     "last_contact": "2026-09-17T17:45:35.880600",
+=======
+    "last_contact": "2026-09-17T17:53:56.380296",
+>>>>>>> Stashed changes
     "followed_up": true,
     "followup_date": "2026-09-13T21:47:01.385786",
     "touch2_sent": true
@@ -7361,7 +7365,11 @@
   "a4b78cc740d6": {
     "email": "staffing@floridablue.com",
     "date": "2026-09-09T22:52:14.976489",
+<<<<<<< Updated upstream
     "last_contact": "2026-09-17T17:45:35.880600",
+=======
+    "last_contact": "2026-09-17T17:53:56.380296",
+>>>>>>> Stashed changes
     "job": "Java Developer C2C",
     "company": "Florida Blue",
     "recruiter": "Recruiting Team",
@@ -7378,7 +7386,11 @@
   "8b61ce2d195b": {
     "email": "recruiting@mtsi.com",
     "date": "2026-09-09T22:52:17.296513",
+<<<<<<< Updated upstream
     "last_contact": "2026-09-17T17:45:35.880600",
+=======
+    "last_contact": "2026-09-17T17:53:56.380296",
+>>>>>>> Stashed changes
     "job": "Java Developer C2C",
     "company": "MTSI",
     "recruiter": "Recruiting Team",
@@ -7395,7 +7407,11 @@
   "db536d82e033": {
     "email": "recruiting@wyetechllc.com",
     "date": "2026-09-09T22:52:19.488539",
+<<<<<<< Updated upstream
     "last_contact": "2026-09-17T17:45:35.880600",
+=======
+    "last_contact": "2026-09-17T17:53:56.380296",
+>>>>>>> Stashed changes
     "job": "Java Developer C2C",
     "company": "Wyetech, LLC",
     "recruiter": "Recruiting Team",
@@ -7412,7 +7428,11 @@
   "5a4be2b8bfd2": {
     "email": "recruiting@jefferies.com",
     "date": "2026-09-09T22:52:21.624865",
+<<<<<<< Updated upstream
     "last_contact": "2026-09-17T17:45:35.880600",
+=======
+    "last_contact": "2026-09-17T17:53:56.380296",
+>>>>>>> Stashed changes
     "job": "Java Developer C2C",
     "company": "Jefferies",
     "recruiter": "Recruiting Team",
@@ -7429,7 +7449,11 @@
   "1649f3590fa7": {
     "email": "recruiting@volkswagen.com",
     "date": "2026-09-10T17:22:26.066241",
+<<<<<<< Updated upstream
     "last_contact": "2026-09-17T17:45:35.880600",
+=======
+    "last_contact": "2026-09-17T17:53:56.380296",
+>>>>>>> Stashed changes
     "job": "Java Developer C2C",
     "company": "Volkswagen",
     "recruiter": "Recruiting Team",
@@ -7446,7 +7470,11 @@
   "871dda157045": {
     "email": "recruiting@workday.com",
     "date": "2026-09-10T17:22:28.224839",
+<<<<<<< Updated upstream
     "last_contact": "2026-09-17T17:45:35.880600",
+=======
+    "last_contact": "2026-09-17T17:53:56.380296",
+>>>>>>> Stashed changes
     "job": "Java Developer C2C",
     "company": "Workday",
     "recruiter": "Recruiting Team",
@@ -7463,7 +7491,11 @@
   "be0a5316b993": {
     "email": "recruiting@solugenix.com",
     "date": "2026-09-10T17:22:30.679024",
+<<<<<<< Updated upstream
     "last_contact": "2026-09-17T17:45:35.880600",
+=======
+    "last_contact": "2026-09-17T17:53:56.380296",
+>>>>>>> Stashed changes
     "job": "Java Developer C2C",
     "company": "Solugenix",
     "recruiter": "Recruiting Team",
@@ -7524,7 +7556,7 @@
   "ba1ccb85e5cc": {
     "email": "recruiting@cayuseholdings.com",
     "date": "2026-09-10T17:39:01.064744",
-    "last_contact": "2026-09-14T19:00:26.144712",
+    "last_contact": "2026-09-17T17:53:56.380296",
     "job": "Java Developer C2C",
     "company": "Cayuse Holdings",
     "recruiter": "Recruiting Team",
@@ -7535,7 +7567,8 @@
     "bounced": false,
     "re_engage_count": 0,
     "followed_up": true,
-    "followup_date": "2026-09-14T19:00:26.144712"
+    "followup_date": "2026-09-14T19:00:26.144712",
+    "touch2_sent": true
   },
   "b0d5bfa74e0c": {
     "email": "hr@reqrouteinc.com",
@@ -7568,7 +7601,11 @@
   "2e302acf8359": {
     "email": "recruiting@gtntechnicalstaffing.com",
     "date": "2026-09-10T17:39:06.807108",
+<<<<<<< Updated upstream
     "last_contact": "2026-09-17T17:45:35.880600",
+=======
+    "last_contact": "2026-09-17T17:53:56.380296",
+>>>>>>> Stashed changes
     "job": "Java Developer C2C",
     "company": "GTN Technical Staffing",
     "recruiter": "Recruiting Team",
@@ -8304,12 +8341,40 @@
     "bounced": true,
     "re_engage_count": 0
   },
+<<<<<<< Updated upstream
   "ed54446e3dcf": {
     "email": "recruiting@cybercoders.com",
     "date": "2026-09-17T17:56:38.476134",
     "last_contact": "2026-09-17T17:56:38.476134",
     "job": "Java Developer C2C",
     "company": "CyberCoders",
+=======
+  "5937829be753": {
+    "email": "sparksoft.accommodations@sparksoftcorp.com",
+    "date": "2026-09-17T17:53:55.796176",
+    "job": "Software Engineer III",
+    "company": "Sparksoft Corporation",
+    "url": "https://www.indeed.com/viewjob?jk=7295ef9cb64f7e5b",
+    "recruiter": null,
+    "smtp_verified": true
+  },
+  "ed89a416af4f": {
+    "email": "origin.allow@cintalinc.com",
+    "date": "2026-09-17T18:02:43.416862",
+    "job": "Java Developer",
+    "company": "Cintal, Inc.",
+    "url": "https://www.linkedin.com/jobs/view/4468325066",
+    "recruiter": "origin allow",
+    "source": "linkedin+guess",
+    "bounced": true
+  },
+  "9f7225cbccd8": {
+    "email": "recruiting@kellton.com",
+    "date": "2026-09-17T18:05:22.383688",
+    "last_contact": "2026-09-17T18:05:22.383688",
+    "job": "Java Developer C2C",
+    "company": "Kellton",
+>>>>>>> Stashed changes
     "recruiter": "Recruiting Team",
     "title": "Recruiter",
     "source": "smtp_verified",
