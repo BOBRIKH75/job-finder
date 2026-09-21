@@ -88,9 +88,16 @@ jobs:
             echo "Nothing changed — no commit needed"
           else
             git commit -m "chore: weekly cleanup [$(date '+%Y-%m-%d')]"
-            git pull --rebase --autostash origin master || true
-            git push
-            echo "✅ Cleanup committed and pushed"
+            if ! git pull --rebase --autostash origin master; then
+              echo "conflict - aborting, checking out clean remote JSON, skipping push"
+              git checkout --theirs -- '*.json' 2>/dev/null || true
+              git rebase --abort 2>/dev/null || true
+            elif git grep -lI '^<<<<<<<' -- '*.json' | grep -q .; then
+              echo "conflict markers in JSON - NOT pushing"
+            else
+              git push
+              echo "Cleanup committed and pushed"
+            fi
           fi
 
       - name: Print cache usage summary

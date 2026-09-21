@@ -208,7 +208,10 @@ def find_company_recruiters(company: str, description: str = "") -> list:
 # ── Load/save contacted tracker ──
 def load_contacted():
     if os.path.exists(CONTACTED_FILE):
-        with open(CONTACTED_FILE) as f: return json.load(f)
+        try:
+            with open(CONTACTED_FILE) as f: return json.load(f)
+        except (json.JSONDecodeError, ValueError) as e:
+            print(f'⚠️  Corrupt JSON in {CONTACTED_FILE} ({e}) — resetting to empty; will be rewritten on save')
     return {}
 
 def save_contacted(data):

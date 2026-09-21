@@ -73,8 +73,17 @@ jobs:
           python manual_apply_list.py
           git add manual_apply_list.html agent/data/manual_apply_master.csv found_jobs.json 2>/dev/null || true
           git diff --cached --quiet || git commit -m "manual apply list + master state [skip ci]" || true
-          git pull --rebase --autostash origin master || true
-          git push || true
+          if ! git pull --rebase --autostash origin master; then
+            echo "conflict - aborting, checking out clean remote JSON, skipping push"
+            git checkout --theirs -- '*.json' 2>/dev/null || true
+            git rebase --abort 2>/dev/null || true
+          else
+            if git grep -lI '^<<<<<<<' -- '*.json' | grep -q .; then
+              echo "conflict markers in JSON - NOT pushing"
+            else
+              git push || true
+            fi
+          fi
 
       - name: Email manual apply links
         if: always()
@@ -121,8 +130,17 @@ jobs:
           git config user.email "bobrikh75@gmail.com"
           git add found_jobs.json contacted.json seen_jobs.json 2>/dev/null || true
           git diff --cached --quiet || git commit -m "Update found_jobs + recruiter contacted state [skip ci]"
-          git pull --rebase --autostash origin master || true
-          git push || true
+          if ! git pull --rebase --autostash origin master; then
+            echo "conflict - aborting, checking out clean remote JSON, skipping push"
+            git checkout --theirs -- '*.json' 2>/dev/null || true
+            git rebase --abort 2>/dev/null || true
+          else
+            if git grep -lI '^<<<<<<<' -- '*.json' | grep -q .; then
+              echo "conflict markers in JSON - NOT pushing"
+            else
+              git push || true
+            fi
+          fi
 
       - name: Resolve LinkedIn URLs to company apply pages
         if: success()
@@ -133,8 +151,17 @@ jobs:
           python resolve_urls.py
           git add found_jobs.json 2>/dev/null || true
           git diff --cached --quiet || git commit -m "Resolve LinkedIn URLs to apply pages [skip ci]"
-          git pull --rebase --autostash origin master || true
-          git push || true
+          if ! git pull --rebase --autostash origin master; then
+            echo "conflict - aborting, checking out clean remote JSON, skipping push"
+            git checkout --theirs -- '*.json' 2>/dev/null || true
+            git rebase --abort 2>/dev/null || true
+          else
+            if git grep -lI '^<<<<<<<' -- '*.json' | grep -q .; then
+              echo "conflict markers in JSON - NOT pushing"
+            else
+              git push || true
+            fi
+          fi
 
       - name: Trigger auto-apply agent
         if: success()
