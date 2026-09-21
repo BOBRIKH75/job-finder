@@ -80,7 +80,10 @@ FAKE_SIGNALS = [
 
 def load_json(path):
     if os.path.exists(path):
-        with open(path) as f: return json.load(f)
+        try:
+            with open(path) as f: return json.load(f)
+        except (json.JSONDecodeError, ValueError) as e:
+            print(f'⚠️  Corrupt JSON in {path} ({e}) — resetting to empty; will be rewritten on save')
     return {}
 
 def save_json(path, data):

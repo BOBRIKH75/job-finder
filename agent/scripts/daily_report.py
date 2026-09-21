@@ -88,7 +88,11 @@ def today_stats(db: sqlite3.Connection) -> dict:
 def outreach_stats() -> dict:
     if not CONTACTED_FILE.exists():
         return {"total_contacted": 0, "replies": 0, "pending": 0}
-    contacted = json.loads(CONTACTED_FILE.read_text())
+    try:
+        contacted = json.loads(CONTACTED_FILE.read_text())
+    except (json.JSONDecodeError, ValueError) as e:
+        print(f"⚠️  Corrupt JSON in {CONTACTED_FILE} ({e}) — skipping outreach stats")
+        return {"total_contacted": 0, "replies": 0, "pending": 0}
     replies = sum(1 for v in contacted.values() if v.get("replied"))
     blacklisted = sum(1 for v in contacted.values() if v.get("blacklisted"))
     return {
