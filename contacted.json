@@ -614,5 +614,82 @@
     "replied": false,
     "bounced": false,
     "re_engage_count": 0
+  },
+  "8386ead8c834": {
+    "email": "candidateaccommodation@icf.com",
+    "date": "2026-09-26T17:24:01.001550",
+    "job": "Lead DevOps Engineer (Remote - US)",
+    "company": "ICF",
+    "url": "https://www.indeed.com/viewjob?jk=a3ed7a91a52bbe8f",
+    "recruiter": null,
+    "smtp_verified": true
+  },
+  "21dca1727527": {
+    "email": "leidoscareersfraud@leidos.com",
+    "date": "2026-09-26T17:24:04.768553",
+    "job": "Principal AI Software Developer",
+    "company": "Leidos",
+    "url": "https://www.indeed.com/viewjob?jk=4ad9e8cf9fce8409",
+    "recruiter": null,
+    "smtp_verified": false
+  },
+  "2bd16c6e2d4d": {
+    "email": "applicantaccom@maximus.com",
+    "date": "2026-09-26T17:24:08.033745",
+    "job": "Senior Full Stack Engineer - AWS Cloud",
+    "company": "Maximus",
+    "url": "https://www.indeed.com/viewjob?jk=0f682845a41118d4",
+    "recruiter": "People Operations",
+    "smtp_verified": true
+  },
+  "cd1f866b9d07": {
+    "email": "origin.allow@floridablue.com",
+    "date": "2026-09-26T17:33:05.488484",
+    "job": "Sr. Java Developer",
+    "company": "Florida Blue",
+    "url": "https://www.linkedin.com/jobs/view/4472206277",
+    "recruiter": "origin allow",
+    "source": "linkedin+guess",
+    "bounced": true
+  },
+  "72a95723ce41": {
+    "email": "origin.allow@eliassengroup.com",
+    "date": "2026-09-26T17:33:07.192782",
+    "job": "Cloud Engineer",
+    "company": "Eliassen Group",
+    "url": "https://www.linkedin.com/jobs/view/4470328320",
+    "recruiter": "origin allow",
+    "source": "linkedin+guess",
+    "bounced": true
+  },
+  "5dc20317751f": {
+    "email": "origin.allow@citi.com",
+    "date": "2026-09-26T17:33:09.987351",
+    "job": "CitiDirect Senior Java Dev for Payments Modernization \u2013 Vice President",
+    "company": "Citi",
+    "url": "https://www.linkedin.com/jobs/view/4461659955",
+    "recruiter": "origin allow",
+    "source": "linkedin+guess",
+    "bounced": true
+  },
+  "3c7a85858c18": {
+    "email": "origin.allow@lumafinancialtechnologies.com",
+    "date": "2026-09-26T17:33:12.762175",
+    "job": "Software Development Engineer",
+    "company": "Luma Financial Technologies",
+    "url": "https://www.linkedin.com/jobs/view/4449145422",
+    "recruiter": "origin allow",
+    "source": "linkedin+guess",
+    "bounced": true
+  },
+  "96951443ffff": {
+    "email": "origin.allow@tridentconsulting.com",
+    "date": "2026-09-26T17:33:26.129533",
+    "job": "Java Backend Developer",
+    "company": "Trident Consulting",
+    "url": "https://www.linkedin.com/jobs/view/4472020647",
+    "recruiter": "origin allow",
+    "source": "linkedin+guess",
+    "bounced": true
   }
 }
