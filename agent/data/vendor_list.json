@@ -9022,5 +9022,23 @@
     "position": "recruitment (role inbox)",
     "source": "deep/role-mx",
     "domain": "taskverse.io"
+  },
+  {
+    "name": "Human Resources",
+    "company": "Echo",
+    "email": "reply_ok@echo.newtonsoftware.com",
+    "position": "recruiter (emailed Bob)",
+    "source": "inbox-harvest",
+    "last_subject": "Senior Full Stack Developer position at D&G Support Services",
+    "verified": "2026-09-30"
+  },
+  {
+    "name": "Ashish TSS",
+    "company": "Transcendstaffing",
+    "email": "ashish@transcendstaffing.com",
+    "position": "recruiter (emailed Bob)",
+    "source": "inbox-harvest",
+    "last_subject": "Requirement for Backend Cloud Engineer",
+    "verified": "2026-09-30"
   }
 ]
