@@ -1453,5 +1453,80 @@
     "replied": false,
     "bounced": false,
     "re_engage_count": 0
+  },
+  "0b7c1d9dc8ca": {
+    "email": "eeocompliance@blueorigin.com",
+    "date": "2026-09-30T18:34:13.662506",
+    "job": "Software Engineer III Core Platform",
+    "company": "Blue Origin",
+    "url": "https://www.indeed.com/viewjob?jk=b6d0184975ce5875",
+    "recruiter": null,
+    "smtp_verified": true
+  },
+  "0ced02ad5ad1": {
+    "email": "origin.allow@accordtechnologiesinc.com",
+    "date": "2026-09-30T18:42:20.738476",
+    "job": "Senior Java Full Stack Developer",
+    "company": "Accord Technologies Inc",
+    "url": "https://www.linkedin.com/jobs/view/4473506451",
+    "recruiter": "origin allow",
+    "source": "linkedin+guess",
+    "bounced": true
+  },
+  "9e0846c24ce6": {
+    "email": "recruiting@circle.com",
+    "date": "2026-09-30T18:44:12.624398",
+    "last_contact": "2026-09-30T18:44:12.624398",
+    "job": "Java Developer C2C",
+    "company": "Circle",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": false,
+    "re_engage_count": 0
+  },
+  "a28ee61a51bc": {
+    "email": "recruiting@kentro.com",
+    "date": "2026-09-30T18:44:15.836840",
+    "last_contact": "2026-09-30T18:44:15.836840",
+    "job": "Java Developer C2C",
+    "company": "Kentro",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": false,
+    "re_engage_count": 0
+  },
+  "8fd73dbfa72c": {
+    "email": "recruiting@technologent.com",
+    "date": "2026-09-30T18:44:17.838118",
+    "last_contact": "2026-09-30T18:44:17.838118",
+    "job": "Java Developer C2C",
+    "company": "TECHNOLOGENT",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": false,
+    "re_engage_count": 0
+  },
+  "036eda1541a9": {
+    "email": "hr@hyring.com",
+    "date": "2026-09-30T18:44:21.334410",
+    "last_contact": "2026-09-30T18:44:21.334410",
+    "job": "Java Developer C2C",
+    "company": "Hyring\u00ae",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": true,
+    "re_engage_count": 0
   }
 }
