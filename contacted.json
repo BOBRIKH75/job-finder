@@ -223,5 +223,82 @@
     "replied": false,
     "bounced": true,
     "re_engage_count": 0
+  },
+  "796e7db47772": {
+    "email": "_accommodation@mastercard.com",
+    "date": "2026-10-02T18:40:36.400294",
+    "job": "Principal Kubernetes Platform Engineer",
+    "company": "Mastercard",
+    "url": "https://www.indeed.com/viewjob?jk=4aa8c8f0d911f216",
+    "recruiter": null,
+    "smtp_verified": false
+  },
+  "21dca1727527": {
+    "email": "leidoscareersfraud@leidos.com",
+    "date": "2026-10-02T18:40:38.975049",
+    "job": "Test Engineer",
+    "company": "Leidos",
+    "url": "https://www.indeed.com/viewjob?jk=9d2ebddecc6d97c8",
+    "recruiter": null,
+    "smtp_verified": false
+  },
+  "2bd16c6e2d4d": {
+    "email": "applicantaccom@maximus.com",
+    "date": "2026-10-02T18:40:44.013475",
+    "job": "Sr. \"Hands On\" SW Manager - 50% tech 50% managing, Java, Spring Boot",
+    "company": "Maximus",
+    "url": "https://www.indeed.com/viewjob?jk=ad54350efe8ddd46",
+    "recruiter": "People Operations",
+    "smtp_verified": true
+  },
+  "8bfbadb86bf3": {
+    "email": "origin.allow@applabsystemsinc.com",
+    "date": "2026-10-02T18:49:08.499330",
+    "job": "Java Developer",
+    "company": "AppLab Systems, Inc",
+    "url": "https://www.linkedin.com/jobs/view/4474705066",
+    "recruiter": "origin allow",
+    "source": "linkedin+guess",
+    "bounced": true
+  },
+  "5b3616caf332": {
+    "email": "origin.allow@netrolynxai.com",
+    "date": "2026-10-02T18:49:09.762661",
+    "job": "Senior Java Developer",
+    "company": "Netrolynx AI",
+    "url": "https://www.linkedin.com/jobs/view/4474735735",
+    "recruiter": "origin allow",
+    "source": "linkedin+guess",
+    "bounced": true
+  },
+  "c22aa1fd01d2": {
+    "email": "origin.allow@infinitecomputersolutions.com",
+    "date": "2026-10-02T18:49:13.166843",
+    "job": "Full Stack Developer",
+    "company": "Infinite Computer Solutions",
+    "url": "https://www.linkedin.com/jobs/view/4474518059",
+    "recruiter": "origin allow",
+    "source": "linkedin+guess",
+    "bounced": true
+  },
+  "4b1d517b1dc9": {
+    "email": "origin.allow@yohadayzimmermanncompany.com",
+    "date": "2026-10-02T18:49:18.166689",
+    "job": "Senior Full Stack Java Spring Angular Developer with AI // Onsite 3 days per week in Boston - USC and GC only- 15 plus years exp",
+    "company": "Yoh, A Day & Zimmermann Company",
+    "url": "https://www.linkedin.com/jobs/view/4473008455",
+    "recruiter": "origin allow",
+    "source": "linkedin+guess",
+    "bounced": true
+  },
+  "c6f2c5b1a21d": {
+    "email": "origin.allow@missiontechnologiesadivisionofhii.com",
+    "date": "2026-10-02T18:49:19.276799",
+    "job": "Senior Software Engineer (Hybrid) - 27722",
+    "company": "Mission Technologies, a division of HII",
+    "url": "https://www.linkedin.com/jobs/view/4394747235",
+    "recruiter": "origin allow",
+    "source": "linkedin+guess",
+    "bounced": true
   }
 }
