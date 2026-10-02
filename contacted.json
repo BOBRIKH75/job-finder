@@ -300,5 +300,80 @@
     "recruiter": "origin allow",
     "source": "linkedin+guess",
     "bounced": true
+  },
+  "b26546ac5eac": {
+    "email": "resume@newrelic.com",
+    "date": "2026-10-02T23:12:59.502918",
+    "job": "Senior Technical Success Manager",
+    "company": "New Relic",
+    "url": "https://www.indeed.com/viewjob?jk=e918147c1be977e5",
+    "recruiter": "Privacy Notice",
+    "smtp_verified": true
+  },
+  "1d4844eb35f4": {
+    "email": "origin.allow@alignerr.com",
+    "date": "2026-10-02T23:21:09.863077",
+    "job": "Software Engineer - Backend",
+    "company": "Alignerr",
+    "url": "https://www.linkedin.com/jobs/view/4473581516",
+    "recruiter": "origin allow",
+    "source": "linkedin+guess",
+    "bounced": true
+  },
+  "4ea8fbe48f70": {
+    "email": "recruiting@peraton.com",
+    "date": "2026-10-02T23:22:00.689799",
+    "last_contact": "2026-10-02T23:22:00.689799",
+    "job": "Java Developer C2C",
+    "company": "Peraton",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": false,
+    "re_engage_count": 0
+  },
+  "30facd915761": {
+    "email": "recruiting@leidos.com",
+    "date": "2026-10-02T23:22:02.797269",
+    "last_contact": "2026-10-02T23:22:02.797269",
+    "job": "Java Developer C2C",
+    "company": "Leidos",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": false,
+    "re_engage_count": 0
+  },
+  "ece13b1cb752": {
+    "email": "recruiting@ice.com",
+    "date": "2026-10-02T23:22:05.221316",
+    "last_contact": "2026-10-02T23:22:05.221316",
+    "job": "Java Developer C2C",
+    "company": "ICE",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": false,
+    "re_engage_count": 0
+  },
+  "e6be2b34b4fd": {
+    "email": "recruiting@sharpdecisions.com",
+    "date": "2026-10-02T23:22:09.295684",
+    "last_contact": "2026-10-02T23:22:09.295684",
+    "job": "Java Developer C2C",
+    "company": "Sharp Decisions",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": false,
+    "re_engage_count": 0
   }
 }
