@@ -450,5 +450,61 @@
     "replied": false,
     "bounced": true,
     "re_engage_count": 0
+  },
+  "fb60fd9ad930": {
+    "email": "recruiting@amtrak.com",
+    "date": "2026-10-03T22:34:14.722154",
+    "last_contact": "2026-10-03T22:34:14.722154",
+    "job": "Java Developer C2C",
+    "company": "Amtrak",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": false,
+    "re_engage_count": 0
+  },
+  "41daa14ec22b": {
+    "email": "jobs@alignerr.com",
+    "date": "2026-10-03T22:34:16.054044",
+    "last_contact": "2026-10-03T22:34:16.054044",
+    "job": "Java Developer C2C",
+    "company": "Alignerr",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": true,
+    "re_engage_count": 0
+  },
+  "1039ff5c8042": {
+    "email": "info@connecttechtalent.com",
+    "date": "2026-10-03T22:34:17.651673",
+    "last_contact": "2026-10-03T22:34:17.651673",
+    "job": "Java Developer C2C",
+    "company": "Connect Tech+Talent",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": true,
+    "re_engage_count": 0
+  },
+  "dcc53bcefd64": {
+    "email": "recruiting@curatepartners.com",
+    "date": "2026-10-03T22:34:19.548658",
+    "last_contact": "2026-10-03T22:34:19.548658",
+    "job": "Java Developer C2C",
+    "company": "Curate Partners",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": false,
+    "re_engage_count": 0
   }
 }
