@@ -375,5 +375,80 @@
     "replied": false,
     "bounced": false,
     "re_engage_count": 0
+  },
+  "5d926b4c2ac8": {
+    "email": "staffing@wyetech.com",
+    "date": "2026-10-03T17:35:08.608845",
+    "job": "Software Engineer 1 (Potential Telework)",
+    "company": "Wyetech",
+    "url": "https://www.indeed.com/viewjob?jk=1d7d726e8c7131fe",
+    "recruiter": "Brittney Wood",
+    "smtp_verified": true
+  },
+  "54bdfb021382": {
+    "email": "origin.allow@skmgroup.com",
+    "date": "2026-10-03T17:45:03.528653",
+    "job": "SENIOR FULL STACK (JAVA / REACT) DEVELOPER",
+    "company": "SKM Group",
+    "url": "https://www.linkedin.com/jobs/view/4473865439",
+    "recruiter": "origin allow",
+    "source": "linkedin+guess",
+    "bounced": true
+  },
+  "d3003e9f718d": {
+    "email": "recruiting@conduent.com",
+    "date": "2026-10-03T17:45:50.762156",
+    "last_contact": "2026-10-03T17:45:50.762156",
+    "job": "Java Developer C2C",
+    "company": "Conduent",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": false,
+    "re_engage_count": 0
+  },
+  "5a4be2b8bfd2": {
+    "email": "recruiting@jefferies.com",
+    "date": "2026-10-03T17:45:54.539829",
+    "last_contact": "2026-10-03T17:45:54.539829",
+    "job": "Java Developer C2C",
+    "company": "Jefferies",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": false,
+    "re_engage_count": 0
+  },
+  "43305350bf68": {
+    "email": "recruiting@paypal.com",
+    "date": "2026-10-03T17:45:58.341205",
+    "last_contact": "2026-10-03T17:45:58.341205",
+    "job": "Java Developer C2C",
+    "company": "PayPal",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": false,
+    "re_engage_count": 0
+  },
+  "ba59b7d0e12a": {
+    "email": "careers@ust.com",
+    "date": "2026-10-03T17:46:01.036945",
+    "last_contact": "2026-10-03T17:46:01.036945",
+    "job": "Java Developer C2C",
+    "company": "UST",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": true,
+    "re_engage_count": 0
   }
 }
