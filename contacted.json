@@ -526,5 +526,47 @@
     "recruiter": "origin allow",
     "source": "linkedin+guess",
     "bounced": true
+  },
+  "be0a5316b993": {
+    "email": "recruiting@solugenix.com",
+    "date": "2026-10-04T22:40:17.867481",
+    "last_contact": "2026-10-04T22:40:17.867481",
+    "job": "Java Developer C2C",
+    "company": "Solugenix",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": false,
+    "re_engage_count": 0
+  },
+  "9f1447cf5aba": {
+    "email": "recruiting@citi.com",
+    "date": "2026-10-04T22:40:21.682569",
+    "last_contact": "2026-10-04T22:40:21.682569",
+    "job": "Java Developer C2C",
+    "company": "Citi",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": false,
+    "re_engage_count": 0
+  },
+  "db96acec6ac1": {
+    "email": "recruiting@bny.com",
+    "date": "2026-10-04T22:40:24.737684",
+    "last_contact": "2026-10-04T22:40:24.737684",
+    "job": "Java Developer C2C",
+    "company": "BNY",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": false,
+    "re_engage_count": 0
   }
 }
