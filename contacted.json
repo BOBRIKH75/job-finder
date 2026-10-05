@@ -6,7 +6,10 @@
     "company": "Invovia",
     "url": "https://www.indeed.com/viewjob?jk=e62e3f41539561d4",
     "recruiter": null,
-    "smtp_verified": false
+    "smtp_verified": false,
+    "last_contact": "2026-10-05T21:27:50.088483",
+    "followed_up": true,
+    "followup_date": "2026-10-05T21:27:50.088483"
   },
   "887bffc80c89": {
     "email": "origin.allow@precisiontechnologies.com",
@@ -185,7 +188,7 @@
   "617032d8337a": {
     "email": "recruiting@teksystems.com",
     "date": "2026-10-01T23:37:39.921267",
-    "last_contact": "2026-10-01T23:37:39.921267",
+    "last_contact": "2026-10-05T21:27:50.088483",
     "job": "Java Developer C2C",
     "company": "TEKsystems",
     "recruiter": "Recruiting Team",
@@ -194,7 +197,9 @@
     "url": "",
     "replied": false,
     "bounced": false,
-    "re_engage_count": 0
+    "re_engage_count": 0,
+    "followed_up": true,
+    "followup_date": "2026-10-05T21:27:50.088483"
   },
   "22ac3e59bf6b": {
     "email": "hr@matlensilver.com",
@@ -231,7 +236,10 @@
     "company": "Mastercard",
     "url": "https://www.indeed.com/viewjob?jk=4aa8c8f0d911f216",
     "recruiter": null,
-    "smtp_verified": false
+    "smtp_verified": false,
+    "last_contact": "2026-10-05T21:27:50.088483",
+    "followed_up": true,
+    "followup_date": "2026-10-05T21:27:50.088483"
   },
   "21dca1727527": {
     "email": "leidoscareersfraud@leidos.com",
@@ -240,7 +248,10 @@
     "company": "Leidos",
     "url": "https://www.indeed.com/viewjob?jk=9d2ebddecc6d97c8",
     "recruiter": null,
-    "smtp_verified": false
+    "smtp_verified": false,
+    "last_contact": "2026-10-05T21:27:50.088483",
+    "followed_up": true,
+    "followup_date": "2026-10-05T21:27:50.088483"
   },
   "2bd16c6e2d4d": {
     "email": "applicantaccom@maximus.com",
@@ -249,7 +260,10 @@
     "company": "Maximus",
     "url": "https://www.indeed.com/viewjob?jk=ad54350efe8ddd46",
     "recruiter": "People Operations",
-    "smtp_verified": true
+    "smtp_verified": true,
+    "last_contact": "2026-10-05T21:27:50.088483",
+    "followed_up": true,
+    "followup_date": "2026-10-05T21:27:50.088483"
   },
   "8bfbadb86bf3": {
     "email": "origin.allow@applabsystemsinc.com",
@@ -561,6 +575,84 @@
     "last_contact": "2026-10-04T22:40:24.737684",
     "job": "Java Developer C2C",
     "company": "BNY",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": false,
+    "re_engage_count": 0
+  },
+  "2bffeab24da8": {
+    "email": "origin.allow@yorkshireglobalsolutionsinc.com",
+    "date": "2026-10-05T21:36:56.496498",
+    "job": "Senior Java Backend Developer",
+    "company": "Yorkshire Global Solutions Inc.",
+    "url": "https://www.linkedin.com/jobs/view/4474282158",
+    "recruiter": "origin allow",
+    "source": "linkedin+guess",
+    "bounced": true
+  },
+  "6fcba9138dd2": {
+    "email": "origin.allow@xforiaglobaltalenttechnologysolutions.com",
+    "date": "2026-10-05T21:36:59.298554",
+    "job": "Java Full Stack Developer - (Spotify Backstage) - 100% Remote - W2 Contract",
+    "company": "Xforia Global Talent  & Technology Solutions",
+    "url": "https://www.linkedin.com/jobs/view/4474281613",
+    "recruiter": "origin allow",
+    "source": "linkedin+guess",
+    "bounced": true
+  },
+  "e7403fd4837d": {
+    "email": "origin.allow@irvinetechnologycorporation.com",
+    "date": "2026-10-05T21:37:02.034886",
+    "job": "Senior Software Engineer",
+    "company": "Irvine Technology Corporation",
+    "url": "https://www.linkedin.com/jobs/view/4474624643",
+    "recruiter": "origin allow",
+    "source": "linkedin+guess",
+    "bounced": true
+  },
+  "c6fbddadf46f": {
+    "email": "origin.allow@tricomtechnicalservices.com",
+    "date": "2026-10-05T21:37:05.400014",
+    "job": "Sr. Full-Stack Java Software Engineer",
+    "company": "TriCom Technical Services",
+    "url": "https://www.linkedin.com/jobs/view/4466111357",
+    "recruiter": "origin allow",
+    "source": "linkedin+guess",
+    "bounced": true
+  },
+  "3c32e8ec3ac9": {
+    "email": "origin.allow@earlywarning.com",
+    "date": "2026-10-05T21:37:10.702640",
+    "job": "Sr. Software Engineer - Java, Paze",
+    "company": "Early Warning",
+    "url": "https://www.linkedin.com/jobs/view/4474781678",
+    "recruiter": "origin allow",
+    "source": "linkedin+guess",
+    "bounced": true
+  },
+  "dffdb0a3bdf5": {
+    "email": "recruiting@wyetech.com",
+    "date": "2026-10-05T21:38:02.617350",
+    "last_contact": "2026-10-05T21:38:02.617350",
+    "job": "Java Developer C2C",
+    "company": "Wyetech",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": false,
+    "re_engage_count": 0
+  },
+  "9177aa038b9e": {
+    "email": "resumes@deloitte.com",
+    "date": "2026-10-05T21:38:04.729621",
+    "last_contact": "2026-10-05T21:38:04.729621",
+    "job": "Java Developer C2C",
+    "company": "Deloitte",
     "recruiter": "Recruiting Team",
     "title": "Recruiter",
     "source": "smtp_verified",
