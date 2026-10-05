@@ -12,6 +12,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GH_PAT }}
 
       - uses: actions/setup-python@v5
         with:
@@ -25,10 +27,12 @@ jobs:
 
       - name: Save post history
         if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
         run: |
           git config user.email "bot@bobrikh.dev"
           git config user.name "Hotlist Bot"
-          git add data/hotlist_post_history.json || true
-          git diff --staged --quiet || git commit -m "chore: hotlist posted $(date +%Y-%m-%d)"
+          git add data/hotlist_post_history.json agent/data/hotlist_post_history.json 2>/dev/null || true
+          git diff --staged --quiet || git commit -m "chore: hotlist posted $(date +%Y-%m-%d) [skip ci]"
           git pull --rebase --autostash origin master || true
           git push || true
