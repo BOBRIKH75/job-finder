@@ -26,10 +26,13 @@ from src.form_filler import load_profile
 from src.self_heal import classify_error, get_retry_config, STRATEGY, DeepHeal
 from src.memory import get_db, init_db, application_exists, upsert_application, claim_job, release_claim
 
-# Git-tracked persistent dedup (Bobur: same company+title kept repeating). The DB is
-# cache-only in CI (lossy) and near-empty locally, so we ALSO keep a JSON keyed by
-# company+normalized-title. Committed by CI → survives across runs on local AND CI.
+# Git-tracked persistent dedup. Keyed by company+normalized-title, but TIME-WINDOWED:
+# a role is "already applied" only for GH_DEDUP_DAYS (default 30). After that it's
+# eligible AGAIN, because companies repost / refresh the same req and genuinely new
+# postings should be re-applied to. This prevents the "finds 447, applies 0 forever"
+# plateau — fresh daily postings and monthly reposts get applied to.
 GH_APPLIED_FILE = 'agent/data/greenhouse_applied.json'
+GH_DEDUP_DAYS = int(os.environ.get('GH_DEDUP_DAYS', '30'))
 
 
 def _gh_key(company, title):
@@ -43,21 +46,53 @@ def _gh_key(company, title):
     return f"{c}|{t}" if c and t else ''
 
 
-def _load_gh_applied() -> set:
+def _load_gh_applied() -> dict:
+    """Returns {key: iso_timestamp}. Backward compatible with the old list format
+    (list → treated as applied 'long ago' so they expire out of the window)."""
     try:
-        return set(json.load(open(GH_APPLIED_FILE)))
+        raw = json.load(open(GH_APPLIED_FILE))
     except Exception:
-        return set()
+        return {}
+    if isinstance(raw, dict):
+        return raw
+    if isinstance(raw, list):
+        # old format: no timestamps → set to epoch so they're OUTSIDE the dedup
+        # window and become eligible again (lets you re-apply to the backlog).
+        return {k: '2000-01-01T00:00:00' for k in raw}
+    return {}
+
+
+def _applied_recently(applied: dict, company, title, now) -> bool:
+    from datetime import datetime as _dt
+    key = _gh_key(company, title)
+    if not key or key not in applied:
+        return False
+    try:
+        when = _dt.fromisoformat(str(applied[key]).replace('Z', ''))
+    except Exception:
+        return True   # malformed → be safe, treat as recent
+    return (now - when).days < GH_DEDUP_DAYS
 
 
 def _save_gh_applied(company, title):
+    from datetime import datetime as _dt
     key = _gh_key(company, title)
     if not key:
         return
-    s = _load_gh_applied(); s.add(key)
+    applied = _load_gh_applied()
+    applied[key] = _dt.utcnow().isoformat()
+    # prune entries older than 2x the window to keep the file small
+    cutoff_days = GH_DEDUP_DAYS * 2
+    pruned = {}
+    for k, v in applied.items():
+        try:
+            if (_dt.utcnow() - _dt.fromisoformat(str(v).replace('Z', ''))).days < cutoff_days:
+                pruned[k] = v
+        except Exception:
+            pruned[k] = v
     try:
         os.makedirs(os.path.dirname(GH_APPLIED_FILE), exist_ok=True)
-        json.dump(sorted(s), open(GH_APPLIED_FILE, 'w'), indent=0)
+        json.dump(pruned, open(GH_APPLIED_FILE, 'w'), indent=0)
     except Exception:
         pass
 
@@ -89,8 +124,11 @@ def main():
     init_db(db)
     profile = load_profile()
     companies = load_companies()
+    from datetime import datetime as _dt
+    _now = _dt.utcnow()
     _gh_applied = _load_gh_applied()
-    print(f"🗂️  {len(_gh_applied)} Greenhouse company+title already applied (persistent dedup)")
+    _run_seen = set()   # same-run duplicate guard
+    print(f"🗂️  {len(_gh_applied)} Greenhouse roles in dedup (window={GH_DEDUP_DAYS}d — older become eligible again)")
 
     greenhouse_companies = companies.get('greenhouse', [])
     # ROTATE through ALL companies (Bobur: kept hitting the SAME companies). random.shuffle
@@ -215,10 +253,14 @@ def main():
         # DEDUP FIX (Bobur: same company+title kept repeating): check by URL AND by
         # company+title. Greenhouse re-posts the same role under a NEW url/gh_jid, so a
         # URL-only check let duplicates through. Passing company+title uses the
-        # normalized-title fallback in application_exists() to catch re-postings.
-        # ALSO check the git-tracked JSON set (survives CI runs; DB is cache-only/lossy).
-        if _gh_key(company_name, title) in _gh_applied or \
-                application_exists(db, url, company=company_name, title=title):
+        # Time-windowed dedup: skip only if this role was applied within GH_DEDUP_DAYS,
+        # OR already handled in THIS run, OR this exact posting URL is already applied.
+        # New postings (new URL) + roles last applied >window-days-ago are NOT skipped,
+        # so fresh daily jobs and monthly reposts get applied to.
+        _k = _gh_key(company_name, title)
+        if (_k and _k in _run_seen) \
+                or _applied_recently(_gh_applied, company_name, title, _now) \
+                or application_exists(db, url):   # URL-only = exact same posting
             skipped += 1
             continue
 
@@ -260,7 +302,8 @@ def main():
         if result.get('submitted'):
             applied += 1
             _record_applied(db, company_name, title, url)
-            _gh_applied.add(_gh_key(company_name, title))   # update in-memory set → catch SAME-RUN duplicates
+            if _k:
+                _run_seen.add(_k)   # same-run duplicate guard
             print(f"  ✅ {title} @ {company_name} (API)")
             time.sleep(1)
             continue
@@ -302,7 +345,7 @@ def main():
             if result2.get('submitted'):
                 applied += 1
                 _record_applied(db, company_name, title, url)
-                _gh_applied.add(_gh_key(company_name, title))   # catch same-run duplicates
+                _k2=_gh_key(company_name, title);  _run_seen.add(_k2) if _k2 else None   # same-run dup guard
                 print(f"  ✅ {title} @ {company_name} (retry {attempt})")
                 retry_success = True
                 break
@@ -358,7 +401,7 @@ def main():
                     browser_applied += 1
                     submitted_urls.add(res['url'])
                     _record_applied(db, res.get('company', ''), res.get('title', ''), res['url'])
-                    _gh_applied.add(_gh_key(res.get('company', ''), res.get('title', '')))   # catch same-run dup
+                    _k3=_gh_key(res.get('company',''), res.get('title',''));  _run_seen.add(_k3) if _k3 else None   # same-run dup
 
             applied += browser_applied
             print(f"  🌐 Browser results: {browser_applied} submitted")
