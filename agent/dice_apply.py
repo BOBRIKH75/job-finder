@@ -884,6 +884,33 @@ def main():
             json.dump(ctx.cookies(), open(COOKIE_FILE, 'w'))
         except Exception:
             pass
+
+        # AUTO-REFRESH the DICE_COOKIES GitHub secret with the fresh session cookies.
+        # dice-apply runs on the self-hosted runner (home IP, logged-in session), so after
+        # every successful run we have VALID fresh cookies. Pushing them back to the secret
+        # keeps CI permanently logged in — no launchd job, no manual re-login, fully dynamic.
+        # Only runs when NOT a login_redirect (don't push dead cookies) and gh is available.
+        try:
+            if not _login_redirect_seen:
+                import base64 as _b64, subprocess as _sp
+                _cookies = ctx.cookies()
+                _names = {c.get("name") for c in _cookies}
+                _has_session = any(n in _names for n in ("DLI", "SERVERID", "_gd_session", "_gd_visitor"))
+                if _cookies and _has_session:
+                    _enc = _b64.b64encode(json.dumps(_cookies).encode()).decode()
+                    if len(_enc) > 48000:   # GH secret size guard — trim to essential tokens
+                        _ess = [c for c in _cookies if c.get("name") in
+                                ("DLI", "SERVERID", "_gd_session", "_gd_visitor", "__ssid", "CMS_Cookie")]
+                        _enc = _b64.b64encode(json.dumps(_ess).encode()).decode()
+                    _r = _sp.run(["gh", "secret", "set", "DICE_COOKIES", "--body", _enc,
+                                  "--repo", "BOBRIKH75/job-finder"],
+                                 capture_output=True, text=True)
+                    if _r.returncode == 0:
+                        print("  ♻️  DICE_COOKIES secret auto-refreshed from this run's live session")
+                    else:
+                        print(f"  (DICE_COOKIES not updated: {_r.stderr[:80]})")
+        except Exception as _e:
+            print(f"  (DICE_COOKIES auto-refresh skipped: {str(_e)[:80]})")
         # If the session had expired mid-run (login_redirect), flag it so the cookie-refresh
         # workflow / next run knows to re-authenticate — no manual step needed.
         if _login_redirect_seen:
