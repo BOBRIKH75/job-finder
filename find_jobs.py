@@ -382,7 +382,7 @@ def search_all(learned):
                 # (Cloudflare WAF) on the runner every call — wasted time + log noise.
                 site_name=['indeed', 'linkedin', 'google'],
                 search_term=s['term'], google_search_term=s['term'] + ' jobs',
-                location=s['location'], results_wanted=15,
+                location=s['location'], results_wanted=50,
                 hours_old=336, country_indeed='USA', verbose=0,
             )
             if len(jobs) > 0:
