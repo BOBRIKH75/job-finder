@@ -189,6 +189,26 @@ def load_vendors() -> list[dict]:
             _ROLE = {"careers", "recruiting", "jobs", "hr", "info", "contact",
                      "talent", "apply", "support", "customersupport", "developers",
                      "noreply", "no-reply", "admin", "sales", "team"}
+            # Pure dead-end inboxes that essentially NEVER reply to a cold availability
+            # email (ATS auto-dumps). In NAMED_ONLY mode we skip these entirely so the
+            # daily send budget is spent on humans who actually reply/call.
+            _DEAD = {"careers", "jobs", "hr", "noreply", "no-reply", "apply",
+                     "support", "customersupport", "admin", "donotreply"}
+            def _is_dead_role(v):
+                user = (v.get("email") or "").split("@")[0].lower()
+                # dead if a pure role word, or any no-reply/do-not-reply variant
+                if "noreply" in user.replace("-", "").replace(".", "") or \
+                   "donotreply" in user.replace("-", "").replace(".", ""):
+                    return True
+                return user in _DEAD and "." not in user
+
+            named_only = os.environ.get("OUTREACH_NAMED_ONLY", "1") == "1"
+            if named_only:
+                before = len(clean)
+                clean = [v for v in clean if not _is_dead_role(v)]
+                print(f"NAMED_ONLY: dropped {before - len(clean)} dead role inboxes "
+                      f"(careers@/jobs@/hr@…) — targeting humans who reply")
+
             def _named_first(v):
                 user = (v.get("email") or "").split("@")[0].lower()
                 is_named = ("." in user and user not in _ROLE)
