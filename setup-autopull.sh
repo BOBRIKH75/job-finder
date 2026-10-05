@@ -77,10 +77,20 @@ PLISTEOF
 launchctl unload "$PLIST" 2>/dev/null || true
 launchctl load "$PLIST"
 
+# --- 4. disable Mac sleep so the runner stays online 24/7 ---
+echo "➡️  Disabling sleep (needs your Mac password)..."
+if sudo pmset -a sleep 0 disablesleep 1 2>/dev/null; then
+  echo "   ✅ sleep disabled (sleep 0, disablesleep 1)"
+else
+  echo "   ⚠️ couldn't set pmset automatically — run this once manually:"
+  echo "        sudo pmset -a sleep 0 disablesleep 1"
+fi
+
 echo ""
-echo "✅ Auto-pull + runner-watchdog installed."
+echo "✅ Auto-pull + runner-watchdog + no-sleep installed."
 echo "   • git pull runs automatically every 15 min + on every login/reboot."
 echo "   • if the runner ever dies, it is restarted automatically."
+echo "   • Mac will not sleep (runner stays online 24/7)."
 echo "   • log: $LOG"
 echo "   • check it's loaded:  launchctl list | grep ${LABEL}"
 echo "   • run it once now:     bash $WORKER && tail $LOG"
