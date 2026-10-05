@@ -27,8 +27,9 @@ jobs:
 
       - name: Send vendor outreach emails
         env:
-          RESEND_KEY: ${{ secrets.RESEND_KEY }}
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          RESEND_KEY: ${{ secrets.RESEND_KEY }}
         run: python scripts/vendor_outreach.py
 
       - name: Save outreach history

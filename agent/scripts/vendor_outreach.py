@@ -2,20 +2,36 @@
 """
 Monthly vendor outreach — sends Bob Rikh's availability email to staffing firms.
 
-Uses Resend API (better deliverability than raw Gmail SMTP).
-Skips vendors contacted within the last 30 days.
+PRIMARY sender: Gmail SMTP (smtp.gmail.com:587, GMAIL_USER + GMAIL_APP_PASSWORD).
+  - Sends to REAL recruiters (Resend sandbox refused everyone except Bob's own
+    address → 0/40 sent for months; Gmail sends to anyone, replies land in inbox).
+FALLBACK sender: Resend API (only used if Gmail creds absent AND a verified domain
+  Resend key is set).
+
+Skips vendors contacted within the last TTL_DAYS days.
+History is recorded ONLY on a successful send (a failed send is retried next run).
 
 Run: python scripts/vendor_outreach.py
 """
-import json, os, sys, time
+import base64
+import json, os, smtplib, sys, time
 from datetime import datetime
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from email.mime.application import MIMEApplication
 from pathlib import Path
 
 import requests
 
+# --- Gmail SMTP (primary) ---
+GMAIL_USER         = os.environ.get("GMAIL_USER", "bobrikh75@gmail.com")
+GMAIL_APP_PASSWORD = os.environ.get("GMAIL_APP_PASSWORD", "")
+
+# --- Resend (fallback only) ---
 RESEND_KEY  = os.environ.get("RESEND_KEY", "")
-REPLY_TO    = os.environ.get("GMAIL_USER", "bobrikh75@gmail.com")
-RESEND_FROM = "Bob Rikh <onboarding@resend.dev>"
+RESEND_FROM = os.environ.get("RESEND_FROM", "Bob Rikh <onboarding@resend.dev>")
+
+REPLY_TO    = GMAIL_USER
 TTL_DAYS    = 14   # per-recruiter cooldown: max once every 2 weeks (safe, not spammy)
 
 VENDOR_FILE  = Path(__file__).parent.parent / "data" / "vendor_list.json"
@@ -159,28 +175,57 @@ def should_contact(history: dict, email: str, now: datetime) -> tuple[bool, int]
     return days_ago >= TTL_DAYS, days_ago
 
 
-def send_via_resend(to_email: str, vendor_name: str) -> bool:
-    if not RESEND_KEY:
-        print(f"  [DRY RUN] Would send to {vendor_name} ({to_email})"
-              f"{' + CV' if CV_PATH else ''}")
-        return True  # count as success for history tracking in dry-run
+def _send_via_gmail(to_email: str, vendor_name: str) -> bool:
+    """Send via Gmail SMTP (smtp.gmail.com:587) with the CV attached.
+    This is the PRIMARY path — it actually delivers to real recruiters."""
+    msg = MIMEMultipart()
+    msg["From"] = f"Bob Rikh <{GMAIL_USER}>"
+    msg["To"] = to_email
+    msg["Reply-To"] = REPLY_TO
+    msg["Subject"] = subject_for(to_email)   # varied per recruiter+week (anti-spam)
+    msg.attach(MIMEText(make_body(vendor_name, to_email), "plain"))
+
+    # Attach the CV PDF so recruiters get Bob's resume directly.
+    if CV_PATH:
+        try:
+            part = MIMEApplication(CV_PATH.read_bytes(), _subtype="pdf")
+            part.add_header(
+                "Content-Disposition", "attachment",
+                filename="Bob_Rikh_Java_Backend_Developer.pdf",
+            )
+            msg.attach(part)
+        except Exception as exc:
+            print(f"    CV attach skipped: {str(exc)[:50]}")
+
+    try:
+        with smtplib.SMTP("smtp.gmail.com", 587, timeout=30) as s:
+            s.starttls()
+            s.login(GMAIL_USER, GMAIL_APP_PASSWORD)
+            s.send_message(msg)
+        return True
+    except Exception as exc:
+        print(f"    Gmail SMTP error: {str(exc)[:120]}")
+        return False
+
+
+def _send_via_resend(to_email: str, vendor_name: str) -> bool:
+    """Fallback only. Resend free/sandbox keys refuse any address except the
+    account owner's — kept only for a verified-domain Resend key."""
     payload = {
         "from": RESEND_FROM,
         "to": [to_email],
         "reply_to": REPLY_TO,
-        "subject": subject_for(to_email),   # varied per recruiter+week (anti-spam)
+        "subject": subject_for(to_email),
         "text": make_body(vendor_name, to_email),
     }
-    # Attach the CV so recruiters get Bob's resume directly.
     if CV_PATH:
         try:
-            import base64
             payload["attachments"] = [{
                 "filename": "Bob_Rikh_Java_Backend_Developer.pdf",
                 "content": base64.b64encode(CV_PATH.read_bytes()).decode(),
             }]
-        except Exception as _e:
-            print(f"    CV attach skipped: {str(_e)[:50]}")
+        except Exception as exc:
+            print(f"    CV attach skipped: {str(exc)[:50]}")
     resp = requests.post(
         "https://api.resend.com/emails",
         headers={
@@ -194,6 +239,17 @@ def send_via_resend(to_email: str, vendor_name: str) -> bool:
         return True
     print(f"    Resend API error: HTTP {resp.status_code} — {resp.text[:120]}")
     return False
+
+
+def send_email(to_email: str, vendor_name: str) -> bool:
+    """Gmail first (real delivery), Resend as fallback, dry-run if neither set."""
+    if GMAIL_APP_PASSWORD:
+        return _send_via_gmail(to_email, vendor_name)
+    if RESEND_KEY:
+        return _send_via_resend(to_email, vendor_name)
+    print(f"  [DRY RUN] Would send to {vendor_name} ({to_email})"
+          f"{' + CV' if CV_PATH else ''}")
+    return True  # dry-run counts as success for history tracking
 
 
 def main():
@@ -222,30 +278,34 @@ def main():
         to_contact = to_contact[:DAILY_CAP]
         print(f"  (capped to {DAILY_CAP} sends this run — anti-spam; rest go next run)")
 
-    print(f"\nSending to {len(to_contact)} vendors via Resend API...")
-    if not RESEND_KEY:
-        print("  RESEND_KEY not set — running in dry-run mode")
+    sender = ("Gmail SMTP" if GMAIL_APP_PASSWORD
+              else "Resend API" if RESEND_KEY else "DRY RUN")
+    print(f"\nSending to {len(to_contact)} vendors via {sender}...")
+    if sender == "DRY RUN":
+        print("  No GMAIL_APP_PASSWORD or RESEND_KEY set — running in dry-run mode")
 
     sent = 0
     for vendor in to_contact:
         try:
-            ok = send_via_resend(vendor["email"], vendor["name"])
+            ok = send_email(vendor["email"], vendor["name"])
             if ok:
                 print(f"  OK  {vendor['name']} ({vendor['email']})")
                 sent += 1
+                # Record history ONLY on success — a failed send must be retried
+                # next run, not silently cooled-down for TTL_DAYS.
+                history[vendor["email"]] = {
+                    "name": vendor["name"],
+                    "last_contacted": now.isoformat(),
+                    "times_contacted": history.get(vendor["email"], {}).get("times_contacted", 0) + 1,
+                }
             else:
-                print(f"  ERR {vendor['name']} — send failed")
-            history[vendor["email"]] = {
-                "name": vendor["name"],
-                "last_contacted": now.isoformat(),
-                "times_contacted": history.get(vendor["email"], {}).get("times_contacted", 0) + 1,
-            }
+                print(f"  ERR {vendor['name']} — send failed (will retry next run)")
             time.sleep(random.uniform(3, 8))   # human-like spacing (anti-spam)
         except Exception as exc:
             print(f"  ERR {vendor['name']}: {exc}")
 
     save_history(history)
-    print(f"\nDONE: {sent}/{len(to_contact)} sent | {len(history)} total in database")
+    print(f"\nDONE: {sent}/{len(to_contact)} sent via {sender} | {len(history)} total in database")
 
 
 if __name__ == "__main__":
