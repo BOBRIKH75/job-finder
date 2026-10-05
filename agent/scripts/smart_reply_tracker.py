@@ -70,6 +70,18 @@ _REJECTION_KEYWORDS = [
     r"decided\s*to\s*(go|proceed)\s*with", r"not\s*suitable",
 ]
 
+# Role requires US citizen / security clearance — Bob is a Green Card holder, so
+# THIS role won't fit, but the recruiter may have OTHER roles that do. Suppress for
+# this role, but allow re-contact for a genuinely NEW role later.
+_CITIZEN_REQUIRED_KEYWORDS = [
+    r"u\.?s\.?\s*citizen", r"us\s*citizen", r"citizenship\s*(is\s*)?required",
+    r"must\s*be\s*(a\s*)?citizen", r"only\s*citizens?", r"citizens?\s*only",
+    r"security\s*clearance", r"secret\s*clearance", r"ts/?sci", r"public\s*trust\s*required",
+    r"green\s*card\s*(not|isn'?t)\s*(ok|accepted|eligible)", r"no\s*green\s*card",
+    r"w2\s*only", r"no\s*c2c", r"c2c\s*(not|isn'?t)\s*(ok|accepted|allowed|available)",
+    r"corp\s*to\s*corp\s*not", r"no\s*corp\s*to\s*corp", r"full\s*time\s*(employee|only)",
+]
+
 _INFO_REQUEST_KEYWORDS = [
     r"what.*rate", r"rate\s*expectation", r"hourly\s*rate",
     r"availability\s*\?", r"when.*start", r"notice\s*period",
@@ -115,6 +127,10 @@ def classify_reply(subject: str, body: str) -> str:
     for pattern in _AUTO_REPLY_KEYWORDS:
         if re.search(pattern, text):
             return "AUTO_REPLY"
+
+    for pattern in _CITIZEN_REQUIRED_KEYWORDS:
+        if re.search(pattern, text):
+            return "CITIZEN_REQUIRED"
 
     for pattern in _REJECTION_KEYWORDS:
         if re.search(pattern, text):
