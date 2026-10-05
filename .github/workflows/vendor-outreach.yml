@@ -2,7 +2,7 @@ name: "Vendor Outreach (Monthly)"
 
 on:
   schedule:
-    - cron: "0 16 * * 2"   # weekly Tue 10 AM MT (30-day TTL prevents re-spam)
+    - cron: "0 16 * * 1-5"   # DAILY weekdays 10 AM MT (14-day per-recruiter TTL prevents re-spam)
   workflow_dispatch: {}
 
 permissions:
@@ -30,6 +30,7 @@ jobs:
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
           RESEND_KEY: ${{ secrets.RESEND_KEY }}
+          OUTREACH_DAILY_CAP: "60"
         run: python scripts/vendor_outreach.py
 
       - name: Save outreach history

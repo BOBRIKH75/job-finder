@@ -75,6 +75,7 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          GH_SCAN_COUNT: "40"
         run: |
           cd $GITHUB_WORKSPACE
           python3 greenhouse_apply.py

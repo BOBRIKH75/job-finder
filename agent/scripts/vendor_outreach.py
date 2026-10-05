@@ -149,7 +149,19 @@ def load_vendors() -> list[dict]:
                 v["name"] = v.get("company") or em.split("@")[1].split(".")[0].title()
             clean.append(v)
         if clean:
-            print(f"Loaded {len(clean)} vendors/recruiters from vendor_list.json")
+            # Prioritize NAMED recruiters (firstname.lastname@ → real people who reply)
+            # over generic role inboxes (info@/careers@/jobs@ → low reply). Within the
+            # daily cap, named people get contacted first = more calls.
+            _ROLE = {"careers", "recruiting", "jobs", "hr", "info", "contact",
+                     "talent", "apply", "support", "customersupport", "developers",
+                     "noreply", "no-reply", "admin", "sales", "team"}
+            def _named_first(v):
+                user = (v.get("email") or "").split("@")[0].lower()
+                is_named = ("." in user and user not in _ROLE)
+                return (0 if is_named else 1, user)   # named (0) sort before role (1)
+            clean.sort(key=_named_first)
+            print(f"Loaded {len(clean)} vendors/recruiters from vendor_list.json "
+                  f"(named recruiters prioritized first)")
             return clean
     print(f"Using fallback vendor list ({len(FALLBACK_VENDORS)} firms)")
     return FALLBACK_VENDORS
