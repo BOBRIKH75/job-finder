@@ -236,10 +236,55 @@ def save_history(history: dict):
     HISTORY_FILE.write_text(json.dumps(history, indent=2))
 
 
-def should_contact(history: dict, email: str, now: datetime) -> tuple[bool, int]:
+MAX_CONTACTS = int(os.environ.get("OUTREACH_MAX_CONTACTS", "3"))   # stop after N no-response tries
+
+
+def load_suppressed() -> set:
+    """Emails we must NOT contact again:
+      1. Anyone who REPLIED (they're already in conversation — re-emailing = annoying).
+      2. Anyone on the manual do-not-contact list (bounced/asked to stop).
+    Response-based: once a recruiter engages, outreach backs off automatically."""
+    sup = set()
+    base = Path(__file__).parent.parent / "data"
+    # 1. replied → from the interview pipeline + reply log
+    for fn in ("interview_pipeline.json", "reply_log.json"):
+        p = base / fn
+        if not p.exists():
+            continue
+        try:
+            data = json.loads(p.read_text())
+        except Exception:
+            continue
+        contacts = data.get("contacts", data) if isinstance(data, dict) else {}
+        for v in (contacts.values() if isinstance(contacts, dict) else []):
+            if isinstance(v, dict):
+                em = (v.get("email") or "").strip().lower()
+                if em and (v.get("replied") or v.get("status") in ("replied", "interested", "interview")):
+                    sup.add(em)
+    # 2. manual do-not-contact list (one email per line)
+    dnc = base / "do_not_contact.txt"
+    if dnc.exists():
+        for line in dnc.read_text().splitlines():
+            e = line.strip().lower()
+            if e and "@" in e and not e.startswith("#"):
+                sup.add(e)
+    if sup:
+        print(f"🔕 Suppressing {len(sup)} recruiters (replied / opted-out) — won't re-contact")
+    return sup
+
+
+def should_contact(history: dict, email: str, now: datetime,
+                   suppressed: set | None = None) -> tuple[bool, int]:
+    em = (email or "").strip().lower()
+    # NEVER re-contact someone who replied or opted out
+    if suppressed and em in suppressed:
+        return False, -2   # -2 = suppressed (replied/opted-out)
     entry = history.get(email, {})
     if not entry:
         return True, -1
+    # Stop after MAX_CONTACTS no-response attempts (don't pester forever)
+    if entry.get("times_contacted", 0) >= MAX_CONTACTS:
+        return False, -3   # -3 = hit max-contacts cap
     last = datetime.fromisoformat(entry["last_contacted"])
     days_ago = (now - last).days
     return days_ago >= TTL_DAYS, days_ago
@@ -325,18 +370,23 @@ def send_email(to_email: str, vendor_name: str) -> bool:
 def main():
     vendors = load_vendors()
     history = load_history()
+    suppressed = load_suppressed()
     now = datetime.utcnow()
 
     to_contact = []
     for v in vendors:
-        ok, days_ago = should_contact(history, v["email"], now)
+        ok, code = should_contact(history, v["email"], now, suppressed)
         if ok:
             to_contact.append(v)
+        elif code == -2:
+            print(f"  🔕 SKIP {v['name']} — already REPLIED/opted-out (not re-contacting)")
+        elif code == -3:
+            print(f"  🛑 SKIP {v['name']} — hit max {MAX_CONTACTS} contacts, no response (dropped)")
         else:
-            print(f"  SKIP {v['name']} — contacted {days_ago}d ago (TTL={TTL_DAYS}d)")
+            print(f"  SKIP {v['name']} — contacted {code}d ago (TTL={TTL_DAYS}d)")
 
     if not to_contact:
-        print("All vendors contacted within TTL. Nothing to send.")
+        print("All eligible recruiters contacted (or suppressed). Nothing to send.")
         return
 
     # ANTI-SPAM: cap sends per run + space them out. Never blast the whole list at once (a burst
