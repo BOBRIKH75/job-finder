@@ -35,6 +35,7 @@ REPLY_TO    = GMAIL_USER
 TTL_DAYS    = 14   # per-recruiter cooldown: max once every 2 weeks (safe, not spammy)
 
 VENDOR_FILE  = Path(__file__).parent.parent / "data" / "vendor_list.json"
+LEADS_FILE   = Path(__file__).parent.parent / "data" / "recruiter_job_leads.json"
 HISTORY_FILE = Path(__file__).parent.parent / "data" / "vendor_outreach_history.json"
 # CV to attach (resolve first existing)
 _CV_CANDIDATES = [
@@ -134,7 +135,38 @@ def make_body(vendor_name: str, email: str = "") -> str:
     )
 
 
+def load_recruiter_leads() -> list[dict]:
+    """The GOLD source: REAL named recruiters who personally emailed Bob about Java
+    jobs (harvested from his inbox). These are humans who reply/call — far higher
+    value than guessed role inboxes. Emailed FIRST, every run."""
+    if not LEADS_FILE.exists():
+        return []
+    try:
+        rows = json.loads(LEADS_FILE.read_text())
+    except Exception:
+        return []
+    leads = []
+    seen = set()
+    for r in rows if isinstance(rows, list) else []:
+        em = (r.get("recruiter_email") or "").strip().lower()
+        if not em or "@" not in em or em in seen:
+            continue
+        seen.add(em)
+        leads.append({
+            "email": em,
+            "name": r.get("recruiter_name") or r.get("company") or em.split("@")[1].split(".")[0].title(),
+            "company": r.get("company", ""),
+        })
+    if leads:
+        print(f"Loaded {len(leads)} REAL named recruiters from recruiter_job_leads.json (emailed FIRST)")
+    return leads
+
+
 def load_vendors() -> list[dict]:
+    # GOLD first: real named recruiters who emailed Bob (highest reply/call rate).
+    leads = load_recruiter_leads()
+    lead_emails = {l["email"] for l in leads}
+
     if VENDOR_FILE.exists():
         data = json.loads(VENDOR_FILE.read_text())
         # harvester writes a plain LIST; older format was {"vendors": [...]}
@@ -145,10 +177,12 @@ def load_vendors() -> list[dict]:
             em = (v.get("email") or "").strip()
             if not em or "@" not in em:
                 continue
+            if em.lower() in lead_emails:   # already in the gold leads — don't duplicate
+                continue
             if not v.get("name"):
                 v["name"] = v.get("company") or em.split("@")[1].split(".")[0].title()
             clean.append(v)
-        if clean:
+        if clean or leads:
             # Prioritize NAMED recruiters (firstname.lastname@ → real people who reply)
             # over generic role inboxes (info@/careers@/jobs@ → low reply). Within the
             # daily cap, named people get contacted first = more calls.
@@ -160,9 +194,13 @@ def load_vendors() -> list[dict]:
                 is_named = ("." in user and user not in _ROLE)
                 return (0 if is_named else 1, user)   # named (0) sort before role (1)
             clean.sort(key=_named_first)
-            print(f"Loaded {len(clean)} vendors/recruiters from vendor_list.json "
-                  f"(named recruiters prioritized first)")
-            return clean
+            # GOLD leads go absolutely first, then named-sorted vendor list.
+            result = leads + clean
+            print(f"Loaded {len(result)} total recruiters "
+                  f"({len(leads)} gold named-leads first, then {len(clean)} vendor list)")
+            return result
+    if leads:
+        return leads
     print(f"Using fallback vendor list ({len(FALLBACK_VENDORS)} firms)")
     return FALLBACK_VENDORS
 
