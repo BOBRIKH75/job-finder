@@ -237,16 +237,31 @@ def save_history(history: dict):
 
 
 MAX_CONTACTS = int(os.environ.get("OUTREACH_MAX_CONTACTS", "3"))   # stop after N no-response tries
+# After a role-specific "no" (citizen/clearance/W2-only or position-filled), the recruiter
+# may still have OTHER roles that fit. Don't re-email for this many days, then a NEW outreach
+# is allowed (staffing firms get fresh Java reqs constantly). In-conversation replies
+# (interview/interested/info-request) are suppressed PERMANENTLY — Bob handles those by hand.
+REENGAGE_AFTER_DAYS = int(os.environ.get("OUTREACH_REENGAGE_DAYS", "45"))
 
 
 def load_suppressed() -> set:
-    """Emails we must NOT contact again:
-      1. Anyone who REPLIED (they're already in conversation — re-emailing = annoying).
-      2. Anyone on the manual do-not-contact list (bounced/asked to stop).
-    Response-based: once a recruiter engages, outreach backs off automatically."""
+    """Response-aware suppression. Returns the set of emails to SKIP this run.
+
+    Rules (based on how the recruiter responded):
+      • INTERVIEW_SCHEDULED / INTERESTED / INFO_REQUEST → PERMANENT skip (you're in
+        conversation — the bot must not interfere; you reply by hand).
+      • CITIZEN_REQUIRED / REJECTION → skip for REENGAGE_AFTER_DAYS, then allow ONE
+        fresh outreach (they may have a NEW role that fits). Not a forever-ban.
+      • AUTO_REPLY / ACKNOWLEDGED → NOT suppressed (not a real decision; normal cooldown).
+      • do_not_contact.txt → PERMANENT skip (manual opt-out / bounces).
+    """
+    from datetime import datetime as _dt
     sup = set()
     base = Path(__file__).parent.parent / "data"
-    # 1. replied → from the interview pipeline + reply log
+    PERMANENT = {"INTERVIEW_SCHEDULED", "INTERESTED", "INFO_REQUEST", "REPLIED"}
+    TIMED = {"CITIZEN_REQUIRED", "REJECTION"}   # re-contactable after cooldown (new role)
+    now = _dt.utcnow()
+
     for fn in ("interview_pipeline.json", "reply_log.json"):
         p = base / fn
         if not p.exists():
@@ -257,11 +272,28 @@ def load_suppressed() -> set:
             continue
         contacts = data.get("contacts", data) if isinstance(data, dict) else {}
         for v in (contacts.values() if isinstance(contacts, dict) else []):
-            if isinstance(v, dict):
-                em = (v.get("email") or "").strip().lower()
-                if em and (v.get("replied") or v.get("status") in ("replied", "interested", "interview")):
-                    sup.add(em)
-    # 2. manual do-not-contact list (one email per line)
+            if not isinstance(v, dict):
+                continue
+            em = (v.get("email") or "").strip().lower()
+            if not em:
+                continue
+            stage = (v.get("stage") or v.get("status") or "").upper()
+            if v.get("replied") and not stage:
+                stage = "REPLIED"
+            if stage in PERMANENT:
+                sup.add(em)                       # in conversation → never auto-email
+            elif stage in TIMED:
+                # suppress only until the re-engage window passes
+                when = v.get("replied_at") or v.get("last_reply") or v.get("updated")
+                recent = True
+                if when:
+                    try:
+                        recent = (now - _dt.fromisoformat(str(when).replace("Z", ""))).days < REENGAGE_AFTER_DAYS
+                    except Exception:
+                        recent = True
+                if recent:
+                    sup.add(em)                   # too soon → skip; after window → allowed again
+
     dnc = base / "do_not_contact.txt"
     if dnc.exists():
         for line in dnc.read_text().splitlines():
@@ -269,7 +301,8 @@ def load_suppressed() -> set:
             if e and "@" in e and not e.startswith("#"):
                 sup.add(e)
     if sup:
-        print(f"🔕 Suppressing {len(sup)} recruiters (replied / opted-out) — won't re-contact")
+        print(f"🔕 Suppressing {len(sup)} recruiters "
+              f"(in-conversation permanently · citizen/rejection for {REENGAGE_AFTER_DAYS}d · opted-out)")
     return sup
 
 
