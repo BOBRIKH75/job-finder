@@ -322,7 +322,10 @@
     "company": "New Relic",
     "url": "https://www.indeed.com/viewjob?jk=e918147c1be977e5",
     "recruiter": "Privacy Notice",
-    "smtp_verified": true
+    "smtp_verified": true,
+    "last_contact": "2026-10-06T01:03:55.150161",
+    "followed_up": true,
+    "followup_date": "2026-10-06T01:03:55.150161"
   },
   "1d4844eb35f4": {
     "email": "origin.allow@alignerr.com",
@@ -337,7 +340,7 @@
   "4ea8fbe48f70": {
     "email": "recruiting@peraton.com",
     "date": "2026-10-02T23:22:00.689799",
-    "last_contact": "2026-10-02T23:22:00.689799",
+    "last_contact": "2026-10-06T01:03:55.150161",
     "job": "Java Developer C2C",
     "company": "Peraton",
     "recruiter": "Recruiting Team",
@@ -346,12 +349,14 @@
     "url": "",
     "replied": false,
     "bounced": false,
-    "re_engage_count": 0
+    "re_engage_count": 0,
+    "followed_up": true,
+    "followup_date": "2026-10-06T01:03:55.150161"
   },
   "30facd915761": {
     "email": "recruiting@leidos.com",
     "date": "2026-10-02T23:22:02.797269",
-    "last_contact": "2026-10-02T23:22:02.797269",
+    "last_contact": "2026-10-06T01:03:55.150161",
     "job": "Java Developer C2C",
     "company": "Leidos",
     "recruiter": "Recruiting Team",
@@ -360,12 +365,14 @@
     "url": "",
     "replied": false,
     "bounced": false,
-    "re_engage_count": 0
+    "re_engage_count": 0,
+    "followed_up": true,
+    "followup_date": "2026-10-06T01:03:55.150161"
   },
   "ece13b1cb752": {
     "email": "recruiting@ice.com",
     "date": "2026-10-02T23:22:05.221316",
-    "last_contact": "2026-10-02T23:22:05.221316",
+    "last_contact": "2026-10-06T01:03:55.150161",
     "job": "Java Developer C2C",
     "company": "ICE",
     "recruiter": "Recruiting Team",
@@ -374,7 +381,9 @@
     "url": "",
     "replied": false,
     "bounced": false,
-    "re_engage_count": 0
+    "re_engage_count": 0,
+    "followed_up": true,
+    "followup_date": "2026-10-06T01:03:55.150161"
   },
   "e6be2b34b4fd": {
     "email": "recruiting@sharpdecisions.com",
@@ -659,6 +668,109 @@
     "url": "",
     "replied": false,
     "bounced": false,
+    "re_engage_count": 0
+  },
+  "45e1b245dee6": {
+    "email": "accommodations@docusign.com",
+    "date": "2026-10-06T01:03:55.148946",
+    "job": "Senior Software Engineer",
+    "company": "DocuSign",
+    "url": "https://www.indeed.com/viewjob?jk=bd91544434e3b977",
+    "recruiter": null,
+    "smtp_verified": true
+  },
+  "c020f104ec4f": {
+    "email": "origin.allow@directclientrequirements.com",
+    "date": "2026-10-06T01:12:28.616066",
+    "job": "Senior Java Architect",
+    "company": "Direct Client Requirements",
+    "url": "https://www.linkedin.com/jobs/view/4475851739",
+    "recruiter": "origin allow",
+    "source": "linkedin+guess",
+    "bounced": true
+  },
+  "613459770c80": {
+    "email": "origin.allow@consultnettechnologyservicesandsolutions.com",
+    "date": "2026-10-06T01:12:32.808358",
+    "job": "Java / NodeJS Developer",
+    "company": "ConsultNet Technology Services and Solutions",
+    "url": "https://www.linkedin.com/jobs/view/4475805868",
+    "recruiter": "origin allow",
+    "source": "linkedin+guess",
+    "bounced": true
+  },
+  "96aebb67310c": {
+    "email": "origin.allow@georgiateksystemsinc.com",
+    "date": "2026-10-06T01:12:34.516311",
+    "job": "Java Developer",
+    "company": "GeorgiaTEK Systems Inc.",
+    "url": "https://www.linkedin.com/jobs/view/4473678899",
+    "recruiter": "origin allow",
+    "source": "linkedin+guess",
+    "bounced": true
+  },
+  "7773c52fb388": {
+    "email": "origin.allow@deltacomputerconsulting.com",
+    "date": "2026-10-06T01:12:38.662536",
+    "job": "Senior Java Backend Developer \u2013 AWS / Microservices",
+    "company": "Delta Computer Consulting",
+    "url": "https://www.linkedin.com/jobs/view/4474518899",
+    "recruiter": "origin allow",
+    "source": "linkedin+guess",
+    "bounced": true
+  },
+  "534ddd5fa43a": {
+    "email": "origin.allow@globalbusinessser4u.com",
+    "date": "2026-10-06T01:12:41.624905",
+    "job": "Java Full Stack + Terraform/ AWS-Onsite day 1. Hybrid local only Plano ,TX",
+    "company": "Global Business Ser. 4u",
+    "url": "https://www.linkedin.com/jobs/view/4475823432",
+    "recruiter": "origin allow",
+    "source": "linkedin+guess",
+    "bounced": true
+  },
+  "8c4ce23578ed": {
+    "email": "origin.allow@wellsfargo.com",
+    "date": "2026-10-06T01:12:46.303239",
+    "job": "Software Engineer 4 - Contingent (contract)",
+    "company": "Wells Fargo",
+    "url": "https://www.linkedin.com/jobs/view/4473395551",
+    "recruiter": "origin allow",
+    "source": "linkedin+guess",
+    "bounced": true
+  },
+  "6f3aca971b28": {
+    "email": "origin.allow@kellymitchellgroup.com",
+    "date": "2026-10-06T01:12:47.629869",
+    "job": "Senior Engineer",
+    "company": "KellyMitchell Group",
+    "url": "https://www.linkedin.com/jobs/view/4475038090",
+    "recruiter": "origin allow",
+    "source": "linkedin+guess",
+    "bounced": true
+  },
+  "c3190d4df917": {
+    "email": "origin.allow@rhpmarketingprivatelimited.com",
+    "date": "2026-10-06T01:12:49.036471",
+    "job": "Java Cloud Developer",
+    "company": "RHP Marketing Private Limited",
+    "url": "https://www.linkedin.com/jobs/view/4475323369",
+    "recruiter": "origin allow",
+    "source": "linkedin+guess",
+    "bounced": true
+  },
+  "65c53a64c105": {
+    "email": "info@beaconhill.com",
+    "date": "2026-10-06T01:13:58.329238",
+    "last_contact": "2026-10-06T01:13:58.329238",
+    "job": "Java Developer C2C",
+    "company": "Beacon Hill",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": true,
     "re_engage_count": 0
   }
 }
