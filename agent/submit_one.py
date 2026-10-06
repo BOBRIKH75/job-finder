@@ -1555,6 +1555,15 @@ def main():
             'Java microservices Spring Boot remote contract',
             'Java Spring Kafka developer remote',
             'Java backend engineer corp to corp remote',
+            'Java developer remote',
+            'Spring Boot developer remote',
+            'Java software engineer remote contract',
+            'Senior software engineer Java remote',
+            'Java AWS microservices developer remote',
+            'Java REST API developer remote',
+            'Lead Java developer remote',
+            'Java full stack developer remote',
+            'backend engineer Java Spring remote',
         ]
         _loc = os.environ.get('SEARCH_LOCATION', 'USA')
         _rw = int(os.environ.get('RESULTS_WANTED', '20'))
@@ -1565,6 +1574,7 @@ def main():
         _hrs_env = os.environ.get('INDEED_HOURS_OLD', '72')
         _hours_old = int(_hrs_env) if _hrs_env.strip() not in ('', '0') else None
         urls = []
+        _seen_u = set()
         for _t in _terms:
             try:
                 _kw = dict(site_name=['indeed'], search_term=_t,
@@ -1575,10 +1585,17 @@ def main():
             except Exception as _e:
                 print(f"  ⚠️ search '{_t[:40]}' errored: {str(_e)[:60]}")
                 continue
-            urls = _extract_cv_matched_urls(jobs)
-            print(f"  🔍 '{_t[:45]}' → {len(urls)} CV-matched urls")
-            if urls:
-                break
+            _found = _extract_cv_matched_urls(jobs)
+            # Collect from ALL terms (don't stop at the first) — each term surfaces
+            # DIFFERENT jobs, so searching all of them finds far more unique roles to
+            # apply to. Dedupe across terms. Stop early only once we have plenty.
+            for _u in _found:
+                if _u not in _seen_u:
+                    _seen_u.add(_u)
+                    urls.append(_u)
+            print(f"  🔍 '{_t[:45]}' → {len(_found)} CV-matched ({len(urls)} unique total)")
+            if len(urls) >= (int(os.environ.get('TARGET_SUBMITS', '15')) * 4):
+                break   # enough inventory to work through this run
             time.sleep(2)  # brief backoff before the next term
 
     if not urls:
