@@ -1564,6 +1564,11 @@ def main():
             'Lead Java developer remote',
             'Java full stack developer remote',
             'backend engineer Java Spring remote',
+            'Java developer',
+            'Java',
+            'Spring',
+            'Spring Boot developer',
+            'Java engineer',
         ]
         _loc = os.environ.get('SEARCH_LOCATION', 'USA')
         _rw = int(os.environ.get('RESULTS_WANTED', '20'))
