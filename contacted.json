@@ -388,7 +388,7 @@
   "e6be2b34b4fd": {
     "email": "recruiting@sharpdecisions.com",
     "date": "2026-10-02T23:22:09.295684",
-    "last_contact": "2026-10-02T23:22:09.295684",
+    "last_contact": "2026-10-06T19:10:00.439473",
     "job": "Java Developer C2C",
     "company": "Sharp Decisions",
     "recruiter": "Recruiting Team",
@@ -397,7 +397,9 @@
     "url": "",
     "replied": false,
     "bounced": false,
-    "re_engage_count": 0
+    "re_engage_count": 0,
+    "followed_up": true,
+    "followup_date": "2026-10-06T19:10:00.439473"
   },
   "5d926b4c2ac8": {
     "email": "staffing@wyetech.com",
@@ -406,7 +408,10 @@
     "company": "Wyetech",
     "url": "https://www.indeed.com/viewjob?jk=1d7d726e8c7131fe",
     "recruiter": "Brittney Wood",
-    "smtp_verified": true
+    "smtp_verified": true,
+    "last_contact": "2026-10-06T19:10:00.439473",
+    "followed_up": true,
+    "followup_date": "2026-10-06T19:10:00.439473"
   },
   "54bdfb021382": {
     "email": "origin.allow@skmgroup.com",
@@ -421,7 +426,7 @@
   "d3003e9f718d": {
     "email": "recruiting@conduent.com",
     "date": "2026-10-03T17:45:50.762156",
-    "last_contact": "2026-10-03T17:45:50.762156",
+    "last_contact": "2026-10-06T19:10:00.439473",
     "job": "Java Developer C2C",
     "company": "Conduent",
     "recruiter": "Recruiting Team",
@@ -430,12 +435,14 @@
     "url": "",
     "replied": false,
     "bounced": false,
-    "re_engage_count": 0
+    "re_engage_count": 0,
+    "followed_up": true,
+    "followup_date": "2026-10-06T19:10:00.439473"
   },
   "5a4be2b8bfd2": {
     "email": "recruiting@jefferies.com",
     "date": "2026-10-03T17:45:54.539829",
-    "last_contact": "2026-10-03T17:45:54.539829",
+    "last_contact": "2026-10-06T19:10:00.439473",
     "job": "Java Developer C2C",
     "company": "Jefferies",
     "recruiter": "Recruiting Team",
@@ -444,12 +451,14 @@
     "url": "",
     "replied": false,
     "bounced": false,
-    "re_engage_count": 0
+    "re_engage_count": 0,
+    "followed_up": true,
+    "followup_date": "2026-10-06T19:10:00.439473"
   },
   "43305350bf68": {
     "email": "recruiting@paypal.com",
     "date": "2026-10-03T17:45:58.341205",
-    "last_contact": "2026-10-03T17:45:58.341205",
+    "last_contact": "2026-10-06T19:10:00.439473",
     "job": "Java Developer C2C",
     "company": "PayPal",
     "recruiter": "Recruiting Team",
@@ -458,7 +467,9 @@
     "url": "",
     "replied": false,
     "bounced": false,
-    "re_engage_count": 0
+    "re_engage_count": 0,
+    "followed_up": true,
+    "followup_date": "2026-10-06T19:10:00.439473"
   },
   "ba59b7d0e12a": {
     "email": "careers@ust.com",
@@ -771,6 +782,158 @@
     "url": "",
     "replied": false,
     "bounced": true,
+    "re_engage_count": 0
+  },
+  "ede33c936e5b": {
+    "email": "origin.allow@torentify.com",
+    "date": "2026-10-06T19:19:43.367039",
+    "job": "Software Engineer,Java (Remote)",
+    "company": "Torentify",
+    "url": "https://www.linkedin.com/jobs/view/4476302932",
+    "recruiter": "origin allow",
+    "source": "linkedin+guess",
+    "bounced": true
+  },
+  "baf0da344eb7": {
+    "email": "origin.allow@nextgensoftwaresolutionsllc.com",
+    "date": "2026-10-06T19:19:45.124345",
+    "job": "Sr. Java Developer | Remote, USA| Contract W2 only",
+    "company": "Next Gen Software Solutions LLC",
+    "url": "https://www.linkedin.com/jobs/view/4466342805",
+    "recruiter": "origin allow",
+    "source": "linkedin+guess",
+    "bounced": true
+  },
+  "72a95723ce41": {
+    "email": "origin.allow@eliassengroup.com",
+    "date": "2026-10-06T19:19:46.604134",
+    "job": "ETL Engineer \u2013 Java Spring Batch",
+    "company": "Eliassen Group",
+    "url": "https://www.linkedin.com/jobs/view/4474068316",
+    "recruiter": "origin allow",
+    "source": "linkedin+guess",
+    "bounced": true
+  },
+  "8b94d83c1e92": {
+    "email": "origin.allow@pyramidconsultinginc.com",
+    "date": "2026-10-06T19:19:55.773567",
+    "job": "Senior Java Developer with OpenShift",
+    "company": "Pyramid Consulting, Inc",
+    "url": "https://www.linkedin.com/jobs/view/4475020872",
+    "recruiter": "origin allow",
+    "source": "linkedin+guess",
+    "bounced": true
+  },
+  "ed54446e3dcf": {
+    "email": "recruiting@cybercoders.com",
+    "date": "2026-10-06T19:20:49.204774",
+    "last_contact": "2026-10-06T19:20:49.204774",
+    "job": "Java Developer C2C",
+    "company": "CyberCoders",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": false,
+    "re_engage_count": 0
+  },
+  "029b72d58a4a": {
+    "email": "hr@greymatterinnovationz.com",
+    "date": "2026-10-06T19:20:52.297738",
+    "last_contact": "2026-10-06T19:20:52.297738",
+    "job": "Java Developer C2C",
+    "company": "Greymatter Innovationz",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": true,
+    "re_engage_count": 0
+  },
+  "3ba51bb35586": {
+    "email": "careers@apexsystems.com",
+    "date": "2026-10-06T19:20:54.227100",
+    "last_contact": "2026-10-06T19:20:54.227100",
+    "job": "Java Developer C2C",
+    "company": "Apex Systems",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": true,
+    "re_engage_count": 0
+  },
+  "4a2e6b281e42": {
+    "email": "info@ltm.com",
+    "date": "2026-10-06T19:20:57.154323",
+    "last_contact": "2026-10-06T19:20:57.154323",
+    "job": "Java Developer C2C",
+    "company": "LTM",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": true,
+    "re_engage_count": 0
+  },
+  "9cb3cdeeeb87": {
+    "email": "recruiting@ampstek.com",
+    "date": "2026-10-06T19:20:59.440192",
+    "last_contact": "2026-10-06T19:20:59.440192",
+    "job": "Java Developer C2C",
+    "company": "Ampstek",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": false,
+    "re_engage_count": 0
+  },
+  "0ac64fff365f": {
+    "email": "recruiting@acldigital.com",
+    "date": "2026-10-06T19:21:01.969168",
+    "last_contact": "2026-10-06T19:21:01.969168",
+    "job": "Java Developer C2C",
+    "company": "ACL Digital",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": false,
+    "re_engage_count": 0
+  },
+  "dfd6b33dd6f1": {
+    "email": "recruiting@kforce.com",
+    "date": "2026-10-06T19:21:04.274588",
+    "last_contact": "2026-10-06T19:21:04.274588",
+    "job": "Java Developer C2C",
+    "company": "Kforce Inc",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": false,
+    "re_engage_count": 0
+  },
+  "fbc27a6f2d08": {
+    "email": "recruiting@roseinternational.com",
+    "date": "2026-10-06T19:21:09.915101",
+    "last_contact": "2026-10-06T19:21:09.915101",
+    "job": "Java Developer C2C",
+    "company": "Rose International",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": false,
     "re_engage_count": 0
   }
 }
