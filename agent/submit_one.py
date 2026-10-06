@@ -1558,11 +1558,20 @@ def main():
         ]
         _loc = os.environ.get('SEARCH_LOCATION', 'USA')
         _rw = int(os.environ.get('RESULTS_WANTED', '20'))
+        # Freshness: only pull jobs posted in the last N hours (default 72h = 3 days).
+        # Without this, every run returns the SAME top results → all already-applied →
+        # 0 new submits. A freshness window surfaces NEW daily postings. Tune via
+        # INDEED_HOURS_OLD (set '' / 0 to disable).
+        _hrs_env = os.environ.get('INDEED_HOURS_OLD', '72')
+        _hours_old = int(_hrs_env) if _hrs_env.strip() not in ('', '0') else None
         urls = []
         for _t in _terms:
             try:
-                jobs = scrape_jobs(site_name=['indeed'], search_term=_t,
-                                   location=_loc, results_wanted=_rw, easy_apply=True)
+                _kw = dict(site_name=['indeed'], search_term=_t,
+                           location=_loc, results_wanted=_rw, easy_apply=True)
+                if _hours_old:
+                    _kw['hours_old'] = _hours_old
+                jobs = scrape_jobs(**_kw)
             except Exception as _e:
                 print(f"  ⚠️ search '{_t[:40]}' errored: {str(_e)[:60]}")
                 continue
