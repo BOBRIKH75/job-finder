@@ -170,6 +170,44 @@ def is_cloudflare(page):
         return False
 
 
+def _try_cf_turnstile(page):
+    """Click the Cloudflare 'Verify you are human' checkbox if present.
+    Turnstile renders inside an iframe; the checkbox is a simple click (not a puzzle).
+    A real/stealth browser (patchright) can click it to proceed. Best-effort, no raise.
+    Returns True if a checkbox was clicked."""
+    try:
+        # 1) Turnstile iframe (most common)
+        for fr in page.frames:
+            u = (fr.url or '').lower()
+            if 'challenges.cloudflare.com' in u or 'turnstile' in u:
+                for sel in ('input[type="checkbox"]', 'label', '#challenge-stage',
+                            'input', 'div[role="checkbox"]'):
+                    try:
+                        loc = fr.locator(sel)
+                        if loc.count() > 0:
+                            loc.first.click(timeout=4000)
+                            print("   ↳ clicked Cloudflare Turnstile checkbox (iframe)")
+                            page.wait_for_timeout(4000)
+                            return True
+                    except Exception:
+                        continue
+        # 2) Checkbox rendered directly on the page
+        for sel in ('input[type="checkbox"]', 'label:has-text("human")',
+                    'div.cf-turnstile', '#challenge-stage input'):
+            try:
+                loc = page.locator(sel)
+                if loc.count() > 0:
+                    loc.first.click(timeout=4000)
+                    print("   ↳ clicked Cloudflare checkbox (page)")
+                    page.wait_for_timeout(4000)
+                    return True
+            except Exception:
+                continue
+    except Exception as _e:
+        print(f"   ↳ turnstile click skipped: {str(_e)[:60]}")
+    return False
+
+
 def pct(page):
     try:
         lines = [l.strip() for l in page.locator('body').inner_text(timeout=3000).split('\n')]
@@ -729,13 +767,22 @@ def learned_rate_limit_plan():
 def submit_one(pg, url, db, profile):
     print(f"\n===== SUBMIT ONE: {url[-40:]}")
 
-    # STEP 1-2: open + reload up to 3 times, screenshot each
+    # STEP 1-2: open, then on Cloudflare WAIT 30s + reload (patchright often clears the
+    # JS challenge if given time), try a visible Turnstile checkbox, up to 3 tries; then
+    # ONE extra 30s wait + reload before giving up (per Bob's request). We never solve an
+    # image puzzle — we just wait for the challenge to auto-resolve and nudge the checkbox.
     pg.goto(url, wait_until='domcontentloaded', timeout=25000)
     time.sleep(3)
+    _cf_wait = int(os.environ.get('CLOUDFLARE_WAIT', '30'))
     for r in range(3):
         snap(pg, f"open_reload{r}")
         if is_cloudflare(pg):
-            print(f"  reload {r}: still Cloudflare — reloading")
+            print(f"  reload {r}: Cloudflare — waiting {_cf_wait}s for challenge to clear")
+            _try_cf_turnstile(pg)                 # nudge the visible checkbox if present
+            time.sleep(_cf_wait)                  # give the JS challenge time to auto-pass
+            if not is_cloudflare(pg):
+                print(f"  reload {r}: cleared after wait")
+                break
         else:
             print(f"  reload {r}: loaded (url ...{pg.url[-30:]})")
             break
@@ -745,8 +792,18 @@ def submit_one(pg, url, db, profile):
             except Exception:
                 pass
             time.sleep(3)
+    # ONE MORE try — extra wait + reload — before giving up on this job
     if is_cloudflare(pg):
-        print("  STILL Cloudflare after 3 reloads — cannot proceed on this job")
+        print(f"  Cloudflare persists — ONE more {_cf_wait}s wait + reload")
+        _try_cf_turnstile(pg)
+        time.sleep(_cf_wait)
+        try:
+            pg.reload(wait_until='domcontentloaded', timeout=25000)
+        except Exception:
+            pass
+        time.sleep(5)
+    if is_cloudflare(pg):
+        print("  STILL Cloudflare after waits + retries — cannot proceed on this job")
         snap(pg, "SKIP_cloudflare")
         return 'cloudflare_stuck'
 
