@@ -95,6 +95,7 @@ jobs:
           DICE_TARGET: ${{ github.event.inputs.dice_target || '40' }}
           DICE_SEARCH_PAGES: ${{ github.event.inputs.dice_pages || '4' }}
           DICE_FRESH_TARGET: '120'   # search wide: gather ~120 fresh jobs before stopping (dynamic — more inventory = more applies)
+          DICE_POSTED_DATE: ${{ github.event.inputs.posted_date || 'THREE' }}   # last 3 days = fresh/real-time jobs
           DICE_EASY_APPLY: ${{ github.event.inputs.easy_apply || '1' }}
           HEADFUL: '1'               # self-hosted runner has a display; headless is the bot tell
         run: |
