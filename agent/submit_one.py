@@ -773,7 +773,7 @@ def submit_one(pg, url, db, profile):
     # image puzzle — we just wait for the challenge to auto-resolve and nudge the checkbox.
     pg.goto(url, wait_until='domcontentloaded', timeout=25000)
     time.sleep(3)
-    _cf_wait = int(os.environ.get('CLOUDFLARE_WAIT', '30'))
+    _cf_wait = int(os.environ.get('CLOUDFLARE_WAIT', '5'))
     for r in range(3):
         snap(pg, f"open_reload{r}")
         if is_cloudflare(pg):
