@@ -77,6 +77,7 @@ jobs:
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
           GH_SCAN_COUNT: "40"
           GH_DEDUP_DAYS: "14"
+          MAX_POSTING_AGE_DAYS: "7"
         run: |
           cd $GITHUB_WORKSPACE
           python3 greenhouse_apply.py

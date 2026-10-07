@@ -76,7 +76,7 @@ jobs:
           ANSWERER_NO_ASK: '1'
           TARGET_SUBMITS: '15'
           RESULTS_WANTED: '50'
-          INDEED_HOURS_OLD: '168'
+          INDEED_HOURS_OLD: '72'
           HEADFUL: '1'
         run: |
           cd $GITHUB_WORKSPACE/agent
