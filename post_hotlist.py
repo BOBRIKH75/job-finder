@@ -39,9 +39,15 @@ ALL_GROUPS = [
     'whythiskolaverydi', 'sureshotjobs', 'SoftwareIT',
     'corp-to-corp-requirements22', 'therecruitmenthub',
     'android-app-develpoment',
+    # --- added 2026-10-07 from web (verified active C2C/bench-sales groups) ---
+    'corp2corp-req', 'C2C-requirementss', 'genuine-c2chotlist',
+    'c2creqrmnts', 'corp-to-corp-position-usa', 'c2c-r-requirements',
+    'qa-c2c-requirments', 'bench-consultants-for-new-projects',
+    'benchsales-recruiters', 'it-recruiters-group',
+    'c2c-jobs-usa', 'direct-client-requirements-c2c',
 ]
 
-GROUPS_PER_DAY = 6  # 31 groups ÷ 5 weekdays ≈ 6/day
+GROUPS_PER_DAY = 8  # ~47 groups spread across weekdays
 
 
 def get_todays_groups() -> list[str]:
