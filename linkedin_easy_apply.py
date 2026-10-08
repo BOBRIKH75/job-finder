@@ -641,12 +641,18 @@ def main():
             # selectors and use the first that returns cards (fallback chain).
             try:
                 _card_selectors = [
+                    "li[data-occludable-job-id]",
+                    "div[data-job-id]",
+                    "li.scaffold-layout__list-item",
+                    "div.job-card-container",
                     ".job-card-container",
                     "li.jobs-search-results__list-item",
                     "div.job-card-container--clickable",
-                    "li.scaffold-layout__list-item",
                     "[data-job-id]",
+                    "ul.jobs-search__results-list > li",
+                    "div.jobs-search-results-list ul > li",
                     ".base-card",
+                    "[data-view-name='job-card']",
                 ]
                 job_cards = []
                 _used = ""
