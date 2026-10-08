@@ -566,7 +566,7 @@
   "be0a5316b993": {
     "email": "recruiting@solugenix.com",
     "date": "2026-10-04T22:40:17.867481",
-    "last_contact": "2026-10-04T22:40:17.867481",
+    "last_contact": "2026-10-07T23:51:00.506991",
     "job": "Java Developer C2C",
     "company": "Solugenix",
     "recruiter": "Recruiting Team",
@@ -575,12 +575,14 @@
     "url": "",
     "replied": false,
     "bounced": false,
-    "re_engage_count": 0
+    "re_engage_count": 0,
+    "followed_up": true,
+    "followup_date": "2026-10-07T23:51:00.506991"
   },
   "9f1447cf5aba": {
     "email": "recruiting@citi.com",
     "date": "2026-10-04T22:40:21.682569",
-    "last_contact": "2026-10-04T22:40:21.682569",
+    "last_contact": "2026-10-07T23:51:00.506991",
     "job": "Java Developer C2C",
     "company": "Citi",
     "recruiter": "Recruiting Team",
@@ -589,12 +591,14 @@
     "url": "",
     "replied": false,
     "bounced": false,
-    "re_engage_count": 0
+    "re_engage_count": 0,
+    "followed_up": true,
+    "followup_date": "2026-10-07T23:51:00.506991"
   },
   "db96acec6ac1": {
     "email": "recruiting@bny.com",
     "date": "2026-10-04T22:40:24.737684",
-    "last_contact": "2026-10-04T22:40:24.737684",
+    "last_contact": "2026-10-07T23:51:00.506991",
     "job": "Java Developer C2C",
     "company": "BNY",
     "recruiter": "Recruiting Team",
@@ -603,7 +607,9 @@
     "url": "",
     "replied": false,
     "bounced": false,
-    "re_engage_count": 0
+    "re_engage_count": 0,
+    "followed_up": true,
+    "followup_date": "2026-10-07T23:51:00.506991"
   },
   "2bffeab24da8": {
     "email": "origin.allow@yorkshireglobalsolutionsinc.com",
@@ -1211,6 +1217,76 @@
     "url": "",
     "replied": false,
     "bounced": true,
+    "re_engage_count": 0
+  },
+  "84751618c213": {
+    "email": "recruiting@ascendion.com",
+    "date": "2026-10-08T00:00:57.470593",
+    "last_contact": "2026-10-08T00:00:57.470593",
+    "job": "Java Developer C2C",
+    "company": "Ascendion",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": false,
+    "re_engage_count": 0
+  },
+  "50d7170dab9c": {
+    "email": "careers@intellibus.com",
+    "date": "2026-10-08T00:01:00.314375",
+    "last_contact": "2026-10-08T00:01:00.314375",
+    "job": "Java Developer C2C",
+    "company": "Intellibus",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": true,
+    "re_engage_count": 0
+  },
+  "b5a88e5a3ae0": {
+    "email": "recruiting@iterable.com",
+    "date": "2026-10-08T00:01:01.764601",
+    "last_contact": "2026-10-08T00:01:01.764601",
+    "job": "Java Developer C2C",
+    "company": "Iterable",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": false,
+    "re_engage_count": 0
+  },
+  "f3fe12530dd9": {
+    "email": "recruiting@earlywarning.com",
+    "date": "2026-10-08T00:01:05.379560",
+    "last_contact": "2026-10-08T00:01:05.379560",
+    "job": "Java Developer C2C",
+    "company": "Early Warning",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": false,
+    "re_engage_count": 0
+  },
+  "f9225f20e943": {
+    "email": "recruiting@pyramidci.com",
+    "date": "2026-10-08T00:01:09.192050",
+    "last_contact": "2026-10-08T00:01:09.192050",
+    "job": "Java Developer C2C",
+    "company": "Pyramid Consulting, Inc",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": false,
     "re_engage_count": 0
   }
 }
