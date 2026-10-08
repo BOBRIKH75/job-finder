@@ -488,7 +488,7 @@
   "fb60fd9ad930": {
     "email": "recruiting@amtrak.com",
     "date": "2026-10-03T22:34:14.722154",
-    "last_contact": "2026-10-03T22:34:14.722154",
+    "last_contact": "2026-10-08T19:31:46.529189",
     "job": "Java Developer C2C",
     "company": "Amtrak",
     "recruiter": "Recruiting Team",
@@ -497,7 +497,9 @@
     "url": "",
     "replied": false,
     "bounced": false,
-    "re_engage_count": 0
+    "re_engage_count": 0,
+    "followed_up": true,
+    "followup_date": "2026-10-08T19:31:46.529189"
   },
   "41daa14ec22b": {
     "email": "jobs@alignerr.com",
@@ -1281,6 +1283,68 @@
     "last_contact": "2026-10-08T00:01:09.192050",
     "job": "Java Developer C2C",
     "company": "Pyramid Consulting, Inc",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": false,
+    "re_engage_count": 0
+  },
+  "dc2cd1fe9887": {
+    "email": "resume@aertron.com",
+    "date": "2026-10-08T19:31:41.568983",
+    "job": "Full Stack Developer - .NET and JAVA",
+    "company": "AERTRON",
+    "url": "https://www.indeed.com/viewjob?jk=355096a03cea5d04",
+    "recruiter": null,
+    "smtp_verified": true
+  },
+  "420eb430a9a5": {
+    "email": "guidehouse@myworkday.com",
+    "date": "2026-10-08T19:31:46.072009",
+    "job": "Senior QA/Automation Test Engineer",
+    "company": "Guidehouse",
+    "url": "https://www.indeed.com/viewjob?jk=fc39039057702f65",
+    "recruiter": "Guidehouse Recruiting",
+    "smtp_verified": true
+  },
+  "ea4ea71559aa": {
+    "email": "origin.allow@stefanininorthamericaandapac.com",
+    "date": "2026-10-08T19:39:38.709503",
+    "job": "Software Engineer",
+    "company": "Stefanini North America and APAC",
+    "url": "https://www.linkedin.com/jobs/view/4468268872",
+    "recruiter": "origin allow",
+    "source": "linkedin+guess",
+    "bounced": true
+  },
+  "ee6603bc1cd9": {
+    "email": "origin.allow@datastaffinc.com",
+    "date": "2026-10-08T19:39:39.939083",
+    "job": "Java Developer",
+    "company": "DataStaff, Inc.",
+    "url": "https://www.linkedin.com/jobs/view/4474838729",
+    "recruiter": "origin allow",
+    "source": "linkedin+guess",
+    "bounced": true
+  },
+  "5005dc7ca21f": {
+    "email": "origin.allow@vaitickasolution.com",
+    "date": "2026-10-08T19:39:42.454877",
+    "job": "Contact Center Application Developer",
+    "company": "Vaiticka Solution",
+    "url": "https://www.linkedin.com/jobs/view/4477460016",
+    "recruiter": "origin allow",
+    "source": "linkedin+guess",
+    "bounced": true
+  },
+  "f67cec7f041a": {
+    "email": "recruiting@icf.com",
+    "date": "2026-10-08T19:40:10.373474",
+    "last_contact": "2026-10-08T19:40:10.373474",
+    "job": "Java Developer C2C",
+    "company": "ICF",
     "recruiter": "Recruiting Team",
     "title": "Recruiter",
     "source": "smtp_verified",
