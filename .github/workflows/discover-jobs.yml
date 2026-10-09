@@ -1,0 +1,50 @@
+name: "Multi-Source Job Discovery (Daily)"
+
+# NEW additive workflow — discovers Java jobs from ZipRecruiter + Google + RemoteOK +
+# WeWorkRemotely on the CLOUD ubuntu runner (clean IP dodges the Cloudflare 403 that
+# blocks ZipRecruiter on the home/self-hosted runner). Writes to data/discovered_jobs.json.
+# Does NOT touch indeed/dice/greenhouse/linkedin appliers.
+
+on:
+  schedule:
+    - cron: "0 13 * * 1-5"   # 7:00 AM MT weekdays
+    - cron: "0 18 * * 1-5"   # 12:00 PM MT weekdays
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+defaults:
+  run:
+    working-directory: agent
+
+jobs:
+  discover:
+    runs-on: ubuntu-latest   # CLOUD runner — clean IP, no Cloudflare block on ZipRecruiter
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GH_PAT }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install deps
+        run: pip install python-jobspy
+
+      - name: Discover jobs (ZipRecruiter + Google + RemoteOK + WWR)
+        run: python scripts/discover_jobs_multi.py
+
+      - name: Save discovered jobs
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+        run: |
+          cd $GITHUB_WORKSPACE
+          git config user.email "bot@bobrikh.dev"
+          git config user.name "Discovery Bot"
+          git add agent/data/discovered_jobs.json 2>/dev/null || true
+          git diff --staged --quiet || git commit -m "discover: multi-source Java jobs $(date +%Y-%m-%d) [skip ci]"
+          git pull --rebase --autostash origin master || true
+          git push || true
