@@ -39,6 +39,12 @@ jobs:
       - name: Harvest Greenhouse/Lever boards from discovered jobs
         run: python scripts/harvest_boards_from_discovered.py
 
+      - name: Email fresh jobs digest
+        env:
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+        run: python scripts/send_fresh_digest.py
+
       - name: Save discovered jobs
         if: always()
         env:
