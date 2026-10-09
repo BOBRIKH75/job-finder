@@ -249,5 +249,86 @@
     "replied": false,
     "bounced": true,
     "re_engage_count": 0
+  },
+  "737664307864": {
+    "email": "ankammarao.p@aivantainc.com",
+    "date": "2026-10-09T19:05:25.371880",
+    "job": "Java Developer",
+    "company": "Aivanta Tech Inc",
+    "url": "https://www.indeed.com/viewjob?jk=c1a802a951df57c5",
+    "recruiter": null,
+    "smtp_verified": true
+  },
+  "2e065e34eb6f": {
+    "email": "origin.allow@synergytechnologies.com",
+    "date": "2026-10-09T19:14:13.623807",
+    "job": "Direct Client :: W2 position :: Looking for Sr. Java Backend Developers & Sr. Fullstack Java Developers with Health Insurance Exp.:: Remote",
+    "company": "Synergy Technologies",
+    "url": "https://www.linkedin.com/jobs/view/4477822912",
+    "recruiter": "origin allow",
+    "source": "linkedin+guess",
+    "bounced": true
+  },
+  "6d7fb972a7a4": {
+    "email": "origin.allow@brightvisiontechnologies.com",
+    "date": "2026-10-09T19:14:17.844859",
+    "job": "Java Developer with IES experience",
+    "company": "Bright Vision Technologies",
+    "url": "https://www.linkedin.com/jobs/view/4477673725",
+    "recruiter": "origin allow",
+    "source": "linkedin+guess",
+    "bounced": true
+  },
+  "df81170549d8": {
+    "email": "origin.allow@flex.io",
+    "date": "2026-10-09T19:14:20.110600",
+    "job": "Senior Software Engineer, Backend",
+    "company": "Flex",
+    "url": "https://www.linkedin.com/jobs/view/4467425027",
+    "recruiter": "origin allow",
+    "source": "linkedin+guess",
+    "bounced": true
+  },
+  "6fc2a6061eb2": {
+    "email": "recruiting@apexsystems.com",
+    "date": "2026-10-09T19:14:54.679711",
+    "last_contact": "2026-10-09T19:14:54.679711",
+    "job": "Java Developer C2C",
+    "company": "Apex Systems",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": false,
+    "re_engage_count": 0
+  },
+  "d3003e9f718d": {
+    "email": "recruiting@conduent.com",
+    "date": "2026-10-09T19:14:56.641428",
+    "last_contact": "2026-10-09T19:14:56.641428",
+    "job": "Java Developer C2C",
+    "company": "Conduent",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": false,
+    "re_engage_count": 0
+  },
+  "729246afdbde": {
+    "email": "recruiting@kornferry.com",
+    "date": "2026-10-09T19:14:58.661921",
+    "last_contact": "2026-10-09T19:14:58.661921",
+    "job": "Java Developer C2C",
+    "company": "Korn Ferry",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": false,
+    "re_engage_count": 0
   }
 }
