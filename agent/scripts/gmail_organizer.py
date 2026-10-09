@@ -288,10 +288,24 @@ def organize_inbox(conn, recruiter_emails: set, applied_companies: set,
                         pass
 
                 if copied:
-                    # Mark for removal from INBOX (archive in Gmail)
-                    conn.store(msg_id, '+FLAGS', '(\\Deleted)')
-                    moved_ids.append(msg_id)
-                    labeled[label] = labeled.get(label, 0) + 1
+                    # CRITICAL: keep high-value emails IN the inbox (label only, do NOT
+                    # archive) so Bob actually SEES recruiter replies + interview requests.
+                    # Only archive low-value noise (digests, job alerts, rejections, acks).
+                    KEEP_IN_INBOX = {
+                        "Jobs/ACTION-Interviews",
+                        "Jobs/ACTION-Inbound",
+                        "Jobs/Recruiters",
+                        "Jobs/Info-Requests",
+                    }
+                    if label in KEEP_IN_INBOX:
+                        labeled[label] = labeled.get(label, 0) + 1
+                        kept_in_inbox = labeled.get("_kept", 0) + 1
+                        labeled["_kept"] = kept_in_inbox
+                    else:
+                        # low-value → archive out of inbox
+                        conn.store(msg_id, '+FLAGS', '(\\Deleted)')
+                        moved_ids.append(msg_id)
+                        labeled[label] = labeled.get(label, 0) + 1
 
         except Exception:
             continue
@@ -299,7 +313,9 @@ def organize_inbox(conn, recruiter_emails: set, applied_companies: set,
     # Finalize all moves in one shot
     if moved_ids:
         conn.expunge()
-        print(f"  📦 Moved {len(moved_ids)} emails out of inbox")
+        print(f"  📦 Archived {len(moved_ids)} low-value emails (digests/alerts/rejections)")
+    if labeled.get("_kept"):
+        print(f"  📥 KEPT {labeled['_kept']} recruiter/interview emails IN your inbox (labeled, not hidden)")
 
     return labeled
 
