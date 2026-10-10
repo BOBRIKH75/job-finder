@@ -489,5 +489,86 @@
     "replied": false,
     "bounced": false,
     "re_engage_count": 0
+  },
+  "5d926b4c2ac8": {
+    "email": "staffing@wyetech.com",
+    "date": "2026-10-10T18:04:35.598565",
+    "job": "Cloud System Administrator 2",
+    "company": "Wyetech",
+    "url": "https://www.indeed.com/viewjob?jk=a9fea81d3e0cd732",
+    "recruiter": "Brittney Wood",
+    "smtp_verified": true
+  },
+  "81e9491d2ea4": {
+    "email": "origin.allow@risamsoftinc.com",
+    "date": "2026-10-10T18:12:07.197561",
+    "job": "Middleware Consultant",
+    "company": "Risamsoft Inc",
+    "url": "https://www.linkedin.com/jobs/view/4477852651",
+    "recruiter": "origin allow",
+    "source": "linkedin+guess",
+    "bounced": true
+  },
+  "de2434f8540a": {
+    "email": "origin.allow@conduent.com",
+    "date": "2026-10-10T18:12:15.051937",
+    "job": "Senior Java Developer \u2013 Healthcare / PBM Platform",
+    "company": "Conduent",
+    "url": "https://www.linkedin.com/jobs/view/4475840497",
+    "recruiter": "origin allow",
+    "source": "linkedin+guess",
+    "bounced": true
+  },
+  "f81ae6df7ad9": {
+    "email": "origin.allow@fanatics.io",
+    "date": "2026-10-10T18:12:26.158968",
+    "job": "Senior Java Software Engineer- SWAT (Remote)",
+    "company": "Fanatics",
+    "url": "https://www.linkedin.com/jobs/view/4443202665",
+    "recruiter": "origin allow",
+    "source": "linkedin+guess",
+    "bounced": true
+  },
+  "d6ad6db3b079": {
+    "email": "jobs@raasinfotek.com",
+    "date": "2026-10-10T18:13:56.959452",
+    "last_contact": "2026-10-10T18:13:56.959452",
+    "job": "Java Developer C2C",
+    "company": "Raas Infotek",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": true,
+    "re_engage_count": 0
+  },
+  "30facd915761": {
+    "email": "recruiting@leidos.com",
+    "date": "2026-10-10T18:13:59.346175",
+    "last_contact": "2026-10-10T18:13:59.346175",
+    "job": "Java Developer C2C",
+    "company": "Leidos",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": false,
+    "re_engage_count": 0
+  },
+  "f3fe12530dd9": {
+    "email": "recruiting@earlywarning.com",
+    "date": "2026-10-10T18:14:01.310513",
+    "last_contact": "2026-10-10T18:14:01.310513",
+    "job": "Java Developer C2C",
+    "company": "Early Warning",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": false,
+    "re_engage_count": 0
   }
 }
