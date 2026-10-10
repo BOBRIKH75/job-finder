@@ -570,5 +570,56 @@
     "replied": false,
     "bounced": false,
     "re_engage_count": 0
+  },
+  "5f0e6163143d": {
+    "email": "adaassistance@fedexfreight.com",
+    "date": "2026-10-10T22:57:14.104790",
+    "job": "Full Stack Developer III",
+    "company": "FedEx Freight",
+    "url": "https://www.indeed.com/viewjob?jk=41354d49f791cb5c",
+    "recruiter": null,
+    "smtp_verified": true
+  },
+  "868f3e38963b": {
+    "email": "recruiting@rei.com",
+    "date": "2026-10-10T23:05:43.430440",
+    "last_contact": "2026-10-10T23:05:43.430440",
+    "job": "Java Developer C2C",
+    "company": "REI",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": false,
+    "re_engage_count": 0
+  },
+  "84751618c213": {
+    "email": "recruiting@ascendion.com",
+    "date": "2026-10-10T23:05:46.823516",
+    "last_contact": "2026-10-10T23:05:46.823516",
+    "job": "Java Developer C2C",
+    "company": "Ascendion",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": false,
+    "re_engage_count": 0
+  },
+  "987fde92cba9": {
+    "email": "recruiting@rtx.com",
+    "date": "2026-10-10T23:05:49.959555",
+    "last_contact": "2026-10-10T23:05:49.959555",
+    "job": "Java Developer C2C",
+    "company": "RTX",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": false,
+    "re_engage_count": 0
   }
 }
