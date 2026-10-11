@@ -621,5 +621,39 @@
     "replied": false,
     "bounced": false,
     "re_engage_count": 0
+  },
+  "d7fe5d71f32e": {
+    "email": "origin.allow@creativecircle.com",
+    "date": "2026-10-11T18:36:43.175700",
+    "job": "Software Engineer",
+    "company": "Creative Circle",
+    "url": "https://www.linkedin.com/jobs/view/4475263525",
+    "recruiter": "origin allow",
+    "source": "linkedin+guess",
+    "bounced": true
+  },
+  "2069b675da9e": {
+    "email": "origin.allow@optech.com",
+    "date": "2026-10-11T18:36:48.824340",
+    "job": "Senior Java Developer (Java 21, Spring Boot, Microservices)",
+    "company": "OpTech",
+    "url": "https://www.linkedin.com/jobs/view/4477859895",
+    "recruiter": "origin allow",
+    "source": "linkedin+guess",
+    "bounced": true
+  },
+  "0def09ea7d61": {
+    "email": "hr@harmoney.com",
+    "date": "2026-10-11T18:40:01.599299",
+    "last_contact": "2026-10-11T18:40:01.599299",
+    "job": "Java Developer C2C",
+    "company": "Harmoney",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": true,
+    "re_engage_count": 0
   }
 }
