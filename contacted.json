@@ -217,5 +217,150 @@
     "replied": false,
     "bounced": true,
     "re_engage_count": 0
+  },
+  "5d926b4c2ac8": {
+    "email": "staffing@wyetech.com",
+    "date": "2026-10-13T19:58:00.505406",
+    "job": "Cloud Software Engineer 3",
+    "company": "Wyetech",
+    "url": "https://www.indeed.com/viewjob?jk=2169e67480a568d3",
+    "recruiter": "Brittney Wood",
+    "smtp_verified": true
+  },
+  "72a95723ce41": {
+    "email": "origin.allow@eliassengroup.com",
+    "date": "2026-10-13T20:03:01.395655",
+    "job": "Senior Software Engineer, Java",
+    "company": "Eliassen Group",
+    "url": "https://www.linkedin.com/jobs/view/4401632602",
+    "recruiter": "origin allow",
+    "source": "linkedin+guess",
+    "bounced": true
+  },
+  "04133d35859e": {
+    "email": "origin.allow@ampcusinc.com",
+    "date": "2026-10-13T20:03:13.431207",
+    "job": "AWS Lead Software Engineer",
+    "company": "Ampcus Inc",
+    "url": "https://www.linkedin.com/jobs/view/4478060425",
+    "recruiter": "origin allow",
+    "source": "linkedin+guess",
+    "bounced": true
+  },
+  "1c6ba298afef": {
+    "email": "origin.allow@secretariadeserviosprefeituradesopaulo.com",
+    "date": "2026-10-13T20:03:15.069901",
+    "job": "Lead Software Engineer",
+    "company": "Secretaria de Servi\u00e7os Prefeitura de S\u00e3o Paulo",
+    "url": "https://www.linkedin.com/jobs/view/4477800302",
+    "recruiter": "origin allow",
+    "source": "linkedin+guess",
+    "bounced": true
+  },
+  "0fef0e1ed5b8": {
+    "email": "origin.allow@real.com",
+    "date": "2026-10-13T20:03:19.466966",
+    "job": "Senior Backend Engineer - Java",
+    "company": "Real",
+    "url": "https://www.linkedin.com/jobs/view/4469854408",
+    "recruiter": "origin allow",
+    "source": "linkedin+guess",
+    "bounced": true
+  },
+  "6d7fb972a7a4": {
+    "email": "origin.allow@brightvisiontechnologies.com",
+    "date": "2026-10-13T20:03:23.268678",
+    "job": "Java Developer - Windchill",
+    "company": "Bright Vision Technologies",
+    "url": "https://www.linkedin.com/jobs/view/4479010312",
+    "recruiter": "origin allow",
+    "source": "linkedin+guess",
+    "bounced": true
+  },
+  "f81ae6df7ad9": {
+    "email": "origin.allow@fanatics.io",
+    "date": "2026-10-13T20:03:24.896542",
+    "job": "Senior Java Software Engineer- SWAT (Remote)",
+    "company": "Fanatics",
+    "url": "https://www.linkedin.com/jobs/view/4443202665",
+    "recruiter": "origin allow",
+    "source": "linkedin+guess",
+    "bounced": true
+  },
+  "c65ed7314558": {
+    "email": "origin.allow@rei.com",
+    "date": "2026-10-13T20:03:27.106478",
+    "job": "Senior Software Engineer",
+    "company": "REI",
+    "url": "https://www.linkedin.com/jobs/view/4478030402",
+    "recruiter": "origin allow",
+    "source": "linkedin+guess",
+    "bounced": true
+  },
+  "14b93393ce1f": {
+    "email": "origin.allow@keepersecurityinc.com",
+    "date": "2026-10-13T20:03:30.899027",
+    "job": "Senior Software Engineer, Backend (Java, KeeperApp)",
+    "company": "Keeper Security, Inc.",
+    "url": "https://www.linkedin.com/jobs/view/4458020746",
+    "recruiter": "origin allow",
+    "source": "linkedin+guess",
+    "bounced": true
+  },
+  "4ea8fbe48f70": {
+    "email": "recruiting@peraton.com",
+    "date": "2026-10-13T20:06:53.482400",
+    "last_contact": "2026-10-13T20:06:53.482400",
+    "job": "Java Developer C2C",
+    "company": "Peraton",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": false,
+    "re_engage_count": 0
+  },
+  "729246afdbde": {
+    "email": "recruiting@kornferry.com",
+    "date": "2026-10-13T20:06:55.031879",
+    "last_contact": "2026-10-13T20:06:55.031879",
+    "job": "Java Developer C2C",
+    "company": "Korn Ferry",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": false,
+    "re_engage_count": 0
+  },
+  "d6ad6db3b079": {
+    "email": "jobs@raasinfotek.com",
+    "date": "2026-10-13T20:06:57.144399",
+    "last_contact": "2026-10-13T20:06:57.144399",
+    "job": "Java Developer C2C",
+    "company": "Raas Infotek",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": true,
+    "re_engage_count": 0
+  },
+  "868f3e38963b": {
+    "email": "recruiting@rei.com",
+    "date": "2026-10-13T20:06:58.804723",
+    "last_contact": "2026-10-13T20:06:58.804723",
+    "job": "Java Developer C2C",
+    "company": "REI",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": false,
+    "re_engage_count": 0
   }
 }
