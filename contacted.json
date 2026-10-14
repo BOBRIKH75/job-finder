@@ -703,5 +703,66 @@
     "replied": false,
     "bounced": false,
     "re_engage_count": 0
+  },
+  "8340b4f302ac": {
+    "email": "myhrhelp@ntrs.com",
+    "date": "2026-10-14T22:39:10.311158",
+    "job": "Sr. Lead, Software Engineering",
+    "company": "Northern Trust Corp.",
+    "url": "https://www.indeed.com/viewjob?jk=e6ae7d8390bbe9a5",
+    "recruiter": "Principles Th",
+    "smtp_verified": false
+  },
+  "e38a44f90193": {
+    "email": "origin.allow@acumenzconsulting.com",
+    "date": "2026-10-14T22:46:30.636838",
+    "job": "Senior Java Full Stack Architect with (Istio, Linkerd) |",
+    "company": "Acumenz Consulting",
+    "url": "https://www.linkedin.com/jobs/view/4479577969",
+    "recruiter": "origin allow",
+    "source": "linkedin+guess",
+    "bounced": true
+  },
+  "e5f29cc56094": {
+    "email": "careers@kforce.com",
+    "date": "2026-10-14T22:47:23.693835",
+    "last_contact": "2026-10-14T22:47:23.693835",
+    "job": "Java Developer C2C",
+    "company": "Kforce Inc",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": true,
+    "re_engage_count": 0
+  },
+  "419a682e8826": {
+    "email": "hr@raisusa.com",
+    "date": "2026-10-14T22:47:25.658519",
+    "last_contact": "2026-10-14T22:47:25.658519",
+    "job": "Java Developer C2C",
+    "company": "RAIS USA",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": true,
+    "re_engage_count": 0
+  },
+  "1039ff5c8042": {
+    "email": "info@connecttechtalent.com",
+    "date": "2026-10-14T22:47:27.812020",
+    "last_contact": "2026-10-14T22:47:27.812020",
+    "job": "Java Developer C2C",
+    "company": "Connect Tech+Talent",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": true,
+    "re_engage_count": 0
   }
 }
