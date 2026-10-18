@@ -892,5 +892,29 @@
     "replied": false,
     "bounced": true,
     "re_engage_count": 0
+  },
+  "5121c97237a8": {
+    "email": "origin.allow@avanceconsulting.com",
+    "date": "2026-10-18T21:58:58.609554",
+    "job": "Full Stack Architect \u2013 Java,Spring Boot, Angular/React",
+    "company": "Avance Consulting",
+    "url": "https://www.linkedin.com/jobs/view/4479931667",
+    "recruiter": "origin allow",
+    "source": "linkedin+guess",
+    "bounced": true
+  },
+  "ee3b29b0b9e2": {
+    "email": "recruiting@enlighten.com",
+    "date": "2026-10-18T21:59:58.703603",
+    "last_contact": "2026-10-18T21:59:58.703603",
+    "job": "Java Developer C2C",
+    "company": "Enlighten",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": false,
+    "re_engage_count": 0
   }
 }
