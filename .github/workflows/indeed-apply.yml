@@ -27,6 +27,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Trust corporate SSL (fixes CERTIFICATE_VERIFY_FAILED on corp network)
+        run: |
+          security find-certificate -a -p /Library/Keychains/System.keychain > $GITHUB_WORKSPACE/.corp-roots.pem 2>/dev/null || true
+          security find-certificate -a -p /System/Library/Keychains/SystemRootCertificates.keychain >> $GITHUB_WORKSPACE/.corp-roots.pem 2>/dev/null || true
+          if [ -s $GITHUB_WORKSPACE/.corp-roots.pem ]; then
+            echo "SSL_CERT_FILE=$GITHUB_WORKSPACE/.corp-roots.pem" >> $GITHUB_ENV
+            echo "REQUESTS_CA_BUNDLE=$GITHUB_WORKSPACE/.corp-roots.pem" >> $GITHUB_ENV
+            echo "certs: $(grep -c 'BEGIN CERT' $GITHUB_WORKSPACE/.corp-roots.pem || echo 0)"
+          fi
+
       - uses: actions/setup-python@v5
         if: runner.environment == 'github-hosted'
         with:
