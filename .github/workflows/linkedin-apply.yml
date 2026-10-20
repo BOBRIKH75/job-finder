@@ -27,6 +27,16 @@ jobs:
         with:
           python-version: '3.12'
 
+      - name: Trust corporate SSL (fixes CERTIFICATE_VERIFY_FAILED on self-hosted/corp network)
+        run: |
+          # Corporate networks (e.g. Charter) do SSL inspection with a self-signed root.
+          # Export the macOS system trust so Python/driver downloads verify correctly.
+          security find-certificate -a -p /Library/Keychains/System.keychain > $GITHUB_WORKSPACE/.corp-roots.pem 2>/dev/null || true
+          security find-certificate -a -p /System/Library/Keychains/SystemRootCertificates.keychain >> $GITHUB_WORKSPACE/.corp-roots.pem 2>/dev/null || true
+          echo "SSL_CERT_FILE=$GITHUB_WORKSPACE/.corp-roots.pem" >> $GITHUB_ENV
+          echo "REQUESTS_CA_BUNDLE=$GITHUB_WORKSPACE/.corp-roots.pem" >> $GITHUB_ENV
+          echo "certs: $(grep -c 'BEGIN CERT' $GITHUB_WORKSPACE/.corp-roots.pem || echo 0)"
+
       - name: Install dependencies
         run: |
           python3 -m venv $GITHUB_WORKSPACE/.venv || true
