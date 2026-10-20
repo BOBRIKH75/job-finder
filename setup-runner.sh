@@ -24,7 +24,7 @@ set -euo pipefail
 REPO_URL="https://github.com/BOBRIKH75/job-finder"
 RUNNER_DIR="$HOME/gh-runner"                  # SEPARATE from the repo — git can't wipe it
 RUNNER_NAME="bobur-laptop"
-RUNNER_LABELS="self-hosted,macOS,linkedin"    # Indeed/Dice need self-hosted; LinkedIn needs linkedin
+RUNNER_LABELS="self-hosted,macOS,ARM64,linkedin"    # Indeed/Dice need self-hosted; LinkedIn needs linkedin
 
 say(){ printf '\n➡️  %s\n' "$*"; }
 die(){ printf '\n❌ %s\n' "$*" >&2; exit 1; }
@@ -32,12 +32,25 @@ die(){ printf '\n❌ %s\n' "$*" >&2; exit 1; }
 # ---- 0. must be macOS ----
 [ "$(uname -s)" = "Darwin" ] || die "This script is for macOS (the runner laptop)."
 
-# ---- 1. token ----
+# ---- 1. token (auto-fetch via gh if not provided) ----
 TOKEN="${1:-}"
 if [ -z "$TOKEN" ]; then
-  die "No token given.
+  say "No token given — trying to fetch one automatically via gh..."
+  if command -v gh >/dev/null 2>&1; then
+    # ensure gh is authed as the repo owner
+    if ! gh auth status >/dev/null 2>&1; then
+      die "gh is not logged in. Run:  gh auth login   (as BOBRIKH75), then re-run: bash setup-runner.sh"
+    fi
+    TOKEN="$(gh api -X POST repos/BOBRIKH75/job-finder/actions/runners/registration-token -q .token 2>/dev/null || true)"
+    [ -n "$TOKEN" ] || die "Could not fetch a token via gh (need admin on BOBRIKH75/job-finder).
+   Manual: get one at ${REPO_URL}/settings/actions/runners/new  then: bash setup-runner.sh <TOKEN>"
+    say "✅ Got a fresh registration token via gh."
+  else
+    die "No token and gh not installed.
    Get one (expires ~1 hour):  ${REPO_URL}/settings/actions/runners/new
-   Then run:                   bash setup-runner.sh <TOKEN>"
+   Then run:                   bash setup-runner.sh <TOKEN>
+   OR install gh (brew install gh) + gh auth login, then just: bash setup-runner.sh"
+  fi
 fi
 
 # ---- 2. detect arch + latest runner version ----
