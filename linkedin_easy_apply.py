@@ -697,6 +697,19 @@ def main():
                         _used = "a[href*='/jobs/view/'] (link-fallback)"
                 print(f"    Found {len(job_cards)} jobs (last 7d, Easy Apply, Remote)"
                       + (f" [selector: {_used}]" if _used else " [no selector matched]"))
+                # DIAGNOSTIC (one-time, when 0 found): dump real page state so we can see
+                # what LinkedIn actually served (authwall? empty? different markup?).
+                if not job_cards:
+                    try:
+                        _url = driver.current_url
+                        _n_view = len(driver.find_elements("css selector", "a[href*='/jobs/view/']"))
+                        _n_li = len(driver.find_elements("css selector", "li"))
+                        _body = (driver.find_element("css selector", "body").text or "")[:300].replace("\n", " ")
+                        print(f"    🔬 DIAG url={_url}")
+                        print(f"    🔬 DIAG /jobs/view/ anchors={_n_view} total <li>={_n_li}")
+                        print(f"    🔬 DIAG body-start: {_body}")
+                    except Exception as _de:
+                        print(f"    🔬 DIAG failed: {_de}")
 
                 for card in job_cards[:8]:  # check up to 8, apply to max 5 per keyword
                     if applied_count >= MAX_APPLICATIONS_PER_RUN:
