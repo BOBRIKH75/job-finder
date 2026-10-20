@@ -29,6 +29,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: master
+          clean: true
 
       - name: Trust corporate SSL (fixes CERTIFICATE_VERIFY_FAILED on corp network)
         run: |
@@ -39,9 +42,6 @@ jobs:
             echo "REQUESTS_CA_BUNDLE=$GITHUB_WORKSPACE/.corp-roots.pem" >> $GITHUB_ENV
             echo "certs: $(grep -c 'BEGIN CERT' $GITHUB_WORKSPACE/.corp-roots.pem || echo 0)"
           fi
-        with:
-          ref: master
-          clean: true
 
       - uses: actions/setup-python@v5
         if: runner.environment == 'github-hosted'
