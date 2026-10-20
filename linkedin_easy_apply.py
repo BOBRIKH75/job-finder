@@ -626,13 +626,31 @@ def main():
             if check_for_restrictions(driver):
                 break
 
-            # Scroll the results list to trigger LinkedIn's lazy-loading (cards render on
-            # scroll — without this the container is empty and we "find 0 jobs").
+            # Scroll the RESULTS CONTAINER (not the window) to trigger LinkedIn's
+            # lazy-loading. LinkedIn renders job cards inside a scrollable left pane;
+            # scrolling window alone leaves it empty → "find 0 jobs". Scroll both the
+            # known container selectors AND the window as a fallback.
             try:
-                for _ in range(3):
-                    driver.execute_script("window.scrollBy(0, 800);")
-                    time.sleep(1.2)
+                _scroll_containers = [
+                    "div.jobs-search-results-list",
+                    "div.scaffold-layout__list",
+                    "div.jobs-search__results-list",
+                    "ul.jobs-search__results-list",
+                    "main",
+                ]
+                _sc = None
+                for _cs in _scroll_containers:
+                    _els = driver.find_elements("css selector", _cs)
+                    if _els:
+                        _sc = _els[0]; break
+                for _ in range(6):
+                    if _sc is not None:
+                        driver.execute_script("arguments[0].scrollTop += 700;", _sc)
+                    driver.execute_script("window.scrollBy(0, 700);")
+                    time.sleep(1.0)
                 driver.execute_script("window.scrollTo(0, 0);")
+                if _sc is not None:
+                    driver.execute_script("arguments[0].scrollTop = 0;", _sc)
                 time.sleep(1)
             except Exception:
                 pass
@@ -653,6 +671,11 @@ def main():
                     "div.jobs-search-results-list ul > li",
                     ".base-card",
                     "[data-view-name='job-card']",
+                    # current LinkedIn (2026) markup
+                    "li.ember-view.jobs-search-results__list-item",
+                    "div.job-card-job-posting-card-wrapper",
+                    "li[data-chameleon-result-urn]",
+                    "a[href*='/jobs/view/']",
                 ]
                 job_cards = []
                 _used = ""
@@ -661,6 +684,17 @@ def main():
                     if job_cards:
                         _used = _sel
                         break
+                # Last-resort fallback: any anchor linking to a job view = a result card.
+                if not job_cards:
+                    _links = driver.find_elements("css selector", "a[href*='/jobs/view/']")
+                    if _links:
+                        # de-dup by href, keep the clickable anchors themselves as "cards"
+                        _seen = set(); job_cards = []
+                        for _a in _links:
+                            _h = (_a.get_attribute("href") or "").split("?")[0]
+                            if _h and _h not in _seen:
+                                _seen.add(_h); job_cards.append(_a)
+                        _used = "a[href*='/jobs/view/'] (link-fallback)"
                 print(f"    Found {len(job_cards)} jobs (last 7d, Easy Apply, Remote)"
                       + (f" [selector: {_used}]" if _used else " [no selector matched]"))
 
@@ -675,6 +709,13 @@ def main():
 
                         # Get job ID to check if already applied
                         job_id = card.get_attribute("data-job-id") or card.get_attribute("data-occludable-job-id") or ""
+                        # link-fallback: extract id from /jobs/view/<id>/ href
+                        if not job_id:
+                            _href = card.get_attribute("href") or ""
+                            import re as _re
+                            _m = _re.search(r"/jobs/view/(\d+)", _href)
+                            if _m:
+                                job_id = _m.group(1)
                         if job_id in applied_data["applied_ids"]:
                             print(f"    ⏭️ Already applied to {job_id}")
                             continue
