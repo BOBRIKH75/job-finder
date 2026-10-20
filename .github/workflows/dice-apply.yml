@@ -115,6 +115,9 @@ jobs:
       - name: Confirm submits via email
         if: always()
         continue-on-error: true
+        env:
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
         run: |
           cd $GITHUB_WORKSPACE/agent
           python3 check_dice_confirmations.py --since-min 45 || true
