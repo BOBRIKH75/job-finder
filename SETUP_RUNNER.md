@@ -79,3 +79,35 @@ gh run list --repo BOBRIKH75/job-finder --limit 5   # recent job results
 tail -5 runner-live.log                           # last job activity date
 ```
 If the last activity is not recent, the runner is down → no applications are going out.
+
+---
+
+# SECOND LAPTOP — full quick start (everything is in git)
+
+A new laptop gets ALL code + workflow fixes automatically from git. It only needs its own
+runner + to be logged into the job sites. Steps:
+
+1. Clone + register runner (see sections above). Install as service so it auto-starts.
+2. Log into Dice / Indeed / LinkedIn in that laptop's Chrome.
+3. Trigger cookie refreshes once (they write the shared GitHub secrets):
+   ```bash
+   gh workflow run refresh-dice-cookies.yml   --repo BOBRIKH75/job-finder
+   gh workflow run refresh-cookies.yml        --repo BOBRIKH75/job-finder   # indeed
+   # LinkedIn: set li_at manually (macOS encrypts cookies) — see LinkedIn section above
+   ```
+4. Done. Schedules then run automatically: Dice 7x/weekday, Indeed 4x/day, Greenhouse 3x/day,
+   agent 4x/day. All read the shared secrets. The corporate-SSL fix is built into every
+   workflow now, so it works on a corporate-network laptop too.
+
+## What is already fixed in git (any laptop inherits these)
+- Corporate SSL trust step on ALL apply workflows (fixes CERTIFICATE_VERIFY_FAILED).
+- LinkedIn scraper: modern selectors + scroll-container + /jobs/view/ link fallback + refresh-retry.
+- PREFER_SELF_HOSTED variable controls cloud-vs-runner (set to true at repo level).
+
+## HONEST LIMITS (proven, not a setup bug — same on every laptop)
+- LinkedIn jobs-search is BOT-BLOCKED: serves "Something went wrong" to automation even after
+  login + 3 refreshes. No code fixes this. LinkedIn must be done manually.
+- Dice / Indeed inventory gets EXHAUSTED (already applied to all matches) — few new per day.
+- Auto-applies are ATS-filtered: high volume, ~0 interviews. Real interviews come from the
+  manual human outreach in OUTREACH_KIT.md (LinkedIn DMs to recruiters, manual applies, vendors).
+- Bottom line: CI/CD = free background volume on Dice/Greenhouse. Interviews = 20 min/day manual.
