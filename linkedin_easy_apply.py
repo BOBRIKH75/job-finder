@@ -621,7 +621,22 @@ def main():
                 f"&f_AL=true&f_WT=2&f_TPR=r604800&sortBy=DD"
             )
             driver.get(search_url)
-            time.sleep(5)
+            time.sleep(6)
+
+            # LinkedIn sometimes serves a transient "Something went wrong / Refresh the
+            # page" error on first load (especially headless). The page ITSELF says to
+            # refresh — so do exactly that, up to 3 times, before giving up.
+            for _retry in range(3):
+                try:
+                    _bt = (driver.find_element("css selector", "body").text or "").lower()
+                except Exception:
+                    _bt = ""
+                if "something went wrong" in _bt or "refresh the page" in _bt or "try again" in _bt:
+                    print(f"    ↻ LinkedIn 'something went wrong' — refresh attempt {_retry+1}/3")
+                    driver.refresh()
+                    time.sleep(7)
+                else:
+                    break
 
             if check_for_restrictions(driver):
                 break
