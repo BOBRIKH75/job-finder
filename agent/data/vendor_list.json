@@ -10562,5 +10562,56 @@
     "position": "recruitment (role inbox)",
     "source": "deep/role-mx",
     "domain": "martinfed.com"
+  },
+  {
+    "name": "Code Signs",
+    "company": "Gmail",
+    "email": "codessigns@gmail.com",
+    "position": "recruiter (emailed Bob)",
+    "source": "inbox-harvest",
+    "last_subject": "Hiriing Senior Java Backend Developer",
+    "verified": "2026-10-21"
+  },
+  {
+    "name": "Substack",
+    "email": "careers@substack.com",
+    "position": "careers (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "substack.com"
+  },
+  {
+    "name": "Substack",
+    "email": "recruiting@substack.com",
+    "position": "recruiting (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "substack.com"
+  },
+  {
+    "name": "Substack",
+    "email": "talent@substack.com",
+    "position": "talent (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "substack.com"
+  },
+  {
+    "name": "Substack",
+    "email": "jobs@substack.com",
+    "position": "jobs (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "substack.com"
+  },
+  {
+    "name": "Substack",
+    "email": "hr@substack.com",
+    "position": "hr (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "substack.com"
+  },
+  {
+    "name": "Substack",
+    "email": "recruitment@substack.com",
+    "position": "recruitment (role inbox)",
+    "source": "deep/role-mx",
+    "domain": "substack.com"
   }
 ]
