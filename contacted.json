@@ -697,5 +697,92 @@
     "replied": false,
     "bounced": false,
     "re_engage_count": 0
+  },
+  "420eb430a9a5": {
+    "email": "guidehouse@myworkday.com",
+    "date": "2026-10-21T22:45:57.909867",
+    "job": "Senior Technical Lead / Solution Architect",
+    "company": "Guidehouse",
+    "url": "https://www.indeed.com/viewjob?jk=178491c7aea00b9b",
+    "recruiter": "Guidehouse Recruiting",
+    "smtp_verified": false
+  },
+  "1d4844eb35f4": {
+    "email": "origin.allow@alignerr.com",
+    "date": "2026-10-21T22:54:16.356550",
+    "job": "Back End Developer (AI Infrastructure)",
+    "company": "Alignerr",
+    "url": "https://www.linkedin.com/jobs/view/4482019384",
+    "recruiter": "origin allow",
+    "source": "linkedin+guess",
+    "bounced": true
+  },
+  "2bce1abc8ea1": {
+    "email": "origin.allow@apexsystems.com",
+    "date": "2026-10-21T22:54:18.363363",
+    "job": "Senior/Lead Java Developer",
+    "company": "Apex Systems",
+    "url": "https://www.linkedin.com/jobs/view/4482182588",
+    "recruiter": "origin allow",
+    "source": "linkedin+guess",
+    "bounced": true
+  },
+  "af5005a84b6e": {
+    "email": "origin.allow@mastech.io",
+    "date": "2026-10-21T22:54:20.534224",
+    "job": "Sr. Java Full Stack Engineer",
+    "company": "Mastech",
+    "url": "https://www.linkedin.com/jobs/view/4478914944",
+    "recruiter": "origin allow",
+    "source": "linkedin+guess",
+    "bounced": true
+  },
+  "396e4d3c8ac0": {
+    "email": "origin.allow@talentsoftwareservices.com",
+    "date": "2026-10-21T22:54:23.195771",
+    "job": "Senior Java Developer - Spring Boot Microservices & Azure Cloud",
+    "company": "TALENT Software Services",
+    "url": "https://www.linkedin.com/jobs/view/4479431942",
+    "recruiter": "origin allow",
+    "source": "linkedin+guess",
+    "bounced": true
+  },
+  "4f9ffa977a3e": {
+    "email": "origin.allow@softwareguidanceassistanceincsgainc.com",
+    "date": "2026-10-21T22:54:35.325428",
+    "job": "Senior Software Engineer - Back End IV",
+    "company": "Software Guidance & Assistance, Inc. (SGA, Inc.)",
+    "url": "https://www.linkedin.com/jobs/view/4480710871",
+    "recruiter": "origin allow",
+    "source": "linkedin+guess",
+    "bounced": true
+  },
+  "41daa14ec22b": {
+    "email": "jobs@alignerr.com",
+    "date": "2026-10-21T22:55:19.053287",
+    "last_contact": "2026-10-21T22:55:19.053287",
+    "job": "Java Developer C2C",
+    "company": "Alignerr",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": true,
+    "re_engage_count": 0
+  },
+  "f0a3968616cf": {
+    "email": "info@htdtalent.com",
+    "date": "2026-10-21T22:55:21.240197",
+    "last_contact": "2026-10-21T22:55:21.240197",
+    "job": "Java Developer C2C",
+    "company": "HTD Talent",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": true,
+    "re_engage_count": 0
   }
 }
