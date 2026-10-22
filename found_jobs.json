@@ -3,202 +3,436 @@
     {
       "title": "Senior Full Stack Software Engineer",
       "company": "DevAltus",
-      "url": "https://www.indeed.com/viewjob?jk=fb4bf0540050adfb",
+      "url": "https://www.indeed.com/viewjob?jk=1c8c37effbf9d8ae",
       "linkedin_url": "",
-      "location": "Richmond, VA, USA",
+      "location": "Atlanta, GA, USA",
       "description": "We are looking for an experienced **Senior Full Stack Software Engineer** to join our dynamic and growing team. In this role, you will play a pivotal part in designing, building, and maintaining scalable web applications and APIs, leveraging cloud-native technologies. You will be responsible for the full lifecycle of software development, from conception to deployment, including designing system architecture, implementing solutions, and optimizing performance.\n\nDeep cloud engineering expertise is essential for this role, including hands-on experience architecting, developing, deploying, and operating production-grade cloud-native applications. Candidates with substantial Azure/AWS experience demonstrating a level of technical depth and responsibility commensurate with the requirements outlined below will be considered.\n\n### **Key Responsibilities**\n\n* **API Development**: Design, develop, and maintain robust, secure, and scalable RESTful APIs using Java and Spring Boot, integrating with Azure services and external platforms through Azure API Management.\n* F**ull Stack Development**: Build responsive, high-performance front-end and back-end applications using modern frameworks and technologies (Java, Spring Boot, React, Node.js, etc.), leveraging Azure cloud services.\n* **Automated Test Development**: Develop automated API and microservices tests, including contract testing and service virtualization, as well as UI tests using modern automation tools and frameworks.\n* **Cloud-Native Architecture:** Design and implement scalable, cloud-native applications on Microsoft Azure, leveraging Azure App Service, Azure Functions, Azure Container Apps, and Azure Kubernetes Service (AKS), following best practices for security, reliability, scalability, and performance.\n* **Containerization**: Build, deploy, and manage containerized applications using Docker, Azure Container Registry (ACR), Azure Container Apps, and Azure Kubernetes Service (AKS), including container orchestratio",
       "score": 88,
       "is_c2c": false,
       "rate": "$150000.0-$300000.0/yearly",
       "source": "indeed",
-      "found_at": "2026-10-21T22:45:52.943800"
+      "found_at": "2026-10-22T18:16:53.945401"
     },
     {
-      "title": "Senior Technical Lead / Solution Architect",
-      "company": "Guidehouse",
-      "url": "https://www.indeed.com/cmp/Guidehouse",
+      "title": "Sr Software Engineer II - Enterprise Architecture",
+      "company": "American Express",
+      "url": "https://www.indeed.com/cmp/American-Express",
+      "linkedin_url": "",
+      "location": "Phoenix, AZ, USA",
+      "description": "**About Enterprise Architecture:**\n\nEnterprise Architecture is an organization within the Chief Technology Office at American Express and it is a key enabler of the company\u2019s technology strategy. The four pillars of Enterprise Architecture include:\n\n* **Architecture as Code** : this pillar owns and operates foundational technologies that are leveraged by engineering teams across the enterprise.\n\n* **Architecture as Design** : this pillar includes the solution and technical design for transformation programs and business critical projects which need architectural guidance and support.\n\n* **Governance** : this pillar is responsible for defining technical standards, and developing innovative tools that automate controls to ensure compliance.\n\n* **Colleague Enablement:** this pillar is focused on colleague development, recognition, training, and enterprise outreach.\n\n  \n\n* 6+ years of professional software development experience with strong expertise in Java and working knowledge of Python for backend or data-driven applications\n* Deep experience with Java ecosystems and frameworks such as Spring, Spring Boot, or equivalent\n* Proven experience in full-stack development, including backend services and modern frontend frameworks (e.g., React, Angular, or similar)\n* Strong experience building RESTful APIs, microservices architectures, and service-to-service integrations\n* Solid understanding of distributed systems, concurrency, scalability, and performance optimization\n* Hands-on experience with relational databases (PostgreSQL, MySQL, Oracle) and/or NoSQL databases (Cassandra, DynamoDB, MongoDB)\n* Experience with containerization and orchestration (Docker, Kubernetes)\n* Familiarity with infrastructure-as-code tools (Terraform, CloudFormation, etc.)\n* Experience with messaging and streaming platforms such as Kafka, RabbitMQ, or JMS\n* Practical experience with cloud platforms (AWS, Azure, or GCP) and cloud-native development patterns\n* Hands-on experience in test data gener",
+      "score": 87,
+      "is_c2c": false,
+      "rate": "$123000.0-$215250.0/yearly",
+      "source": "indeed",
+      "found_at": "2026-10-22T18:16:53.945475"
+    },
+    {
+      "title": "Java Full Stack Developer",
+      "company": "DHANU GLOBAL ENTERPRISES, INC.",
+      "url": "https://www.indeed.com/cmp/Dhanu-Global-Enterprises,-Inc.",
+      "linkedin_url": "",
+      "location": "Omaha, NE, USA",
+      "description": "**J****ob Title:** Java Full Stack Developer on W2 only **Location:** Omaha, Nebraska **Duration:** 12+ Months Contract with Possible Extension **Job Summary:** We are seeking an experienced Java Full Stack Developer to design, develop, test, and maintain scalable enterprise applications. The ideal candidate will have strong hands-on experience in Java, Spring Boot, REST APIs, microservices, and modern frontend technologies such as React or Angular. The candidate will collaborate with cross-functional teams to deliver secure, reliable, and high-performance applications supporting business-critical operations. **Required Qualifications:**\n\n* 8+ years of professional experience in Java full-stack application development.\n* Strong hands-on experience with Java, Spring Framework, and Spring Boot.\n* Experience developing RESTful APIs and microservices architectures.\n* Proficiency in React or Angular, JavaScript, HTML5, and CSS3.\n* Experience with SQL and relational databases such as PostgreSQL, Oracle, or SQL Server.\n* Experience with unit testing frameworks such as JUnit or Mockito.\n* Familiarity with Git, build tools, debugging, and application performance tuning.\n* Understanding of Agile/Scrum methodologies and the software development lifecycle.\n* Strong analytical, problem-solving, communication, and collaboration skills.\n\n**Preferred Qualifications:**\n\n* Experience with AWS cloud services and cloud-native application development.\n* Knowledge of Apache Kafka or other messaging and event-streaming technologies.\n* Experience with MuleSoft or comparable enterprise integration platforms.\n* Familiarity with MongoDB or other NoSQL databases.\n* Exposure to Docker, Kubernetes, Jenkins, GitHub Actions, or other CI/CD tools.\n* Experience with automated testing, application monitoring, and production support.\n* Experience in insurance, financial services, benefits administration, or other enterprise domains.",
+      "score": 85,
+      "is_c2c": false,
+      "rate": "$45.0-$55.0/yearly",
+      "source": "indeed",
+      "found_at": "2026-10-22T18:16:53.945526"
+    },
+    {
+      "title": "Senior Full Stack Developer - Java",
+      "company": "EXA Technologies",
+      "url": "https://www.indeed.com/viewjob?jk=da7897ddb367c7a1",
+      "linkedin_url": "",
+      "location": "Charlotte, NC, USA",
+      "description": "**Java Full Stack Developer**  \n**EXA Technologies**  | Charlotte, NC | Hybrid (3 days/week onsite) | W-2 Contract\n\n**About the role**  \nEXA Technologies is hiring an experienced Java Full Stack Developer to support a leading financial services client in Charlotte. You\u2019ll build and maintain enterprise web applications end to end, from Spring Boot microservices and APIs to modern front-end interfaces, working closely with product owners, architects, and QA in an Agile team.\n\n**What you\u2019ll do**\n\n* Design, develop, and maintain full stack applications using Java, Spring Boot, and React or Angular\n* Build RESTful APIs and microservices that are secure, scalable, and well-tested\n* Develop responsive, user-friendly front-end components and integrate them with backend services\n* Write efficient SQL and work with relational and NoSQL databases\n* Write unit and integration tests; take part in code reviews and follow engineering best practices\n* Work with CI/CD pipelines and support deployments and production issues\n* Collaborate with BAs, product owners, and other developers to turn requirements into working features\n\n**What you\u2019ll bring**\n\n* 7+ years of software development experience\n* Strong Java skills (Java 11 or later), including Spring Boot, Spring MVC, and Spring Data/JPA\n* Hands-on front-end experience with React or Angular, plus JavaScript/TypeScript, HTML, and CSS\n* Experience designing and consuming REST APIs and building microservices\n* Solid SQL skills with Oracle, PostgreSQL, SQL Server, or similar\n* Experience with Git, Maven or Gradle, Jenkins or similar CI/CD tools, and Agile delivery\n* Testing experience with JUnit, Mockito, Jest, or similar\n* Strong communication and problem-solving skills\n\n**Nice to have**\n\n* Cloud experience (AWS, Azure, or GCP)\n* Docker, Kubernetes, or OpenShift\n* Messaging tools such as Kafka or MQ\n* Banking or financial services domain experience\n\n**Work arrangement**  \nHybrid: 3 days a week onsite in Charlotte, NC.\n\n**Work authoriza",
+      "score": 83,
+      "is_c2c": false,
+      "rate": "$90000.0-$95000.0/yearly",
+      "source": "indeed",
+      "found_at": "2026-10-22T18:16:53.945573"
+    },
+    {
+      "title": "Software Developer Houston, TX",
+      "company": "TanPro ITCorp",
+      "url": "https://www.indeed.com/cmp/Tanpro-Itcorp",
+      "linkedin_url": "",
+      "location": "Houston, TX, USA",
+      "description": "Work location(s)\n\nHouston, TX\n\nEducation / experience\n\nRequires Bachelor's degree or foreign equivalent in Computer Science, Computer Engineering, Information Technology or a related field and a minimum of 3 years of relevant experience in Java development, API development or as a Software Developer.\n\n#### **Summary**\n\nSoftware Developer with experience designing, building and deploying secure, scalable backend services and APIs using Java, the Apigee API management platform, Kubernetes, CI/CD pipelines and the AWS cloud platform. Owns features end to end, from API design through production deployment and support.\n\nEmail resume with cover letter to hr@tanprotech.com\n\n#### **Skills and Competencies**\n\n* Strong experience in Java (Java 11 or later) and Spring Boot, including Spring MVC, Spring Security and Spring Data JPA, for building microservices\n* Experience designing and developing RESTful APIs, including API-first design with OpenAPI / Swagger, versioning and error-handling standards\n* Hands-on experience developing Apigee API proxies and shared flows, and configuring policies for security, traffic management (Quota, Spike Arrest), caching and mediation\n* Knowledge of API security standards such as OAuth 2.0, JWT, API keys and TLS / mTLS\n* Experience containerizing applications with Docker and deploying to Kubernetes (Amazon EKS) using Helm charts or Kubernetes manifests\n* Experience with AWS cloud services such as EKS, EC2, ECR, S3, RDS, Lambda, IAM and CloudWatch\n* Experience building CI/CD pipelines with Jenkins, GitHub Actions or GitLab CI, and using Git, Maven or Gradle\n* Knowledge of SQL and relational databases (PostgreSQL, Oracle or MySQL)\n* Verbal and written communication skills, problem solving skills, customer service and interpersonal skills\n\n#### **Major Job Duties and Responsibilities**\n\n* Design, develop, test and deploy Java / Spring Boot microservices and REST APIs that meet business, performance and security requirements.\n* Design API contract",
+      "score": 80,
+      "is_c2c": false,
+      "rate": "$nan-$nan/nan",
+      "source": "indeed",
+      "found_at": "2026-10-22T18:16:53.945617"
+    },
+    {
+      "title": "Full Stack AI Engineer",
+      "company": "Impyrian",
+      "url": "https://www.indeed.com/cmp/Impyrian",
       "linkedin_url": "",
       "location": "Washington, DC, USA",
-      "description": "**Job Family****:**\n\nIT Architecture/Cloud\n\n**Travel Required****:**\n\nNone\n\n**Clearance Required****:**\n\nAbility to Obtain Public Trust\n\n**Job Description Summary**\n\nThe Senior Technical Lead / Solution Architect will provide senior, hands-on technical leadership for a large-scale agile software development and platform modernization program supporting a large Federal contract. Working under the architectural direction of the integrated architecture team, this role will translate approved architectures, designs, patterns, and standards into actionable implementation guidance for multiple workstreams, vendors, and delivery teams. The Senior Technical Lead / Solution Architect will collaborate with the architects on solution design, ensure teams implement solutions as intended, verify adherence to architectural and engineering standards, and identify and escalate deviations or risks. The role will help ensure delivered capabilities are secure, scalable, maintainable, interoperable, and aligned with the program\u2019s target architecture.\n\n**What You Will Do****:**\n\nWe are seeking a seasoned Senior Technical Lead / Solution Architect to lead the technical implementation of a platform modernization effort. Working within the direction and guardrails established by the integrated architecture team, this individual will collaborate on solution designs, communicate approved designs to delivery teams, provide day-to-day technical guidance, and oversee implementation across multiple workstreams, vendors, and Scrum teams while supporting continuity of critical legacy operations throughout the transition.\n\nThe Senior Technical Lead / Solution Architect will be accountable for turning approved architecture into consistent, high-quality implementation. This leader will partner with the integrated architecture team to clarify designs, assess implementation options, and surface delivery considerations while ensuring engineering teams follow established architecture decisions, interface",
-      "score": 71,
+      "description": "**COMPANY SUMMARY**\n\nAt Impyrian, our commitment to excellence, client-centric approach, and deep industry expertise set us apart. We strive to be a trusted partner for organizations seeking to embrace digital transformation, bolster cybersecurity, streamline operations, leverage advanced audio-visual technologies, drive successful engineering and construction projects, and harness the power of AI and robotics to stay ahead in today's dynamic business landscape.\n\nImpyrian knows the most important factor in our success is the excellence of our personnel\u2014if we take care of our people, our people take care of our clients. This philosophy helps ensure a work-life balance, competitive compensation and benefits, and opportunities for professional growth.\n\n**Essential Duties and Responsibilities:**\n\nImpyrian is seeking a mid-level Full Stack AI Engineer to design, develop, and deploy scalable AI-powered software applications. This role combines full-stack software engineering with practical AI/ML, LLM integration, workflow automation, and cloud-native development to deliver modern enterprise solutions that improve business operations and decision-making.\n\n* Design and develop full-stack applications using React, Angular, TypeScript, JavaScript, Python, and Node.js.\n* Build scalable backend services, RESTful APIs, and microservices.\n* Integrate large language models (LLMs), generative AI, agentic AI, and Retrieval-Augmented Generation (RAG) into software applications.\n* Develop AI-powered automation, document processing, and intelligent data analysis solutions.\n* Implement machine learning models using Python, TensorFlow, PyTorch, or comparable frameworks.\n* Develop data pipelines and work with relational and NoSQL databases.\n* Build and deploy cloud-native applications using AWS, Docker, and Kubernetes.\n* Implement CI/CD pipelines, automated testing, and secure coding practices.\n* Collaborate with cross-functional teams to develop prototypes, minimum viable products (MVPs)",
+      "score": 74,
       "is_c2c": false,
-      "rate": "$130000.0-$216000.0/yearly",
+      "rate": "$100000.0-$130000.0/yearly",
       "source": "indeed",
-      "found_at": "2026-10-21T22:45:52.943890"
+      "found_at": "2026-10-22T18:16:53.945661"
     },
     {
-      "title": "Staff Software Development Engineer",
-      "company": "CVS Health",
-      "url": "https://www.indeed.com/cmp/CVS-Health",
+      "title": "Application Development Lead Java Back-End Engineer - Vice President",
+      "company": "Citi",
+      "url": "https://www.indeed.com/cmp/Citi",
       "linkedin_url": "",
-      "location": "CT, USA",
-      "description": "We\u2019re building a world of health around every individual \u2014 shaping a more connected, convenient and compassionate health experience. At CVS Health\u00ae, you\u2019ll be surrounded by passionate colleagues who care deeply, innovate with purpose, hold ourselves accountable and prioritize safety and quality in everything we do. Join us and be part of something bigger \u2013 helping to simplify health care one person, one family and one community at a time.\n\n**Position Summary**  \n  \nWe are seeking a highly skilled and visionary Staff Engineer to lead the architecture, development, and scaling of our core applications. In this role, you will bridge the gap between complex backend data systems, emerging AI capabilities, and intuitive frontend experiences.\n\nAs a hands-on technical leader, you will be responsible for designing rich, interactive dashboards, building resilient backend microservices, and orchestrating deep integrations with diverse data objects and third-party systems. You will champion our DevOps culture and lead the charge in embedding AI-driven features into our product suite to automate workflows and deliver intelligent insights.\n\nSitting at the intersection of application development, data integration, and cloud operations, you will guide technical strategy, mentor engineering teams, and ensure operational excellence across the entire technology stack. This position will focus on optimizing our Payer Operations with the goal of building solutions that enrich our Payer metadata, automate our Payer lifecycle contracts, and measure Payer performance.\n\n**Responsibilities**\n\n* Architecture & Full Stack Development: Lead the end-to-end design, architecture, and development of highly scalable web applications, from responsive, user-centric frontends to robust backend services.\n* Dashboarding & Data Visualization: Architect and implement rich, interactive dashboards and user interfaces that surface complex data insights in an intuitive, performant, and accessible manner.\n* Bac",
-      "score": 67,
+      "location": "New York, NY, USA",
+      "description": "**Discover your future at Citi**\n--------------------------------\n\nWorking at Citi is far more than just a job. A career with us means joining a team of approximately 219,000 dedicated people from around the globe. At Citi, you\u2019ll have the opportunity to grow your career, give back to your community and make a real impact.\n\n**Job Overview**\n----------------\n\n**Role Overview**\n\n  \n  \n\nWe are looking for a highly experienced, deeply hands-on Team Lead- Java Back-End Developer to drive day-to-day engineering execution on the Digital Assets Platform. The successful candidate will focus on core backend/platform software engineering leadership: and write production code regularly, leads by example, enforces engineering rigor, and is the technical backbone that junior and mid-level engineers rely on for direction, review, and mentorship.\n\n  \n  \n\nThe ideal candidate will bring at least 6 to 10+ years of hands-on development experience and has \"been in the trenches\" \u2014 someone who can jump into a complex codebase, spot subtle bugs and design flaws during code review, drive low-level design (LLD) discussions with authority, and unblock the team on the hardest technical problems. This person is expected to be more experienced and technically sharper than the other developers on the team, acting as the de facto technical authority and quality gatekeeper for the squad.\n\n  \n  \n\n**Key Responsibilities**\n\n  \n  \n\n***Hands-On Technical Leadership***\n\n* Actively write, review, and ship production-quality code alongside the team \u2014 this is not a purely managerial or coordination role.\n\n* Personally take ownership of the most complex, high-risk, or ambiguous engineering problems on the platform.\n\n* Set the technical direction for the team's day-to-day implementation work, ensuring consistency with overall platform architecture.\n\n  \n  \n\n***Code Quality & Code Review***\n\n* Perform rigorous, detailed code reviews across the team's pull requests, catching subtle logic errors, concurrency issu",
+      "score": 74,
       "is_c2c": false,
-      "rate": "$106605.0-$284280.0/yearly",
+      "rate": "$142320.0-$213480.0/yearly",
       "source": "indeed",
-      "found_at": "2026-10-21T22:45:52.943967"
+      "found_at": "2026-10-22T18:16:53.945704"
     },
     {
-      "title": "Software Architecture - Advisor I",
-      "company": "Fiserv",
-      "url": "https://www.indeed.com/cmp/Fiserv",
+      "title": "Senior Backend Engineer/Staff Engineer",
+      "company": "ProphetX",
+      "url": "https://www.indeed.com/cmp/Prophetx",
       "linkedin_url": "",
-      "location": "Alpharetta, GA, USA",
-      "description": "Location: Alpharetta, Georgia, United States of America\n\nJob ID: R-10404828\n\nCategory: Technology\n\nOnsite\n\nPosting Start Date: Posting Start Date: 20-October-2026\n\nPosting End Date: Posting End Date: 27-November-2026\n\n  \n\n**Calling all innovators \u2013 find your future at Fiserv.**\n\nWe\u2019re Fiserv, a global leader in Fintech and payments, and we move money and information in a way that moves the world. We connect financial institutions, corporations, merchants, and consumers to one another millions of times a day \u2013 quickly, reliably, and securely. Any time you swipe your credit card, pay through a mobile app, or withdraw money from the bank, we\u2019re involved. If you want to make an impact on a global scale, come make a difference at Fiserv.\n\n**Job Title**\n\nSoftware Architecture - Advisor I\n\n**About your role:**  \nAt Fiserv we build and operate cloud-native platforms and services that enable secure, scalable commerce and payment experiences.\n\nAs a Software Architecture - Advisor I, you will play a crucial role in developing and implementing software architecture strategies that support Fiserv\u2019s business objectives. Your expertise will ensure the robustness, scalability, and security of our software systems. You will collaborate with cross-functional teams to design and deploy software architecture solutions that meet the evolving needs of the financial services industry.\n\n  \n\n**What you'll do:**\n\n* Design and develop scalable, secure, and maintainable applications using Java and Spring Boot.\n* Define application and solution architecture for microservices-based, cloud-native systems running on AWS.\n* Translate business requirements and complex problems into clear technical designs and implementation approaches.\n* Lead technical design discussions and clearly articulate architecture decisions, trade-offs, risks, dependencies, and alternatives.\n* Create and maintain architecture diagrams, sequence diagrams, API specifications, technical design documents, and solution blueprint",
-      "score": 51,
+      "location": "New York, NY, USA",
+      "description": "### **Description**\n\nWe\u2019re looking for a Staff Backend Engineer (IC4) to set technical direction across multiple teams and own our most complex, high-impact systems. You\u2019ll solve ambiguous problems at the platform level, shape architecture for our exchange and trading infrastructure, and raise the engineering bar across the organization.\n\n### **Key Responsibilities**\n\n  \n\n* Define and drive the technical vision and architecture for critical systems that span multiple teams.\n* Lead cross-team initiatives from design through delivery, aligning engineering, product, and compliance stakeholders.\n* Own the reliability, latency, and scalability of core exchange systems, and lead incident response and postmortems for major issues.\n* Make and document key architectural decisions, balancing innovation, risk, and regulatory requirements.\n* Break ambiguous, org-level problems into workstreams and delegate effectively to senior and junior engineers.\n* Partner with product and leadership to influence roadmap and prioritization with technical insight.\n* Proactively seek development opportunities and share knowledge with peers and junior engineers.\n\n  \n\n### **Skills, Knowledge and Expertise**\n\n  \n\n* 7+ years of backend experience, with deep expertise in Go, Java, C++, or Python (Go strongly preferred)\n* Proven track record designing and operating highly scalable, low-latency, real-time distributed systems in production\n* Deep expertise in microservices, event-driven architecture (Kafka), and RESTful and WebSocket API design\n* Strong knowledge of SQL and NoSQL data modeling and performance tuning\n* Extensive experience with AWS or equivalent, Docker and Kubernetes, and CI/CD at scale\n* Experience with observability and incident management for production systems\n* Experience in trading, exchange, fintech, or other high-throughput transactional systems is strongly preferred\n* Demonstrated cross-team leadership and the ability to explain complex tradeoffs to technical and non-technica",
+      "score": 64,
+      "is_c2c": false,
+      "rate": "$165000.0-$210000.0/yearly",
+      "source": "indeed",
+      "found_at": "2026-10-22T18:16:53.945747"
+    },
+    {
+      "title": "Senior Backend Engineer",
+      "company": "ProphetX",
+      "url": "https://www.indeed.com/cmp/Prophetx",
+      "linkedin_url": "",
+      "location": "New York, NY, USA",
+      "description": "### **Description**\n\nWe're looking for a Senior Backend Engineer (IC3) to take ownership of designing, developing, deploying, and maintaining complex backend systems. You will lead delivery on large projects within the team, translate product requirements into engineering tasks, and be a technical anchor for more junior engineers. At this level, we expect you to define and manage solutions for highly complex problems and manage delivery across smaller teams.\n\n### **Key Responsibilities**\n\n  \n\n* Lead the design and implementation of multiple large projects within one team, with production-level ownership.\n* Translate product requirements into detailed engineering tasks and be the translation layer between product and engineering.\n* Monitor product health proactively and drive resolution of functional and performance issues.\n* Contribute to the evolution of key systems and frameworks, balancing innovation with reliability.\n* Set and uphold best practices in software development across your workstream.\n* Identify opportunities to improve processes and technologies and drive their adoption.\n* Collaborate effectively with offshore and globally distributed engineering teams.\n* Analyze complex problems and break them into manageable workstreams for junior engineers.\n* Proactively seek development opportunities and share knowledge with peers and junior engineers.\n\n  \n\n### **Skills, Knowledge and Expertise**\n\n  \n\n* 3+ years of hands-on backend experience in Go, Java, C++, or Python, with deep Go ecosystem knowledge preferred\n* 2+ years building on AWS or equivalent cloud platforms (GCP, Azure)\n* Proven experience building highly scalable, real-time systems in a production environment\n* Strong command of microservices architecture, including design patterns and best practices\n* Experience with event-driven and asynchronous system design, including technologies like Kafka\n* Expertise designing RESTful and WebSocket APIs\n* In-depth knowledge of SQL and NoSQL databases\n* Working",
+      "score": 64,
+      "is_c2c": false,
+      "rate": "$130000.0-$165000.0/yearly",
+      "source": "indeed",
+      "found_at": "2026-10-22T18:16:53.945789"
+    },
+    {
+      "title": "Engineering Manager",
+      "company": "ProphetX",
+      "url": "https://www.indeed.com/cmp/Prophetx",
+      "linkedin_url": "",
+      "location": "New York, NY, USA",
+      "description": "### **Description**\n\nWe\u2019re looking for an Engineering Manager to lead a team of ~7 engineers building the real-time, high-throughput systems at the core of our exchange. You\u2019ll be accountable for delivery, technical quality, and the growth of your team, working closely with Product, Risk, Compliance, and business leaders. This is a hands-on leadership role in a fast-moving, post-Series A environment. You\u2019ll stay close enough to the technology to make sound architectural calls, while spending most of your time building a high-performing team and removing obstacles.\n\n### **Key Responsibilities**\n\n**Delivery and Technical Leadership**\n\n* Own predictable, high-quality delivery of your team\u2019s roadmap, from planning and estimation through launch and post-launch operations.\n* Partner with tech leads on architecture and design decisions for matching, order management, pricing, settlement, and real-time data systems.\n* Uphold engineering standards for code quality, testing, scalability, security, and observability.\n* Own production health. Drive incident response, postmortems, and follow-through on reliability and latency improvements.\n* Balance feature velocity, technical debt, and platform investment, and make the tradeoffs visible to stakeholders.\n\n**People and Team Development**\n\n* Directly manage ~7 engineers, including IC1 through IC4 levels, with regular 1:1s, feedback, and performance reviews.\n* Set clear expectations by level and coach engineers toward promotion and career goals.\n* Lead hiring: define roles, run interview loops, and close strong candidates.\n* Identify skill gaps and create mentorship and training opportunities.\n* Build an inclusive, accountable, and collaborative team culture, including across remote, offshore, and globally distributed teammates.\n\n**Cross-Functional Partnership**\n\n* Partner with Product to turn business goals into clear scope, requirements, and timelines.\n* Work with Compliance, Risk, and Legal to build products that meet CFTC regul",
+      "score": 64,
+      "is_c2c": false,
+      "rate": "$170000.0-$250000.0/yearly",
+      "source": "indeed",
+      "found_at": "2026-10-22T18:16:53.945831"
+    },
+    {
+      "title": "Microservices Architect",
+      "company": "BV Teck",
+      "url": "https://www.indeed.com/cmp/Bv-Teck",
+      "linkedin_url": "",
+      "location": "Remote, USA",
+      "description": "**Microservices Architect - Remote**  \n  \nBright Vision Technologies is a technology consulting and software development company delivering cloud, AI, data, and enterprise solutions across the United States.  \nThis is a fantastic opportunity to join an established and well-respected organization offering tremendous career growth potential.  \n  \n**Job Title:** Microservices Architect  \n**Location:** 100% Remote (U.S.)  \n**Position Type:** Full-time, Direct W2  \n**Salary Range:** $100,000\u2013$180,000 Annually  \n**Experience Required:** 12+ years  \n  \n**Sponsorship:** U.S. Citizens, Green Card Holders, EAD Holders, and H-1B transfer candidates are encouraged to apply. We are unable to sponsor new H-1B visa petitions for this position.  \n  \n**Job Summary:**  \nWe are seeking a seasoned Microservices Architect to lead the design and evolution of large-scale microservices ecosystems built on modern container platforms and cloud-native technology stacks. The role requires deep expertise in service decomposition, domain-driven design, distributed data management, and runtime concerns such as resilience, observability, and security at scale. The ideal candidate brings hands-on architectural leadership across complex transformations, with a clear point of view on when microservices are the right answer, how to evolve them safely, and how to keep the resulting estate maintainable over the long term.  \n  \n**Key Responsibilities**\n\n* Define microservices architecture standards, service boundaries, and decomposition strategies aligned with domain-driven design principles.\n* Lead the modernization of legacy monoliths into well-bounded, independently deployable services with clear ownership.\n* Design service communication patterns leveraging REST, gRPC, asynchronous messaging, and event streaming as appropriate.\n* Establish API contracts, schema governance, and versioning strategies that enable safe evolution of services over time.\n* Architect resilient distributed systems incorporatin",
+      "score": 59,
+      "is_c2c": false,
+      "rate": "$100000.0-$180000.0/yearly",
+      "source": "indeed",
+      "found_at": "2026-10-22T18:16:53.945871"
+    },
+    {
+      "title": "Software Test Eng, Sr",
+      "company": "Realtor.com",
+      "url": "https://www.indeed.com/cmp/Realtor.com",
+      "linkedin_url": "",
+      "location": "Austin, TX, USA",
+      "description": "**Description**\n\n**Senior SDET \u2013 MVIP**\n======================\n\n**The Role**\n------------\n\nAs a Senior SDET for MVIP at Realtor.com, you will be a key technical contributor responsible for the quality of the systems that power Market VIP\u2014from lead eligibility and allocation through Concierge vetting, delivery, CRM routing, and broker/team-lead management.\n\nMVIP is a subscription lead product in which brokers and teams purchase a share of eligible buyer leads in defined markets. Leads may be delivered as live transfers, email prospects, or priority callback opportunities, making correctness, fulfillment, routing, and customer visibility critical to the business.\n\nYou will design and evolve test architecture for distributed services, allocation logic, APIs, event-driven workflows, data pipelines, and RealPro Dashboard experiences. You will work hands-on in code, influence system design, identify quality risks early, and mentor engineers in modern testing practices.\n\n**What You\u2019ll Do**\n------------------\n\n### **Strategic Quality Planning**\n\n* Define and maintain a layered test strategy for MVIP services, including unit, integration, contract, end-to-end, performance, data-quality, and resilience testing.\n* Validate the MVIP lead lifecycle: market and ZIP eligibility, lead allocation, Concierge vetting, live-transfer or prospect delivery, CRM routing, lead status updates, reassignment, and reporting.\n* Develop risk-based test plans for allocation fairness, fulfillment pacing, duplicate prevention, idempotency, retries, fallback behavior, and cross-product routing.\n* Help validate the transition from legacy Share of Voice allocation toward EVR-based fulfillment and ensure customer-facing outcomes align with contractual expectations.\n\n### **Technical Leadership**\n\n* Drive testing for backend services, REST/GraphQL APIs, event-driven workflows, queues, batch processes, and data pipelines supporting MVIP.\n* Test integrations across Global Lead Allocation, ARM, Concierge, Gr",
+      "score": 58,
       "is_c2c": false,
       "rate": "$nan-$nan/nan",
       "source": "indeed",
-      "found_at": "2026-10-21T22:45:52.944039"
+      "found_at": "2026-10-22T18:16:53.945912"
     },
     {
-      "title": "AI Technology Support Engineer/Analyst",
-      "company": "Amentum",
-      "url": "https://www.indeed.com/cmp/Amentum",
+      "title": "Senior Lead Software Engineer - Agentic AI/Java/Python",
+      "company": "JPMorganChase",
+      "url": "https://www.indeed.com/cmp/Jpmorganchase-2",
       "linkedin_url": "",
-      "location": "Remote, USA",
-      "description": "Amentum is a global leader in advanced engineering and innovative technology solutions, trusted by the United States and its allies to address their most significant and complex challenges in science, security and sustainability. Our people apply undaunted curiosity, relentless ambition and boundless imagination to challenge convention and drive progress. Our commitments are underpinned by the belief that safety, collaboration and well-being are integral to success. Headquartered in Chantilly, Virginia, we have approximately 50,000 employees in more than 70 countries across all 7 continents.\n\nWe are seeking a highly skilled and motivated AI Technology Support Engineer/Analyst to join our dynamic team. The ideal candidate will possess a strong technical background in AI technologies, exceptional problem-solving abilities, and a passion for providing top-tier technical support. This role involves troubleshooting, diagnosing, and resolving complex issues related to AI products and services, as well as collaborating with cross-functional teams to enhance product performance and customer satisfaction.\n\n**Key Responsibilities:**\n\n* Provide technical support for AI products and services, addressing client inquiries, troubleshooting issues, and offering resolutions in a timely and efficient manner.\n* Diagnose and resolve complex technical problems related to AI algorithms, model deployment, data processing, and system integration.\n* Collaborate with product development, engineering, and data science teams to identify and implement solutions for improving AI system performance and functionality.\n* Conduct thorough analysis of technical issues, document findings, and communicate solutions to internal teams and clients.\n* Develop and maintain comprehensive technical documentation, including user guides, troubleshooting manuals, and FAQs.\n* Offer training and guidance to clients and internal teams on the utilization and optimization of AI technologies.\n* Stay up-to-date with em",
-      "score": 48,
+      "location": "Plano, TX, USA",
+      "description": "**JOB DESCRIPTION**  \n  \n  \n\nBe an integral part of an agile team that's constantly pushing the envelope to enhance, build, and deliver top-notch technology products.\n  \n  \nAs a Senior Lead Software Engineer at JPMorganChase within the Consumer & Community Banking, Digital Technology, you will design and build critical technology solutions across Chase AI components, including Chase Agent, Agent Operating Memory, Domain Agents, Agentic Experience Service, and Assurance.  \n  \n**Job responsibilities:**\n\n* Executes software solutions, design, development, and technical troubleshooting, thinking beyond routine approaches to solve complex problems.\n* Creates secure, high-quality production code and maintain algorithms that run synchronously with appropriate systems.\n* Produces architecture and design artifacts for complex applications, ensuring design constraints are met by software code development.\n* Gathers, analyzes, synthesizes, and develops visualizations and reporting from large, diverse data sets to drive continuous improvement of software applications and systems.\n* Proactively identifies hidden problems and patterns in data, using insights to drive improvements in coding hygiene and system architecture.\n* Contributes to software engineering communities of practice and events that explore new and emerging technologies.\n* Adopts and learn new technologies that positively impact agentic solutions.\n* Collaborates with cross-functional teams, including product, design, and operations, to deliver end-to-end solutions.\n* Ensures compliance with security, privacy, and regulatory requirements in all software solutions.\n* **Drives team adoption of enterprise-authorized AI-assisted engineering practices within the work environment to improve code quality, delivery speed, and operational outcomes (e.g., AI-assisted code review/refactoring, test strategy acceleration, incident/root-cause analysis support), while establishing consistent validation standards (secure coding, p",
+      "score": 57,
       "is_c2c": false,
-      "rate": "$90000.0-$107000.0/yearly",
+      "rate": "$nan-$nan/nan",
       "source": "indeed",
-      "found_at": "2026-10-21T22:45:52.944112"
+      "found_at": "2026-10-22T18:16:53.945952"
     },
     {
-      "title": "Software Engineer",
-      "company": "Booz Allen Hamilton",
-      "url": "https://www.indeed.com/cmp/Booz-Allen-Hamilton",
+      "title": "Senior Software Engineer",
+      "company": "66degrees",
+      "url": "https://www.indeed.com/cmp/66degrees",
+      "linkedin_url": "",
+      "location": "Chicago, IL, USA",
+      "description": "**Overview of 66degrees**\n-------------------------\n\n66degrees is an end-to-end AI transformation partner that guides enterprises from complex business challenges to clear, quantifiable outcomes. Our company is the culmination of several successful firms, each a leader in its own right in cloud, artificial intelligence, and data. This convergence of talent and expertise is how we help businesses reach their own \"inflection point,\" where chaotic data becomes a strategic asset, complexity becomes clarity, and AI becomes an engine for growth. Our ultimate vision is to be the catalyst for a future where every business operates as an intelligent enterprise, with autonomous systems unlocking human potential.\n\nAt 66degrees, we believe in thriving through challenges and winning together. These values not only guide us in achieving our goals as a company but also for our people. We are dedicated to creating a significant impact for our employees by fostering a culture that sparks innovation and supports professional and personal growth along the way.\n\n**Overview of Role**\n--------------------\n\nThe Senior Software Engineer (EIP) will serve as a technical expert building high-speed, real-time cloud integration pipelines and Java microservices on Google Cloud Platform (GCP). Acting as the backbone of McLane's \"Integration Factory,\" the role connects core databases to modern supply chain platforms (Manhattan Active, o9 Solutions) and the Cloud Data Lakehouse. Key duties include coding Java/Spring Boot microservices on Cloud Run and GKE, managing event streaming via Pub/Sub and Kafka, and governing APIs and schemas. It requires 12+ years of backend engineering experience along with deep GCP, Java, and event-driven architecture expertise.\n\n**Responsibilities:**\n\n* **Build Cloud-Native Microservices:** Architect, code, and deploy fast, resilient microservices using **Java (17/21)** and **Spring Boot** on Google Cloud Run and GKE.\n* **Handle Real-Time Data & Messaging:** Design even",
+      "score": 57,
+      "is_c2c": false,
+      "rate": "$nan-$nan/nan",
+      "source": "indeed",
+      "found_at": "2026-10-22T18:16:53.945994"
+    },
+    {
+      "title": "Junior Software Developer",
+      "company": "BLN24",
+      "url": "https://www.indeed.com/cmp/Bln24",
       "linkedin_url": "",
       "location": "McLean, VA, USA",
-      "description": "**The Opportunity:**\n\nAs a back-end developer, you know that a good site or system needs the right combination of clean code, APIs, analytics, and infrastructure to develop a user-focused solution. We\u2019re looking for an experienced back-end developer with the software engineering skills it takes to identify potential risks, contribute to solution development, and create efficient and effective systems for our clients.\n\n  \n  \n\nAs a back-end developer at Booz Allen, you\u2019ll use the latest architectural approaches and open-source frameworks and tools to deliver solutions. Using your software engineering experience, you\u2019ll work with the development team to create custom tools, systems, and sites with consistent performance and scalability.\n\n  \n  \n\nIn this role, you\u2019ll make a mission-forward impact as you further your skillset and career. Work with us as we shape systems for the better.\n\n  \n  \n\nJoin us. The world can\u2019t wait.\n\n  \n  \n\n**You Have:**\n\n* Experience using Java to build enterprise products and applications\n\n* Experience with back-end frameworks such as Spring or Quarkus\n\n* Experience with Git and GitLab CI/CD\n\n* Experience working in a team environment\n\n* TS/SCI clearance\n\n* Bachelor's degree\n* Ability to obtain a Security+ Certification within 6 months of hire date\n  \n\n  \n\n**Nice If You Have:**\n\n* Experience with AI or ML pipelines and processes\n\n* Experience with Extract, Transform, and Load (ETL) software patterns to ingest large and complex datasets\n\n* Experience with containerized environments such as Docker and Kubernetes\n\n* Experience working with geospatial tools and datasets\n\n* Experience with scripting languages such as Python or Bash\n\n* Experience building real-time data processing applications using streaming libraries such as Kafka Streams\n* Experience with Metadata Management, such as Data Catalogs or Advana\n\n* Experience with graph databases such as Neo4j\n* Knowledge of analytic platforms such as Kafka or Spark\n* Possession of excellent communicati",
-      "score": 46,
-      "is_c2c": false,
-      "rate": "$69400.0-$158000.0/yearly",
-      "source": "indeed",
-      "found_at": "2026-10-21T22:45:52.944235"
-    },
-    {
-      "title": "Senior level Java Software Engineers Investment Experience",
-      "company": "Infoville Inc",
-      "url": "https://www.indeed.com/cmp/Infoville-Inc-2",
-      "linkedin_url": "",
-      "location": "Remote, USA",
-      "description": "Greeting:\n\nPlease find the Requirement and if you are comfortable revert me with your updated resume along with all the details given below at the earliest.\n\n**Senior level Java Software Engineers Investment Experience**\n\n***(Investment Accounting Platform Transformation Project)***\n\n**Location: REMOTE**\n\n**W2 Consultants Needed**\n\n***It is expected that resources will have the following skills and capabilities:***\n\n* Technical Expertise:\n* Modern software engineering, including proficiency in languages and frameworks relevant to our technology stack\n* **Investment Accounting platform** (or otherwise significant work in the investment technology space) development and functional knowledge in the following areas:\n* Core Operations: Multicurrency Fund Accounting, Institutional Operations, and Custody\n* Controls & Processing: Exception Management, NAV controls, and SWIFT processing\n* Technology & Integration**:** Event orchestration, enterprise interfaces, and system integrations\n* Accounting Domains**:** Wealth Accounting and Investment Accounting\n* Portfolio Management: Investment Selection, Portfolio Composition, Asset Allocation, and Optimization\n* Reporting & Settlements: Financial Reporting and trade/settlement processing\n* Microservices architecture, API design, and event-driven systems\n* Event based architecture\n* Java, SQL, Kubernetes, Github, Redis\n* Cloud-native development and deployment - Azure, Snowflake, Postgres\n* CI/CD pipelines, automated testing frameworks, and DevOps practices\n* Multi-tenancy\n* Data governance and quality controls\n* LLMs and Agentic Infrastructure, LLM Prompt Engineering, MCP, RAG\n* Python\n* Microservices Architecture\n* Event based Architecture\n* Distributed Design\n* Distributed Caching\n* Multi-threading / concurrent processing\n* Strong verbal and written communication skills to coordinate effectively with project stakeholders.\n* Ability to document technical decisions, design rationale, and code architecture made during development",
-      "score": 38,
+      "description": "**Job Title:**Junior Software Developer  \n  \n**Location:** McLean, VA (Hybrid)  \n  \n**Company:**BLN24  \n  \n**About Us:**We find strength in teamwork-a better you is a better us  \nBLN24 is an award-winning Management Consulting Firm that supports the U.S. Federal Government in successfully achieving their mission and goals. Our service and solutions delivery start with understanding each client\u2019s end-state, and then seamlessly integrating within each Agency\u2019s organization to improve and enhance strategic and technical operations and deployments.  \n  \n**Job Overview:**  \nBLN24 is seeking a Junior Software Developer to support NOAA's modernization of mission-critical weather and data dissemination systems. Working as part of an Agile development team and with mentorship from senior engineers, the developer will help review legacy weather applications, which typically ingest, route, and deliver weather products, and convert them into secure, event-driven, cloud-native applications on AWS in support of the National Weather Service. The ideal candidate is eager to learn modern cloud technologies, enjoys solving technical challenges, and thrives in a collaborative environment delivering solutions that improve NOAA's capabilities.  \n  \n**Role and Responsibilities:**\n\n* Develop and maintain backend services and REST APIs (primarily Python) that carry forward legacy application workflows, including administrative and subscription-management functions.\n* Build and update user-facing features using modern front-end technologies (e.g., React) that work across a wide range of browsers and devices.\n* Develop event-driven, message-processing components on AWS (e.g., Lambda, SQS, S3) and the data-access layer for relational databases.\n* Study legacy code and documentation to understand how existing systems behave, and help write design documents, API contracts, and workflow diagrams that preserve that behavior in the cloud version.\n* Add structured logging, audit trails, and correla",
+      "score": 49,
       "is_c2c": false,
       "rate": "$nan-$nan/nan",
       "source": "indeed",
-      "found_at": "2026-10-21T22:45:52.944318"
+      "found_at": "2026-10-22T18:16:53.946055"
     },
     {
-      "title": "Senior Software Engineer - Python",
-      "company": "Applied Intuition",
-      "url": "https://www.indeed.com/cmp/Applied-Intuition",
+      "title": "lead software engineer - Digital Partner Experience(Nashville, TN - U.S.)",
+      "company": "Starbucks",
+      "url": "https://www.indeed.com/cmp/Starbucks",
       "linkedin_url": "",
-      "location": "Remote, USA",
-      "description": "**Overview**\n\nWe are seeking a highly skilled and motivated Senior Software Engineer specializing in Python to join our dynamic development team. In this role, you will work on the design, development, and deployment of scalable software solutions that drive innovation and efficiency across our platforms. Your expertise will help shape the future of our systems, ensuring they are robust, secure, and capable of supporting rapid growth. This position offers an exciting opportunity to work with cutting-edge technologies and collaborate with talented professionals dedicated to excellence in software engineering.\n\n**Duties**\n\n* Work on the development of high-quality Python applications, ensuring adherence to best practices in software design and architecture.\n* Design and implement scalable microservices architectures utilizing RESTful APIs, cloud infrastructure (AWS, Azure), and modern JavaScript frameworks for seamless web integration.\n* Collaborate within Agile teams to plan, develop, test, and deploy features efficiently using CI/CD pipelines and version control systems like GitHub.\n* Develop system components with a focus on scalability, security (RBAC), and performance optimization using design patterns and system design principles.\n* Integrate third-party APIs and develop custom APIs to enhance system functionality while maintaining high standards for API security and performance.\n* Participate in code reviews, provide mentorship to junior developers, and promote best practices in software engineering across the team.\n* Contribute to continuous improvement initiatives by evaluating new technologies such as Quantum engineering concepts or advanced programming languages like C++, C#, and Java.\n\n**Requirements**\n\n* Proven experience developing complex applications using Python within a professional environment focused on web development or software engineering.\n* Strong understanding of IT infrastructure components including cloud services (AWS, Azure), Linux enviro",
+      "location": "Nashville, TN, USA",
+      "description": "**Now Brewing: Lead Software Engineer! #tobeapartner**\n\nFrom the beginning, Starbucks set out to be a different kind of company. One that not only celebrated coffee and the rich tradition, but that also brought a feeling of connection. We are known for developing extraordinary leaders who share this passion and are guided by their service to others.\n\nYou'll be the technical lead for the backend and infrastructure behind a partner-facing application that helps store partners plan and get through their daily work. You'll own the architecture, delivery, deployment, and production health of the services and cloud infrastructure that power it, and set the team's technical direction. You'll work with product, QA, and platform teams to ship reliable features that matter, including large, high-priority projects.\n\n***As a Lead Software Engineer, you will...***\n\n* Act as the technical lead for the backend and infrastructure. You'll own architecture, delivery, deployment, monitoring, and production support for the Node.js/TypeScript services and the GraphQL/REST APIs they expose.\n* Set backend standards, patterns, and technical direction, including service boundaries, API design, data modeling, and schema composition across a federated GraphQL layer.\n* Own the infrastructure-as-code behind the services you lead \u2014 provisioning app hosting, serverless functions, databases, caching, messaging, and secret stores via Terraform or an equivalent IaC tool.\n* Lead technical design reviews, code reviews, and architecture discussions, and make sound engineering decisions.\n* Break large projects into technical work the team can deliver, and coordinate dependencies with frontend, product, and platform teams.\n* Design and operate the integration layer connecting your services to downstream REST APIs, GraphQL services, and third-party systems.\n* Own CI/CD pipelines, release management, and environment health in the cloud, including certificate and secret rotation, blue/green deployments, and",
+      "score": 42,
+      "is_c2c": false,
+      "rate": "$124200.0-$207000.0/yearly",
+      "source": "indeed",
+      "found_at": "2026-10-22T18:16:53.946105"
+    },
+    {
+      "title": "Sr Staff Software Engineer (Distributed Systems | Data Ingestion | Storage | Analytics) - Remote",
+      "company": "ServiceNow",
+      "url": "https://www.indeed.com/cmp/Servicenow",
+      "linkedin_url": "",
+      "location": "San Diego, CA, USA",
+      "description": "**Company Description**\n\nIt all started when engineer Fred Luddy wrote code that automated a tedious task for his coworker, Phyllis. She cried tears of joy. That moment inspired Fred to build a company that could do that for everyone\u2014freeing people from busywork so they could focus on meaningful work. Today, ServiceNow is the AI control tower for business reinvention. Our ServiceNow AI platform brings together any AI, any data, and any workflow\u2014 helping 85% of the Fortune 500\u00ae work smarter, faster, and better. We're building an AI-native culture where technology and talent are unstoppable together. And we're just getting started.\n\nJoin us to put AI to work for people.\n\n **Job Description**\n\n**About the role**\n\nHealth Log Analytics (HLA) ingests, stores, and analyzes the logs that power ServiceNow's AIOps suite. We want it to be the data backbone teams trust to find problems early and fix them fast.\n\nHLA is a data platform for operational logs at high volume, built for ServiceNow\u2019s large enterprise customers. The work spans the full data path: collection and ingestion, routing and enrichment, durable storage and retention, and fast, cost-aware query. Our ingest builds on OpenTelemetry, and we have our own Rust-based log storage. As data volume, customer needs, and AI-driven use cases grow, we need the platform to get more reliable, more efficient, and more useful.\n\nWe're looking for a senior technical leader to help set where HLA goes next. You'll work side by side with engineering and product leadership on the roadmap. You'll bring a clear point of view and show it with a prototype, not just a slide.\n\nYou'll set the technical bar for experienced engineers. You'll do it by being a great teammate, not the loudest person in the room.\n\n**What you'll do**\n\n* Help shape the HLA roadmap with engineering, product, and leadership. Bring both vision and a reality check.\n* Work directly with customers to make sure HLA keeps delivering value as their needs change. Turn their fe",
+      "score": 41,
+      "is_c2c": false,
+      "rate": "$171900.0-$300800.0/yearly",
+      "source": "indeed",
+      "found_at": "2026-10-22T18:16:53.946151"
+    },
+    {
+      "title": "Seasonal Associate, Full Stack Developer (Remote)",
+      "company": "ICF",
+      "url": "https://www.indeed.com/cmp/Icf-4a7490b6",
+      "linkedin_url": "",
+      "location": "Reston, VA, USA",
+      "description": "Description\n\n**Who Are We Looking For?**\n\nWe are seeking motivated Seasonal Associates with a foundation in programming and a passion for solving real problems using modern AI-enabled technology. The ideal candidate is eager to collaborate, comfortable learning quickly, and interested in applying GenAI tools (e.g., LLMs and prompt techniques) alongside core software and data engineering practices.\n\n**The position is fully remote from anywhere in the United States. At this time, we are unable to provide relocation or housing assistance for this internship.**\n\n**Key Responsibilities**\n\nAs a Seasonal Associate, Full-Stack Developer for the Chief Technology Office, you will:\n\n* Support rapid prototype development using AI tools and AI frameworks\n* Hands-on experience building lightweight front ends and back ends that allow stakeholders to interact with our prototypes\n* Navigate responsible LLM usage, prompt design, and practical grounding patterns (such as grounding responses in authoritative client data)\n* Collaborate with senior engineers and technology partners to integrate, test, and demonstrate capabilities in real workflows\n* A key objective of this opportunity is to create a win-win engagement where you obtain a fresh perspective, new ways of thinking, and emerging AI skills to solve real challenges. The goal is to deliver work with measurable impact, and the intern may have the opportunity to present learning or deliverables to leadership before the internship concludes.\n\n**Minimum Qualifications**\n\n* By start date, a completed bachelor\u2019s degree\n* Acceptance/ enrollment verification, or at least 9 credit hours of completed graduate-level courses in computer science or a relevant discipline\n* Candidate must be a US citizen or lawful permanent resident (Green Card holder), reside in the U.S., be authorized to work in the U.S., and all work must be performed in the U.S. per contract requirements.\n\n**Preferred Qualifications**\n\n* Demonstrated interest, knowledge or ",
+      "score": 36,
+      "is_c2c": false,
+      "rate": "$41822.0-$71098.0/yearly",
+      "source": "indeed",
+      "found_at": "2026-10-22T18:16:53.946195"
+    },
+    {
+      "title": "Salesforce Senior Developer",
+      "company": "CloudMasonry",
+      "url": "https://www.indeed.com/cmp/Cloudmasonry",
+      "linkedin_url": "",
+      "location": "Indianapolis, IN, USA",
+      "description": "**Salesforce Senior Developer**\n===============================\n\n**US-based candidates only. Full-time, direct hire. No C2C, contract, or agency submissions.**\n\n#### **About Us - CloudMasonry**\n\n**CloudMasonry is a full-service Salesforce consultancy with multi-cloud expertise, serving enterprise clients through onshore, collaborative teams. Senior consultants shape the solution, and we were the first Salesforce consultancy to build AI into a complete delivery methodology, where it keeps requirements, documentation, and reporting moving so our teams spend more time with clients.**  \n**With offices in the US and UK, 65+ consultants holding 350+ Salesforce certifications, 559+ completed projects, a 4.9 CSAT, and an 89% repeat-client rate, CloudMasonry works with enterprise clients on their most complex Salesforce programs.**\n\n#### **About the Role**\n\n**A Senior Salesforce Developer at CloudMasonry is a technical consulting role ideal for individuals with extensive experience in developing custom solutions on the Salesforce platform, along with the proven ability to communicate effectively with both technical and non-technical team members. The candidate should be comfortable discovering innovative technology solutions to efficiently meet client needs. Being a self-motivated learner of new technologies or related skills is essential. Previous hands-on Salesforce experience is required, and existing Salesforce technical certifications are necessary.**\n\n#### **Key Responsibilities**\n\n* **Collaborate with the Consulting Project Team to accomplish project goals and achieve client success.**\n* **Lead technical work streams through all phases of the application development lifecycle.**\n* **Conduct technical process reviews, lead technical UATs and advise clients on technical solutions and best practices.**\n* **Translate client business requirements to design, document, and develop technical solutions leveraging Salesforce declarative and custom development solutions and rela",
+      "score": 34,
+      "is_c2c": true,
+      "rate": "$nan-$nan/nan",
+      "source": "indeed",
+      "found_at": "2026-10-22T18:16:53.946237"
+    },
+    {
+      "title": "Software Engineer (Cloud & DevOps)",
+      "company": "Bowhead",
+      "url": "https://www.indeed.com/cmp/Bowhead",
+      "linkedin_url": "",
+      "location": "Dahlgren, VA, USA",
+      "description": "Overview:\n\n**Software Engineer (Cloud & DevOps) (RDTE)**\n\nBowhead is seeking a Software Engineer (Cloud & DevOps) to join our team in Dahlgren, VA. The Software Engineer (Cloud & DevOps) will assist with the entire hardware/software lifecycle, including planning and deployment. The successful candidate will bring a strong combination of software development expertise, cloud engineering experience, DevOps automation capabilities, and advanced technical troubleshooting skills. This individual will support the complete software development lifecycle while helping shape technical solutions, improve development practices, strengthen system reliability, and enhance operational efficiency. The ideal candidate is a technically versatile, solutions-oriented engineer who can independently assess complex challenges, recommend architectural improvements, and collaborate with multidisciplinary teams to deliver secure, scalable, and reliable software solutions.\n\nResponsibilities:\n\n**Key Responsibilities:**\n\n**Software Engineering and Application Development**\n\n* Design, develop, maintain, and enhance secure, scalable, and high-performance web applications supporting mission-critical RDT&E operations.\n* Contribute to software architecture and technical design decisions, emphasizing maintainability, reliability, performance, and long-term sustainability.\n* Develop and maintain application functionality using modern programming languages and frameworks, including JavaScript and related full-stack technologies.\n* Support the integration of applications with enterprise data sources, analytics platforms, reporting systems, and supporting infrastructure.\n* Develop and execute comprehensive automated testing strategies, including unit, functional, integration, performance, and acceptance testing.\n* Conduct code reviews, identify opportunities for optimization, and promote software engineering best practices.\n* Diagnose and resolve complex application issues through systematic troubleshoo",
       "score": 31,
       "is_c2c": false,
-      "rate": "$120000.0-$150000.0/yearly",
+      "rate": "$120000.0-$140000.0/yearly",
       "source": "indeed",
-      "found_at": "2026-10-21T22:45:52.944389"
+      "found_at": "2026-10-22T18:16:53.946279"
     },
     {
-      "title": "Software Engineer II",
-      "company": "Arcfield",
-      "url": "https://www.indeed.com/cmp/Arcfield",
+      "title": "Full Stack Java Developer",
+      "company": "CEO FOUNDRY LLC",
+      "url": "https://www.indeed.com/cmp/CEO-Foundry-LLC",
       "linkedin_url": "",
-      "location": "Rome, NY, USA",
-      "description": "Arcfield Overview: Arcfield was purpose-built to relentlessly protect the nation and its allies from today\u2019s national security threats. We have nearly 70 years of proven expertise and excel in space superiority, hypersonic defense and nuclear deterrence, digital transformation, and surface and undersea warfare domains. Our solution areas include space mission engineering, atmospheric science, digital engineering, mission assurance, and advances in modeling and simulation that together with our enterprise-wide adoption of artificial intelligence and machine learning, lead to better systems and timely, reliable decision-making. Headquartered in Chantilly, VA with 18 North American offices, Arcfield employs 2,200 engineers, scientists, analysts, IT specialists and other professionals who challenge the status quo to deliver an efficient technological advantage to our national security and defense partners. Responsibilities:\n\nThe chosen candidate will join the Agile Scrum team and contribute to the design, development and maintenance of a complex software code base comprised of a cross-domain solution and feature-enhancing components. Tasking includes analyzing, prototyping, and contributing to the development of baseline features to address security and enterprise requirements, while also maintaining and providing bug fixes to currently deployed versions of the cross-domain guarding solution. The chosen candidate will collaborate with a very synergistic Product Development team, a Research & Development team, a Fielding team, Government Testing teams, and a Government PMO to achieve the program goals.\n\nQualifications:\n\n**You\u2019d be a great fit if you\u2026**\n\n* Have a science/math/engineering BS degree with 2-4 years recent software development work experience or an MS with 0-2 years of recent software development work experience.\n* **Must be able to obtain and maintain a US SECRET clearance**.\n* Function well in a team environment.\n* Demonstrate proficiencies in Java, C++, sh",
+      "location": "Remote, USA",
+      "description": "**Job Summary**\n\nBuild and improve full-stack applications as a Full Stack Java Developer. You\u2019ll contribute across front-end development, back-end services, and cloud infrastructure, turning product needs into secure, reliable software. Work with Java and related programming languages, collaborate through Agile software development, and help design scalable systems. Your impact: Thoughtful application development helps users access dependable features and enables teams to evolve products with confidence.\n\n**Duties**\n\n* Develop and maintain web applications, RESTful APIs, and microservices using Java, SQL, and JavaScript.\n* Apply software design, design patterns, and system design for system development to support scalability and maintainable software.\n* Build user interfaces with JavaScript frameworks; experience with React Express is relevant.\n* Collaborate on code reviews, version control, and CI/CD (continuous integration and continuous delivery) using Git, GitHub, or SVN.\n* Support deployments and troubleshooting across AWS, Azure, Linux, and other IT infrastructure.\n\n**Qualifications**\n\n* Essential: software development or software engineering experience, with knowledge of Java, web development, APIs, REST, SQL, and Agile practices.\n* Essential: understanding of scalable systems, software design, version control, and application development.\n* Preferred: MySQL, cloud infrastructure, front-end development, RBAC (role-based access control), and C# or.NET.\n* Additional relevant technologies may include Ruby on Rails, Python, C, C++, VBA, and quantum engineering; familiarity is a plus, not a requirement.\n\nPay: $80,000.00 - $100,000.00 per year\n\nWork Location: Remote",
+      "score": 31,
+      "is_c2c": false,
+      "rate": "$80000.0-$100000.0/yearly",
+      "source": "indeed",
+      "found_at": "2026-10-22T18:16:53.946321"
+    },
+    {
+      "title": "Software Engineer 4",
+      "company": "Wyetech",
+      "url": "https://www.indeed.com/cmp/Wyetech",
+      "linkedin_url": "",
+      "location": "Fort Meade, MD, USA",
+      "description": "**Principal Software Engineer (SWE4) \u2013**\n========================================\n\nWyetech is seeking a motivated Principal Software Engineer (SWE4) / Full-Stack Developer to support the Tradecraft Evolution mission. The successful candidate will work closely with mission stakeholders to capture requirements and design, develop, deploy, and sustain a production-ready Business Intelligence (BI), data warehousing, and advanced analytics environment.\n\nThis position requires expertise in full-stack software development, cloud computing, data engineering, business intelligence, and AI/ML operations. The Software Engineer will leverage Python, Java, R, and AWS cloud technologies to develop scalable enterprise analytics solutions, integrate diverse data sources, and deliver mission-critical capabilities that support intelligence analysis, operational decision-making, and technology discovery.\n\n**Required Skills/Experience:**\n\n* Strong proficiency in object-oriented programming and software development using Python, Java, and R.\n* Extensive experience designing, developing, deploying, and sustaining full-stack software applications and enterprise analytics solutions.\n* Experience with AWS cloud computing, including provisioning, configuring, and managing AWS resources.\n* Experience designing and implementing enterprise data warehousing solutions.\n* Experience developing and integrating Business Intelligence solutions using Tableau and Power BI.\n* Experience creating enterprise dashboards, analytics products, and reporting capabilities.\n* Experience with data engineering, data integration, and advanced analytics.\n* Experience developing APIs and integrating disparate data sources to support business intelligence and mission analytics.\n* Experience with Jupyter Notebooks for data analysis, development, and experimentation.\n* Experience with AI/ML operations (MLOps), including deploying and operationalizing machine learning models.\n* Experience with Docker containerization and",
       "score": 28,
       "is_c2c": false,
-      "rate": "$72826.14-$126630.53/yearly",
+      "rate": "$92.54-$125.31/hourly",
       "source": "indeed",
-      "found_at": "2026-10-21T22:45:52.944460"
+      "found_at": "2026-10-22T18:16:53.946364"
     },
     {
-      "title": "Senior Java Developer - Spring Boot Microservices & Azure Cloud",
-      "company": "TALENT Software Services",
-      "url": "https://www.linkedin.com/jobs/view/4479431942",
-      "linkedin_url": "https://www.linkedin.com/jobs/view/4479431942",
-      "location": "Pleasanton, CA, USA",
+      "title": "Senior Software Engineer, C++ | Platform & Asset Mgmt",
+      "company": "NinjaOne",
+      "url": "https://www.indeed.com/cmp/Ninjaone",
+      "linkedin_url": "",
+      "location": "Remote, USA",
+      "description": "**About the Role**\n\nWe are hiring a Senior C++ Software Engineer to join our growing **Platform & Asset Management** team. Our team gives customers the tools to shape the platform around their specific needs. We own the products that let organizations build and maintain their own knowledge bases, create custom checklists, define custom fields that capture the data unique to their environment, and manage apps and services directly inside NinjaOne, along with many other features that put real power in our customers\u2019 hands.\n\nOn the asset side, we cover software license tracking, asset discovery, and visibility into unmanaged devices, so customers have a clearer picture of what they own and what is connected.\n\nBecause these capabilities touch nearly every part of the product, our work influences how thousands of organizations document, customize, and operate their IT environments day to day. You will own software that more than 40,000 customers rely on to make NinjaOne fit their processes.\n\nWe are a fast-paced team with a steady pipeline of customer-driven features. We are looking for an engineer for our endpoint agent who is proficient in C++ and has a strong understanding of macOS and Linux systems, to help extend our reach across more of the environments our customers manage.\n\n**We hire the best software engineers, but experience in our stack can\u2019t hurt:****NinjaOne**is built on**Java**, **Kotlin**, **C++**, **Golang** and **Postgres**, supporting millions of user endpoints and running as a scalable cloud service in **AWS**. Knowing large-scale datastore bottlenecks, asynchronous application design and client-server architecture will help you.\n\n**Location** - We are flexible on remote working from home, if you are located in the **USA** and reside in one of the following states - **CA**, **CO**, **CT**, **FL**, **GA**, **\\*IL**, **KS**, **MA, MD, ME**, **NJ**, **NC**, **NY,** **OH, OR**, **TN**, **TX**, **VA****,** and **WA**. We have physical offices in Austin, TX a",
+      "score": 23,
+      "is_c2c": false,
+      "rate": "$150000.0-$220000.0/yearly",
+      "source": "indeed",
+      "found_at": "2026-10-22T18:16:53.946404"
+    },
+    {
+      "title": "Software Developer",
+      "company": "NY Creates",
+      "url": "https://www.indeed.com/cmp/Ny-Creates",
+      "linkedin_url": "",
+      "location": "Albany, NY, USA",
+      "description": "Category:\n\nAdministrative\n\n  \n\nDepartment:\n\nInformation Technology\n\n  \n\nLocations:\n\nAlbany, NY\n\n  \n\nPosted:\n\nOct 21, 2026\n\n  \n\nCloses:\n\nOpen Until Filled\n\n  \n\nType:\n\nFull-Time\n\n  \n\nSalary Type:\n\nAnnually\n\n  \n\nSalary Range:\n\n$75,000.00 - $97,000.00\n\n  \n\nPosition ID:\n\n206018\n\n**About NY Creates:**\n---------------------\n\nNY Creates serves as a bridge for advanced electronics, leads projects that advance R&D in emerging technologies, and generates the jobs of tomorrow. NY Creates also runs some of the most advanced facilities in the world, boasts more than 3,000 industry experts and faculty, and manages public and private investments of approximately $25 billion - placing it at the global epicenter of high-tech innovation and commercialization.\n\n**Job Description:**\n--------------------\n\n**Position Summary, Software Developer**\n\nJoin NY Creates as a Software Developer and help build the next generation of web-based solutions. You'll develop impactful applications, solve complex technical challenges, and leverage emerging technologies, including AI/ML, to drive innovation.\n\n**Key Responsibilities**\n\n* Design, develop, and maintain responsive and high-performance web applications using Java, JavaScript, JQuery, JSON, SQL, and UNIX command scripts, and other modern front-end technologies.\n* Day to day support and advancement of the NY Creates web applications as necessary.\n* Independently troubleshoot and debug complex issues across various web applications and environments.\n* Stay current with emerging web technologies and AI/ML trends, applying new knowledge to continuously improve our platforms and processes.\n* Participate in IT team response to user account requests and system issues received through Help Desk Ticket System.\n* Other reasonable duties assigned.\n\nThis position is not open to contract work or sponsorship. This position is onsite in Albany, NY only and not open to\n  \nremote work.\n\n**Requirements:**\n-----------------\n\n**Minimum Qualifications, Software Deve",
+      "score": 21,
+      "is_c2c": false,
+      "rate": "$75000.0-$97000.0/yearly",
+      "source": "indeed",
+      "found_at": "2026-10-22T18:16:53.946446"
+    },
+    {
+      "title": "Senior Java Developer \u2013 AWS / Search / Distributed Systems",
+      "company": "TechClub Inc",
+      "url": "https://www.linkedin.com/jobs/view/4481114712",
+      "linkedin_url": "https://www.linkedin.com/jobs/view/4481114712",
+      "location": "Sunnyvale, CA, USA",
       "description": "nan",
-      "score": 25,
+      "score": 20,
       "is_c2c": false,
       "rate": "$nan-$nan/nan",
       "source": "linkedin",
-      "found_at": "2026-10-21T22:45:52.944531"
+      "found_at": "2026-10-22T18:16:53.946496"
     },
     {
-      "title": "Sr Java Full Stack Developer (Snowflake/QuickSight) -  100% Remote - (W2 Contract)",
-      "company": "Xforia Global Talent  & Technology Solutions",
-      "url": "https://www.linkedin.com/jobs/view/4481144482",
-      "linkedin_url": "https://www.linkedin.com/jobs/view/4481144482",
-      "location": "USA",
-      "description": "nan",
+      "title": "Software Engineer, Agentic",
+      "company": "Uber",
+      "url": "https://www.indeed.com/cmp/Uber",
+      "linkedin_url": "",
+      "location": "New York, NY, USA",
+      "description": "**About the Role**\n  \n  \nAgentic Pods is building a new model for how Engineering partners with teams across Uber to transform work with AI. Our engineers embed directly with operational teams to understand complex workflows, reimagine how that work could operate in an agentic-first world, and build the production systems that make that future real.\n  \n  \nWe are looking for an Agentic Software Engineer to design, build, and operate production-grade agentic systems and processes that improve complex operational workflows.\n  \n  \nThis role combines backend engineering, reliability engineering, and a forward-deployed working model. You will work directly with operators and domain experts to discover opportunities, determine where agents can safely help, and turn ambiguous problems into reliable software.\n  \n  \nYou will own solutions from discovery through architecture, implementation, production rollout, and ongoing operation.\n  \n  \n**What You Will Do**\n  \n  \n**Discover and Build Agentic Systems**\n\n* Embed with operational teams to understand workflows and identify where agentic AI, deterministic software, automation, or human decision-making can meaningfully improve how work gets done.\n* Design, build, and iterate on production agentic systems, including agents, skills, backend services, APIs, integrations, data pipelines, and human-in-the-loop workflows, alongside real users.\n\n**Own Production Reliability**\n\n* Define reliability and quality targets and build observability across agent decisions, model behavior, dependencies, and workflow outcomes through tracing, logging, metrics, alerting, fallbacks, and recovery.\n* Own systems in production, using incidents, operational data, and user outcomes to continuously improve performance, resilience, and reliability.\n\n**Make Agents Safe and Measurable**\n\n* Define evaluations and validation approaches for task completion, output quality, tool selection, policy compliance, and failure handling across offline testing, controlle",
       "score": 18,
       "is_c2c": false,
-      "rate": "$nan-$nan/nan",
-      "source": "linkedin",
-      "found_at": "2026-10-21T22:45:52.944601"
+      "rate": "$171000.0-$190000.0/yearly",
+      "source": "indeed",
+      "found_at": "2026-10-22T18:16:53.946549"
     },
     {
-      "title": "Senior Java Technical Developer/Lead - RESTful API, Spring Boot",
-      "company": "Sira Consulting, an Inc 5000 company",
-      "url": "https://www.linkedin.com/jobs/view/4479434852",
-      "linkedin_url": "https://www.linkedin.com/jobs/view/4479434852",
-      "location": "Edison, NJ, USA",
-      "description": "nan",
+      "title": "Principal / Senior Staff Backend Engineer",
+      "company": "ProphetX",
+      "url": "https://www.indeed.com/cmp/Prophetx",
+      "linkedin_url": "",
+      "location": "New York, NY, USA",
+      "description": "### **Description**\n\nWe\u2019re looking for a Principal / Senior Staff Backend Engineer (IC5) to shape the technical strategy of ProphetX as a company. You\u2019ll be a recognized technical authority who solves our hardest problems, sets multi-year architectural direction for our exchange platform, and multiplies the impact of the entire engineering organization.\n\n### **Key Responsibilities**\n\n  \n\n* Define the long-term technical strategy and architecture for the exchange platform, aligned to business and regulatory goals.\n* Lead company-level technical initiatives with ambiguous scope and significant business risk or opportunity.\n* Drive critical decisions on scalability, resilience, and security for systems operating in a CFTC-regulated environment.\n* Evaluate and introduce new technologies, build-versus-buy choices, and engineering practices at an organizational level.\n* Advise executive and product leadership on technical feasibility, risk, and investment.\n* Mentor staff and senior engineers, and help shape hiring, leveling, and engineering culture.\n* Represent ProphetX\u2019s engineering depth with partners, regulators, and the broader technical community where appropriate.\n* Partner with product and leadership to influence roadmap and prioritization with technical insight.\n* Proactively seek development opportunities and share knowledge with peers and junior engineers.\n\n  \n\n### **Skills, Knowledge and Expertise**\n\n  \n\n* 10+ years of backend and distributed systems experience, including a track record of org- or company-wide technical impact\n* Expert-level command of Go, Java, C++, or Python, and of large-scale system design\n* Proven experience architecting and evolving mission-critical, low-latency, high-availability platforms (exchange, trading, payments, or comparable)\n* Mastery of event-driven architecture, real-time APIs, data systems, and cloud-native infrastructure\n* Deep experience with reliability, security, and compliance in regulated environments\n* History of mento",
       "score": 18,
       "is_c2c": false,
-      "rate": "$nan-$nan/nan",
-      "source": "linkedin",
-      "found_at": "2026-10-21T22:45:52.944670"
+      "rate": "$200000.0-$250000.0/yearly",
+      "source": "indeed",
+      "found_at": "2026-10-22T18:16:53.946594"
     },
     {
-      "title": "Contract role: Senior Java Developer with Strong Python & AI exp at USA (Remote) - Open for W2",
-      "company": "Yochana",
-      "url": "https://www.linkedin.com/jobs/view/4481138744",
-      "linkedin_url": "https://www.linkedin.com/jobs/view/4481138744",
-      "location": "USA",
-      "description": "nan",
-      "score": 18,
-      "is_c2c": false,
-      "rate": "$nan-$nan/nan",
-      "source": "linkedin",
-      "found_at": "2026-10-21T22:45:52.944740"
-    },
-    {
-      "title": "Senior Java Backend Developer \u2013 AWS / Microservices",
-      "company": "Delta Computer Consulting",
-      "url": "https://www.linkedin.com/jobs/view/4482183447",
-      "linkedin_url": "https://www.linkedin.com/jobs/view/4482183447",
-      "location": "Los Angeles Metropolitan Area",
+      "title": "Full Stack Engineer (Java)",
+      "company": "Kforce Inc",
+      "url": "https://www.linkedin.com/jobs/view/4482183546",
+      "linkedin_url": "https://www.linkedin.com/jobs/view/4482183546",
+      "location": "New York, NY, USA",
       "description": "nan",
       "score": 15,
       "is_c2c": false,
       "rate": "$nan-$nan/nan",
       "source": "linkedin",
-      "found_at": "2026-10-21T22:45:52.944809"
+      "found_at": "2026-10-22T18:16:53.946639"
     },
     {
-      "title": "Java Software Engineer",
-      "company": "SPG Consulting",
-      "url": "https://www.linkedin.com/jobs/view/4479462361",
-      "linkedin_url": "https://www.linkedin.com/jobs/view/4479462361",
+      "title": "OSS Java Architect",
+      "company": "Infosys",
+      "url": "https://www.linkedin.com/jobs/view/4476409711",
+      "linkedin_url": "https://www.linkedin.com/jobs/view/4476409711",
+      "location": "Boston, MA, USA",
+      "description": "nan",
+      "score": 15,
+      "is_c2c": false,
+      "rate": "$nan-$nan/nan",
+      "source": "linkedin",
+      "found_at": "2026-10-22T18:16:53.946683"
+    },
+    {
+      "title": "AEM - Java Architect",
+      "company": "Infosys",
+      "url": "https://www.linkedin.com/jobs/view/4476422316",
+      "linkedin_url": "https://www.linkedin.com/jobs/view/4476422316",
+      "location": "San Antonio, TX, USA",
+      "description": "nan",
+      "score": 15,
+      "is_c2c": false,
+      "rate": "$nan-$nan/nan",
+      "source": "linkedin",
+      "found_at": "2026-10-22T18:16:53.946725"
+    },
+    {
+      "title": "W2 Role: Java Fullstack Developer , REMOTE",
+      "company": "Xforia Global Talent  & Technology Solutions",
+      "url": "https://www.linkedin.com/jobs/view/4481384771",
+      "linkedin_url": "https://www.linkedin.com/jobs/view/4481384771",
+      "location": "Dallas, TX, USA",
+      "description": "nan",
+      "score": 10,
+      "is_c2c": false,
+      "rate": "$nan-$nan/nan",
+      "source": "linkedin",
+      "found_at": "2026-10-22T18:16:53.946767"
+    },
+    {
+      "title": "Java Developer",
+      "company": "Talent Groups",
+      "url": "https://www.linkedin.com/jobs/view/4479451857",
+      "linkedin_url": "https://www.linkedin.com/jobs/view/4479451857",
       "location": "Denver, CO, USA",
       "description": "nan",
       "score": 10,
       "is_c2c": false,
       "rate": "$nan-$nan/nan",
       "source": "linkedin",
-      "found_at": "2026-10-21T22:45:52.944878"
+      "found_at": "2026-10-22T18:16:53.946809"
+    },
+    {
+      "title": "Java Lead Developer | Omaha, NE (5days onsite / Week) | Contract w2",
+      "company": "Next Gen Software Solutions LLC",
+      "url": "https://www.linkedin.com/jobs/view/4473794067",
+      "linkedin_url": "https://www.linkedin.com/jobs/view/4473794067",
+      "location": "Omaha, NE, USA",
+      "description": "nan",
+      "score": 8,
+      "is_c2c": false,
+      "rate": "$nan-$nan/nan",
+      "source": "linkedin",
+      "found_at": "2026-10-22T18:16:53.946850"
     },
     {
       "title": "Motion Recruitment Java Contract",
       "company": "Motion Recruitment",
-      "url": "https://motionrecruitment.com/tech-jobs/ux-ui-design",
+      "url": "https://motionrecruitment.com/tech-jobs/business-intelligence\\",
       "linkedin_url": "",
       "location": "USA",
       "description": "",
@@ -206,226 +440,408 @@
       "is_c2c": false,
       "rate": "$nan-$nan/nan",
       "source": "motion_recruitment",
-      "found_at": "2026-10-21T22:45:52.944945"
+      "found_at": "2026-10-22T18:16:53.946892"
     },
     {
-      "title": "Full stack Developer - Java + Apache Flink | Columbus, OH \u2013 Onsite role (5 days / week) Contract W2",
-      "company": "Next Gen Software Solutions LLC",
-      "url": "https://www.linkedin.com/jobs/view/4482183123",
-      "linkedin_url": "https://www.linkedin.com/jobs/view/4482183123",
-      "location": "Columbus, OH, USA",
+      "title": "Senior Java Full Stack Developer (contract)",
+      "company": "BNY",
+      "url": "https://www.linkedin.com/jobs/view/4472617773",
+      "linkedin_url": "https://www.linkedin.com/jobs/view/4472617773",
+      "location": "Dallas, TX, USA",
       "description": "nan",
       "score": 8,
       "is_c2c": false,
       "rate": "$nan-$nan/nan",
       "source": "linkedin",
-      "found_at": "2026-10-21T22:45:52.945013"
+      "found_at": "2026-10-22T18:16:53.946935"
     },
     {
-      "title": "Java Backend Developer",
-      "company": "The AES Group",
-      "url": "https://www.linkedin.com/jobs/view/4479448654",
-      "linkedin_url": "https://www.linkedin.com/jobs/view/4479448654",
-      "location": "Bellevue, WA, USA",
+      "title": "Senior Business Systems Engineer",
+      "company": "Center for Elders' Independence",
+      "url": "https://www.indeed.com/cmp/Center-For-Elders'-Independence",
+      "linkedin_url": "",
+      "location": "Oakland, CA, USA",
+      "description": "**Senior Business Systems Engineer**\n\n  \n\n**The Center for Elders' Independence** is a PACE (Program of All-Inclusive Care for the elderly) organization (PO) that uses an interdisciplinary team approach for care planning and implementing purposeful high quality, affordable, and integrated health care services to the elderly. Our elderly meet PACE requirements as prescribed by CMS and are referred to as participants. Our PO includes Adult Day Health Centers and primary care clinics, promoting participant autonomy, quality of life and the ability for individuals to live in their communities\n\n  \n\n**THE POS****I****TION****:** We are seeking a Senior Business Systems Engineer to provide senior, hands-on technical and operational support across CEI's enterprise business applications. The role supports systems used for Claims, Finance, Contracts, Enrollment, Outreach, provider payment, and related administrative functions. This position combines application support, systems analysis, configuration, data mapping, integration, testing, and production problem solving. The Senior Business Systems Engineer will also identify recurring support issues and redesign fragmented or manual processes into controlled, scalable, and maintainable system solutions.\n\n  \n\nThe annual pay range for the Senior Business Systems Engineer position at Center for Elders' Independence is $104,332 to $159,629. Placement within the range is determined based on job-related factors such as relevant experience, skills, abilities, internal equity, and market data, consistent with CEI's annual compensation review and established compensation practices.\n\n  \n\n**DUTIES AND RESPONSIBILITIES:**\n\n  \n\n* Provide senior technical and operational support for enterprise applications such as EZCap, Salesforce, Conga, finance systems, claims and provider-payment platforms, and other assigned business applications.\n\n* Troubleshoot complex configuration, workflow, mapping, permission, file-load, interface, data, reportin",
+      "score": 8,
+      "is_c2c": false,
+      "rate": "$104332.0-$159629.0/yearly",
+      "source": "indeed",
+      "found_at": "2026-10-22T18:16:53.946976"
+    },
+    {
+      "title": "Java AWS Developer (10+)",
+      "company": "Envision Technology Solutions",
+      "url": "https://www.linkedin.com/jobs/view/4481371495",
+      "linkedin_url": "https://www.linkedin.com/jobs/view/4481371495",
+      "location": "Jersey City, NJ, USA",
+      "description": "nan",
+      "score": 5,
+      "is_c2c": false,
+      "rate": "$nan-$nan/nan",
+      "source": "linkedin",
+      "found_at": "2026-10-22T18:16:53.947029"
+    },
+    {
+      "title": "Senior Full Stack Developer / Engineer (Java / Angular / AWS)",
+      "company": "Katalyst CRO",
+      "url": "https://www.linkedin.com/jobs/view/4482434171",
+      "linkedin_url": "https://www.linkedin.com/jobs/view/4482434171",
+      "location": "District of Columbia, USA",
+      "description": "nan",
+      "score": 5,
+      "is_c2c": false,
+      "rate": "$nan-$nan/nan",
+      "source": "linkedin",
+      "found_at": "2026-10-22T18:16:53.947081"
+    },
+    {
+      "title": "Senior Software Engineer / Application Architect \u2013 Java, AWS & GIS",
+      "company": "Seneca Resources",
+      "url": "https://www.linkedin.com/jobs/view/4482424664",
+      "linkedin_url": "https://www.linkedin.com/jobs/view/4482424664",
+      "location": "New York City Metropolitan Area",
+      "description": "nan",
+      "score": 5,
+      "is_c2c": false,
+      "rate": "$nan-$nan/nan",
+      "source": "linkedin",
+      "found_at": "2026-10-22T18:16:53.947126"
+    },
+    {
+      "title": "Java Developer",
+      "company": "Cloud and Things",
+      "url": "https://www.linkedin.com/jobs/view/4480045472",
+      "linkedin_url": "https://www.linkedin.com/jobs/view/4480045472",
+      "location": "Albany, NY, USA",
       "description": "nan",
       "score": 0,
       "is_c2c": false,
       "rate": "$nan-$nan/nan",
       "source": "linkedin",
-      "found_at": "2026-10-21T22:45:52.945080"
+      "found_at": "2026-10-22T18:16:53.947169"
     },
     {
-      "title": "Java Developer - Only W2",
-      "company": "Raas Infotek",
-      "url": "https://www.linkedin.com/jobs/view/4482175653",
-      "linkedin_url": "https://www.linkedin.com/jobs/view/4482175653",
-      "location": "San Antonio, TX, USA",
+      "title": "Java Developer",
+      "company": "Clevanoo LLC",
+      "url": "https://www.linkedin.com/jobs/view/4481383442",
+      "linkedin_url": "https://www.linkedin.com/jobs/view/4481383442",
+      "location": "Phoenix, AZ, USA",
       "description": "nan",
       "score": 0,
       "is_c2c": false,
       "rate": "$nan-$nan/nan",
       "source": "linkedin",
-      "found_at": "2026-10-21T22:45:52.945181"
+      "found_at": "2026-10-22T18:16:53.947211"
     },
     {
-      "title": "Senior Java Application Engineer",
-      "company": "HCA Healthcare",
-      "url": "https://www.linkedin.com/jobs/view/4466868443",
-      "linkedin_url": "https://www.linkedin.com/jobs/view/4466868443",
-      "location": "Nashville Metropolitan Area",
+      "title": "Senior Java Developer",
+      "company": "Arohana Tech Solutions Private Limited",
+      "url": "https://www.linkedin.com/jobs/view/4481372182",
+      "linkedin_url": "https://www.linkedin.com/jobs/view/4481372182",
+      "location": "Southlake, TX, USA",
       "description": "nan",
       "score": 0,
       "is_c2c": false,
       "rate": "$nan-$nan/nan",
       "source": "linkedin",
-      "found_at": "2026-10-21T22:45:52.945263"
+      "found_at": "2026-10-22T18:16:53.947253"
     },
     {
-      "title": "Java Software Engineer (W2)",
-      "company": "Raas Infotek",
-      "url": "https://www.linkedin.com/jobs/view/4482177309",
-      "linkedin_url": "https://www.linkedin.com/jobs/view/4482177309",
-      "location": "Texas, USA",
+      "title": "Java Developer",
+      "company": "Reqroute, Inc",
+      "url": "https://www.linkedin.com/jobs/view/4479450819",
+      "linkedin_url": "https://www.linkedin.com/jobs/view/4479450819",
+      "location": "Scottsdale, AZ, USA",
       "description": "nan",
       "score": 0,
       "is_c2c": false,
       "rate": "$nan-$nan/nan",
       "source": "linkedin",
-      "found_at": "2026-10-21T22:45:52.945332"
+      "found_at": "2026-10-22T18:16:53.947294"
     },
     {
-      "title": "Senior/Lead Java Developer",
-      "company": "Apex Systems",
-      "url": "https://www.linkedin.com/jobs/view/4482182588",
-      "linkedin_url": "https://www.linkedin.com/jobs/view/4482182588",
-      "location": "Richmond, VA, USA",
+      "title": "Senior Java Consultant",
+      "company": "Clevanoo LLC",
+      "url": "https://www.linkedin.com/jobs/view/4481375570",
+      "linkedin_url": "https://www.linkedin.com/jobs/view/4481375570",
+      "location": "McLean, VA, USA",
       "description": "nan",
       "score": 0,
       "is_c2c": false,
       "rate": "$nan-$nan/nan",
       "source": "linkedin",
-      "found_at": "2026-10-21T22:45:52.945400"
+      "found_at": "2026-10-22T18:16:53.947335"
     },
     {
-      "title": "Java Backend Engineer",
-      "company": "Silicontek Inc",
-      "url": "https://www.linkedin.com/jobs/view/4481142688",
-      "linkedin_url": "https://www.linkedin.com/jobs/view/4481142688",
-      "location": "Seattle, WA, USA",
+      "title": "Java Developer",
+      "company": "UNICOM Technologies Inc",
+      "url": "https://www.linkedin.com/jobs/view/4482702204",
+      "linkedin_url": "https://www.linkedin.com/jobs/view/4482702204",
+      "location": "Chicago, IL, USA",
       "description": "nan",
       "score": 0,
       "is_c2c": false,
       "rate": "$nan-$nan/nan",
       "source": "linkedin",
-      "found_at": "2026-10-21T22:45:52.945467"
+      "found_at": "2026-10-22T18:16:53.947376"
     },
     {
-      "title": "Java Software Engineer",
-      "company": "Bayforce",
-      "url": "https://www.linkedin.com/jobs/view/4482172093",
-      "linkedin_url": "https://www.linkedin.com/jobs/view/4482172093",
-      "location": "Buffalo, NY, USA",
+      "title": "Senior Java Backend Developer with NetCracker Platform",
+      "company": "Tech One IT",
+      "url": "https://www.linkedin.com/jobs/view/4481379376",
+      "linkedin_url": "https://www.linkedin.com/jobs/view/4481379376",
+      "location": "Dallas, TX, USA",
       "description": "nan",
       "score": 0,
       "is_c2c": false,
       "rate": "$nan-$nan/nan",
       "source": "linkedin",
-      "found_at": "2026-10-21T22:45:52.945533"
+      "found_at": "2026-10-22T18:16:53.947416"
     },
     {
-      "title": "Full stack Java Enterprise Architect",
-      "company": "Nityo Infotech",
-      "url": "https://www.linkedin.com/jobs/view/4482128576",
-      "linkedin_url": "https://www.linkedin.com/jobs/view/4482128576",
-      "location": "Plano, TX, USA",
+      "title": "Java Developer [AQ-23389]",
+      "company": "Aquent",
+      "url": "https://www.linkedin.com/jobs/view/4480043080",
+      "linkedin_url": "https://www.linkedin.com/jobs/view/4480043080",
+      "location": "Southlake, TX, USA",
       "description": "nan",
       "score": 0,
       "is_c2c": false,
       "rate": "$nan-$nan/nan",
       "source": "linkedin",
-      "found_at": "2026-10-21T22:45:52.945599"
+      "found_at": "2026-10-22T18:16:53.947457"
     },
     {
-      "title": "Java Full stack Developer with Angular",
-      "company": "PETADATA",
-      "url": "https://www.linkedin.com/jobs/view/4482160751",
-      "linkedin_url": "https://www.linkedin.com/jobs/view/4482160751",
-      "location": "Westlake, TX, USA",
+      "title": "Java AI Engineer",
+      "company": "Smart IT Frame LLC",
+      "url": "https://www.linkedin.com/jobs/view/4481380667",
+      "linkedin_url": "https://www.linkedin.com/jobs/view/4481380667",
+      "location": "Austin, TX, USA",
       "description": "nan",
       "score": 0,
       "is_c2c": false,
       "rate": "$nan-$nan/nan",
       "source": "linkedin",
-      "found_at": "2026-10-21T22:45:52.945665"
+      "found_at": "2026-10-22T18:16:53.947500"
     },
     {
-      "title": "Sr Application Developer Java",
-      "company": "The Custom Group of Companies",
-      "url": "https://www.linkedin.com/jobs/view/4479447766",
-      "linkedin_url": "https://www.linkedin.com/jobs/view/4479447766",
-      "location": "New York, USA",
+      "title": "Senior Backend Engineer (Java / Kotlin)",
+      "company": "Aptimized",
+      "url": "https://www.linkedin.com/jobs/view/4480062059",
+      "linkedin_url": "https://www.linkedin.com/jobs/view/4480062059",
+      "location": "Phoenix, AZ, USA",
       "description": "nan",
       "score": 0,
       "is_c2c": false,
       "rate": "$nan-$nan/nan",
       "source": "linkedin",
-      "found_at": "2026-10-21T22:45:52.945731"
+      "found_at": "2026-10-22T18:16:53.947543"
     },
     {
-      "title": "Sr. Back End Developer - Java",
-      "company": "AgileGrid Solutions",
-      "url": "https://www.linkedin.com/jobs/view/4482151624",
-      "linkedin_url": "https://www.linkedin.com/jobs/view/4482151624",
+      "title": "Java Developer Associate",
+      "company": "Jobgether",
+      "url": "https://www.linkedin.com/jobs/view/4481168923",
+      "linkedin_url": "https://www.linkedin.com/jobs/view/4481168923",
       "location": "USA",
       "description": "nan",
       "score": 0,
       "is_c2c": false,
       "rate": "$nan-$nan/nan",
       "source": "linkedin",
-      "found_at": "2026-10-21T22:45:52.945798"
+      "found_at": "2026-10-22T18:16:53.947585"
     },
     {
-      "title": "Senior Java Software Engineer",
-      "company": "VistalTech Inc",
-      "url": "https://www.linkedin.com/jobs/view/4479446561",
-      "linkedin_url": "https://www.linkedin.com/jobs/view/4479446561",
-      "location": "Miami, FL, USA",
+      "title": "Java \u10d3\u10d4\u10d5\u10d4\u10da\u10dd\u10de\u10d4\u10e0\u10d8",
+      "company": "MagtiCom-\u10db\u10d0\u10d2\u10d7\u10d8\u10d9\u10dd\u10db\u10d8",
+      "url": "https://www.linkedin.com/jobs/view/4481186332",
+      "linkedin_url": "https://www.linkedin.com/jobs/view/4481186332",
+      "location": "Spring Hill, FL, USA",
       "description": "nan",
       "score": 0,
       "is_c2c": false,
       "rate": "$nan-$nan/nan",
       "source": "linkedin",
-      "found_at": "2026-10-21T22:45:52.945865"
+      "found_at": "2026-10-22T18:16:53.947627"
     },
     {
-      "title": "Java Full Stack developer",
-      "company": "Virtusa",
-      "url": "https://www.linkedin.com/jobs/view/4479439997",
-      "linkedin_url": "https://www.linkedin.com/jobs/view/4479439997",
+      "title": "Software Engineer-Java",
+      "company": "Deloitte",
+      "url": "https://www.linkedin.com/jobs/view/4482059150",
+      "linkedin_url": "https://www.linkedin.com/jobs/view/4482059150",
       "location": "Tampa, FL, USA",
       "description": "nan",
       "score": 0,
       "is_c2c": false,
       "rate": "$nan-$nan/nan",
       "source": "linkedin",
-      "found_at": "2026-10-21T22:45:52.945931"
+      "found_at": "2026-10-22T18:16:53.947670"
     },
     {
-      "title": "Technical Lead - Java/Camunda",
-      "company": "Trilyon, Inc.",
-      "url": "https://www.linkedin.com/jobs/view/4481131250",
-      "linkedin_url": "https://www.linkedin.com/jobs/view/4481131250",
-      "location": "Richardson, TX, USA",
+      "title": "Java Developer",
+      "company": "Envision Technology Solutions",
+      "url": "https://www.linkedin.com/jobs/view/4481380737",
+      "linkedin_url": "https://www.linkedin.com/jobs/view/4481380737",
+      "location": "Addison, TX, USA",
       "description": "nan",
       "score": 0,
       "is_c2c": false,
       "rate": "$nan-$nan/nan",
       "source": "linkedin",
-      "found_at": "2026-10-21T22:45:52.945997"
+      "found_at": "2026-10-22T18:16:53.947711"
     },
     {
-      "title": "Java developer",
-      "company": "Raas Infotek",
-      "url": "https://www.linkedin.com/jobs/view/4482179503",
-      "linkedin_url": "https://www.linkedin.com/jobs/view/4482179503",
-      "location": "Plano, TX, USA",
+      "title": "Java Developer",
+      "company": "CIS TECHNOLOGIES INC",
+      "url": "https://www.linkedin.com/jobs/view/4480045569",
+      "linkedin_url": "https://www.linkedin.com/jobs/view/4480045569",
+      "location": "Richmond, VA, USA",
       "description": "nan",
       "score": 0,
       "is_c2c": false,
       "rate": "$nan-$nan/nan",
       "source": "linkedin",
-      "found_at": "2026-10-21T22:45:52.946064"
+      "found_at": "2026-10-22T18:16:53.947753"
     },
     {
-      "title": "Senior Java Developer (Spring Boot & Microservices)",
-      "company": "Randstad Digital Americas",
-      "url": "https://www.linkedin.com/jobs/view/4482124711",
-      "location": "Auburn, WA, USA",
+      "title": "Lead Software Engineer (Java/Spring and Python) - Data Protection & Recovery",
+      "company": "JPMorganChase",
+      "url": "https://www.linkedin.com/jobs/view/4438137443",
+      "linkedin_url": "https://www.linkedin.com/jobs/view/4438137443",
+      "location": "Columbus, OH, USA",
+      "description": "nan",
+      "score": 0,
+      "is_c2c": false,
+      "rate": "$nan-$nan/nan",
+      "source": "linkedin",
+      "found_at": "2026-10-22T18:16:53.947794"
+    },
+    {
+      "title": "System Integration Engineer (Java)",
+      "company": "Cloud and Things",
+      "url": "https://www.linkedin.com/jobs/view/4480044531",
+      "linkedin_url": "https://www.linkedin.com/jobs/view/4480044531",
+      "location": "Albany, NY, USA",
+      "description": "nan",
+      "score": 0,
+      "is_c2c": false,
+      "rate": "$nan-$nan/nan",
+      "source": "linkedin",
+      "found_at": "2026-10-22T18:16:53.947835"
+    },
+    {
+      "title": "Senior Java Architect",
+      "company": "Resolve Tech Solutions",
+      "url": "https://www.linkedin.com/jobs/view/4480254143",
+      "linkedin_url": "https://www.linkedin.com/jobs/view/4480254143",
+      "location": "Irving, TX, USA",
+      "description": "nan",
+      "score": 0,
+      "is_c2c": false,
+      "rate": "$nan-$nan/nan",
+      "source": "linkedin",
+      "found_at": "2026-10-22T18:16:53.947876"
+    },
+    {
+      "title": "Blockchain Senior Java Engineer - Digital Assets Platform - VP",
+      "company": "Citi",
+      "url": "https://www.linkedin.com/jobs/view/4480497218",
+      "linkedin_url": "https://www.linkedin.com/jobs/view/4480497218",
+      "location": "New York, NY, USA",
+      "description": "nan",
+      "score": 0,
+      "is_c2c": false,
+      "rate": "$nan-$nan/nan",
+      "source": "linkedin",
+      "found_at": "2026-10-22T18:16:53.947916"
+    },
+    {
+      "title": "Java or Python Engineer",
+      "company": "Wissen Technology",
+      "url": "https://www.linkedin.com/jobs/view/4470619497",
+      "linkedin_url": "https://www.linkedin.com/jobs/view/4470619497",
+      "location": "Menlo Park, CA, USA",
+      "description": "nan",
+      "score": 0,
+      "is_c2c": false,
+      "rate": "$nan-$nan/nan",
+      "source": "linkedin",
+      "found_at": "2026-10-22T18:16:53.947958"
+    },
+    {
+      "title": "Java Services Developer, IT Applications Engineer IV - Greensboro, NC",
+      "company": "Kaiser Permanente",
+      "url": "https://www.linkedin.com/jobs/view/4427433641",
+      "linkedin_url": "https://www.linkedin.com/jobs/view/4427433641",
+      "location": "Greensboro, NC, USA",
+      "description": "nan",
+      "score": 0,
+      "is_c2c": false,
+      "rate": "$nan-$nan/nan",
+      "source": "linkedin",
+      "found_at": "2026-10-22T18:16:53.947998"
+    },
+    {
+      "title": "Senior Java Developer",
+      "company": "Creative Information Technology, Inc.",
+      "url": "https://www.linkedin.com/jobs/view/4478459532",
+      "linkedin_url": "https://www.linkedin.com/jobs/view/4478459532",
+      "location": "Falls Church, VA, USA",
+      "description": "nan",
+      "score": 0,
+      "is_c2c": false,
+      "rate": "$nan-$nan/nan",
+      "source": "linkedin",
+      "found_at": "2026-10-22T18:16:53.948055"
+    },
+    {
+      "title": "Lead Software Engineer (Java and Python) - Enterprise Technology Data Protection & Recovery",
+      "company": "JPMorganChase",
+      "url": "https://www.linkedin.com/jobs/view/4452460987",
+      "linkedin_url": "https://www.linkedin.com/jobs/view/4452460987",
+      "location": "Columbus, OH, USA",
+      "description": "nan",
+      "score": 0,
+      "is_c2c": false,
+      "rate": "$nan-$nan/nan",
+      "source": "linkedin",
+      "found_at": "2026-10-22T18:16:53.948103"
+    },
+    {
+      "title": "Senior Java Backend Developer",
+      "company": "Covetus",
+      "url": "https://www.linkedin.com/jobs/view/4480181666",
+      "linkedin_url": "https://www.linkedin.com/jobs/view/4480181666",
+      "location": "Texas, USA",
+      "description": "nan",
+      "score": 0,
+      "is_c2c": false,
+      "rate": "$nan-$nan/nan",
+      "source": "linkedin",
+      "found_at": "2026-10-22T18:16:53.948147"
+    },
+    {
+      "title": "Associate Principal, Software Engineering: Java",
+      "company": "The Options Clearing Corporation (OCC)",
+      "url": "https://www.linkedin.com/jobs/view/4477603695",
+      "linkedin_url": "https://www.linkedin.com/jobs/view/4477603695",
+      "location": "Greater Chicago Area",
+      "description": "nan",
+      "score": 0,
+      "is_c2c": false,
+      "rate": "$nan-$nan/nan",
+      "source": "linkedin",
+      "found_at": "2026-10-22T18:16:53.948189"
+    },
+    {
+      "title": "Security Engineer",
+      "company": "Horizontal Talent",
+      "url": "https://www.linkedin.com/jobs/view/4472632750",
+      "location": "Brooklyn Park, MN, USA",
       "description": "None",
       "score": 40,
       "is_c2c": false,
       "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861655"
+      "found_at": "2026-10-22T18:25:16.271985"
     },
     {
       "title": "Senior Java Full Stack Developer with ReactJS Experience-6 Months Contract-Remote opportunity-Direct Customer",
@@ -436,7 +852,7 @@
       "score": 40,
       "is_c2c": false,
       "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861670"
+      "found_at": "2026-10-22T18:25:16.271996"
     },
     {
       "title": "Senior Java Architect",
@@ -447,18 +863,29 @@
       "score": 40,
       "is_c2c": false,
       "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861673"
+      "found_at": "2026-10-22T18:25:16.272000"
     },
     {
-      "title": "SENIOR FULL STACK (JAVA / REACT) DEVELOPER",
-      "company": "SKM Group",
-      "url": "https://www.linkedin.com/jobs/view/4481133012",
+      "title": "Contract role: Senior Java Developer with Strong Python & AI exp at USA (Remote) - Open for W2",
+      "company": "Yochana",
+      "url": "https://www.linkedin.com/jobs/view/4481138744",
       "location": "USA",
       "description": "None",
       "score": 40,
       "is_c2c": false,
       "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861676"
+      "found_at": "2026-10-22T18:25:16.272002"
+    },
+    {
+      "title": "Java Software Engineer",
+      "company": "Bayforce",
+      "url": "https://www.linkedin.com/jobs/view/4482172093",
+      "location": "Buffalo, NY, USA",
+      "description": "None",
+      "score": 40,
+      "is_c2c": false,
+      "source": "linkedin_deep",
+      "found_at": "2026-10-22T18:25:16.272005"
     },
     {
       "title": "Java Fullstack Developer",
@@ -469,7 +896,7 @@
       "score": 40,
       "is_c2c": false,
       "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861679"
+      "found_at": "2026-10-22T18:25:16.272007"
     },
     {
       "title": "Java Software Engineer",
@@ -480,7 +907,7 @@
       "score": 40,
       "is_c2c": false,
       "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861682"
+      "found_at": "2026-10-22T18:25:16.272022"
     },
     {
       "title": "Sr. Java Full Stack Engineers (KDB+) - $80/hr on W2",
@@ -491,7 +918,7 @@
       "score": 40,
       "is_c2c": false,
       "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861684"
+      "found_at": "2026-10-22T18:25:16.272025"
     },
     {
       "title": "Sr. Java Full Stack Engineer",
@@ -502,7 +929,7 @@
       "score": 40,
       "is_c2c": false,
       "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861686"
+      "found_at": "2026-10-22T18:25:16.272027"
     },
     {
       "title": "Sr. Java Full Stack Engineer",
@@ -513,7 +940,18 @@
       "score": 40,
       "is_c2c": false,
       "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861688"
+      "found_at": "2026-10-22T18:25:16.272029"
+    },
+    {
+      "title": "Java Fullstack Engineer",
+      "company": "Anagh Technologies Inc",
+      "url": "https://www.linkedin.com/jobs/view/4478686890",
+      "location": "USA",
+      "description": "None",
+      "score": 40,
+      "is_c2c": false,
+      "source": "linkedin_deep",
+      "found_at": "2026-10-22T18:25:16.272031"
     },
     {
       "title": "Software Engineer",
@@ -524,7 +962,7 @@
       "score": 40,
       "is_c2c": false,
       "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861691"
+      "found_at": "2026-10-22T18:25:16.272033"
     },
     {
       "title": "Streaming Data Platform Engineer",
@@ -535,18 +973,7 @@
       "score": 40,
       "is_c2c": false,
       "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861693"
-    },
-    {
-      "title": "Lead Software Engineer",
-      "company": "System One",
-      "url": "https://www.linkedin.com/jobs/view/4470994483",
-      "location": "Reston, VA, USA",
-      "description": "None",
-      "score": 40,
-      "is_c2c": false,
-      "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861695"
+      "found_at": "2026-10-22T18:25:16.272035"
     },
     {
       "title": "Sr. Java Full Stack Engineer  - Low Latency -  Financial Services domain exp (Remote within the U.S.) W2 Only",
@@ -557,7 +984,7 @@
       "score": 40,
       "is_c2c": false,
       "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861697"
+      "found_at": "2026-10-22T18:25:16.272037"
     },
     {
       "title": "Application Developer",
@@ -568,7 +995,7 @@
       "score": 40,
       "is_c2c": false,
       "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861699"
+      "found_at": "2026-10-22T18:25:16.272039"
     },
     {
       "title": "Full Stack java Devloper",
@@ -579,40 +1006,18 @@
       "score": 40,
       "is_c2c": false,
       "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861702"
+      "found_at": "2026-10-22T18:25:16.272041"
     },
     {
-      "title": "Software Engineer III",
-      "company": "Kforce Inc",
-      "url": "https://www.linkedin.com/jobs/view/4462497249",
-      "location": "New York, NY, USA",
-      "description": "None",
-      "score": 40,
-      "is_c2c": false,
-      "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861704"
-    },
-    {
-      "title": "Senior Java Engineer, AVAD & Agentic Development",
-      "company": "Eliassen Group",
-      "url": "https://www.linkedin.com/jobs/view/4477303211",
+      "title": "Lead Software Engineer (Java / Kafka / Angular)",
+      "company": "Optomi",
+      "url": "https://www.linkedin.com/jobs/view/4470003111",
       "location": "USA",
       "description": "None",
       "score": 40,
       "is_c2c": false,
       "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861706"
-    },
-    {
-      "title": "Fullstack developer - remote",
-      "company": "JSR Tech Consulting",
-      "url": "https://www.linkedin.com/jobs/view/4469497768",
-      "location": "Newark, NJ, USA",
-      "description": "None",
-      "score": 40,
-      "is_c2c": false,
-      "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861709"
+      "found_at": "2026-10-22T18:25:16.272045"
     },
     {
       "title": "Technical Java Lead Developer",
@@ -623,29 +1028,7 @@
       "score": 40,
       "is_c2c": false,
       "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861711"
-    },
-    {
-      "title": "Full Stack Developer",
-      "company": "Tential Solutions",
-      "url": "https://www.linkedin.com/jobs/view/4462082183",
-      "location": "Cary, NC, USA",
-      "description": "None",
-      "score": 40,
-      "is_c2c": false,
-      "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861713"
-    },
-    {
-      "title": "Sr. Software Development",
-      "company": "Horizontal Talent",
-      "url": "https://www.linkedin.com/jobs/view/4469363035",
-      "location": "Eagan, MN, USA",
-      "description": "None",
-      "score": 40,
-      "is_c2c": false,
-      "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861715"
+      "found_at": "2026-10-22T18:25:16.272047"
     },
     {
       "title": "Senior Application Developer / DevOps Engineer",
@@ -656,18 +1039,51 @@
       "score": 40,
       "is_c2c": false,
       "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861717"
+      "found_at": "2026-10-22T18:25:16.272049"
     },
     {
-      "title": "Java Developer",
-      "company": "Kforce Inc",
-      "url": "https://www.linkedin.com/jobs/view/4479722281",
-      "location": "Irving, TX, USA",
+      "title": "Principal Full Stack Engineer",
+      "company": "Bixal",
+      "url": "https://www.linkedin.com/jobs/view/4480131389",
+      "location": "Reston, VA, USA",
       "description": "None",
       "score": 40,
       "is_c2c": false,
       "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861720"
+      "found_at": "2026-10-22T18:25:16.272051"
+    },
+    {
+      "title": "Full Stack Engineer",
+      "company": "Bixal",
+      "url": "https://www.linkedin.com/jobs/view/4480130405",
+      "location": "Reston, VA, USA",
+      "description": "None",
+      "score": 40,
+      "is_c2c": false,
+      "source": "linkedin_deep",
+      "found_at": "2026-10-22T18:25:16.272053"
+    },
+    {
+      "title": "Application Developer (Credit Risk & ML Platform) - W2/ 1099",
+      "company": "GBIT (Global Bridge InfoTech Inc)",
+      "url": "https://www.linkedin.com/jobs/view/4481376875",
+      "location": "USA",
+      "description": "None",
+      "score": 40,
+      "is_c2c": false,
+      "source": "linkedin_deep",
+      "found_at": "2026-10-22T18:25:16.272055"
+    },
+    {
+      "title": "Back-End Software Engineer (Contractor)",
+      "company": "Dimensional Fund Advisors",
+      "url": "https://www.linkedin.com/jobs/view/4482466416",
+      "location": "Austin, TX, USA",
+      "description": "None",
+      "score": 40,
+      "is_c2c": false,
+      "source": "linkedin_deep",
+      "found_at": "2026-10-22T18:25:16.272057"
     },
     {
       "title": "Back End Developer (AI Infrastructure)",
@@ -678,18 +1094,18 @@
       "score": 40,
       "is_c2c": false,
       "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861722"
+      "found_at": "2026-10-22T18:25:16.272059"
     },
     {
-      "title": "Sr Facets Developer with Java (FTE/ Contract)",
-      "company": "AppLab Systems, Inc",
-      "url": "https://www.linkedin.com/jobs/view/4480247325",
-      "location": "USA",
+      "title": "Senior/Lead Java Developer",
+      "company": "Apex Systems",
+      "url": "https://www.linkedin.com/jobs/view/4482182588",
+      "location": "Richmond, VA, USA",
       "description": "None",
       "score": 40,
       "is_c2c": false,
       "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861724"
+      "found_at": "2026-10-22T18:25:16.272061"
     },
     {
       "title": "Sr. Java Full Stack Engineer",
@@ -700,7 +1116,7 @@
       "score": 40,
       "is_c2c": false,
       "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861729"
+      "found_at": "2026-10-22T18:25:16.272063"
     },
     {
       "title": "Senior Software Engineer",
@@ -711,7 +1127,7 @@
       "score": 40,
       "is_c2c": false,
       "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861731"
+      "found_at": "2026-10-22T18:25:16.272065"
     },
     {
       "title": "100% Remote // Java Facets Developer (Eligibility, Medicaid, Claims)",
@@ -722,788 +1138,18 @@
       "score": 40,
       "is_c2c": false,
       "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861733"
+      "found_at": "2026-10-22T18:25:16.272067"
     },
     {
-      "title": "Java Edi Developer",
-      "company": "Envision Technology Solutions",
-      "url": "https://www.linkedin.com/jobs/view/4480508738",
-      "location": "USA",
-      "description": "None",
-      "score": 40,
-      "is_c2c": false,
-      "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861736"
-    },
-    {
-      "title": "Java Technical Lead",
-      "company": "iSpace, Inc.",
-      "url": "https://www.linkedin.com/jobs/view/4478140022",
-      "location": "Torrance, CA, USA",
-      "description": "None",
-      "score": 40,
-      "is_c2c": false,
-      "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861738"
-    },
-    {
-      "title": "Senior Software Engineer - Back End IV",
-      "company": "Software Guidance & Assistance, Inc. (SGA, Inc.)",
-      "url": "https://www.linkedin.com/jobs/view/4480710871",
-      "location": "Cincinnati, OH, USA",
-      "description": "None",
-      "score": 40,
-      "is_c2c": false,
-      "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861740"
-    },
-    {
-      "title": "Java Developer with Kafka (W2 ONLY)",
-      "company": "MethodHub",
-      "url": "https://www.linkedin.com/jobs/view/4479535317",
-      "location": "Tampa, FL, USA",
-      "description": "None",
-      "score": 40,
-      "is_c2c": false,
-      "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861743"
-    },
-    {
-      "title": "Senior Java Developer",
-      "company": "HTD Talent",
-      "url": "https://www.linkedin.com/jobs/view/4478931869",
-      "location": "Charlotte, NC, USA",
-      "description": "None",
-      "score": 40,
-      "is_c2c": false,
-      "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861746"
-    },
-    {
-      "title": "Senior Software Engineer",
-      "company": "Request Technology, LLC",
-      "url": "https://www.linkedin.com/jobs/view/4480701719",
-      "location": "Alpharetta, GA, USA",
-      "description": "None",
-      "score": 40,
-      "is_c2c": false,
-      "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861748"
-    },
-    {
-      "title": "Java Engineer",
-      "company": "Motion Recruitment",
-      "url": "https://www.linkedin.com/jobs/view/4473008264",
-      "location": "Tempe, AZ, USA",
-      "description": "None",
-      "score": 40,
-      "is_c2c": false,
-      "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861750"
-    },
-    {
-      "title": "Java Software Engineer",
-      "company": "BCforward",
-      "url": "https://www.linkedin.com/jobs/view/4481573945",
-      "location": "Columbus, OH, USA",
-      "description": "None",
-      "score": 40,
-      "is_c2c": false,
-      "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861752"
-    },
-    {
-      "title": "Senior Java / AWS Software Engineer (W2 | Hybrid)",
-      "company": "Tricon Solutions",
-      "url": "https://www.linkedin.com/jobs/view/4480992334",
-      "location": "Englewood Cliffs, NJ, USA",
-      "description": "None",
-      "score": 40,
-      "is_c2c": false,
-      "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861755"
-    },
-    {
-      "title": "Senior Java Software Engineer",
-      "company": "Software Technology Inc.",
-      "url": "https://www.linkedin.com/jobs/view/4480993674",
-      "location": "Atlanta, GA, USA",
-      "description": "None",
-      "score": 40,
-      "is_c2c": false,
-      "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861757"
-    },
-    {
-      "title": "Sr Java Technical Lead - Miami",
-      "company": "Coderio",
-      "url": "https://www.linkedin.com/jobs/view/4468938518",
-      "location": "Miami, FL, USA",
-      "description": "None",
-      "score": 40,
-      "is_c2c": false,
-      "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861759"
-    },
-    {
-      "title": "Sr Java Backend Developer",
-      "company": "Coderio",
-      "url": "https://www.linkedin.com/jobs/view/4469765621",
-      "location": "Miami, FL, USA",
-      "description": "None",
-      "score": 40,
-      "is_c2c": false,
-      "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861761"
-    },
-    {
-      "title": "Senior Java FullStack Developer",
-      "company": "Accord Technologies Inc",
-      "url": "https://www.linkedin.com/jobs/view/4480393425",
-      "location": "O'Fallon, IL, USA",
-      "description": "None",
-      "score": 40,
-      "is_c2c": false,
-      "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861763"
-    },
-    {
-      "title": "Application Developer",
-      "company": "Agile Tech Labs",
-      "url": "https://www.linkedin.com/jobs/view/4480359834",
-      "location": "Detroit, MI, USA",
-      "description": "None",
-      "score": 40,
-      "is_c2c": false,
-      "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861765"
-    },
-    {
-      "title": "Java Developer - Python, AWS",
-      "company": "Talon Professional Services",
-      "url": "https://www.linkedin.com/jobs/view/4480394089",
-      "location": "Coppell, TX, USA",
-      "description": "None",
-      "score": 40,
-      "is_c2c": false,
-      "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861767"
-    },
-    {
-      "title": "Sr. Java Engineer",
-      "company": "Dexian",
-      "url": "https://www.linkedin.com/jobs/view/4477729571",
-      "location": "Hoboken, NJ, USA",
-      "description": "None",
-      "score": 40,
-      "is_c2c": false,
-      "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861770"
-    },
-    {
-      "title": "Senior Engineer",
-      "company": "KellyMitchell Group",
-      "url": "https://www.linkedin.com/jobs/view/4479841702",
-      "location": "Fort Worth, TX, USA",
-      "description": "None",
-      "score": 40,
-      "is_c2c": false,
-      "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861772"
-    },
-    {
-      "title": "Senior Java Software Engineer",
-      "company": "LanceSoft, Inc.",
-      "url": "https://www.linkedin.com/jobs/view/4479160748",
-      "location": "Columbus, OH, USA",
-      "description": "None",
-      "score": 40,
-      "is_c2c": false,
-      "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861776"
-    },
-    {
-      "title": "Senior Temporal Java Software Engineer",
-      "company": "TalentDome Staffing",
-      "url": "https://www.linkedin.com/jobs/view/4467242462",
-      "location": "USA",
-      "description": "None",
-      "score": 40,
-      "is_c2c": false,
-      "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861779"
-    },
-    {
-      "title": "Senior Full Stack Engineer",
-      "company": "Kforce Inc",
-      "url": "https://www.linkedin.com/jobs/view/4482121849",
-      "location": "Orlando, FL, USA",
-      "description": "None",
-      "score": 40,
-      "is_c2c": false,
-      "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861781"
-    },
-    {
-      "title": "Senior Application Programmer / Java Developer",
-      "company": "Revolutional",
-      "url": "https://www.linkedin.com/jobs/view/4480426155",
-      "location": "USA",
-      "description": "None",
-      "score": 40,
-      "is_c2c": false,
-      "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861784"
-    },
-    {
-      "title": "Java/Mainframe Developer with Facets & Medicaid",
+      "title": "Facets Developer",
       "company": "Programmers.io",
-      "url": "https://www.linkedin.com/jobs/view/4480741009",
-      "location": "Texas, USA",
-      "description": "None",
-      "score": 40,
-      "is_c2c": false,
-      "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861786"
-    },
-    {
-      "title": "Java Full Stack Engineer",
-      "company": "Paladin Consulting",
-      "url": "https://www.linkedin.com/jobs/view/4480729296",
+      "url": "https://www.linkedin.com/jobs/view/4480238817",
       "location": "USA",
       "description": "None",
       "score": 40,
       "is_c2c": false,
       "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861788"
-    },
-    {
-      "title": "Sr Software Engineer",
-      "company": "Apex Systems",
-      "url": "https://www.linkedin.com/jobs/view/4482129551",
-      "location": "St Louis, MO, USA",
-      "description": "None",
-      "score": 40,
-      "is_c2c": false,
-      "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861791"
-    },
-    {
-      "title": "Senior Java Developer (Healthcare Tech)",
-      "company": "Hillview Consulting Solutions",
-      "url": "https://www.linkedin.com/jobs/view/4480224640",
-      "location": "Atlanta Metropolitan Area",
-      "description": "None",
-      "score": 40,
-      "is_c2c": false,
-      "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861793"
-    },
-    {
-      "title": "Sr Java Developer",
-      "company": "PineQ Lab Technology",
-      "url": "https://www.linkedin.com/jobs/view/4478906699",
-      "location": "Atlanta, GA, USA",
-      "description": "None",
-      "score": 40,
-      "is_c2c": false,
-      "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861795"
-    },
-    {
-      "title": "Senior Software Engineer",
-      "company": "Eliassen Group",
-      "url": "https://www.linkedin.com/jobs/view/4480280200",
-      "location": "St Louis, MO, USA",
-      "description": "None",
-      "score": 40,
-      "is_c2c": false,
-      "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861798"
-    },
-    {
-      "title": "Application Developer",
-      "company": "Software Guidance & Assistance, Inc. (SGA, Inc.)",
-      "url": "https://www.linkedin.com/jobs/view/4470389859",
-      "location": "New York, NY, USA",
-      "description": "None",
-      "score": 40,
-      "is_c2c": false,
-      "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861800"
-    },
-    {
-      "title": "Java Developer",
-      "company": "Cloud and Things",
-      "url": "https://www.linkedin.com/jobs/view/4477729364",
-      "location": "Albany, NY, USA",
-      "description": "None",
-      "score": 40,
-      "is_c2c": false,
-      "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861802"
-    },
-    {
-      "title": "Software Engineer 4",
-      "company": "Cypress HCM",
-      "url": "https://www.linkedin.com/jobs/view/4479161101",
-      "location": "San Jose, CA, USA",
-      "description": "None",
-      "score": 40,
-      "is_c2c": false,
-      "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861804"
-    },
-    {
-      "title": "Senior Software Engineer - Back End IV",
-      "company": "Apex Systems",
-      "url": "https://www.linkedin.com/jobs/view/4482003003",
-      "location": "Cincinnati, OH, USA",
-      "description": "None",
-      "score": 40,
-      "is_c2c": false,
-      "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861806"
-    },
-    {
-      "title": "Lead Java developer",
-      "company": "Holistic Partners, Inc",
-      "url": "https://www.linkedin.com/jobs/view/4479391256",
-      "location": "Phoenix, AZ, USA",
-      "description": "None",
-      "score": 40,
-      "is_c2c": false,
-      "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861808"
-    },
-    {
-      "title": "Senior Software Engineer",
-      "company": "Circle",
-      "url": "https://www.linkedin.com/jobs/view/4351156756",
-      "location": "Greater Phoenix Area",
-      "description": "None",
-      "score": 40,
-      "is_c2c": false,
-      "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861811"
-    },
-    {
-      "title": "Software developer / Java developer hire 1024",
-      "company": "TalentHop",
-      "url": "https://www.linkedin.com/jobs/view/4479450125",
-      "location": "USA",
-      "description": "None",
-      "score": 40,
-      "is_c2c": false,
-      "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861813"
-    },
-    {
-      "title": "Software Engineer",
-      "company": "Kobie",
-      "url": "https://www.linkedin.com/jobs/view/4471931024",
-      "location": "Raleigh, NC, USA",
-      "description": "None",
-      "score": 40,
-      "is_c2c": false,
-      "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861815"
-    },
-    {
-      "title": "Java Software Engineer",
-      "company": "Rivago Infotech Inc",
-      "url": "https://www.linkedin.com/jobs/view/4479443207",
-      "location": "USA",
-      "description": "None",
-      "score": 40,
-      "is_c2c": false,
-      "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861818"
-    },
-    {
-      "title": "Senior Java Developer",
-      "company": "UST",
-      "url": "https://www.linkedin.com/jobs/view/4478648153",
-      "location": "Alpharetta, GA, USA",
-      "description": "None",
-      "score": 40,
-      "is_c2c": false,
-      "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861820"
-    },
-    {
-      "title": "Senior Java Software Engineer",
-      "company": "HCL Global Systems Inc",
-      "url": "https://www.linkedin.com/jobs/view/4478903615",
-      "location": "New Jersey, USA",
-      "description": "None",
-      "score": 40,
-      "is_c2c": false,
-      "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861822"
-    },
-    {
-      "title": "Senior Full Stack Java Engineer",
-      "company": "Deque Systems, Inc",
-      "url": "https://www.linkedin.com/jobs/view/4481535142",
-      "location": "Alabama, USA",
-      "description": "None",
-      "score": 40,
-      "is_c2c": false,
-      "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861824"
-    },
-    {
-      "title": "Java Spring Boot Developer - 6553868",
-      "company": "Accenture",
-      "url": "https://www.linkedin.com/jobs/view/4480296187",
-      "location": "Arlington, VA, USA",
-      "description": "None",
-      "score": 40,
-      "is_c2c": false,
-      "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861827"
-    },
-    {
-      "title": "Senior Java Developer \u2013 Healthcare / PBM Platform",
-      "company": "Conduent",
-      "url": "https://www.linkedin.com/jobs/view/4377450294",
-      "location": "USA",
-      "description": "None",
-      "score": 40,
-      "is_c2c": false,
-      "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861829"
-    },
-    {
-      "title": "Senior Java Backend Engineer - Remote-First, Full Ownership",
-      "company": "ExecutivePlacements.com",
-      "url": "https://www.linkedin.com/jobs/view/4480568700",
-      "location": "Scottsdale, AZ, USA",
-      "description": "None",
-      "score": 40,
-      "is_c2c": false,
-      "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861831"
-    },
-    {
-      "title": "Senior Software Engineer (Java Full stack)",
-      "company": "Optum",
-      "url": "https://www.linkedin.com/jobs/view/4480823018",
-      "location": "Raleigh, NC, USA",
-      "description": "None",
-      "score": 40,
-      "is_c2c": false,
-      "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861833"
-    },
-    {
-      "title": "Software Engineer II - Java, Spring, AWS, CI/CD",
-      "company": "GHX",
-      "url": "https://www.linkedin.com/jobs/view/4477745400",
-      "location": "USA",
-      "description": "None",
-      "score": 40,
-      "is_c2c": false,
-      "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861835"
-    },
-    {
-      "title": "Senior Software Engineer - APIs",
-      "company": "Unacast",
-      "url": "https://www.linkedin.com/jobs/view/4479349794",
-      "location": "Ashburn, VA, USA",
-      "description": "None",
-      "score": 40,
-      "is_c2c": false,
-      "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861837"
-    },
-    {
-      "title": "Senior Software Engineer",
-      "company": "Optum",
-      "url": "https://www.linkedin.com/jobs/view/4480334936",
-      "location": "Charlotte, NC, USA",
-      "description": "None",
-      "score": 40,
-      "is_c2c": false,
-      "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861839"
-    },
-    {
-      "title": "ANR - Mid Developer - IE Web",
-      "company": "Shee Atik\u00e1 Government Services",
-      "url": "https://www.linkedin.com/jobs/view/4480323889",
-      "location": "Sitka, AK, USA",
-      "description": "None",
-      "score": 40,
-      "is_c2c": false,
-      "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861841"
-    },
-    {
-      "title": "Full-Stack Developer (Java)",
-      "company": "MajorKey Technologies",
-      "url": "https://www.linkedin.com/jobs/view/4479387267",
-      "location": "USA",
-      "description": "None",
-      "score": 40,
-      "is_c2c": false,
-      "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861843"
-    },
-    {
-      "title": "Sr. Software Engineer",
-      "company": "Robert Half",
-      "url": "https://www.linkedin.com/jobs/view/4479839360",
-      "location": "Chicago, IL, USA",
-      "description": "None",
-      "score": 40,
-      "is_c2c": false,
-      "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861845"
-    },
-    {
-      "title": "Senior API Developer",
-      "company": "General Dynamics Information Technology",
-      "url": "https://www.linkedin.com/jobs/view/4479805370",
-      "location": "USA",
-      "description": "None",
-      "score": 40,
-      "is_c2c": false,
-      "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861848"
-    },
-    {
-      "title": "Java Developer",
-      "company": "HCLTech",
-      "url": "https://www.linkedin.com/jobs/view/4477321007",
-      "location": "Seattle, WA, USA",
-      "description": "None",
-      "score": 40,
-      "is_c2c": false,
-      "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861851"
-    },
-    {
-      "title": "Java Full Stack Developer",
-      "company": "HCLTech",
-      "url": "https://www.linkedin.com/jobs/view/4477341053",
-      "location": "Raleigh, NC, USA",
-      "description": "None",
-      "score": 40,
-      "is_c2c": false,
-      "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861853"
-    },
-    {
-      "title": "Senior Developer - Java Full Stack",
-      "company": "Capgemini",
-      "url": "https://www.linkedin.com/jobs/view/4477032239",
-      "location": "Atlanta, GA, USA",
-      "description": "None",
-      "score": 40,
-      "is_c2c": false,
-      "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861855"
-    },
-    {
-      "title": "Senior Core Java Backend Developer-Java, Spring Boot",
-      "company": "Rose International",
-      "url": "https://www.linkedin.com/jobs/view/4478954263",
-      "location": "Jersey City, NJ, USA",
-      "description": "None",
-      "score": 40,
-      "is_c2c": false,
-      "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861857"
-    },
-    {
-      "title": "Senior Software Developer",
-      "company": "Global Technical Talent, an Inc. 5000 Company",
-      "url": "https://www.linkedin.com/jobs/view/4479435284",
-      "location": "Fort Mill, SC, USA",
-      "description": "None",
-      "score": 40,
-      "is_c2c": false,
-      "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861860"
-    },
-    {
-      "title": "Senior Java Full Stack Developer (contract)",
-      "company": "BNY",
-      "url": "https://www.linkedin.com/jobs/view/4471205247",
-      "location": "Pittsburgh, PA, USA",
-      "description": "None",
-      "score": 40,
-      "is_c2c": false,
-      "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861862"
-    },
-    {
-      "title": "High Performing Core or Senior level Java Developer - Boston or Needham - RTH- 4-10 years exp only - financial services must- USC and GC only",
-      "company": "Yoh, A Day & Zimmermann Company",
-      "url": "https://www.linkedin.com/jobs/view/4481274336",
-      "location": "Needham, MA, USA",
-      "description": "None",
-      "score": 40,
-      "is_c2c": false,
-      "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861864"
-    },
-    {
-      "title": "Senior Java Developer",
-      "company": "Matlen Silver",
-      "url": "https://www.linkedin.com/jobs/view/4478601379",
-      "location": "Newark, DE, USA",
-      "description": "None",
-      "score": 40,
-      "is_c2c": false,
-      "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861866"
-    },
-    {
-      "title": "Sr Java Developer",
-      "company": "VOLTO Consulting",
-      "url": "https://www.linkedin.com/jobs/view/4481237043",
-      "location": "Addison, TX, USA",
-      "description": "None",
-      "score": 40,
-      "is_c2c": false,
-      "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861869"
-    },
-    {
-      "title": "Senior Java Developer (contract)",
-      "company": "BNY",
-      "url": "https://www.linkedin.com/jobs/view/4477736709",
-      "location": "Lake Mary, FL, USA",
-      "description": "None",
-      "score": 40,
-      "is_c2c": false,
-      "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861871"
-    },
-    {
-      "title": "Senior Java Microservices Developer",
-      "company": "Horizontal Talent",
-      "url": "https://www.linkedin.com/jobs/view/4469315688",
-      "location": "Oakland, CA, USA",
-      "description": "None",
-      "score": 40,
-      "is_c2c": false,
-      "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861873"
-    },
-    {
-      "title": "Senior Software Engineer",
-      "company": "Revolution Technologies",
-      "url": "https://www.linkedin.com/jobs/view/4469212262",
-      "location": "Dedham, MA, USA",
-      "description": "None",
-      "score": 40,
-      "is_c2c": false,
-      "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861875"
-    },
-    {
-      "title": "Senior Full Stack Developer / Engineer (Java / Angular / AWS)",
-      "company": "Randstad Digital Americas",
-      "url": "https://www.linkedin.com/jobs/view/4482038628",
-      "location": "Washington, DC, USA",
-      "description": "None",
-      "score": 40,
-      "is_c2c": false,
-      "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861877"
-    },
-    {
-      "title": "Senior Software Engineer II",
-      "company": "Kforce Inc",
-      "url": "https://www.linkedin.com/jobs/view/4417775049",
-      "location": "New York, NY, USA",
-      "description": "None",
-      "score": 40,
-      "is_c2c": false,
-      "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861879"
-    },
-    {
-      "title": "Senior Software Engineer (NodeJS/Angular/AWS)",
-      "company": "Eliassen Group",
-      "url": "https://www.linkedin.com/jobs/view/4470873756",
-      "location": "Rockville, MD, USA",
-      "description": "None",
-      "score": 40,
-      "is_c2c": false,
-      "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861881"
-    },
-    {
-      "title": "Java Developer Contract",
-      "company": "V Group Inc.",
-      "url": "https://www.linkedin.com/jobs/view/4481550480",
-      "location": "Albany, NY, USA",
-      "description": "None",
-      "score": 40,
-      "is_c2c": false,
-      "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861883"
-    },
-    {
-      "title": "API Developer",
-      "company": "Highbrow Technology Inc",
-      "url": "https://www.linkedin.com/jobs/view/4480227637",
-      "location": "Charlotte, NC, USA",
-      "description": "None",
-      "score": 40,
-      "is_c2c": false,
-      "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861886"
-    },
-    {
-      "title": "Forward Deployed Engineer Lead / Architect",
-      "company": "TekCommands",
-      "url": "https://www.linkedin.com/jobs/view/4477307927",
-      "location": "Minneapolis, MN, USA",
-      "description": "None",
-      "score": 40,
-      "is_c2c": false,
-      "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861888"
-    },
-    {
-      "title": "Full Stack Java Developer | Jersey City, NJ - Hybrid | W2 ONLY",
-      "company": "Matlen Silver",
-      "url": "https://www.linkedin.com/jobs/view/4477729594",
-      "location": "Jersey City, NJ, USA",
-      "description": "None",
-      "score": 40,
-      "is_c2c": false,
-      "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861890"
-    },
-    {
-      "title": "Java Full stack Developer with Angular",
-      "company": "PETADATA",
-      "url": "https://www.linkedin.com/jobs/view/4480551292",
-      "location": "Roanoke, TX, USA",
-      "description": "None",
-      "score": 40,
-      "is_c2c": false,
-      "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861892"
-    },
-    {
-      "title": "Principal Integration Architect (6005)",
-      "company": "NextPath Workforce Solutions",
-      "url": "https://www.linkedin.com/jobs/view/4478818507",
-      "location": "Reading, PA, USA",
-      "description": "None",
-      "score": 40,
-      "is_c2c": false,
-      "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861894"
+      "found_at": "2026-10-22T18:25:16.272069"
     },
     {
       "title": "Software Developer",
@@ -1514,7 +1160,821 @@
       "score": 40,
       "is_c2c": false,
       "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861896"
+      "found_at": "2026-10-22T18:25:16.272071"
+    },
+    {
+      "title": "Senior Backend Engineer",
+      "company": "InfiCare Staffing",
+      "url": "https://www.linkedin.com/jobs/view/4481379528",
+      "location": "New Jersey, USA",
+      "description": "None",
+      "score": 40,
+      "is_c2c": false,
+      "source": "linkedin_deep",
+      "found_at": "2026-10-22T18:25:16.272073"
+    },
+    {
+      "title": "Distinguished Engineer (Fintech)",
+      "company": "Intellibus",
+      "url": "https://www.linkedin.com/jobs/view/4481365552",
+      "location": "Manhattan, NY, USA",
+      "description": "None",
+      "score": 40,
+      "is_c2c": false,
+      "source": "linkedin_deep",
+      "found_at": "2026-10-22T18:25:16.272075"
+    },
+    {
+      "title": "Senior Java Developer - Spring Boot Microservices & Azure Cloud",
+      "company": "TALENT Software Services",
+      "url": "https://www.linkedin.com/jobs/view/4479431942",
+      "location": "Pleasanton, CA, USA",
+      "description": "None",
+      "score": 40,
+      "is_c2c": false,
+      "source": "linkedin_deep",
+      "found_at": "2026-10-22T18:25:16.272078"
+    },
+    {
+      "title": "Java Technical Lead",
+      "company": "iSpace, Inc.",
+      "url": "https://www.linkedin.com/jobs/view/4478140022",
+      "location": "Torrance, CA, USA",
+      "description": "None",
+      "score": 40,
+      "is_c2c": false,
+      "source": "linkedin_deep",
+      "found_at": "2026-10-22T18:25:16.272080"
+    },
+    {
+      "title": "Senior Software Engineer - Back End IV",
+      "company": "Software Guidance & Assistance, Inc. (SGA, Inc.)",
+      "url": "https://www.linkedin.com/jobs/view/4480710871",
+      "location": "Cincinnati, OH, USA",
+      "description": "None",
+      "score": 40,
+      "is_c2c": false,
+      "source": "linkedin_deep",
+      "found_at": "2026-10-22T18:25:16.272082"
+    },
+    {
+      "title": "Java Developer with Kafka (W2 ONLY)",
+      "company": "MethodHub",
+      "url": "https://www.linkedin.com/jobs/view/4479535317",
+      "location": "Tampa, FL, USA",
+      "description": "None",
+      "score": 40,
+      "is_c2c": false,
+      "source": "linkedin_deep",
+      "found_at": "2026-10-22T18:25:16.272084"
+    },
+    {
+      "title": "Senior Java Application Engineer",
+      "company": "HCA Healthcare",
+      "url": "https://www.linkedin.com/jobs/view/4466868443",
+      "location": "Nashville Metropolitan Area",
+      "description": "None",
+      "score": 40,
+      "is_c2c": false,
+      "source": "linkedin_deep",
+      "found_at": "2026-10-22T18:25:16.272086"
+    },
+    {
+      "title": "Senior Java Developer",
+      "company": "HTD Talent",
+      "url": "https://www.linkedin.com/jobs/view/4478931869",
+      "location": "Charlotte, NC, USA",
+      "description": "None",
+      "score": 40,
+      "is_c2c": false,
+      "source": "linkedin_deep",
+      "found_at": "2026-10-22T18:25:16.272088"
+    },
+    {
+      "title": "Senior Software Engineer",
+      "company": "Request Technology, LLC",
+      "url": "https://www.linkedin.com/jobs/view/4480701719",
+      "location": "Alpharetta, GA, USA",
+      "description": "None",
+      "score": 40,
+      "is_c2c": false,
+      "source": "linkedin_deep",
+      "found_at": "2026-10-22T18:25:16.272090"
+    },
+    {
+      "title": "Java Engineer",
+      "company": "Motion Recruitment",
+      "url": "https://www.linkedin.com/jobs/view/4473008264",
+      "location": "Tempe, AZ, USA",
+      "description": "None",
+      "score": 40,
+      "is_c2c": false,
+      "source": "linkedin_deep",
+      "found_at": "2026-10-22T18:25:16.272092"
+    },
+    {
+      "title": "Senior Java / AWS Software Engineer (W2 | Hybrid)",
+      "company": "Tricon Solutions",
+      "url": "https://www.linkedin.com/jobs/view/4480992334",
+      "location": "Englewood Cliffs, NJ, USA",
+      "description": "None",
+      "score": 40,
+      "is_c2c": false,
+      "source": "linkedin_deep",
+      "found_at": "2026-10-22T18:25:16.272094"
+    },
+    {
+      "title": "Senior Java Software Engineer",
+      "company": "Software Technology Inc.",
+      "url": "https://www.linkedin.com/jobs/view/4480993674",
+      "location": "Atlanta, GA, USA",
+      "description": "None",
+      "score": 40,
+      "is_c2c": false,
+      "source": "linkedin_deep",
+      "found_at": "2026-10-22T18:25:16.272096"
+    },
+    {
+      "title": "Sr Java Technical Lead - Miami",
+      "company": "Coderio",
+      "url": "https://www.linkedin.com/jobs/view/4468938518",
+      "location": "Miami, FL, USA",
+      "description": "None",
+      "score": 40,
+      "is_c2c": false,
+      "source": "linkedin_deep",
+      "found_at": "2026-10-22T18:25:16.272098"
+    },
+    {
+      "title": "Sr Java Backend Developer",
+      "company": "Coderio",
+      "url": "https://www.linkedin.com/jobs/view/4469765621",
+      "location": "Miami, FL, USA",
+      "description": "None",
+      "score": 40,
+      "is_c2c": false,
+      "source": "linkedin_deep",
+      "found_at": "2026-10-22T18:25:16.272100"
+    },
+    {
+      "title": "Senior Java FullStack Developer",
+      "company": "Accord Technologies Inc",
+      "url": "https://www.linkedin.com/jobs/view/4480393425",
+      "location": "O'Fallon, IL, USA",
+      "description": "None",
+      "score": 40,
+      "is_c2c": false,
+      "source": "linkedin_deep",
+      "found_at": "2026-10-22T18:25:16.272102"
+    },
+    {
+      "title": "Java Developer - Python, AWS",
+      "company": "Talon Professional Services",
+      "url": "https://www.linkedin.com/jobs/view/4480394089",
+      "location": "Coppell, TX, USA",
+      "description": "None",
+      "score": 40,
+      "is_c2c": false,
+      "source": "linkedin_deep",
+      "found_at": "2026-10-22T18:25:16.272104"
+    },
+    {
+      "title": "Sr. Java Engineer",
+      "company": "Dexian",
+      "url": "https://www.linkedin.com/jobs/view/4477729571",
+      "location": "Hoboken, NJ, USA",
+      "description": "None",
+      "score": 40,
+      "is_c2c": false,
+      "source": "linkedin_deep",
+      "found_at": "2026-10-22T18:25:16.272106"
+    },
+    {
+      "title": "Senior Java Software Engineer",
+      "company": "LanceSoft, Inc.",
+      "url": "https://www.linkedin.com/jobs/view/4479160748",
+      "location": "Columbus, OH, USA",
+      "description": "None",
+      "score": 40,
+      "is_c2c": false,
+      "source": "linkedin_deep",
+      "found_at": "2026-10-22T18:25:16.272107"
+    },
+    {
+      "title": "Sr Java Full Stack Developer (Snowflake/QuickSight) -  100% Remote - (W2 Contract)",
+      "company": "Xforia Global Talent  & Technology Solutions",
+      "url": "https://www.linkedin.com/jobs/view/4481144482",
+      "location": "USA",
+      "description": "None",
+      "score": 40,
+      "is_c2c": false,
+      "source": "linkedin_deep",
+      "found_at": "2026-10-22T18:25:16.272109"
+    },
+    {
+      "title": "Senior Temporal Java Software Engineer",
+      "company": "TalentDome Staffing",
+      "url": "https://www.linkedin.com/jobs/view/4467242462",
+      "location": "USA",
+      "description": "None",
+      "score": 40,
+      "is_c2c": false,
+      "source": "linkedin_deep",
+      "found_at": "2026-10-22T18:25:16.272111"
+    },
+    {
+      "title": "Senior Full Stack Engineer",
+      "company": "Kforce Inc",
+      "url": "https://www.linkedin.com/jobs/view/4482121849",
+      "location": "Orlando, FL, USA",
+      "description": "None",
+      "score": 40,
+      "is_c2c": false,
+      "source": "linkedin_deep",
+      "found_at": "2026-10-22T18:25:16.272113"
+    },
+    {
+      "title": "CCaR - Senior Software Engineer",
+      "company": "Jobgether",
+      "url": "https://www.linkedin.com/jobs/view/4480773763",
+      "location": "USA",
+      "description": "None",
+      "score": 40,
+      "is_c2c": false,
+      "source": "linkedin_deep",
+      "found_at": "2026-10-22T18:25:16.272115"
+    },
+    {
+      "title": "Senior Application Programmer / Java Developer",
+      "company": "Revolutional",
+      "url": "https://www.linkedin.com/jobs/view/4480426155",
+      "location": "USA",
+      "description": "None",
+      "score": 40,
+      "is_c2c": false,
+      "source": "linkedin_deep",
+      "found_at": "2026-10-22T18:25:16.272117"
+    },
+    {
+      "title": "Java/Mainframe Developer with Facets & Medicaid",
+      "company": "Programmers.io",
+      "url": "https://www.linkedin.com/jobs/view/4480741009",
+      "location": "Texas, USA",
+      "description": "None",
+      "score": 40,
+      "is_c2c": false,
+      "source": "linkedin_deep",
+      "found_at": "2026-10-22T18:25:16.272119"
+    },
+    {
+      "title": "Java Full Stack Engineer",
+      "company": "Paladin Consulting",
+      "url": "https://www.linkedin.com/jobs/view/4480729296",
+      "location": "USA",
+      "description": "None",
+      "score": 40,
+      "is_c2c": false,
+      "source": "linkedin_deep",
+      "found_at": "2026-10-22T18:25:16.272121"
+    },
+    {
+      "title": "Senior Java Developer with Facets and Medicaid Experience",
+      "company": "Programmers.io",
+      "url": "https://www.linkedin.com/jobs/view/4480473930",
+      "location": "USA",
+      "description": "None",
+      "score": 40,
+      "is_c2c": false,
+      "source": "linkedin_deep",
+      "found_at": "2026-10-22T18:25:16.272123"
+    },
+    {
+      "title": "Senior Java Developer \u2013 Healthcare / PBM Platform",
+      "company": "Conduent",
+      "url": "https://www.linkedin.com/jobs/view/4377450294",
+      "location": "USA",
+      "description": "None",
+      "score": 40,
+      "is_c2c": false,
+      "source": "linkedin_deep",
+      "found_at": "2026-10-22T18:25:16.272125"
+    },
+    {
+      "title": "Sr Application Developer Java",
+      "company": "The Custom Group of Companies",
+      "url": "https://www.linkedin.com/jobs/view/4479447766",
+      "location": "New York, USA",
+      "description": "None",
+      "score": 40,
+      "is_c2c": false,
+      "source": "linkedin_deep",
+      "found_at": "2026-10-22T18:25:16.272128"
+    },
+    {
+      "title": "Sr Software Engineer",
+      "company": "Apex Systems",
+      "url": "https://www.linkedin.com/jobs/view/4482129551",
+      "location": "St Louis, MO, USA",
+      "description": "None",
+      "score": 40,
+      "is_c2c": false,
+      "source": "linkedin_deep",
+      "found_at": "2026-10-22T18:25:16.272130"
+    },
+    {
+      "title": "Sr Java Developer",
+      "company": "PineQ Lab Technology",
+      "url": "https://www.linkedin.com/jobs/view/4478906699",
+      "location": "Atlanta, GA, USA",
+      "description": "None",
+      "score": 40,
+      "is_c2c": false,
+      "source": "linkedin_deep",
+      "found_at": "2026-10-22T18:25:16.272133"
+    },
+    {
+      "title": "Senior Software Engineer",
+      "company": "Eliassen Group",
+      "url": "https://www.linkedin.com/jobs/view/4480280200",
+      "location": "St Louis, MO, USA",
+      "description": "None",
+      "score": 40,
+      "is_c2c": false,
+      "source": "linkedin_deep",
+      "found_at": "2026-10-22T18:25:16.272135"
+    },
+    {
+      "title": "Software Engineer 4",
+      "company": "Cypress HCM",
+      "url": "https://www.linkedin.com/jobs/view/4479161101",
+      "location": "San Jose, CA, USA",
+      "description": "None",
+      "score": 40,
+      "is_c2c": false,
+      "source": "linkedin_deep",
+      "found_at": "2026-10-22T18:25:16.272137"
+    },
+    {
+      "title": "Senior Software Engineer - Back End IV",
+      "company": "Apex Systems",
+      "url": "https://www.linkedin.com/jobs/view/4482003003",
+      "location": "Cincinnati, OH, USA",
+      "description": "None",
+      "score": 40,
+      "is_c2c": false,
+      "source": "linkedin_deep",
+      "found_at": "2026-10-22T18:25:16.272140"
+    },
+    {
+      "title": "Lead Java developer",
+      "company": "Holistic Partners, Inc",
+      "url": "https://www.linkedin.com/jobs/view/4479391256",
+      "location": "Phoenix, AZ, USA",
+      "description": "None",
+      "score": 40,
+      "is_c2c": false,
+      "source": "linkedin_deep",
+      "found_at": "2026-10-22T18:25:16.272142"
+    },
+    {
+      "title": "Senior Software Engineer",
+      "company": "Circle",
+      "url": "https://www.linkedin.com/jobs/view/4351186898",
+      "location": "Austin, Texas Metropolitan Area",
+      "description": "None",
+      "score": 40,
+      "is_c2c": false,
+      "source": "linkedin_deep",
+      "found_at": "2026-10-22T18:25:16.272144"
+    },
+    {
+      "title": "Software developer / Java developer hire 1024",
+      "company": "TalentHop",
+      "url": "https://www.linkedin.com/jobs/view/4480005580",
+      "location": "USA",
+      "description": "None",
+      "score": 40,
+      "is_c2c": false,
+      "source": "linkedin_deep",
+      "found_at": "2026-10-22T18:25:16.272147"
+    },
+    {
+      "title": "Java Developer - Remote Work",
+      "company": "Torentify",
+      "url": "https://www.linkedin.com/jobs/view/4482702259",
+      "location": "USA",
+      "description": "None",
+      "score": 40,
+      "is_c2c": false,
+      "source": "linkedin_deep",
+      "found_at": "2026-10-22T18:25:16.272149"
+    },
+    {
+      "title": "Senior Java Software Engineer (Library of Congress)",
+      "company": "Ad Hoc LLC",
+      "url": "https://www.linkedin.com/jobs/view/4472322361",
+      "location": "USA",
+      "description": "None",
+      "score": 40,
+      "is_c2c": false,
+      "source": "linkedin_deep",
+      "found_at": "2026-10-22T18:25:16.272151"
+    },
+    {
+      "title": "Software Engineer",
+      "company": "Kobie",
+      "url": "https://www.linkedin.com/jobs/view/4471931024",
+      "location": "Raleigh, NC, USA",
+      "description": "None",
+      "score": 40,
+      "is_c2c": false,
+      "source": "linkedin_deep",
+      "found_at": "2026-10-22T18:25:16.272153"
+    },
+    {
+      "title": "Senior Java Developer",
+      "company": "UST",
+      "url": "https://www.linkedin.com/jobs/view/4478648153",
+      "location": "Alpharetta, GA, USA",
+      "description": "None",
+      "score": 40,
+      "is_c2c": false,
+      "source": "linkedin_deep",
+      "found_at": "2026-10-22T18:25:16.272155"
+    },
+    {
+      "title": "Senior Java Software Engineer",
+      "company": "HCL Global Systems Inc",
+      "url": "https://www.linkedin.com/jobs/view/4478903615",
+      "location": "New Jersey, USA",
+      "description": "None",
+      "score": 40,
+      "is_c2c": false,
+      "source": "linkedin_deep",
+      "found_at": "2026-10-22T18:25:16.272158"
+    },
+    {
+      "title": "Senior Full Stack Java Engineer",
+      "company": "Deque Systems, Inc",
+      "url": "https://www.linkedin.com/jobs/view/4481535142",
+      "location": "Alabama, USA",
+      "description": "None",
+      "score": 40,
+      "is_c2c": false,
+      "source": "linkedin_deep",
+      "found_at": "2026-10-22T18:25:16.272160"
+    },
+    {
+      "title": "Senior Software Engineer, Backend",
+      "company": "Flex",
+      "url": "https://www.linkedin.com/jobs/view/4481764183",
+      "location": "USA",
+      "description": "None",
+      "score": 40,
+      "is_c2c": false,
+      "source": "linkedin_deep",
+      "found_at": "2026-10-22T18:25:16.272162"
+    },
+    {
+      "title": "Java Integration Engineer I",
+      "company": "Mutual of Omaha",
+      "url": "https://www.linkedin.com/jobs/view/4478907553",
+      "location": "USA",
+      "description": "None",
+      "score": 40,
+      "is_c2c": false,
+      "source": "linkedin_deep",
+      "found_at": "2026-10-22T18:25:16.272164"
+    },
+    {
+      "title": "Senior Software Engineer",
+      "company": "EnergyHub",
+      "url": "https://www.linkedin.com/jobs/view/4462508890",
+      "location": "USA",
+      "description": "None",
+      "score": 40,
+      "is_c2c": false,
+      "source": "linkedin_deep",
+      "found_at": "2026-10-22T18:25:16.272166"
+    },
+    {
+      "title": "Full Stack Engineer (Java, Mulesoft, Cobol)",
+      "company": "Mutual of Omaha",
+      "url": "https://www.linkedin.com/jobs/view/4478908721",
+      "location": "USA",
+      "description": "None",
+      "score": 40,
+      "is_c2c": false,
+      "source": "linkedin_deep",
+      "found_at": "2026-10-22T18:25:16.272168"
+    },
+    {
+      "title": "Java Spring Boot Developer - 6553868",
+      "company": "Accenture",
+      "url": "https://www.linkedin.com/jobs/view/4480296187",
+      "location": "Arlington, VA, USA",
+      "description": "None",
+      "score": 40,
+      "is_c2c": false,
+      "source": "linkedin_deep",
+      "found_at": "2026-10-22T18:25:16.272170"
+    },
+    {
+      "title": "Senior Java Backend Engineer - Remote-First, Full Ownership",
+      "company": "ExecutivePlacements.com",
+      "url": "https://www.linkedin.com/jobs/view/4480568700",
+      "location": "Scottsdale, AZ, USA",
+      "description": "None",
+      "score": 40,
+      "is_c2c": false,
+      "source": "linkedin_deep",
+      "found_at": "2026-10-22T18:25:16.272173"
+    },
+    {
+      "title": "Senior Software Engineer (Java Full stack)",
+      "company": "Optum",
+      "url": "https://www.linkedin.com/jobs/view/4480823018",
+      "location": "Raleigh, NC, USA",
+      "description": "None",
+      "score": 40,
+      "is_c2c": false,
+      "source": "linkedin_deep",
+      "found_at": "2026-10-22T18:25:16.272175"
+    },
+    {
+      "title": "Software Engineer II - Java, Spring, AWS, CI/CD",
+      "company": "GHX",
+      "url": "https://www.linkedin.com/jobs/view/4477745400",
+      "location": "USA",
+      "description": "None",
+      "score": 40,
+      "is_c2c": false,
+      "source": "linkedin_deep",
+      "found_at": "2026-10-22T18:25:16.272177"
+    },
+    {
+      "title": "Senior Software Engineer - APIs",
+      "company": "Unacast",
+      "url": "https://www.linkedin.com/jobs/view/4479349794",
+      "location": "Ashburn, VA, USA",
+      "description": "None",
+      "score": 40,
+      "is_c2c": false,
+      "source": "linkedin_deep",
+      "found_at": "2026-10-22T18:25:16.272179"
+    },
+    {
+      "title": "Senior Software Engineer",
+      "company": "Optum",
+      "url": "https://www.linkedin.com/jobs/view/4480334936",
+      "location": "Charlotte, NC, USA",
+      "description": "None",
+      "score": 40,
+      "is_c2c": false,
+      "source": "linkedin_deep",
+      "found_at": "2026-10-22T18:25:16.272181"
+    },
+    {
+      "title": "ANR - Mid Developer - IE Web",
+      "company": "Shee Atik\u00e1 Government Services",
+      "url": "https://www.linkedin.com/jobs/view/4480323889",
+      "location": "Sitka, AK, USA",
+      "description": "None",
+      "score": 40,
+      "is_c2c": false,
+      "source": "linkedin_deep",
+      "found_at": "2026-10-22T18:25:16.272183"
+    },
+    {
+      "title": "Full-Stack Developer (Java)",
+      "company": "MajorKey Technologies",
+      "url": "https://www.linkedin.com/jobs/view/4479387267",
+      "location": "USA",
+      "description": "None",
+      "score": 40,
+      "is_c2c": false,
+      "source": "linkedin_deep",
+      "found_at": "2026-10-22T18:25:16.272185"
+    },
+    {
+      "title": "Java Full Stack Developer",
+      "company": "HCLTech",
+      "url": "https://www.linkedin.com/jobs/view/4477341053",
+      "location": "Raleigh, NC, USA",
+      "description": "None",
+      "score": 40,
+      "is_c2c": false,
+      "source": "linkedin_deep",
+      "found_at": "2026-10-22T18:25:16.272186"
+    },
+    {
+      "title": "Senior Core Java Backend Developer-Java, Spring Boot",
+      "company": "Rose International",
+      "url": "https://www.linkedin.com/jobs/view/4478954263",
+      "location": "Jersey City, NJ, USA",
+      "description": "None",
+      "score": 40,
+      "is_c2c": false,
+      "source": "linkedin_deep",
+      "found_at": "2026-10-22T18:25:16.272189"
+    },
+    {
+      "title": "Senior Software Developer",
+      "company": "Global Technical Talent, an Inc. 5000 Company",
+      "url": "https://www.linkedin.com/jobs/view/4479435284",
+      "location": "Fort Mill, SC, USA",
+      "description": "None",
+      "score": 40,
+      "is_c2c": false,
+      "source": "linkedin_deep",
+      "found_at": "2026-10-22T18:25:16.272191"
+    },
+    {
+      "title": "Senior Java Backend Developer ONSITE",
+      "company": "TechPerm Incorporated",
+      "url": "https://www.linkedin.com/jobs/view/4477862890",
+      "location": "Woodlawn, MD, USA",
+      "description": "None",
+      "score": 40,
+      "is_c2c": false,
+      "source": "linkedin_deep",
+      "found_at": "2026-10-22T18:25:16.272193"
+    },
+    {
+      "title": "High Performing Core or Senior level Java Developer - Boston or Needham - RTH- 4-10 years exp only - financial services must- USC and GC only",
+      "company": "Yoh, A Day & Zimmermann Company",
+      "url": "https://www.linkedin.com/jobs/view/4481274336",
+      "location": "Needham, MA, USA",
+      "description": "None",
+      "score": 40,
+      "is_c2c": false,
+      "source": "linkedin_deep",
+      "found_at": "2026-10-22T18:25:16.272196"
+    },
+    {
+      "title": "Senior Java Developer",
+      "company": "Matlen Silver",
+      "url": "https://www.linkedin.com/jobs/view/4478601379",
+      "location": "Newark, DE, USA",
+      "description": "None",
+      "score": 40,
+      "is_c2c": false,
+      "source": "linkedin_deep",
+      "found_at": "2026-10-22T18:25:16.272198"
+    },
+    {
+      "title": "Sr Java Developer",
+      "company": "VOLTO Consulting",
+      "url": "https://www.linkedin.com/jobs/view/4481237043",
+      "location": "Addison, TX, USA",
+      "description": "None",
+      "score": 40,
+      "is_c2c": false,
+      "source": "linkedin_deep",
+      "found_at": "2026-10-22T18:25:16.272200"
+    },
+    {
+      "title": "Senior Java Developer (contract)",
+      "company": "BNY",
+      "url": "https://www.linkedin.com/jobs/view/4477736709",
+      "location": "Lake Mary, FL, USA",
+      "description": "None",
+      "score": 40,
+      "is_c2c": false,
+      "source": "linkedin_deep",
+      "found_at": "2026-10-22T18:25:16.272202"
+    },
+    {
+      "title": "Senior Software Engineer",
+      "company": "Revolution Technologies",
+      "url": "https://www.linkedin.com/jobs/view/4469212262",
+      "location": "Dedham, MA, USA",
+      "description": "None",
+      "score": 40,
+      "is_c2c": false,
+      "source": "linkedin_deep",
+      "found_at": "2026-10-22T18:25:16.272204"
+    },
+    {
+      "title": "FS Java Angular v16+ AWS API",
+      "company": "Kforce Inc",
+      "url": "https://www.linkedin.com/jobs/view/4482172871",
+      "location": "Boston, MA, USA",
+      "description": "None",
+      "score": 40,
+      "is_c2c": false,
+      "source": "linkedin_deep",
+      "found_at": "2026-10-22T18:25:16.272206"
+    },
+    {
+      "title": "Senior Software Engineer II",
+      "company": "Kforce Inc",
+      "url": "https://www.linkedin.com/jobs/view/4417775049",
+      "location": "New York, NY, USA",
+      "description": "None",
+      "score": 40,
+      "is_c2c": false,
+      "source": "linkedin_deep",
+      "found_at": "2026-10-22T18:25:16.272208"
+    },
+    {
+      "title": "Senior Software Engineer (NodeJS/Angular/AWS)",
+      "company": "Eliassen Group",
+      "url": "https://www.linkedin.com/jobs/view/4470873756",
+      "location": "Rockville, MD, USA",
+      "description": "None",
+      "score": 40,
+      "is_c2c": false,
+      "source": "linkedin_deep",
+      "found_at": "2026-10-22T18:25:16.272209"
+    },
+    {
+      "title": "Software Development Engineer",
+      "company": "Randstad Digital Americas",
+      "url": "https://www.linkedin.com/jobs/view/4481776401",
+      "location": "McLean, VA, USA",
+      "description": "None",
+      "score": 40,
+      "is_c2c": false,
+      "source": "linkedin_deep",
+      "found_at": "2026-10-22T18:25:16.272211"
+    },
+    {
+      "title": "API Developer",
+      "company": "Highbrow Technology Inc",
+      "url": "https://www.linkedin.com/jobs/view/4480227637",
+      "location": "Charlotte, NC, USA",
+      "description": "None",
+      "score": 40,
+      "is_c2c": false,
+      "source": "linkedin_deep",
+      "found_at": "2026-10-22T18:25:16.272213"
+    },
+    {
+      "title": "Forward Deployed Engineer Lead / Architect",
+      "company": "TekCommands",
+      "url": "https://www.linkedin.com/jobs/view/4477307927",
+      "location": "Minneapolis, MN, USA",
+      "description": "None",
+      "score": 40,
+      "is_c2c": false,
+      "source": "linkedin_deep",
+      "found_at": "2026-10-22T18:25:16.272215"
+    },
+    {
+      "title": "Full Stack Java Developer | Jersey City, NJ - Hybrid | W2 ONLY",
+      "company": "Matlen Silver",
+      "url": "https://www.linkedin.com/jobs/view/4477729594",
+      "location": "Jersey City, NJ, USA",
+      "description": "None",
+      "score": 40,
+      "is_c2c": false,
+      "source": "linkedin_deep",
+      "found_at": "2026-10-22T18:25:16.272217"
+    },
+    {
+      "title": "Java Full stack Developer with Angular",
+      "company": "PETADATA",
+      "url": "https://www.linkedin.com/jobs/view/4480551292",
+      "location": "Roanoke, TX, USA",
+      "description": "None",
+      "score": 40,
+      "is_c2c": false,
+      "source": "linkedin_deep",
+      "found_at": "2026-10-22T18:25:16.272219"
+    },
+    {
+      "title": "Senior Java Developer \u2013 Schwab Investing Themes",
+      "company": "Charles Schwab",
+      "url": "https://www.linkedin.com/jobs/view/4480049480",
+      "location": "Austin, TX, USA",
+      "description": "None",
+      "score": 40,
+      "is_c2c": false,
+      "source": "linkedin_deep",
+      "found_at": "2026-10-22T18:25:16.272221"
+    },
+    {
+      "title": "Principal Software Engineer (Java) - Washington DC, Philly, Wilmington, Chicago",
+      "company": "Amtrak",
+      "url": "https://www.linkedin.com/jobs/view/4472648276",
+      "location": "Chicago, IL, USA",
+      "description": "None",
+      "score": 40,
+      "is_c2c": false,
+      "source": "linkedin_deep",
+      "found_at": "2026-10-22T18:25:16.272223"
+    },
+    {
+      "title": "Senior Java Developer",
+      "company": "Santander US",
+      "url": "https://www.linkedin.com/jobs/view/4480040419",
+      "location": "New York, NY, USA",
+      "description": "None",
+      "score": 40,
+      "is_c2c": false,
+      "source": "linkedin_deep",
+      "found_at": "2026-10-22T18:25:16.272225"
     },
     {
       "title": "Senior Software Engineer",
@@ -1525,7 +1985,7 @@
       "score": 40,
       "is_c2c": false,
       "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861899"
+      "found_at": "2026-10-22T18:25:16.272227"
     },
     {
       "title": "Lead Java Developer",
@@ -1536,7 +1996,7 @@
       "score": 40,
       "is_c2c": false,
       "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861901"
+      "found_at": "2026-10-22T18:25:16.272229"
     },
     {
       "title": "Senior Software Engineer",
@@ -1547,7 +2007,7 @@
       "score": 40,
       "is_c2c": false,
       "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861903"
+      "found_at": "2026-10-22T18:25:16.272231"
     },
     {
       "title": "Software Engineer (Hybrid) - 29370",
@@ -1558,7 +2018,7 @@
       "score": 40,
       "is_c2c": false,
       "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861905"
+      "found_at": "2026-10-22T18:25:16.272233"
     },
     {
       "title": "Senior Java Developer--NAOP (New Account Opening Platform)",
@@ -1569,18 +2029,7 @@
       "score": 40,
       "is_c2c": false,
       "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861908"
-    },
-    {
-      "title": "Java Developer with Hadoop",
-      "company": "Envision Technology Solutions",
-      "url": "https://www.linkedin.com/jobs/view/4479437803",
-      "location": "Charlotte, NC, USA",
-      "description": "None",
-      "score": 40,
-      "is_c2c": false,
-      "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861910"
+      "found_at": "2026-10-22T18:25:16.272235"
     },
     {
       "title": "Sr. Java Developer",
@@ -1591,7 +2040,7 @@
       "score": 40,
       "is_c2c": false,
       "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861912"
+      "found_at": "2026-10-22T18:25:16.272237"
     },
     {
       "title": "Senior Backend Engineer - (Java/Spring Boot)",
@@ -1602,7 +2051,7 @@
       "score": 40,
       "is_c2c": false,
       "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861914"
+      "found_at": "2026-10-22T18:25:16.272239"
     },
     {
       "title": "Java Developer \u2013 Assistant Vice President",
@@ -1613,7 +2062,7 @@
       "score": 40,
       "is_c2c": false,
       "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861916"
+      "found_at": "2026-10-22T18:25:16.272241"
     },
     {
       "title": "CitiDirect Senior Java Dev for Payments Modernization \u2013 Vice President",
@@ -1624,7 +2073,7 @@
       "score": 40,
       "is_c2c": false,
       "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861919"
+      "found_at": "2026-10-22T18:25:16.272243"
     },
     {
       "title": "Sr. Java Engineer - Application & Services",
@@ -1635,7 +2084,7 @@
       "score": 40,
       "is_c2c": false,
       "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861921"
+      "found_at": "2026-10-22T18:25:16.272245"
     },
     {
       "title": "Java Developer",
@@ -1646,7 +2095,7 @@
       "score": 40,
       "is_c2c": false,
       "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861923"
+      "found_at": "2026-10-22T18:25:16.272246"
     },
     {
       "title": "Sr Software Engineer - Backend (Java)",
@@ -1657,7 +2106,7 @@
       "score": 40,
       "is_c2c": false,
       "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861925"
+      "found_at": "2026-10-22T18:25:16.272248"
     },
     {
       "title": "Software Development Engineer",
@@ -1668,18 +2117,7 @@
       "score": 40,
       "is_c2c": false,
       "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861927"
-    },
-    {
-      "title": "Senior Java Software Engineer",
-      "company": "Themesoft Inc.",
-      "url": "https://www.linkedin.com/jobs/view/4481726704",
-      "location": "Sunnyvale, CA, USA",
-      "description": "None",
-      "score": 40,
-      "is_c2c": false,
-      "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861930"
+      "found_at": "2026-10-22T18:25:16.272250"
     },
     {
       "title": "Java Developer III (Senior)",
@@ -1690,7 +2128,7 @@
       "score": 40,
       "is_c2c": false,
       "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861932"
+      "found_at": "2026-10-22T18:25:16.272252"
     },
     {
       "title": "Senior Software Engineer (Hybrid) - 27722",
@@ -1701,7 +2139,7 @@
       "score": 40,
       "is_c2c": false,
       "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861934"
+      "found_at": "2026-10-22T18:25:16.272254"
     },
     {
       "title": "Senior Software Engineer (Java Backend)",
@@ -1712,7 +2150,7 @@
       "score": 40,
       "is_c2c": false,
       "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861936"
+      "found_at": "2026-10-22T18:25:16.272257"
     },
     {
       "title": "Java Microservices Developer",
@@ -1723,7 +2161,7 @@
       "score": 40,
       "is_c2c": false,
       "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861939"
+      "found_at": "2026-10-22T18:25:16.272259"
     },
     {
       "title": "Senior Java Engineer",
@@ -1734,7 +2172,7 @@
       "score": 40,
       "is_c2c": false,
       "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861941"
+      "found_at": "2026-10-22T18:25:16.272261"
     },
     {
       "title": "Senior Developer",
@@ -1745,7 +2183,7 @@
       "score": 40,
       "is_c2c": false,
       "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861943"
+      "found_at": "2026-10-22T18:25:16.272262"
     },
     {
       "title": "Software Engineer III -Java/Springboot/AWS",
@@ -1756,7 +2194,7 @@
       "score": 40,
       "is_c2c": false,
       "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861946"
+      "found_at": "2026-10-22T18:25:16.272264"
     },
     {
       "title": "Java Backend Developer",
@@ -1767,29 +2205,40 @@
       "score": 40,
       "is_c2c": false,
       "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861948"
+      "found_at": "2026-10-22T18:25:16.272266"
     },
     {
-      "title": "Senior Java Software Engineer",
-      "company": "Vestmark",
-      "url": "https://www.linkedin.com/jobs/view/4464607411",
-      "location": "Wakefield, MA, USA",
+      "title": "Java Software Engineer (W2)",
+      "company": "Raas Infotek",
+      "url": "https://www.linkedin.com/jobs/view/4482177309",
+      "location": "Texas, USA",
       "description": "None",
       "score": 40,
       "is_c2c": false,
       "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861950"
+      "found_at": "2026-10-22T18:25:16.272268"
     },
     {
-      "title": "Senior Software Engineer (Hybrid) - 27722",
-      "company": "Enlighten",
-      "url": "https://www.linkedin.com/jobs/view/4434720134",
-      "location": "San Antonio, TX, USA",
+      "title": "Senior Java Technical Developer/Lead - RESTful API, Spring Boot",
+      "company": "Sira Consulting, an Inc 5000 company",
+      "url": "https://www.linkedin.com/jobs/view/4479434852",
+      "location": "Edison, NJ, USA",
       "description": "None",
       "score": 40,
       "is_c2c": false,
       "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861952"
+      "found_at": "2026-10-22T18:25:16.272270"
+    },
+    {
+      "title": "Java Lead Developer | Berkeley Heights, NJ (3 days onsite / Week) | Contract W2 only",
+      "company": "Next Gen Software Solutions LLC",
+      "url": "https://www.linkedin.com/jobs/view/4473265454",
+      "location": "Berkeley Heights, NJ, USA",
+      "description": "None",
+      "score": 40,
+      "is_c2c": false,
+      "source": "linkedin_deep",
+      "found_at": "2026-10-22T18:25:16.272314"
     },
     {
       "title": "Sr. Java Developer (Local Profile only)",
@@ -1800,7 +2249,7 @@
       "score": 40,
       "is_c2c": false,
       "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861955"
+      "found_at": "2026-10-22T18:25:16.272318"
     },
     {
       "title": "Java Backend Developer",
@@ -1811,7 +2260,7 @@
       "score": 40,
       "is_c2c": false,
       "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861957"
+      "found_at": "2026-10-22T18:25:16.272320"
     },
     {
       "title": "Java Developer | Newark, DE - hybrid | W2 ONLY",
@@ -1822,9 +2271,9 @@
       "score": 40,
       "is_c2c": false,
       "source": "linkedin_deep",
-      "found_at": "2026-10-21T22:54:45.861961"
+      "found_at": "2026-10-22T18:25:16.272322"
     }
   ],
-  "exported_at": "2026-10-21T22:54:45.861964",
-  "count": 160
+  "exported_at": "2026-10-22T18:25:16.272325",
+  "count": 195
 }
