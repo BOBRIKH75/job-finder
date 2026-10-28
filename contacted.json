@@ -638,5 +638,70 @@
     "replied": false,
     "bounced": false,
     "re_engage_count": 0
+  },
+  "a053794bca0c": {
+    "email": "accommodations@workday.com",
+    "date": "2026-10-28T23:34:37.646225",
+    "job": "Software Development Engineer, Business Process Optimization",
+    "company": "Workday",
+    "url": "https://www.indeed.com/viewjob?jk=110ac4b2d55638cd",
+    "recruiter": null,
+    "smtp_verified": true
+  },
+  "c85338b2aa4d": {
+    "email": "careers@virtusa.com",
+    "date": "2026-10-28T23:44:36.785442",
+    "last_contact": "2026-10-28T23:44:36.785442",
+    "job": "Java Developer C2C",
+    "company": "Virtusa",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": true,
+    "re_engage_count": 0
+  },
+  "8abbb83317b0": {
+    "email": "careers@electrifyamerica.com",
+    "date": "2026-10-28T23:44:37.978111",
+    "last_contact": "2026-10-28T23:44:37.978111",
+    "job": "Java Developer C2C",
+    "company": "Electrify America",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": true,
+    "re_engage_count": 0
+  },
+  "1039ff5c8042": {
+    "email": "info@connecttechtalent.com",
+    "date": "2026-10-28T23:44:39.799571",
+    "last_contact": "2026-10-28T23:44:39.799571",
+    "job": "Java Developer C2C",
+    "company": "Connect Tech+Talent",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": true,
+    "re_engage_count": 0
+  },
+  "f2871f575bcf": {
+    "email": "recruiting@fiserv.com",
+    "date": "2026-10-28T23:44:41.521683",
+    "last_contact": "2026-10-28T23:44:41.521683",
+    "job": "Java Developer C2C",
+    "company": "Fiserv",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": false,
+    "re_engage_count": 0
   }
 }
