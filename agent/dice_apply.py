@@ -466,10 +466,11 @@ def _apply_one(page, url, title, db=None, profile=None):
     _step_settle = int(os.environ.get('DICE_STEP_SETTLE', '2'))
 
     def _real_confirmation(pg):
-        """STRICT: only a genuine Dice post-submit confirmation counts (email is ground truth).
-        Loose signals like bare 'applied'/'success' or a clicked button caused ~23 FALSE
-        positives (logged 25, only 2 real emails). Require an explicit confirmation phrase or
-        the /application-submitted URL."""
+        """Confirm a genuine Dice post-submit. Dice's confirmation appears AFTER a short
+        redirect/async update, so a single instant check missed it (the script logged
+        'incomplete' while Dice actually EMAILED 'Application sent' — Bobur caught this: 10
+        real emails, counter said 0). We check: (a) strong confirmation text, (b) the
+        /application-submitted URL, (c) the apply BUTTON flipping to an 'Applied' state."""
         try:
             body = (pg.locator('body').inner_text(timeout=2500) or '').lower()
             u = (pg.url or '').lower()
@@ -478,11 +479,41 @@ def _apply_one(page, url, title, db=None, profile=None):
         STRONG = ('application submitted', 'your application has been submitted',
                   'thank you for applying', "we've sent your application",
                   'application was sent', 'successfully submitted', 'application complete',
-                  'you have successfully applied')
+                  'you have successfully applied', 'application has been sent',
+                  "you've applied", 'applied to this job')
         if any(s in body for s in STRONG):
             return True
         if 'application-submitted' in u or 'applysuccess' in u or '/applied' in u:
             return True
+        # Apply button/control flipped to an "Applied" state = Dice recorded the submit.
+        try:
+            flipped = pg.evaluate(r"""() => {
+                const c = Array.from(document.querySelectorAll(
+                    '[data-testid="apply-button"], [data-testid*="apply" i], '
+                    + 'button[aria-label*="applied" i], a[aria-label*="applied" i]'));
+                for (const el of c) {
+                    const t = (el.textContent || '').trim().toLowerCase();
+                    const al = (el.getAttribute('aria-label') || '').trim().toLowerCase();
+                    for (const s of [t, al]) {
+                        if (s === 'applied' || s.startsWith('applied ')
+                            || s.includes('application submitted')) return true;
+                    }
+                }
+                return false;
+            }""")
+            if flipped:
+                return True
+        except Exception:
+            pass
+        return False
+
+    def _confirm_with_wait(pg, tries=6, gap=2):
+        """Poll for confirmation after the final Submit — Dice needs a moment to redirect
+        and flip the button. Prevents the 'submitted but logged incomplete' undercount."""
+        for _ in range(tries):
+            if _real_confirmation(pg):
+                return True
+            time.sleep(gap)
         return False
 
     # multi-step easy-apply modal: fill questions + click Next/Submit up to N steps
@@ -516,8 +547,9 @@ def _apply_one(page, url, title, db=None, profile=None):
                 continue
         if not advanced:
             break
-    # final STRICT confirmation check — no click-only fallback (that caused false positives)
-    if _real_confirmation(page):
+    # final confirmation check — POLL (Dice redirects/flips the button async; a single
+    # instant check undercounted real submits that Dice had actually emailed confirmation for).
+    if _confirm_with_wait(page):
         return 'submitted', company
     return 'incomplete', company
 
