@@ -2,7 +2,12 @@ name: LinkedIn Easy Apply (Safe Mode)
 
 on:
   schedule:
-    - cron: '0 15 * * 1-5'  # 9:00 AM MT, weekdays only (one session — 20h cooldown enforced in script)
+    # Fire twice daily, EVERY day (incl. weekends). The script's own 20h cooldown +
+    # per-run cap + business-hours gate are the real anti-ban safety — they ensure only
+    # ONE safe session actually runs per day. Two cron slots just give the gate a valid
+    # window to pick on any day (the old single weekday-9am slot missed weekends entirely).
+    - cron: '0 15 * * *'   # 9:00 AM MT, every day
+    - cron: '0 21 * * *'   # 3:00 PM MT, every day (gate picks whichever passes the cooldown)
   workflow_dispatch: {}
 
 permissions:

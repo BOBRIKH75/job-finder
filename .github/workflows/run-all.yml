@@ -1,0 +1,52 @@
+name: Run ALL (apply everywhere now)
+
+# ONE control to run the whole job-apply pipeline on demand (or on a schedule).
+# Dispatches every apply + search workflow so ALL platforms fire together.
+#
+# Trigger it:
+#   • GitHub UI: Actions → "Run ALL (apply everywhere now)" → Run workflow
+#   • CLI:       gh workflow run run-all.yml   (from the repo)
+#   • Local:     cds-jobs-run-all   (helper script in ~/bin)
+#
+# The individual workflows keep their own every-2-hour schedules too — this is just a
+# manual "do it all right now" button. Each child workflow has its own dedup/gates, so
+# firing them together is safe (no double-apply).
+
+on:
+  workflow_dispatch:
+    inputs:
+      include_linkedin:
+        description: "Also run LinkedIn (риск — leave true only if you want it)"
+        type: boolean
+        default: true
+  # Optional: uncomment to also run the whole set on a cadence.
+  # schedule:
+  #   - cron: '0 */6 * * *'   # every 6h, all platforms together
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  fan-out:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dispatch every apply + search workflow
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT || github.token }}
+          INCLUDE_LI: ${{ github.event.inputs.include_linkedin }}
+        run: |
+          set +e
+          echo "🚀 Firing all job-apply workflows..."
+          for wf in dice-apply.yml greenhouse-apply.yml indeed-apply.yml agent.yml daily-jobs.yml discover-jobs.yml; do
+            echo "  → $wf"
+            gh workflow run "$wf" --repo "${{ github.repository }}" && echo "     ok" || echo "     (skip/err)"
+          done
+          if [ "${INCLUDE_LI}" != "false" ]; then
+            echo "  → linkedin-apply.yml (force run)"
+            gh workflow run linkedin-apply.yml --repo "${{ github.repository }}" \
+              -f 2>/dev/null; gh workflow run linkedin-apply.yml --repo "${{ github.repository }}" || true
+          else
+            echo "  → linkedin-apply.yml SKIPPED (include_linkedin=false)"
+          fi
+          echo "✅ All workflows dispatched. Watch: Actions tab or 'gh run list'."
