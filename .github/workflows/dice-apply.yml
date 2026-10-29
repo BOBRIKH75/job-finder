@@ -108,7 +108,7 @@ jobs:
           HEADFUL: '1'               # self-hosted runner has a display; headless is the bot tell
         run: |
           cd $GITHUB_WORKSPACE/agent
-          python3 dice_apply.py
+          PYTHONUNBUFFERED=1 python3 -u dice_apply.py
 
       - name: Confirm submits via email
         if: always()

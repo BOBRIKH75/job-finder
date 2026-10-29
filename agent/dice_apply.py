@@ -395,25 +395,33 @@ def _apply_one(page, url, title):
     # detect session-expired redirect (apply needs login) → distinct reason for self-heal
     if 'login' in (page.url or '').lower():
         return 'login_redirect', company
-    # Dice shows an "Applied" state on the button for jobs already applied to (Bobur's tip).
-    # Trust Dice's own state → skip immediately (also covers applies made outside our dedup files).
+    # Dice shows an "Applied" state on the APPLY BUTTON for jobs already applied to.
+    # Trust ONLY the apply control's own text — NOT a body-text scan. The old code did
+    # `document.body.innerText.includes('you applied'/'applied on'/'application sent')`,
+    # but a Dice job page's body almost ALWAYS contains the word "applied" somewhere
+    # (e.g. "People who applied", "X applicants", "Posted … applied on", recommended-jobs
+    # rails) → it false-positived on nearly EVERY fresh job → SUBMITTED 0 on 144 real jobs
+    # (Bobur caught this: "it's not no-new-jobs"). Now we only read the apply button itself,
+    # which Dice sets to "Applied" / "Application submitted" when genuinely applied.
     try:
         already = page.evaluate(r"""() => {
-            const btn = document.querySelector('[data-testid="apply-button"], button, a');
-            const scan = (document.body.innerText || '').toLowerCase();
-            // button text or a page badge that means already-applied
-            const phrases = ['application submitted', 'you applied', "you've applied",
-                             'already applied', 'applied on', 'application sent'];
-            // check the apply control text first (most reliable)
-            const controls = Array.from(document.querySelectorAll('[data-testid="apply-button"], button, a'));
+            // Only inspect the actual apply control(s), not the whole page body.
+            const controls = Array.from(document.querySelectorAll(
+                '[data-testid="apply-button"], [data-testid*="apply" i], '
+                + 'button[aria-label*="applied" i], a[aria-label*="applied" i]'));
             for (const c of controls) {
                 const t = (c.textContent || '').trim().toLowerCase();
-                if (t === 'applied' || t === 'application submitted' || t.startsWith('applied')) return true;
+                const al = (c.getAttribute('aria-label') || '').trim().toLowerCase();
+                for (const s of [t, al]) {
+                    if (s === 'applied' || s === 'application submitted'
+                        || s.startsWith('applied ') || s === 'you applied'
+                        || s.includes('application submitted')) return true;
+                }
             }
-            return phrases.some(p => scan.includes(p));
+            return false;
         }""")
         if already:
-            print(f"  ⏭️ Dice says ALREADY APPLIED — skip: {title[:40]}")
+            print(f"  ⏭️ Dice says ALREADY APPLIED (button state) — skip: {title[:40]}")
             return 'already_applied', company
     except Exception:
         pass
