@@ -21,7 +21,11 @@ REPO="BOBRIKH75/job-finder"
 REPO_URL="https://github.com/${REPO}"
 RUNNER_DIR="$HOME/gh-runner"          # the ONE runner we keep
 OLD_DIR="$HOME/actions-runner"        # the duplicate we kill
-NAME="bobur-laptop"
+# Runner name: unique PER MACHINE so a SECOND laptop registers as its OWN runner instead of
+# replacing the first (GitHub then load-balances jobs across both). Override with:
+#   RUNNER_NAME=bobur-laptop-2 bash fix-runner.sh
+# Default stays "bobur-laptop" so re-running on the original machine is unchanged.
+NAME="${RUNNER_NAME:-bobur-laptop}"
 LABELS="self-hosted,macOS,ARM64,linkedin"
 PLIST="$HOME/Library/LaunchAgents/actions.runner.${REPO//\//-}.${NAME}.plist"
 
