@@ -108,3 +108,58 @@ cd ~/Downloads/CV/job-finder && gh workflow run dice-apply.yml
 - Body-text `already applied` scan (false-skips every job).
 - `fill_questions_page(page, None, {}, ...)` (empty profile → stall).
 - LinkedIn click-without-confirmation counting (fake numbers).
+
+
+---
+
+# Part 2 — cross-platform audit + fixes (same day, after Dice)
+
+Audited Indeed, LinkedIn, Greenhouse for the same 5 bug classes. Findings + fixes:
+
+## Indeed — the LIVE applier is `agent/submit_one.py`, NOT `indeed_apply.py`
+`indeed_apply.py` is **dead code** (no workflow runs it; it still has the old body-scan
+false-positive, click=success, and a `_has_visible` NameError). The workflow runs
+`submit_one.py`. Fixes applied to the LIVE one:
+- **Unconfirmed submit counted as success (fake):** `submitted_no_conf` (Submit clicked but
+  no confirmation verified) was lumped with real `submitted` → counted + permanently
+  deduped. Now ONLY `submitted` counts/dedups; `submitted_no_conf` is left retryable.
+- **Transient failures permanently retired:** `cloudflare_stuck` / `error` ('browser
+  closed') were written to `failed_jks`/`dead_jks` and skipped forever. Now only genuinely
+  unapplyable results (`stuck`/`no_apply_button`/`submit_click_failed`/`max_steps`) persist.
+- **Loose confirmation URL:** `'applied' in u` matched any URL containing "applied" →
+  require a real post-apply path segment (`post-apply`/`appliedconfirmation`/
+  `/confirmation`/`application-submitted`).
+- **Buffering:** workflow now runs `PYTHONUNBUFFERED=1 python3 -u submit_one.py`.
+- Guarded by `test_indeed_*`.
+
+## LinkedIn
+- **Confirmation false-positive:** removed bare `"applied"` / `"application submitted"` from
+  the confirmation match (LinkedIn shows "Applied"/"X applied" on non-confirmation pages).
+  Keeps only reliable "sent" / "submitted to" phrases.
+- **Over-gating** (why it never ran): was weekday-only + 8am–5pm + 20h cooldown + once-daily
+  cron. Widened to **weekends allowed + 7am–8pm MT**. The **20h cooldown + per-run cap
+  stay** — those are the real anti-ban protections (LinkedIn bans bots; do NOT remove them).
+- Guarded by `test_linkedin_confirmation_no_bare_applied`, `test_linkedin_runs_on_weekends`.
+- NOTE: LinkedIn applies are the riskiest (ban risk). This is intentionally the most
+  conservative platform. Do not crank up volume.
+
+## Greenhouse
+- Bug classes 1–4 were already CLEAN (its browser `submit_and_verify` literally encodes the
+  Dice fix; API path guards the OTP page).
+- **`job_claims` permanent leak (bug class 5):** claims were added but NOT released for
+  queued-but-unattempted (over-quota) jobs and when the browser batch threw → those roles
+  were claimed forever and never retried. Fixes:
+  - Release claims on the over-quota, batch-exception, and no-browser-run paths.
+  - Added `_purge_stale_claims()` in `memory.py` (runs on `init_db`) — claims older than
+    `CLAIM_TTL_HOURS` (default 24h) are purged, so an un-released claim can't block a role
+    permanently. Claims are a short-lived lock, not a dedup record.
+- **Operational note:** OTP/reCAPTCHA-gated Greenhouse boards need `GMAIL_APP_PASSWORD` +
+  `NOPECHA_API_KEY`/`CAPSOLVER_KEY`; without them those specific boards can't complete.
+- Guarded by `test_greenhouse_releases_claims_on_unattempted`, `test_job_claims_have_ttl_purge`.
+
+## Do NOT revert (part 2)
+- Indeed `submitted_no_conf` counting as success (fake confirmation).
+- Indeed `'applied' in u` loose URL confirmation.
+- LinkedIn bare `"applied"` confirmation substring.
+- Greenhouse: leaving claims un-released / removing the claim TTL purge.
+- Do NOT remove LinkedIn's 20h cooldown or per-run cap (anti-ban).

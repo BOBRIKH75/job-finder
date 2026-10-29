@@ -413,15 +413,22 @@ def main():
                     failed.append(j)
                     release_claim(db, j.get('company', ''), j.get('title', ''))   # not applied → free claim
 
-            # Jobs we didn't even attempt in browser (exceeded remaining quota)
+            # Jobs we didn't even attempt in browser (exceeded remaining quota) — release
+            # their claims so they're retried next run (else they'd be blocked forever).
+            for j in browser_queue[remaining:]:
+                release_claim(db, j.get('company', ''), j.get('title', ''))
             failed.extend(browser_queue[remaining:])
 
         except Exception as browser_err:
             print(f"  ❌ Browser strategy error: {str(browser_err)[:200]}")
+            for j in browser_queue:   # batch threw → nothing applied → free all claims
+                release_claim(db, j.get('company', ''), j.get('title', ''))
             failed.extend(browser_queue)  # save all browser-queued for next run
 
     else:
-        # No browser run — save all browser_queue for next run
+        # No browser run — save all browser_queue for next run + release their claims
+        for j in browser_queue:
+            release_claim(db, j.get('company', ''), j.get('title', ''))
         failed.extend(browser_queue)
 
     # ── Persist remaining failures for next run ──────────────────────────────

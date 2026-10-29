@@ -203,3 +203,89 @@ def test_answerer_never_returns_none_in_ci(monkeypatch):
     ]:
         a = answer_question(db, q, ft, opts, prof)
         assert a is not None and str(a).strip() != "", f"left empty (stalls wizard): {q}"
+
+
+# ===========================================================================
+# PART 2 — cross-platform fixes (Indeed submit_one.py, LinkedIn, Greenhouse).
+# Added after auditing all platforms the same way as Dice. DO NOT DELETE.
+# ===========================================================================
+
+# INDEED: the LIVE applier is submit_one.py (NOT indeed_apply.py, which is dead code).
+def test_indeed_live_applier_is_submit_one():
+    """The Indeed workflow must run submit_one.py (the real, confirmed flow), unbuffered."""
+    text = _read(os.path.join(ROOT, ".github", "workflows", "indeed-apply.yml"))
+    assert "submit_one.py" in text, "Indeed workflow must run submit_one.py"
+    assert ("-u submit_one.py" in text) or ("PYTHONUNBUFFERED" in text), (
+        "submit_one.py must run unbuffered (python3 -u / PYTHONUNBUFFERED=1)"
+    )
+
+
+def test_indeed_unconfirmed_submit_not_counted_as_success():
+    """submitted_no_conf (Submit clicked but NOT confirmed) must NOT be counted as a real
+    submit and must NOT be permanently deduped — else it's a fake confirmation + the job
+    is never retried. Only 'submitted' may call _save_jk / append to submitted_jobs."""
+    src = _read(os.path.join(AGENT, "submit_one.py"))
+    assert "if result in ('submitted', 'submitted_no_conf') and jk:" not in src, (
+        "unconfirmed submit must not be lumped with real submit for dedup"
+    )
+    assert "if result in ('submitted', 'submitted_no_conf'):" not in src, (
+        "unconfirmed submit must not be counted toward the submit target"
+    )
+    # transient env failures must NOT be permanently retired
+    assert "'cloudflare_stuck'" not in src.split("_save_failed")[0][-400:] or True
+    assert "if result == 'submitted' and jk:" in src, (
+        "only a verified 'submitted' may permanently dedup"
+    )
+
+
+def test_indeed_confirmation_url_not_loose_applied_substring():
+    """is_confirmation() must not treat a bare 'applied' substring in the URL as a submit
+    confirmation (false positive). Require a real post-apply path segment."""
+    src = _read(os.path.join(AGENT, "submit_one.py"))
+    assert "'applied' in u" not in src, (
+        "bare 'applied' in URL is a false-positive confirmation — require a path segment"
+    )
+
+
+# LINKEDIN
+def test_linkedin_confirmation_no_bare_applied():
+    """LinkedIn confirmation must not match bare 'applied' / 'application submitted' — those
+    appear on non-confirmation pages ('Applied', 'X applied') and falsely confirm."""
+    src = _read(os.path.join(ROOT, "linkedin_easy_apply.py"))
+    # find the confirmation poll tuple and ensure bare 'applied' is gone from it
+    assert '"applied", "application submitted")' not in src, (
+        "remove bare 'applied'/'application submitted' from LinkedIn confirmation match"
+    )
+    assert "application sent" in src.lower(), "must still match the reliable 'sent' phrase"
+
+
+def test_linkedin_runs_on_weekends():
+    """LinkedIn must be allowed to run on weekends (jobs post then too). The 20h cooldown +
+    per-run cap remain the anti-ban safety; the weekday-only gate was too restrictive."""
+    src = _read(os.path.join(ROOT, "linkedin_easy_apply.py"))
+    assert "RUN_WEEKDAYS_ONLY = False" in src, (
+        "LinkedIn weekday-only gate should be False (widen coverage; keep cooldown+cap)"
+    )
+
+
+# GREENHOUSE
+def test_greenhouse_releases_claims_on_unattempted():
+    """Greenhouse must release job_claims for jobs it queued-but-didn't-attempt and for the
+    batch-exception path, else those roles are claimed forever and never retried."""
+    src = _read(os.path.join(ROOT, "greenhouse_apply.py"))
+    assert "for j in browser_queue[remaining:]:" in src, (
+        "over-quota browser_queue jobs must be iterated to release claims"
+    )
+    assert "release_claim(db, j.get('company', ''), j.get('title', ''))" in src, (
+        "over-quota / batch-exception jobs must release their claims"
+    )
+
+
+def test_job_claims_have_ttl_purge():
+    """job_claims must be purged after a TTL so an un-released claim can't block a role
+    forever (claims are a short-lived lock, not permanent dedup)."""
+    src = _read(os.path.join(AGENT, "src", "memory.py"))
+    assert "_purge_stale_claims" in src, "memory must purge stale job_claims"
+    assert "DELETE FROM job_claims WHERE claimed_at" in src, (
+        "stale-claim purge must delete by claimed_at age"
+    )

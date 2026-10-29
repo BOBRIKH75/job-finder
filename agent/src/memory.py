@@ -150,6 +150,33 @@ def init_db(db: sqlite3.Connection) -> None:
     )
     db.commit()
     _purge_poisoned_answers(db)
+    _purge_stale_claims(db)
+
+
+def _purge_stale_claims(db: sqlite3.Connection, ttl_hours: int = None) -> int:
+    """Expire old job_claims so a claim that was never released (e.g. a greenhouse job
+    claimed but skipped over-quota, or a batch that threw) does NOT block that role
+    forever. Claims are a short-lived concurrency lock, not a permanent dedup record —
+    the real dedup is the `applications` table + the per-platform applied JSON. Without
+    this, un-released claims accumulate across CI runs (agent_memory.db is cached) and
+    steadily starve the apply queue. Default TTL 24h (override CLAIM_TTL_HOURS)."""
+    if ttl_hours is None:
+        try:
+            ttl_hours = int(os.environ.get("CLAIM_TTL_HOURS", "24"))
+        except Exception:
+            ttl_hours = 24
+    try:
+        cur = db.execute(
+            "DELETE FROM job_claims WHERE claimed_at < datetime('now', ?)",
+            (f"-{int(ttl_hours)} hours",),
+        )
+        db.commit()
+        n = cur.rowcount or 0
+        if n:
+            print(f"  🧹 purged {n} stale job_claim(s) older than {ttl_hours}h (re-eligible)")
+        return n
+    except Exception:
+        return 0
 
 
 def _claim_key(company: str, title: str) -> str:

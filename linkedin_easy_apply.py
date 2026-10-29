@@ -54,9 +54,10 @@ SEARCH_KEYWORDS = [
 ]
 
 # Only run during US business hours MT (avoid 3 AM bot signature)
-RUN_HOUR_START_MT = 8   # 8 AM MT = 14:00 UTC
-RUN_HOUR_END_MT = 17    # 5 PM MT = 23:00 UTC
-RUN_WEEKDAYS_ONLY = True  # no weekend runs
+RUN_HOUR_START_MT = 7   # 7 AM MT = 13:00 UTC (widened from 8)
+RUN_HOUR_END_MT = 20    # 8 PM MT = 02:00 UTC (widened from 17 — more coverage, still human hours)
+RUN_WEEKDAYS_ONLY = False  # allow weekends too (jobs post on weekends; 20h cooldown + per-run cap
+                           # remain the real anti-ban safety — we only widen WHEN it may run)
 
 APPLIED_FILE = "linkedin_applied.json"
 
@@ -812,7 +813,12 @@ def main():
                                             "application sent", "your application was sent",
                                             "application was sent", "we've sent your application",
                                             "your application has been submitted",
-                                            "applied", "application submitted")):
+                                            "application submitted to")):
+                                        # NOTE: bare "applied" / "application submitted" were
+                                        # REMOVED — LinkedIn pages show "Applied", "X applied",
+                                        # "Applied 2d ago" independent of a real send, which
+                                        # false-confirmed. Only "sent"/"submitted to" phrases
+                                        # appear after a genuine submit.
                                         _confirmed = True
                                         break
                                     time.sleep(1)

@@ -377,7 +377,10 @@ def is_confirmation(page):
     # URL-based signal is the most reliable post-submit indicator.
     try:
         u = (page.url or '').lower()
-        if 'post-apply' in u or 'confirmation' in u or 'applied' in u or 'appliedconfirmation' in u:
+        # Require a real post-apply PATH segment, not a bare 'applied' substring
+        # (an Indeed URL can contain 'applied' in a filter/param and falsely confirm).
+        if ('post-apply' in u or 'appliedconfirmation' in u
+                or '/confirmation' in u or 'application-submitted' in u):
             return 'url:' + u.split('/')[-1][:24]
     except Exception:
         pass
@@ -1880,14 +1883,20 @@ def main():
                     except Exception as _re:
                         print(f"  ❌ relaunch failed: {str(_re)[:80]} — stopping run")
                         break
-            if result in ('submitted', 'submitted_no_conf') and jk:
+            if result == 'submitted' and jk:
+                # ONLY a verified confirmation permanently dedups + counts.
                 _save_jk(jk)
                 applied_jks.add(jk)
-            elif jk and result in ('stuck', 'cloudflare_stuck', 'no_apply_button',
-                                   'submit_click_failed', 'error', 'max_steps'):
+            elif jk and result in ('stuck', 'no_apply_button',
+                                   'submit_click_failed', 'max_steps'):
+                # Genuinely-unapplyable results → failed bucket (retryable via TTL).
+                # NOTE: transient env failures (cloudflare_stuck, rate_limited, error/
+                # 'browser closed') are DELIBERATELY NOT persisted here — they should be
+                # retried next run, not permanently buried (Bobur: don't retire jobs that
+                # failed for environmental reasons).
                 _save_failed(jk)
                 failed_jks.add(jk)
-            if result in ('submitted', 'submitted_no_conf'):
+            if result == 'submitted':
                 submitted_jobs.append(url)
                 print(f"\n✅ SUBMITTED #{len(submitted_jobs)} — {url[-45:]} (took {_job_elapsed:.0f}s)")
                 if len(submitted_jobs) >= target:
@@ -1896,6 +1905,11 @@ def main():
                 if _rl_pace > 0:
                     print(f"  ⏸️  pacing {_rl_pace}s before next submit (learned protection)")
                     time.sleep(_rl_pace)
+            elif result == 'submitted_no_conf':
+                # Submit was clicked but NO confirmation was verified. DO NOT count it as a
+                # real application and DO NOT permanently dedup it — leave it retryable so a
+                # later run can confirm. (Was counted as success + permanent dedup = fake.)
+                print(f"  ⚠️ submit clicked but NOT confirmed — not counting, will retry later")
             else:
                 print(f"  -> {result}; trying next job")
                 # FAILURE REPORT for debugging (per Bobur: screenshot + report + TIME).
