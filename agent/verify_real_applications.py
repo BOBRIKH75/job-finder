@@ -78,37 +78,41 @@ SOURCES = [
 def main():
     M = imaplib.IMAP4_SSL('imap.gmail.com')
     M.login(USER, PW)
-    M.select('inbox')
+    # Search ALL mail, not just inbox — Gmail filters/labels may move confirmation
+    # emails out of the inbox. '[Gmail]/All Mail' covers inbox + archived + labeled.
+    try:
+        M.select('"[Gmail]/All Mail"')
+    except Exception:
+        M.select('inbox')
 
     print(f"\n📬 REAL application confirmations in Gmail"
           + (f" (last {days} day(s))" if days else " (all time)") + ":\n")
     grand = 0
     per = {}
+    # Build an IMAP server-side date filter (fast — avoids scanning All Mail client-side).
+    since_imap = ""
+    if days:
+        from datetime import datetime as _dt, timedelta as _td, timezone as _tz
+        since_date = (_dt.now(_tz.utc) - _td(days=days)).strftime("%d-%b-%Y")
+        since_imap = f'(SINCE "{since_date}")'
     for label, query, markers in SOURCES:
         try:
-            typ, data = M.search(None, query)
+            full_query = f'{since_imap} {query}'.strip() if since_imap else query
+            typ, data = M.search(None, full_query)
             ids = data[0].split() if data and data[0] else []
         except Exception as e:
             print(f"  {label:16s}: search error {str(e)[:40]}")
             continue
         count = 0
         samples = []
-        # scan most-recent 120 per source
-        for i in ids[-120:]:
+        # scan the matched set (SINCE already narrowed it server-side)
+        for i in ids[-300:]:
             try:
                 typ, md = M.fetch(i, '(BODY.PEEK[HEADER.FIELDS (SUBJECT DATE)])')
                 m = email.message_from_string(md[0][1].decode('utf-8', 'ignore'))
             except Exception:
                 continue
             subj = _dec(m.get('Subject')) or ''
-            # recency filter
-            if cutoff:
-                try:
-                    dt = parsedate_to_datetime(m.get('Date'))
-                    if dt and dt < cutoff:
-                        continue
-                except Exception:
-                    pass
             if any(mk in subj.lower() for mk in markers):
                 count += 1
                 if len(samples) < 3:
