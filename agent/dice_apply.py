@@ -378,8 +378,15 @@ def _search_urls(page, term, want=50, pages=3):
     return out
 
 
-def _apply_one(page, url, title):
-    """Open a Dice job, click Easy Apply, fill questions, submit. Returns result str."""
+def _apply_one(page, url, title, db=None, profile=None):
+    """Open a Dice job, click Easy Apply, fill questions, submit. Returns result str.
+
+    db + profile are threaded in so the questions filler can actually ANSWER the
+    multi-step screening questions (work auth, sponsorship, rate, years, EEO). Passing
+    None/{} here was the cause of the 'incomplete' stall (seen 89x): required fields were
+    left empty so Dice's Next/Submit stayed disabled and the wizard never reached the
+    confirmation page. With the real profile + db (memory + safe defaults), the wizard
+    can complete."""
     page.goto(url, wait_until='domcontentloaded', timeout=30000)
     time.sleep(3)
     # company from the detail page (for dedup/record)
@@ -482,7 +489,7 @@ def _apply_one(page, url, title):
     for _step in range(_wizard_steps):
         try:
             if is_questions_page and is_questions_page(page):
-                fill_questions_page(page, None, {}, company or 'Employer')
+                fill_questions_page(page, db, profile or {}, company or 'Employer')
         except Exception:
             pass
         if _real_confirmation(page):
@@ -520,7 +527,7 @@ def main():
     target = int(os.environ.get('DICE_TARGET', '10'))
     db = get_db()
     init_db(db)
-    _ = load_profile()
+    _profile = load_profile()
 
     applied_ids = _load_fresh_applied(JK_FILE)
     failed_ids = _load_failed_fresh()
@@ -903,7 +910,7 @@ def main():
 
             print(f"  ▶ applying: {title[:50]}")
             try:
-                result, company = _apply_one(page, url, title)
+                result, company = _apply_one(page, url, title, db=db, profile=_profile)
             except Exception as e:
                 result, company = 'error', ''
                 print(f"    ERR {str(e)[:70]}")
