@@ -289,3 +289,41 @@ def test_job_claims_have_ttl_purge():
     assert "DELETE FROM job_claims WHERE claimed_at" in src, (
         "stale-claim purge must delete by claimed_at age"
     )
+
+
+# ===========================================================================
+# PART 3 — Greenhouse big-company boards-api fallback + Indeed Cloudflare
+#          auto-pass (wait for token, don't click). DO NOT DELETE.
+# ===========================================================================
+
+def test_greenhouse_boards_api_fallback_exists():
+    """When the HTML __remixContext parse fails (big-company themed boards like Coinbase/
+    Toast/Dropbox), submit_greenhouse_api must fall back to the official
+    boards-api.greenhouse.io JSON API instead of dead-ending on 'parse remixContext'."""
+    src = _read(os.path.join(AGENT, "src", "greenhouse_api.py"))
+    assert "_get_job_data_boards_api" in src, "boards-api fallback must exist"
+    assert "boards-api.greenhouse.io/v1/boards/" in src, "must call the official JSON API"
+    # fallback must be invoked when the HTML parse returns None
+    assert "route_data = _get_job_data_boards_api(company, job_id)" in src, (
+        "submit_greenhouse_api must call the boards-api fallback when HTML parse fails"
+    )
+
+
+def test_indeed_cloudflare_waits_for_token_not_just_click():
+    """Indeed Cloudflare handling must WAIT for the Turnstile token / auto-clear (reliable
+    for a trusted headful browser), not rely on clicking the cross-origin iframe checkbox
+    (not a trusted gesture; does not clear a managed challenge)."""
+    src = _read(os.path.join(AGENT, "submit_one.py"))
+    assert "_cf_token_present" in src, "must poll for the cf-turnstile-response token"
+    assert "_wait_out_cloudflare" in src, "must wait for Cloudflare to auto-clear"
+    assert "cf-turnstile-response" in src, "must check the Turnstile token field"
+    # the old click-then-tiny-sleep loop (CLOUDFLARE_WAIT default 5) must be gone
+    assert "int(os.environ.get('CLOUDFLARE_WAIT', '5'))" not in src, (
+        "CLOUDFLARE_WAIT default must be raised (5s was too short for auto-pass)"
+    )
+
+
+def test_indeed_runs_headful():
+    """Indeed must run HEADFUL (headful real Chrome is what lets Turnstile auto-pass)."""
+    wf = _read(os.path.join(ROOT, ".github", "workflows", "indeed-apply.yml"))
+    assert "HEADFUL: '1'" in wf, "Indeed workflow must set HEADFUL=1 (headful real Chrome)"

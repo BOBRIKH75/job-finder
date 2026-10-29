@@ -163,3 +163,44 @@ false-positive, click=success, and a `_has_visible` NameError). The workflow run
 - LinkedIn bare `"applied"` confirmation substring.
 - Greenhouse: leaving claims un-released / removing the claim TTL purge.
 - Do NOT remove LinkedIn's 20h cooldown or per-run cap (anti-ban).
+
+
+---
+
+# Part 3 — Greenhouse big-company boards + Indeed Cloudflare
+
+## Greenhouse `remix_context` parse failure (FIXED — real fix)
+Big companies (Coinbase, Toast, Dropbox) moved their `job-boards.greenhouse.io` page to a
+themed career site (clinchtalent / AWS WAF) with **NO `window.__remixContext`** in the HTML,
+so `_get_job_data` returned None → "Cannot fetch job page / parse remixContext" → those jobs
+dead-ended. Verified: the HTML parser returns None for coinbase, but the **official public
+JSON API still works**: `GET boards-api.greenhouse.io/v1/boards/{company}/jobs/{id}?questions=true`
+returns all 21 questions cleanly.
+- **Fix:** added `_get_job_data_boards_api()` in `greenhouse_api.py` — when the HTML parse
+  fails, fetch questions from the official API and normalize to the same shape the submit
+  path expects (jobPost.questions + submitPath + confirmationPath). Submit still POSTs to
+  `boards.greenhouse.io/{company}/jobs/{id}`.
+- Guarded by `test_greenhouse_boards_api_fallback_exists`.
+- Verified live: coinbase job 8175363 — old parser None, new fallback returns 21 questions
+  incl. work-auth/sponsorship/LinkedIn.
+
+## Indeed Cloudflare (IMPROVED — best-effort, honest)
+Cloudflare Turnstile is adversarial; no code guarantees 100%. Root cause of the stall:
+clicking the **cross-origin** Turnstile iframe checkbox from automation is NOT a trusted
+gesture and does NOT clear a *managed* challenge; the old loop clicked + waited only 5s.
+- **Fix (highest-ROI, per 2026 research):** WAIT for the challenge to auto-clear / for the
+  `cf-turnstile-response` token to be minted (a trusted **headful real-Chrome** profile on a
+  **residential IP** — your home laptop — auto-passes Turnstile silently, usually in a few–20s).
+  New `_cf_token_present()` polls the token field; `_wait_out_cloudflare()` waits up to
+  `CLOUDFLARE_WAIT` (now 30s) and only nudges the checkbox once, midway, as a last resort.
+- Workflow already runs `HEADFUL=1` on the self-hosted laptop (residential IP) = best case.
+- Guarded by `test_indeed_cloudflare_waits_for_token_not_just_click`, `test_indeed_runs_headful`.
+- **Honest limit:** if Indeed ever flips your IP to a hard managed-challenge, only a
+  residential proxy or a paid Turnstile solver (CapSolver `AntiTurnstileTaskProxyLess` →
+  inject token into `cf-turnstile-response`, no reload) is deterministic. Those are additive,
+  env-gated options to add later if needed — NOT wired in yet (keep it simple first).
+
+## Do NOT revert (part 3)
+- Greenhouse boards-api fallback (big-company jobs dead-end without it).
+- Indeed CLOUDFLARE_WAIT back to 5s / click-only (auto-pass needs the longer token wait).
+- Indeed HEADFUL=1 (headless gets hard managed challenges).

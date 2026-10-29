@@ -86,6 +86,9 @@ jobs:
           RESULTS_WANTED: '50'
           INDEED_HOURS_OLD: '72'
           HEADFUL: '1'
+          CLOUDFLARE_WAIT: '30'   # wait up to 30s for Turnstile to auto-pass (headful real
+                                  # Chrome on the home residential IP auto-mints the token;
+                                  # clicking a managed challenge from automation does not work)
         run: |
           cd $GITHUB_WORKSPACE/agent
           PYTHONUNBUFFERED=1 python3 -u submit_one.py

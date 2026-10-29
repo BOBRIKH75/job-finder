@@ -170,6 +170,45 @@ def is_cloudflare(page):
         return False
 
 
+def _cf_token_present(page) -> bool:
+    """True if Cloudflare Turnstile has minted a token (cf-turnstile-response filled).
+    For a HIGH-TRUST browser (real Chrome, warmed persistent profile, residential IP),
+    Turnstile auto-passes SILENTLY and fills this hidden field — NO click needed. Polling
+    for this is far more reliable than clicking the cross-origin iframe checkbox (which is
+    not a trusted gesture and does not clear a managed challenge). 2026 best practice."""
+    try:
+        return bool(page.evaluate(
+            """() => {
+                const els = document.querySelectorAll(
+                  '[name="cf-turnstile-response"], input[name="cf_challenge_response"], '
+                  + 'textarea[name="cf-turnstile-response"]');
+                for (const e of els) { if (e.value && e.value.length > 20) return true; }
+                return false;
+            }"""))
+    except Exception:
+        return False
+
+
+def _wait_out_cloudflare(page, total_wait=None) -> bool:
+    """Wait for Cloudflare to AUTO-CLEAR (the reliable path), polling for either the page
+    leaving the challenge OR a minted Turnstile token. Clicking is only a last-resort nudge.
+    Returns True once cleared. 2026: a trusted headful real-Chrome profile auto-passes in
+    a few–20s; clicking a managed challenge from automation does not help and can hurt."""
+    import time as _t
+    budget = total_wait if total_wait is not None else int(os.environ.get('CLOUDFLARE_WAIT', '25'))
+    deadline = _t.time() + budget
+    nudged = False
+    while _t.time() < deadline:
+        if not is_cloudflare(page) or _cf_token_present(page):
+            return True
+        # One gentle nudge midway (only if an INTERACTIVE checkbox is actually shown).
+        if not nudged and (deadline - _t.time()) < budget * 0.5:
+            _try_cf_turnstile(page)
+            nudged = True
+        _t.sleep(1.5)
+    return not is_cloudflare(page) or _cf_token_present(page)
+
+
 def _try_cf_turnstile(page):
     """Click the Cloudflare 'Verify you are human' checkbox if present.
     Turnstile renders inside an iframe; the checkbox is a simple click (not a puzzle).
@@ -776,18 +815,19 @@ def submit_one(pg, url, db, profile):
     # image puzzle — we just wait for the challenge to auto-resolve and nudge the checkbox.
     pg.goto(url, wait_until='domcontentloaded', timeout=25000)
     time.sleep(3)
-    _cf_wait = int(os.environ.get('CLOUDFLARE_WAIT', '5'))
+    # CLOUDFLARE: WAIT for the challenge to auto-clear (the reliable path for a trusted
+    # headful real-Chrome profile — Turnstile mints the token silently). Clicking the
+    # cross-origin iframe checkbox is NOT a trusted gesture and does not clear a managed
+    # challenge, so we only nudge once, midway, inside _wait_out_cloudflare. Up to 3
+    # reloads, each with a full wait budget, before giving up.
     for r in range(3):
         snap(pg, f"open_reload{r}")
-        if is_cloudflare(pg):
-            print(f"  reload {r}: Cloudflare — waiting {_cf_wait}s for challenge to clear")
-            _try_cf_turnstile(pg)                 # nudge the visible checkbox if present
-            time.sleep(_cf_wait)                  # give the JS challenge time to auto-pass
-            if not is_cloudflare(pg):
-                print(f"  reload {r}: cleared after wait")
-                break
-        else:
+        if not is_cloudflare(pg):
             print(f"  reload {r}: loaded (url ...{pg.url[-30:]})")
+            break
+        print(f"  reload {r}: Cloudflare — waiting for auto-clear (token poll)")
+        if _wait_out_cloudflare(pg):
+            print(f"  reload {r}: cleared (auto-pass / token present)")
             break
         if r < 2:
             try:
@@ -795,16 +835,6 @@ def submit_one(pg, url, db, profile):
             except Exception:
                 pass
             time.sleep(3)
-    # ONE MORE try — extra wait + reload — before giving up on this job
-    if is_cloudflare(pg):
-        print(f"  Cloudflare persists — ONE more {_cf_wait}s wait + reload")
-        _try_cf_turnstile(pg)
-        time.sleep(_cf_wait)
-        try:
-            pg.reload(wait_until='domcontentloaded', timeout=25000)
-        except Exception:
-            pass
-        time.sleep(5)
     if is_cloudflare(pg):
         print("  STILL Cloudflare after waits + retries — cannot proceed on this job")
         snap(pg, "SKIP_cloudflare")

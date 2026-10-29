@@ -72,6 +72,54 @@ def _get_job_data(company: str, job_id: str) -> Optional[dict]:
         return None
 
 
+def _get_job_data_boards_api(company: str, job_id: str) -> Optional[dict]:
+    """FALLBACK for big-company boards (Coinbase/Toast/Dropbox) that switched to a
+    themed career site with NO `window.__remixContext` in the HTML (why the parser
+    returned 'Cannot fetch job page / parse remixContext' and those jobs dead-ended).
+
+    The OFFICIAL public Greenhouse JSON API still serves everything we need:
+        GET https://boards-api.greenhouse.io/v1/boards/{company}/jobs/{id}?questions=true
+    returns {title, questions:[{label, required, fields:[{name,type,values}]}]}.
+
+    We normalize it into the SAME shape `submit_greenhouse_api` already expects
+    (a route_data dict with jobPost.questions + submitPath + confirmationPath), so the
+    existing form-build/submit path works unchanged. The submit endpoint for the public
+    API is boards.greenhouse.io/{company}/jobs/{id} (same as the default fallback)."""
+    api = f"https://boards-api.greenhouse.io/v1/boards/{company}/jobs/{job_id}?questions=true"
+    try:
+        resp = requests.get(api, headers={**_HEADERS, "Accept": "application/json"}, timeout=15)
+        if resp.status_code != 200:
+            return None
+        data = resp.json()
+    except Exception:
+        return None
+    questions = data.get("questions")
+    if not questions:
+        return None
+    # Normalize API question shape → the remix 'fields' shape the builder expects.
+    norm_qs = []
+    for q in questions:
+        fields = []
+        for f in q.get("fields", []):
+            fields.append({
+                "name": f.get("name", ""),
+                "type": f.get("type", "input_text"),
+                # API uses 'values':[{label,value}] — same key the remix path reads.
+                "values": f.get("values", []),
+            })
+        norm_qs.append({
+            "label": q.get("label", ""),
+            "required": q.get("required", False),
+            "fields": fields,
+        })
+    return {
+        "jobPost": {"questions": norm_qs},
+        "submitPath": f"https://boards.greenhouse.io/{company}/jobs/{job_id}",
+        "confirmationPath": "/confirmation",
+        "_source": "boards_api",
+    }
+
+
 def _answer_question(question: dict, profile: dict) -> Optional[str]:
     """Return the best answer for one question field as a string."""
     label = question.get("label", "").lower().strip()
@@ -187,6 +235,10 @@ def submit_greenhouse_api(
     url_token = _qs.get("token", [None])[0]
 
     route_data = _get_job_data(company, job_id)
+    if not route_data:
+        # Big-company boards (themed career sites) have no __remixContext → use the
+        # official Greenhouse JSON API instead of dead-ending on 'parse remixContext'.
+        route_data = _get_job_data_boards_api(company, job_id)
     if not route_data:
         return {"submitted": False, "error": "Cannot fetch job page / parse remixContext"}
 
