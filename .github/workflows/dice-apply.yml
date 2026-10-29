@@ -7,13 +7,11 @@ name: Dice Easy Apply
 # after the first week.
 on:
   schedule:
-    - cron: '30 13 * * 1-5'   # 7:30 AM MT
-    - cron: '30 15 * * 1-5'   # 9:30 AM MT
-    - cron: '30 17 * * 1-5'   # 11:30 AM MT
-    - cron: '30 19 * * 1-5'   # 1:30 PM MT
-    - cron: '30 21 * * 1-5'   # 3:30 PM MT
-    - cron: '30 23 * * 1-5'   # 5:30 PM MT
-    - cron: '30 16 * * 0,6'   # 10:30 AM MT weekends (jobs post weekends too)
+    # 24/7, every 2 hours (at :30 so Dice staggers off Indeed/Greenhouse on the hour).
+    # Weekday/business-hours gating removed — jobs post nights + weekends; freshness filter
+    # (DICE_POSTED_DATE / _posted_date_filter) auto-limits to the newest jobs after week 1,
+    # and the TTL dedup re-opens reposts, so continuous running keeps catching fresh postings.
+    - cron: '30 */2 * * *'   # every 2h, 24/7
   workflow_dispatch:
     inputs:
       dice_term:

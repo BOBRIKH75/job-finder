@@ -796,7 +796,31 @@ def main():
                                 submit_btn = driver.find_element("css selector", "button[aria-label*='Submit'], button[aria-label*='submit']")
                                 submit_btn.click()
                                 time.sleep(3)
-                                submitted = True
+                                # HONESTY FIX (Bobur): a button CLICK is NOT proof the
+                                # application was sent — the old code set submitted=True on
+                                # the click alone, overcounting LinkedIn. LinkedIn shows a
+                                # post-submit confirmation modal ("Application sent", "Your
+                                # application was sent to <company>", "Done"). Only count it
+                                # if that confirmation actually appears.
+                                _confirmed = False
+                                for _ in range(6):   # poll up to ~6s for the confirmation
+                                    try:
+                                        _pt = (driver.find_element("css selector", "body").text or "").lower()
+                                    except Exception:
+                                        _pt = ""
+                                    if any(s in _pt for s in (
+                                            "application sent", "your application was sent",
+                                            "application was sent", "we've sent your application",
+                                            "your application has been submitted",
+                                            "applied", "application submitted")):
+                                        _confirmed = True
+                                        break
+                                    time.sleep(1)
+                                if _confirmed:
+                                    submitted = True
+                                    print("    📨 LinkedIn confirmed: application sent")
+                                else:
+                                    print("    ⚠️ Submit clicked but NO confirmation seen — NOT counting")
                                 break
                             except Exception:
                                 pass

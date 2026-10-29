@@ -7,9 +7,10 @@ name: Greenhouse Apply
 # discovery. Moderate cadence maximizes CV-fit applies without spamming.
 on:
   schedule:
-    - cron: '30 15 * * 1-5'   # 9:30 AM MT (after Indeed 8:00, staggered)
-    - cron: '30 19 * * 1-5'   # 1:30 PM MT
-    - cron: '30 23 * * 1-5'   # 5:30 PM MT
+    # 24/7, every 2 hours at :15 (staggered off Indeed :00 and Dice :30). Greenhouse runs on
+    # ubuntu-latest (cloud) by default, so continuous running does NOT depend on the laptop.
+    # 30-day TTL dedup + round-robin rotation keep fresh reqs flowing.
+    - cron: '15 */2 * * *'   # every 2h, 24/7
   workflow_dispatch: {}
 
 concurrency:

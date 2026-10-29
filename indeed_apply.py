@@ -388,23 +388,54 @@ def main():
         # laptop) which has a real display, so we default to HEADED. Override
         # with INDEED_HEADLESS=1 only for debugging on a headless box.
         headless = os.environ.get('INDEED_HEADLESS', '0') == '1'
-        browser = pw.chromium.launch(
-            headless=headless,
-            args=['--disable-blink-features=AutomationControlled'],
-        )
-        print(f"🌐 Browser launched (headless={headless})")
-        context = browser.new_context(
-            user_agent=(
-                'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) '
-                'AppleWebKit/537.36 (KHTML, like Gecko) '
-                'Chrome/126.0.0.0 Safari/537.36'
+
+        def _launch_browser():
+            """(Re)launch browser + context + logged-in page. Returned tuple is reused so
+            the per-job loop can REBUILD the browser if it crashes mid-run (Bobur: 176 of
+            200 Indeed failures were 'Target page/context/browser has been closed' — one
+            crash killed every remaining job in the run. Now we relaunch and keep going)."""
+            b = pw.chromium.launch(
+                headless=headless,
+                args=['--disable-blink-features=AutomationControlled'],
             )
-        )
-        # Fix cookie format: Playwright needs boolean for 'secure', not int
-        for c in cookies:
-            c['secure'] = bool(c.get('secure', False))
-        context.add_cookies(cookies)
-        page = context.new_page()
+            ctx = b.new_context(
+                user_agent=(
+                    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) '
+                    'AppleWebKit/537.36 (KHTML, like Gecko) '
+                    'Chrome/126.0.0.0 Safari/537.36'
+                )
+            )
+            for c in cookies:
+                c['secure'] = bool(c.get('secure', False))
+            ctx.add_cookies(cookies)
+            pg = ctx.new_page()
+            return b, ctx, pg
+
+        browser, context, page = _launch_browser()
+        print(f"🌐 Browser launched (headless={headless})")
+
+        def _browser_alive():
+            """True if the browser/page is still usable (cheap probe)."""
+            try:
+                return browser.is_connected() and not page.is_closed()
+            except Exception:
+                return False
+
+        def _recover_browser():
+            """Rebuild the browser after a crash so the run can continue."""
+            nonlocal browser, context, page
+            print("  ♻️ browser died — relaunching to continue the run...")
+            try:
+                browser.close()
+            except Exception:
+                pass
+            try:
+                browser, context, page = _launch_browser()
+                time.sleep(2)
+                return True
+            except Exception as _re:
+                print(f"  ❌ relaunch failed: {str(_re)[:80]}")
+                return False
 
         # Quick cookie validity check.
         # VERIFIED LIVE (2026-09-01): valid session redirects to
@@ -424,6 +455,12 @@ def main():
             print("⚠️ Cookie check inconclusive — proceeding anyway")
 
         for _, row in jobs.iterrows():
+            # If the browser crashed on a previous job, rebuild it before continuing
+            # (one crash used to fail EVERY remaining job in the run).
+            if not _browser_alive():
+                if not _recover_browser():
+                    print("  ⛔ cannot recover browser — ending run early")
+                    break
             if applied >= MAX_APPS:
                 break
             if time.time() > apply_deadline:

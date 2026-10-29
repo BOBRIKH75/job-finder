@@ -111,6 +111,69 @@ def _save_json_set(path, s):
         pass
 
 
+# TTL for the APPLIED dedup (Bobur: "SUBMITTED 0 — everything ALREADY APPLIED"). The old
+# applied_ids / applied_titles caches were PERMANENT, so once the whole Java/Spring Dice pool
+# was in them, every run skipped 100% and submitted nothing. Greenhouse already solved this
+# with a 30-day re-eligibility window; Dice now does the same: an applied id/title becomes
+# eligible AGAIN after APPLIED_TTL_DAYS, because Dice reposts/refreshes reqs and genuinely new
+# postings should be re-applied to. Set APPLIED_TTL_DAYS=0 to restore permanent dedup.
+APPLIED_TTL_DAYS = int(os.environ.get('APPLIED_TTL_DAYS', '30'))
+
+
+def _load_fresh_applied(path):
+    """Return the set of applied keys still WITHIN the TTL window (so expired ones are
+    eligible to apply to again). Backward compatible:
+      - new format {key: epoch}  -> keep only if age < APPLIED_TTL_DAYS (0 = never expire)
+      - old format [key, ...]    -> no timestamps; treat as applied 'long ago' so they
+        EXPIRE immediately and the backlog re-opens (migrates to {key: now} on next save).
+    """
+    try:
+        raw = json.load(open(path))
+    except Exception:
+        return set()
+    if APPLIED_TTL_DAYS <= 0:
+        # permanent mode: honor every key regardless of age
+        if isinstance(raw, dict):
+            return set(raw.keys())
+        if isinstance(raw, list):
+            return set(str(x) for x in raw)
+        return set()
+    now = time.time()
+    ttl = APPLIED_TTL_DAYS * 86400
+    if isinstance(raw, dict):
+        return {k for k, ts in raw.items() if (now - float(ts)) < ttl}
+    if isinstance(raw, list):
+        # legacy list: no timestamps -> outside the window -> re-eligible now
+        return set()
+    return set()
+
+
+def _add_applied(path, key):
+    """Record an applied key WITH a timestamp (so it can expire after APPLIED_TTL_DAYS).
+    Migrates a legacy list file to the timestamped dict on first write. Prunes entries
+    older than 2x the window to keep the file small."""
+    if not key:
+        return
+    try:
+        raw = json.load(open(path))
+    except Exception:
+        raw = {}
+    if isinstance(raw, list):
+        raw = {str(x): time.time() for x in raw}   # migrate legacy list
+    elif not isinstance(raw, dict):
+        raw = {}
+    raw[str(key)] = time.time()
+    if APPLIED_TTL_DAYS > 0:
+        cutoff = APPLIED_TTL_DAYS * 2 * 86400
+        now = time.time()
+        raw = {k: v for k, v in raw.items() if (now - float(v)) < cutoff}
+    try:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        json.dump(raw, open(path, 'w'), indent=0)
+    except Exception:
+        pass
+
+
 def _load_dead():
     try:
         d = json.load(open(DEAD_FILE))
@@ -451,13 +514,13 @@ def main():
     init_db(db)
     _ = load_profile()
 
-    applied_ids = _load_json_set(JK_FILE)
+    applied_ids = _load_fresh_applied(JK_FILE)
     failed_ids = _load_failed_fresh()
     dead = {k for k, c in _load_dead().items() if int(c) >= MAX_FAILS}
-    applied_titles = _load_json_set(APPLIED_FILE)
+    applied_titles = _load_fresh_applied(APPLIED_FILE)
     _apply_lessons_to_env()   # SELF-LEARNING: apply fixes learned from past failures
-    print(f"🗂️  Dice dedup: {len(applied_ids)} ids applied, {len(applied_titles)} titles, "
-          f"{len(dead)} retired")
+    print(f"🗂️  Dice dedup (TTL={APPLIED_TTL_DAYS}d): {len(applied_ids)} ids applied, "
+          f"{len(applied_titles)} titles, {len(dead)} retired")
 
     def _save_failed(jid):
         # Write the failed-id with a timestamp so it can EXPIRE after FAIL_TTL_DAYS
@@ -842,9 +905,9 @@ def main():
             nt = _title_key(company, title)
             if result == 'submitted':
                 submitted += 1
-                applied_ids.add(jid); _save_json_set(JK_FILE, applied_ids)
+                applied_ids.add(jid); _add_applied(JK_FILE, jid)
                 if nt:
-                    applied_titles.add(nt); _save_json_set(APPLIED_FILE, applied_titles)
+                    applied_titles.add(nt); _add_applied(APPLIED_FILE, nt)
                 try:
                     upsert_application(db, company=company or 'Dice Employer', job_title=title or 'Dice Job',
                                        job_url=url, ats_type='dice', status='applied', match_score=75)
@@ -855,9 +918,9 @@ def main():
                 # Dice's own "Applied" state → add to dedup so we never re-open it, no fail count
                 release_claim(db, 'dice:' + (title or ''), title)
                 if jid:
-                    applied_ids.add(jid); _save_json_set(JK_FILE, applied_ids)
+                    applied_ids.add(jid); _add_applied(JK_FILE, jid)
                 if nt:
-                    applied_titles.add(nt); _save_json_set(APPLIED_FILE, applied_titles)
+                    applied_titles.add(nt); _add_applied(APPLIED_FILE, nt)
             else:
                 release_claim(db, 'dice:' + (title or ''), title)   # not applied → free claim
                 if jid:
