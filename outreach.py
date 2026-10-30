@@ -11,6 +11,122 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.base import MIMEBase
 from email import encoders
 
+# ── US-relevance filter (target REAL US recruiters, skip offshore C2C body-shops) ──
+# Business-signal filter ONLY (not national origin — that's inaccurate + wrong to code).
+# It scores a job/recruiter on signals that distinguish a real US recruiter / direct US
+# employer from an offshore bench-sales C2C spam shop. Set US_FILTER_OFF=1 to disable.
+
+# Verified large US staffing / direct-employer firms — always ALLOW (SIA 2026 top-firms).
+_US_ALLOW_FRAGMENTS = {
+    "teksystems", "allegis", "aerotek", "insightglobal", "insight global",
+    "apexsystems", "apex systems", "kforce", "roberthalf", "robert half",
+    "randstad", "experis", "manpower", "beaconhill", "beacon hill",
+    "motionrecruitment", "motion recruitment", "brooksource", "kavaliro",
+    "bayforce", "judge", "signaturecg", "collabera",  # Collabera is US-HQ'd (NJ)
+    "dexian", "inspyr", "mondo", "jobot", "cybercoders", "matlensilver",
+    "eliassen", "harnham", "aquent", "astoncarter", "calculatedhire",
+}
+
+# Email local-parts that scream "bench sales / hotlist C2C spam" (not a real 1:1 recruiter).
+_BENCH_LOCAL_PARTS = ("benchsales", "bench", "hotlist", "marketing", "resumes",
+                      "submissions", "requirements", "req", "c2c", "consultants")
+
+# Phrases that indicate a multi-vendor bench/C2C body-shop rather than a direct US role.
+_BODYSHOP_PHRASES = ("corp to corp only", "c2c only", "corp-to-corp only", "bench",
+                     "implementation partner", "prime vendor", "multiple positions",
+                     "h1b transfer", "opt/cpt", "opt cpt", "gc-ept", "whatsapp",
+                     "share your hotlist", "send hotlist")
+
+
+def _domain_of(email):
+    return (email.split('@')[1].lower() if '@' in email else '')
+
+
+def us_relevance_score(email, company, description):
+    """Return (score, reasons). Higher = more likely a REAL US recruiter/employer.
+    score >= US_MIN_SCORE (default 0) passes. Negative = likely offshore C2C spam."""
+    score, reasons = 0, []
+    e, comp, desc = (email or '').lower(), (company or '').lower(), (description or '').lower()
+    dom = _domain_of(e)
+    local = e.split('@')[0] if '@' in e else ''
+
+    # STRONG ALLOW: known US firm by name or domain
+    if any(f in comp or f.replace(' ', '') in dom for f in _US_ALLOW_FRAGMENTS):
+        score += 5; reasons.append('known-US-firm')
+
+    # Free webmail recruiter = usually an individual bench-sales rep, not a firm recruiter
+    if dom in ('gmail.com', 'yahoo.com', 'outlook.com', 'hotmail.com', 'aol.com'):
+        score -= 2; reasons.append('free-webmail')
+    elif dom:
+        score += 1; reasons.append('corp-domain')
+
+    # Bench-sales email local part
+    if any(local.startswith(b) or local == b for b in _BENCH_LOCAL_PARTS):
+        score -= 3; reasons.append(f'bench-local:{local[:12]}')
+
+    # +91 India phone in the posting (a real US role lists a +1 number)
+    if re.search(r'\+?91[\s\-]?\d{10}\b|\b0091\b', desc):
+        score -= 3; reasons.append('india-phone')
+    if re.search(r'\bwhatsapp\b', desc):
+        score -= 2; reasons.append('whatsapp')
+
+    # Body-shop / bench language
+    hits = [p for p in _BODYSHOP_PHRASES if p in desc]
+    if hits:
+        score -= 2 * len(hits); reasons.append('bodyshop:' + ','.join(hits[:2]))
+
+    # Explicit US-direct signals
+    if any(s in desc for s in ('w2 only', 'us citizen', 'gc holder only',
+                               'no c2c', 'direct hire', 'full-time employee')):
+        score += 2; reasons.append('us-direct-signal')
+
+    return score, reasons
+
+
+def passes_us_filter(email, company, description):
+    """True if this recruiter/job clears the US-relevance bar. Requires 2+ negative
+    signals before blocking (per research — avoid false blocks on real US firms)."""
+    if os.environ.get('US_FILTER_OFF') == '1':
+        return True, 0, ['filter-off']
+    min_score = int(os.environ.get('US_MIN_SCORE', '0'))
+    score, reasons = us_relevance_score(email, company, description)
+    neg = sum(1 for r in reasons if r.split(':')[0] in
+              ('free-webmail', 'bench-local', 'india-phone', 'whatsapp', 'bodyshop'))
+    # Block only when clearly offshore-C2C: below threshold AND 2+ independent neg signals,
+    # and NOT a known US firm.
+    if score < min_score and neg >= 2 and 'known-US-firm' not in reasons:
+        return False, score, reasons
+    return True, score, reasons
+
+
+def hunter_verify_email(email):
+    """Verify deliverability via Hunter.io (2026 API). Returns:
+      True  = safe to send (status valid, not catch-all)
+      False = do NOT send (invalid/disposable/blocked)
+      None  = unknown / no API key / accept-all (let SMTP decide, don't hard-block)
+    Endpoint: GET https://api.hunter.io/v2/email-verifier (field 'status')."""
+    key = os.environ.get('HUNTER_API_KEY', '')
+    if not key or not email:
+        return None
+    try:
+        q = urllib.request.quote(email)
+        url = f"https://api.hunter.io/v2/email-verifier?email={q}&api_key={key}"
+        ctx = ssl.create_default_context()
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+        with urllib.request.urlopen(req, timeout=12, context=ctx) as r:
+            data = json.loads(r.read().decode('utf-8', errors='ignore')).get('data', {})
+        status = (data.get('status') or '').lower()
+        if status in ('invalid', 'disposable') or data.get('block'):
+            return False
+        if status == 'valid' and not data.get('accept_all'):
+            return True
+        return None   # accept_all / webmail / unknown → don't hard-block
+    except Exception:
+        return None
+
+
 CONTACTED_FILE = 'contacted.json'
 CV_URL = 'https://drive.google.com/drive/folders/1sJRyHCTC2Xend6VWn6hM07VufWQdw_qV?usp=sharing'
 APPOINTMENT_URL = 'https://calendar.google.com/calendar/u/0/appointments/AcZssZ22KPDPginBf34kMvb6wAFQUEHtG5sJ3PF_1k8='
@@ -394,10 +510,23 @@ def process_jobs(jobs_list):
                 print(f'  ⏭️  Already contacted: {email}')
                 continue
 
+            # US-RELEVANCE FILTER (Bobur: target REAL US recruiters, skip offshore C2C
+            # bench-sales spam). Business signals only — not national origin. Blocks only
+            # when clearly a body-shop (2+ negative signals + below threshold).
+            ok_us, us_score, us_reasons = passes_us_filter(email, company, desc)
+            if not ok_us:
+                print(f'  🌍 skip non-US-relevant (score={us_score} {",".join(us_reasons)}): {email}')
+                continue
+
             # Mandatory mailbox check — block only addresses the mail server
             # explicitly REJECTS (False). Allow verified (True) and unverifiable
             # (None, e.g. port 25 blocked on the runner) so real recruiters still
             # get contacted, but dead/guessed domains are stopped.
+            # Hunter.io verify FIRST (reliable, handles catch-all); SMTP as backup.
+            hv = hunter_verify_email(email)
+            if hv is False:
+                print(f'  🚫 Hunter says invalid/disposable — skip: {email}')
+                continue
             smtp_status = verify_email_smtp(email)
             if smtp_status is False:
                 print(f'  🚫 SMTP rejected — skip dead mailbox: {email}')
@@ -412,6 +541,7 @@ def process_jobs(jobs_list):
                     'job': title, 'company': company, 'url': url,
                     'recruiter': recruiter_name,
                     'smtp_verified': smtp_status is True,
+                    'us_score': us_score, 'us_reasons': us_reasons,
                 }
                 sent_count += 1
                 results.append({

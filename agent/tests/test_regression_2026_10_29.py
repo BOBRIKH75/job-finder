@@ -327,3 +327,46 @@ def test_indeed_runs_headful():
     """Indeed must run HEADFUL (headful real Chrome is what lets Turnstile auto-pass)."""
     wf = _read(os.path.join(ROOT, ".github", "workflows", "indeed-apply.yml"))
     assert "HEADFUL: '1'" in wf, "Indeed workflow must set HEADFUL=1 (headful real Chrome)"
+
+
+# ===========================================================================
+# PART 4 — recruiter outreach US-relevance filter + email verification.
+# Target REAL US recruiters, skip offshore C2C bench-sales spam. DO NOT DELETE.
+# ===========================================================================
+
+def test_us_relevance_filter_keeps_us_firms_blocks_bodyshops():
+    """Outreach must keep real US staffing firms + neutral unknowns, and block clear
+    offshore C2C bench-sales spam (benchsales@, 'corp to corp only', +91 whatsapp, hotlist).
+    Business signals ONLY — never national origin."""
+    import sys
+    sys.path.insert(0, ROOT)
+    try:
+        from outreach import passes_us_filter
+    except Exception as e:
+        import pytest
+        pytest.skip(f"outreach import unavailable: {e}")
+
+    # KEEP: known US firms + neutral unknown corp domain
+    for email, comp, desc in [
+        ("r@teksystems.com", "TEKsystems", "W2 contract US"),
+        ("a.b@kforce.com", "Kforce", "direct hire java"),
+        ("info@somefirm.com", "Some Firm", "java developer remote"),
+    ]:
+        ok, score, reasons = passes_us_filter(email, comp, desc)
+        assert ok, f"should KEEP {email} (got block, reasons={reasons})"
+
+    # BLOCK: clear offshore C2C body-shop (2+ negative signals)
+    for email, comp, desc in [
+        ("benchsales@x.com", "X Consulting",
+         "C2C only, share your hotlist, whatsapp +91 9876543210, OPT/CPT"),
+        ("ravi@gmail.com", "Staffing LLC", "corp to corp only, send hotlist to whatsapp"),
+    ]:
+        ok, score, reasons = passes_us_filter(email, comp, desc)
+        assert not ok, f"should BLOCK {email} (got keep, reasons={reasons})"
+
+
+def test_hunter_email_verifier_exists():
+    """Outreach must verify deliverability via Hunter.io before sending (cut bounces)."""
+    src = _read(os.path.join(ROOT, "outreach.py"))
+    assert "hunter_verify_email" in src, "must have a Hunter email-verifier"
+    assert "api.hunter.io/v2/email-verifier" in src, "must call the Hunter verifier endpoint"
