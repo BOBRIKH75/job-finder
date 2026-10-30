@@ -35,6 +35,11 @@ jobs:
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
         run: python scripts/apollo_api_recruiters.py
 
+      - name: Find REAL US recruiters at real companies (US-filtered, verified emails)
+        env:
+          APOLLO_API_KEY: ${{ secrets.APOLLO_API_KEY }}
+        run: python3 -u scripts/apollo_us_recruiters.py
+
       - name: Commit results
         if: always()
         env:

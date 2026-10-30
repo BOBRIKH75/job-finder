@@ -130,6 +130,35 @@ def _fits(title, text):
     return any(k in blob for k in KEEP)
 
 
+def _is_bodyshop(email, company, text):
+    """Business-signal check: is this an offshore C2C bench-shop (low value) vs a real
+    US-relevant recruiter? NOT national origin — signals only. Returns True to DROP."""
+    e, comp, t = (email or "").lower(), (company or "").lower(), (text or "").lower()
+    local = e.split("@")[0]
+    neg = 0
+    # bench-sales / mass local parts
+    if any(local.startswith(b) or local == b for b in
+           ("benchsales", "bench", "hotlist", "marketing", "resumes", "submissions",
+            "requirements", "req", "consultants", "recruit", "anilrecruit")):
+        neg += 1
+    # free webmail recruiter (individual bench rep, not a firm)
+    if e.split("@")[-1] in ("gmail.com", "yahoo.com", "outlook.com", "hotmail.com", "aol.com"):
+        neg += 1
+    # +91 / whatsapp / visa-status language = classic C2C bench-shop post
+    if re.search(r"\+?91[\s\-]?\d{10}\b", t) or "whatsapp" in t:
+        neg += 1
+    if any(p in t for p in ("opt", "cpt", "h1b", "h-1b", "ept", "gc-ept",
+                            "share your hotlist", "send hotlist", "bench ",
+                            "prime vendor list", "us citizen or green card only",
+                            "passport number", "last 4 digit", "date of birth")):
+        neg += 1
+    # multiple visa categories listed (USC/GC/H1B/OPT) = body-shop boilerplate
+    visa_terms = sum(1 for v in ("usc", "gc", "h1b", "opt", "cpt", "ead") if v in t)
+    if visa_terms >= 3:
+        neg += 1
+    return neg >= 2   # 2+ negative signals = drop (avoid false drops on real firms)
+
+
 def main():
     pages = 3
     maxn = int(os.environ.get("NVOIDS_MAX", "120"))
@@ -174,32 +203,40 @@ def main():
         if not email:
             seen.add(jid)
             continue
+        company = _company(text, email)
+        bodyshop = _is_bodyshop(email, company, text)
         lead = {
             "id": jid,
             "title": title or "Java Developer (nvoids)",
             "recruiter_email": email,
-            "company": _company(text, email),
+            "company": company,
             "rate": _rate(text),
             "location": _location(text),
             "source": "nvoids",
+            "bodyshop": bodyshop,
             "url": DETAIL.format(id=jid, uid=uniq[jid]),
             "snippet": text[:300],
             "harvested": time.strftime("%Y-%m-%dT%H:%M:%S"),
         }
         nleads.append(lead)
-        # add to GOLD leads (vendor_outreach emails these FIRST) if new email
+        seen.add(jid)
+        if bodyshop:
+            # low-value offshore C2C bench desk — keep in nvoids_leads for reference,
+            # but DO NOT add to gold leads (gold = emailed first). Skip the queue-jump.
+            print(f"  🌍 skip body-shop: {title[:38]:40s} {email}")
+            continue
+        # US-relevant recruiter → add to GOLD leads (emailed first, CV attached)
         if email not in gold_emails:
             gold.append({
                 "recruiter_email": email,
-                "recruiter_name": _company(text, email) or email.split("@")[0].title(),
-                "company": lead["company"],
+                "recruiter_name": company or email.split("@")[0].title(),
+                "company": company,
                 "role": lead["title"],
                 "source": "nvoids",
             })
             gold_emails.add(email)
-        seen.add(jid)
         new_fit += 1
-        print(f"  ✅ {title[:42]:44s} {email:34s} {lead['rate']} {lead['location'][:20]}")
+        print(f"  ✅ {title[:38]:40s} {email:34s} {lead['rate']} {lead['location'][:18]}")
         time.sleep(0.4)   # polite
 
     # keep files bounded
