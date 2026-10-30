@@ -204,6 +204,23 @@ def main():
             print(f"     {c['subject']}")
             if kind in ("REQUIREMENT_BLOCKER", "NEW_ROLE", "RATE_QUESTION"):
                 print(f"     ↳ {c['snippet'][:150]}")
+            # RATE QUESTION → generate the market-value strategic reply (anchor high).
+            if kind == "RATE_QUESTION":
+                try:
+                    try:
+                        from rate_strategy import build_rate_reply
+                    except Exception:
+                        from scripts.rate_strategy import build_rate_reply
+                    name = c["from"].split("@")[0].replace(".", " ").title()
+                    _subj, _reply_body, r = build_rate_reply(name, c["role"], c["snippet"])
+                    print(f"     💡 MARKET TARGET: ${r['target']}/hr  (quote ${r['low']}-{r['high']}/hr)"
+                          f"  factors: {', '.join(r['factors']) or 'base'}")
+                    print(f"     💬 suggested reply saved → see rate_reply below")
+                    c["suggested_rate_reply"] = _reply_body
+                    c["rate_target"] = r["target"]
+                    c["rate_range"] = [r["low"], r["high"]]
+                except Exception as _e:
+                    pass
 
     # ---- learnings summary ----
     blockers = [c for c in rows if c["kind"] == "REQUIREMENT_BLOCKER"]

@@ -370,3 +370,37 @@ def test_hunter_email_verifier_exists():
     src = _read(os.path.join(ROOT, "outreach.py"))
     assert "hunter_verify_email" in src, "must have a Hunter email-verifier"
     assert "api.hunter.io/v2/email-verifier" in src, "must call the Hunter verifier endpoint"
+
+
+# ===========================================================================
+# PART 5 — rate maximization strategy. DO NOT DELETE.
+# ===========================================================================
+
+def test_rate_strategy_anchors_by_conditions():
+    """Rate strategy must price UP for premium conditions (onsite/architecture/lead/niche/
+    direct/urgency) and never quote below the floor. Urgency must RAISE, not discount."""
+    import sys
+    sys.path.insert(0, os.path.join(AGENT, "scripts"))
+    try:
+        from rate_strategy import compute_rate
+    except Exception as e:
+        import pytest
+        pytest.skip(f"rate_strategy import unavailable: {e}")
+
+    base = compute_rate("remote c2c java")["target"]
+    assert base >= 90, "base target must be at least the floor ($90)"
+
+    # premium stack must price materially higher than base remote IC
+    premium = compute_rate(
+        "remote architecture lead kafka kubernetes aws direct client on-call")["target"]
+    assert premium > base, "architecture/lead/niche/direct must raise the target"
+    assert premium >= 150, "full premium stack should reach the top band"
+
+    # urgency must ANCHOR UP (never discount)
+    urgent = compute_rate("remote c2c java urgent immediate")["target"]
+    assert urgent >= base, "urgency must raise or hold the rate, never lower it"
+
+    # quote range bottom == target (recruiters negotiate down from the top you give)
+    r = compute_rate("remote c2c java")
+    assert r["low"] == r["target"], "quote range bottom must equal the target"
+    assert r["high"] >= r["target"], "quote range top must be >= target"
