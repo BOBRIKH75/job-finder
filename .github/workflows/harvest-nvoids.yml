@@ -1,0 +1,39 @@
+name: "Harvest nvoids C2C reqs (every 2h)"
+
+# Real-time C2C requirement harvester. nvoids.com publishes fresh Java C2C reqs with the
+# recruiter's email inline — no login, newest first. Every 2 hours we pull the latest,
+# keep the Java/C2C-fit ones, and add the recruiter emails to recruiter_job_leads.json
+# (the GOLD source vendor_outreach emails FIRST with the CV attached). Cloud — no laptop.
+
+on:
+  schedule:
+    - cron: "20 */2 * * *"   # every 2 hours (offset :20 so it staggers off the appliers)
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+defaults:
+  run:
+    working-directory: agent
+
+jobs:
+  harvest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Harvest nvoids latest C2C requirements
+        run: python3 -u scripts/harvest_nvoids.py --max 120
+      - name: Commit new leads (shared with pipeline)
+        if: always()
+        run: |
+          cd $GITHUB_WORKSPACE
+          git config user.email "bot@bobrikh.dev"
+          git config user.name "nvoids Harvester"
+          git add agent/data/recruiter_job_leads.json agent/data/nvoids_leads.json agent/data/nvoids_seen.json 2>/dev/null || true
+          git diff --staged --quiet || git commit -m "nvoids: harvest fresh C2C recruiter leads [skip ci]"
+          git pull --rebase --autostash || true
+          git push || true
