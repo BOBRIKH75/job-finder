@@ -65,8 +65,11 @@ def ntfy_push(title, body, priority="high", tags="briefcase"):
         return False
     try:
         url = f"https://ntfy.sh/{NTFY}"
+        # HTTP headers must be latin-1/ASCII — strip non-ASCII (emojis) from Title;
+        # emojis in the BODY are fine (UTF-8 encoded). Use the Tags header for the icon.
+        safe_title = title.encode("ascii", "ignore").decode().strip() or "Recruiter reply"
         req = urllib.request.Request(url, data=body.encode("utf-8"), headers={
-            "Title": title, "Priority": priority, "Tags": tags,
+            "Title": safe_title, "Priority": priority, "Tags": tags,
         }, method="POST")
         urllib.request.urlopen(req, timeout=10)
         return True
@@ -118,12 +121,13 @@ def main():
         print("No new hot replies to alert.")
         return
 
-    icon = {"RTR": "🔥 RTR", "INTERVIEW": "🔥 INTERVIEW", "RATE": "💲 RATE"}
+    icon = {"RTR": "RTR request", "INTERVIEW": "Interview request", "RATE": "Rate question"}
+    tagmap = {"RTR": "fire", "INTERVIEW": "fire", "RATE": "moneybag"}
     for kind, addr, subject, mid in hot:
-        title = f"{icon.get(kind, kind)} — recruiter reply"
-        body = f"{addr}\n{subject[:120]}\n\nReply from Gmail → Drafts or hand-reply."
-        ok = ntfy_push(title, body)
-        print(f"  {'📲 alerted' if ok else '(no ntfy)'}: [{kind}] {addr} — {subject[:50]}")
+        title = f"{icon.get(kind, kind)} — {addr}"
+        body = f"{subject[:140]}\n\nOpen Gmail → reply (draft may be ready). Rate? anchor $100-120+/hr."
+        ok = ntfy_push(title, body, tags=tagmap.get(kind, "briefcase"))
+        print(f"  {'alerted' if ok else '(no ntfy)'}: [{kind}] {addr} — {subject[:50]}")
         alerted.add(mid)
 
     # also email a digest to self as backup
