@@ -200,75 +200,46 @@ def run_filter(db, jobs):
         description = job.get("description", "")
         job["is_staffing_firm"] = is_staffing_firm(company, description)
 
-        # For direct employers (not staffing firms), require C2C/contract signals.
-        # For CAPTCHA-free ATS (Lever/Greenhouse), we CAN auto-apply but still need
-        # relevance checks to avoid wasting applications on wrong jobs.
-        CAPTCHA_FREE_ATS_TYPES = {"lever", "greenhouse", "ashby", "workable"}
-        if not job["is_staffing_firm"]:
-            desc_lower = description.lower()
-            title_lower = job.get("title", "").lower()
-            c2c_signals = [
-                "c2c", "corp to corp", "corp-to-corp", "1099",
-                "contract only", "contract position", "contract role",
-                "w2 or c2c", "w2/c2c", "independent contractor",
-                "contract-to-hire", "contract to hire",
-            ]
-            # Also accept if explicitly says "contract" AND is in the title
-            has_contract_title = "contract" in title_lower
-            has_c2c_desc = any(sig in desc_lower for sig in c2c_signals)
-            is_captcha_free_ats = ats.ats_type in CAPTCHA_FREE_ATS_TYPES
+        # ENGAGEMENT-AGNOSTIC (Bobur 2026-10-30): apply to C2C / 1099 / W2 / FTE ALL —
+        # engagement type is negotiable after the interview, so don't reject a role just
+        # because it isn't labeled C2C. Only keep the REAL quality gates: (1) it's a
+        # Java/backend-relevant role, (2) it's US/remote (not offshore/wrong-continent),
+        # (3) it's not explicitly no-third-party/clearance that Bob can't meet.
+        desc_lower = description.lower()
+        title_lower = job.get("title", "").lower()
 
-            if not has_c2c_desc and not has_contract_title and not is_captcha_free_ats:
-                print(f"  🚫 SKIP (no C2C signals) [DIRECT FTE]: {job.get('title', '')} @ {company}")
-                continue
+        # (1) US / remote only — drop clearly non-US locations
+        location = (job.get("location", "") or "").lower()
+        skip_locations = ["latam", "latin america", "india", "uk", "europe", "canada",
+                          "toronto", "london", "berlin", "australia", "singapore", "japan",
+                          "brazil", "mexico", "argentina", "colombia", "chile", "peru",
+                          "emea", "apac"]
+        if any(loc in location for loc in skip_locations) or \
+           any(loc in title_lower for loc in ("latam", "- uk", "- eu", "- india",
+                                              "(emea)", "(apac)", "- brazil")):
+            print(f"  🚫 SKIP (non-US location): {job.get('title', '')} @ {company}")
+            continue
 
-            # CAPTCHA-free ATS jobs WITHOUT C2C signals need extra relevance checks.
-            # These come from portal scanner (bulk-scraped company pages).
-            # Without checks, we apply to DevOps, Data, LATAM, on-site, FTE jobs.
-            if is_captcha_free_ats and not has_c2c_desc and not has_contract_title:
-                # CHECK 1: Title must contain core Java/backend keywords (not just any tech)
-                java_core_title = ["java", "spring", "backend", "back-end", "j2ee",
-                                   "jvm", "microservice"]
-                if not any(kw in title_lower for kw in java_core_title):
-                    print(f"  🚫 SKIP (not Java/backend title) [DIRECT+AUTO-ATS]: {job.get('title', '')} @ {company}")
-                    continue
+        # (2) hard blockers Bob genuinely can't meet (clearance / US-citizen-only / no-3rd-party)
+        hard_block = ["clearance required", "active clearance", "ts/sci", "top secret",
+                      "polygraph", "secret clearance", "us citizen only", "must be a us citizen",
+                      "no third party", "no c2c, no 1099, w2 only with our company"]
+        if any(sig in desc_lower for sig in hard_block):
+            print(f"  🚫 SKIP (clearance/citizen/no-3rd-party): {job.get('title', '')} @ {company}")
+            continue
 
-                # CHECK 2: Location — skip on-site roles outside USA or specific-city-only
-                location = job.get("location", "").lower()
-                skip_locations = ["latam", "latin america", "india", "uk", "europe",
-                                  "canada", "toronto", "london", "berlin", "australia",
-                                  "singapore", "japan", "brazil", "mexico", "argentina",
-                                  "colombia", "chile", "peru"]
-                if any(loc in location for loc in skip_locations):
-                    print(f"  🚫 SKIP (wrong location: {location[:30]}) [DIRECT+AUTO-ATS]: {job.get('title', '')} @ {company}")
-                    continue
-                # Also skip if title contains location markers for non-US
-                title_loc_skip = ["latam", "- uk", "- eu", "- india", "miami",
-                                  "- brazil", "(emea)", "(apac)"]
-                if any(loc in title_lower for loc in title_loc_skip):
-                    print(f"  🚫 SKIP (location in title) [DIRECT+AUTO-ATS]: {job.get('title', '')} @ {company}")
-                    continue
+        # (3) relevance: Java/backend-ish title OR decent skill match (keeps it on-target
+        # without rejecting W2/FTE). match_skills already scored the description.
+        java_core = ["java", "spring", "backend", "back-end", "back end", "j2ee", "jvm",
+                     "microservice", "software engineer", "software developer", "full stack",
+                     "fullstack", "api", "platform engineer", "sre"]
+        if not any(kw in title_lower for kw in java_core) and match["score"] < 40:
+            print(f"  🚫 SKIP (not Java/backend relevant): {job.get('title', '')} @ {company}")
+            continue
 
-                # CHECK 3: Match score must be >= 50% for direct auto-apply
-                if match["score"] < 50:
-                    print(f"  🚫 SKIP (low match {match['score']}%) [DIRECT+AUTO-ATS]: {job.get('title', '')} @ {company}")
-                    continue
-
-                # CHECK 4: Skip if description shows it's clearly NOT contract-friendly
-                fte_only_signals = ["no contractors", "no c2c", "no corp-to-corp",
-                                    "permanent only", "w2 only", "no third party",
-                                    "must be direct employee", "no agencies",
-                                    "clearance required", "ts/sci", "top secret",
-                                    "polygraph"]
-                if any(sig in desc_lower for sig in fte_only_signals):
-                    print(f"  🚫 SKIP (FTE/clearance only) [DIRECT+AUTO-ATS]: {job.get('title', '')} @ {company}")
-                    continue
-
-                print(f"  ✅ PASS ({match['score']}% match) [DIRECT+AUTO-ATS]: {job.get('title', '')} @ {company}")
-            elif has_c2c_desc or has_contract_title:
-                print(f"  ✅ PASS ({match['score']}% match) [DIRECT+C2C]: {job.get('title', '')} @ {company}")
-        else:
-            print(f"  ✅ PASS ({match['score']}% match) [STAFFING]: {job.get('title', '')} @ {company}")
+        _eng = "C2C" if any(s in desc_lower for s in ("c2c", "corp to corp", "1099")) \
+            else ("contract" if "contract" in (desc_lower + title_lower) else "W2/FTE")
+        print(f"  ✅ PASS ({match['score']}% | {_eng}): {job.get('title', '')} @ {company}")
 
         upsert_application(db, company=company, job_title=job.get("title", ""),
                            job_url=url, ats_type=ats.ats_type,
