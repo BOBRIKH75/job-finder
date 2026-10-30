@@ -1,0 +1,33 @@
+name: "Hot Lead Drafts (Daily)"
+
+# Every morning: read Bob's recruiter replies, find the HOT leads (RTR / interview /
+# new role / rate question), and draft tailored replies into Gmail Drafts so he can
+# review + send in seconds. NOTHING is auto-sent. Runs on the cloud (no laptop needed).
+
+on:
+  schedule:
+    - cron: "0 14 * * *"   # 8:00 AM MT daily
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    working-directory: agent
+
+jobs:
+  draft:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Read replies + draft hot-lead responses into Gmail Drafts
+        env:
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+        run: |
+          python3 -u scripts/read_recruiter_replies.py --days 30 || true
+          python3 -u scripts/draft_hot_lead_replies.py --days 30 || true
