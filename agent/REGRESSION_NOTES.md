@@ -204,3 +204,28 @@ gesture and does NOT clear a *managed* challenge; the old loop clicked + waited 
 - Greenhouse boards-api fallback (big-company jobs dead-end without it).
 - Indeed CLOUDFLARE_WAIT back to 5s / click-only (auto-pass needs the longer token wait).
 - Indeed HEADFUL=1 (headless gets hard managed challenges).
+
+---
+
+# Part 6 — REAL US recruiters vs body shops (honest findings, 2026-10-30)
+
+Bob asked why harvested recruiter emails look like Indian body-shops. The honest truth,
+documented so it's not re-litigated:
+
+- **C2C email-outreach channel (nvoids, C2C Google Groups, hotlist blasts) is STRUCTURALLY
+  Indian bench-sales body-shops** (~90%). No filter reliably turns it into US direct
+  recruiters — a body-shop email looks identical to a real one. Added a best-effort
+  body-shop filter to harvest_nvoids.py (OPT/CPT/H1B/visa-category + benchsales/free-webmail
+  + +91/whatsapp signals, 2+ required to drop) so bench desks stay OUT of gold leads, but
+  this only catches the obvious ones.
+- **Apollo people-search API returns HTTP 403** on the current key (free tier blocks
+  mixed_people/search). apollo_us_recruiters.py is correct (US location + verified-email
+  filter) and will work IF the plan is upgraded — not worth chasing otherwise.
+- **The REAL US-recruiter channel that WORKS and is already running:** direct-employer ATS
+  (Greenhouse 257 + Lever 102 = 359 real US companies). Confirmed real applications landed
+  at Leidos, Candid Health, Lively, Datadog, Prenuvo — real US employers with real HR.
+  PLUS the named US recruiters who emailed Bob directly (LanceSoft/State of Colorado,
+  Horizontal, KellyMitchell) — surfaced by read_recruiter_replies + drafted by
+  draft_hot_lead_replies.
+- **Strategy:** lean on direct-employer applies + inbound named recruiters for REAL US
+  opportunities; keep C2C vendor blast as volume/backup but don't expect US-direct from it.
