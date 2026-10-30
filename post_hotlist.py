@@ -45,6 +45,10 @@ ALL_GROUPS = [
     'qa-c2c-requirments', 'bench-consultants-for-new-projects',
     'benchsales-recruiters', 'it-recruiters-group',
     'c2c-jobs-usa', 'direct-client-requirements-c2c',
+    # --- added 2026-10-30 from deep web research (public C2C requirement groups) ---
+    'c2c-hotlist-and-requirements-', 'hotlistandc2creqs', 'us_c2c_requirements',
+    'us_it_c2c_dailyrequirements', 'c2c-recruiters-requirements',
+    'daily-requirement-c2c-it', 'c2cactiverequirements', 'c2c-requirementsRSS',
 ]
 
 GROUPS_PER_DAY = 8  # ~47 groups spread across weekdays
