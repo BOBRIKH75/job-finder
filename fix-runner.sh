@@ -75,6 +75,15 @@ say "Deregistering any stale runner on GitHub..."
 RM_TOKEN="$(gh api -X POST repos/${REPO}/actions/runners/remove-token -q .token 2>/dev/null || true)"
 [ -n "$RM_TOKEN" ] && ./config.sh remove --token "$RM_TOKEN" >/dev/null 2>&1 || true
 
+# HARD CLEAR: if a local config still exists (the "already configured — run config remove
+# first" error), delete the local config files so a fresh configure always succeeds. This
+# is safe — it only clears THIS machine's runner identity, which we're re-registering anyway.
+if [ -f "$RUNNER_DIR/.runner" ] || [ -f "$RUNNER_DIR/.credentials" ]; then
+  say "Clearing leftover local runner config (forces a clean re-register)..."
+  rm -f "$RUNNER_DIR/.runner" "$RUNNER_DIR/.credentials" \
+        "$RUNNER_DIR/.credentials_rsaparams" "$RUNNER_DIR/.service" 2>/dev/null || true
+fi
+
 say "Registering fresh with GitHub..."
 REG_TOKEN="$(gh api -X POST repos/${REPO}/actions/runners/registration-token -q .token 2>/dev/null || true)"
 [ -n "$REG_TOKEN" ] || die "Could not get a registration token (need admin on ${REPO})."
