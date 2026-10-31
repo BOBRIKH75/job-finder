@@ -934,5 +934,29 @@
     "replied": false,
     "bounced": true,
     "re_engage_count": 0
+  },
+  "96d03f26cc46": {
+    "email": "origin.allow@inherenttechnologies.com",
+    "date": "2026-10-31T22:59:12.884946",
+    "job": "Java Developer",
+    "company": "Inherent Technologies",
+    "url": "https://www.linkedin.com/jobs/view/4485901988",
+    "recruiter": "origin allow",
+    "source": "linkedin+guess",
+    "bounced": true
+  },
+  "dffdb0a3bdf5": {
+    "email": "recruiting@wyetech.com",
+    "date": "2026-10-31T22:59:44.025030",
+    "last_contact": "2026-10-31T22:59:44.025030",
+    "job": "Java Developer C2C",
+    "company": "Wyetech",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": false,
+    "re_engage_count": 0
   }
 }
