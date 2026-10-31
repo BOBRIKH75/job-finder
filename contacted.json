@@ -828,5 +828,111 @@
     "replied": false,
     "bounced": true,
     "re_engage_count": 0
+  },
+  "027b45e39dac": {
+    "email": "_coordinators@bokf.com",
+    "date": "2026-10-31T18:02:06.859929",
+    "job": "Senior Software Engineer - Java, AWS, & Distributed Systems",
+    "company": "BOK Financial",
+    "url": "https://www.indeed.com/viewjob?jk=f5d4a8e2eae0a0a3",
+    "recruiter": "Operate Wh",
+    "smtp_verified": true,
+    "us_score": 1,
+    "us_reasons": [
+      "corp-domain"
+    ]
+  },
+  "d6379f8e683a": {
+    "email": "suman.kumar@oraninc.com",
+    "date": "2026-10-31T18:02:10.034714",
+    "job": "Full Stack Developer",
+    "company": "Oran Inc",
+    "url": "https://www.indeed.com/viewjob?jk=19393960c940f93b",
+    "recruiter": null,
+    "smtp_verified": true,
+    "us_score": 1,
+    "us_reasons": [
+      "corp-domain"
+    ]
+  },
+  "1d4844eb35f4": {
+    "email": "origin.allow@alignerr.com",
+    "date": "2026-10-31T18:10:24.194900",
+    "job": "Back End Developer (AI Infrastructure)",
+    "company": "Alignerr",
+    "url": "https://www.linkedin.com/jobs/view/4484795247",
+    "recruiter": "origin allow",
+    "source": "linkedin+guess",
+    "bounced": true
+  },
+  "9d7b30f9ab3c": {
+    "email": "info@roboticstechnologies.com",
+    "date": "2026-10-31T18:11:01.764966",
+    "last_contact": "2026-10-31T18:11:01.764966",
+    "job": "Java Developer C2C",
+    "company": "Robotics Technologies",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": true,
+    "re_engage_count": 0
+  },
+  "c78dc418ef88": {
+    "email": "recruiting@optomi.com",
+    "date": "2026-10-31T18:11:02.965266",
+    "last_contact": "2026-10-31T18:11:02.965266",
+    "job": "Java Developer C2C",
+    "company": "Optomi",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": false,
+    "re_engage_count": 0
+  },
+  "6ed8a2c0e632": {
+    "email": "recruiting@bokfinancial.com",
+    "date": "2026-10-31T18:11:04.202209",
+    "last_contact": "2026-10-31T18:11:04.202209",
+    "job": "Java Developer C2C",
+    "company": "BOK Financial",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": false,
+    "re_engage_count": 0
+  },
+  "7446d3f75a61": {
+    "email": "careers@brooksource.com",
+    "date": "2026-10-31T18:11:05.733798",
+    "last_contact": "2026-10-31T18:11:05.733798",
+    "job": "Java Developer C2C",
+    "company": "Brooksource",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": true,
+    "re_engage_count": 0
+  },
+  "f0e817476e30": {
+    "email": "careers@cognizant.com",
+    "date": "2026-10-31T18:11:07.898210",
+    "last_contact": "2026-10-31T18:11:07.898210",
+    "job": "Java Developer C2C",
+    "company": "Cognizant",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": true,
+    "re_engage_count": 0
   }
 }
