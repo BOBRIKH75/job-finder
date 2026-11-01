@@ -958,5 +958,88 @@
     "replied": false,
     "bounced": false,
     "re_engage_count": 0
+  },
+  "87effe74a0d2": {
+    "email": "recruiting@grvty.com",
+    "date": "2026-11-01T18:32:51.325239",
+    "job": "Software Engineer",
+    "company": "GRVTY",
+    "url": "https://www.indeed.com/viewjob?jk=f54a212f1e3cd479",
+    "recruiter": null,
+    "smtp_verified": true,
+    "us_score": 1,
+    "us_reasons": [
+      "corp-domain"
+    ]
+  },
+  "9f1447cf5aba": {
+    "email": "recruiting@citi.com",
+    "date": "2026-11-01T18:42:25.618214",
+    "last_contact": "2026-11-01T18:42:25.618214",
+    "job": "Java Developer C2C",
+    "company": "Citi",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": false,
+    "re_engage_count": 0
+  },
+  "996fd7a5afc7": {
+    "email": "careers@galent.com",
+    "date": "2026-11-01T18:42:30.749405",
+    "last_contact": "2026-11-01T18:42:30.749405",
+    "job": "Java Developer C2C",
+    "company": "Galent",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": true,
+    "re_engage_count": 0
+  },
+  "e3dc82b83e4a": {
+    "email": "info@ltimindtree.com",
+    "date": "2026-11-01T18:42:35.957850",
+    "last_contact": "2026-11-01T18:42:35.957850",
+    "job": "Java Developer C2C",
+    "company": "LTIMindtree",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": true,
+    "re_engage_count": 0
+  },
+  "8abbb83317b0": {
+    "email": "careers@electrifyamerica.com",
+    "date": "2026-11-01T18:42:39.016116",
+    "last_contact": "2026-11-01T18:42:39.016116",
+    "job": "Java Developer C2C",
+    "company": "Electrify America",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": true,
+    "re_engage_count": 0
+  },
+  "62c3cfa5ddb0": {
+    "email": "recruiting@inspyrsolutions.com",
+    "date": "2026-11-01T18:42:42.076277",
+    "last_contact": "2026-11-01T18:42:42.076277",
+    "job": "Java Developer C2C",
+    "company": "INSPYR Solutions",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": false,
+    "re_engage_count": 0
   }
 }
