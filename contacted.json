@@ -100,7 +100,7 @@
   "4a35f11cb197": {
     "email": "recruiting@3pillar.com",
     "date": "2026-10-30T00:38:51.042764",
-    "last_contact": "2026-10-30T00:38:51.042764",
+    "last_contact": "2026-11-02T22:36:00.226083",
     "job": "Java Developer C2C",
     "company": "3Pillar",
     "recruiter": "Recruiting Team",
@@ -109,12 +109,14 @@
     "url": "",
     "replied": false,
     "bounced": false,
-    "re_engage_count": 0
+    "re_engage_count": 0,
+    "followed_up": true,
+    "followup_date": "2026-11-02T22:36:00.226083"
   },
   "c51bd50fb633": {
     "email": "recruiting@4arrows.com",
     "date": "2026-10-30T00:38:53.546300",
-    "last_contact": "2026-10-30T00:38:53.546300",
+    "last_contact": "2026-11-02T22:36:00.226083",
     "job": "Java Developer C2C",
     "company": "4 Arrows",
     "recruiter": "Recruiting Team",
@@ -123,7 +125,9 @@
     "url": "",
     "replied": false,
     "bounced": false,
-    "re_engage_count": 0
+    "re_engage_count": 0,
+    "followed_up": true,
+    "followup_date": "2026-11-02T22:36:00.226083"
   },
   "d8da5f4ae3e2": {
     "email": "careers@appliedintuition.com",
@@ -246,7 +250,7 @@
   "9cb3cdeeeb87": {
     "email": "recruiting@ampstek.com",
     "date": "2026-10-30T01:06:08.776624",
-    "last_contact": "2026-10-30T01:06:08.776624",
+    "last_contact": "2026-11-02T22:36:00.226083",
     "job": "Java Developer C2C",
     "company": "Ampstek",
     "recruiter": "Recruiting Team",
@@ -255,7 +259,9 @@
     "url": "",
     "replied": false,
     "bounced": false,
-    "re_engage_count": 0
+    "re_engage_count": 0,
+    "followed_up": true,
+    "followup_date": "2026-11-02T22:36:00.226083"
   },
   "9c001ce7aa57": {
     "email": "recruiting@allstate.com",
@@ -302,7 +308,7 @@
   "35401ab19cea": {
     "email": "recruiting@dexian.com",
     "date": "2026-10-30T01:06:17.195486",
-    "last_contact": "2026-10-30T01:06:17.195486",
+    "last_contact": "2026-11-02T22:36:00.226083",
     "job": "Java Developer C2C",
     "company": "Dexian",
     "recruiter": "Recruiting Team",
@@ -311,7 +317,9 @@
     "url": "",
     "replied": false,
     "bounced": false,
-    "re_engage_count": 0
+    "re_engage_count": 0,
+    "followed_up": true,
+    "followup_date": "2026-11-02T22:36:00.226083"
   },
   "1b1677b184c6": {
     "email": "recruiting@elastic.com",
@@ -408,7 +416,10 @@
     "us_score": 1,
     "us_reasons": [
       "corp-domain"
-    ]
+    ],
+    "last_contact": "2026-11-02T22:36:00.226083",
+    "followed_up": true,
+    "followup_date": "2026-11-02T22:36:00.226083"
   },
   "3246ed261b33": {
     "email": "origin.allow@logisticsintegrationsolutions.com",
@@ -615,7 +626,7 @@
   "c5455316a15a": {
     "email": "recruiting@everywherecommunications.com",
     "date": "2026-10-30T19:06:36.468807",
-    "last_contact": "2026-10-30T19:06:36.468807",
+    "last_contact": "2026-11-02T22:36:00.226083",
     "job": "Java Developer C2C",
     "company": "EVERYWHERE Communications",
     "recruiter": "Recruiting Team",
@@ -624,7 +635,9 @@
     "url": "",
     "replied": false,
     "bounced": false,
-    "re_engage_count": 0
+    "re_engage_count": 0,
+    "followed_up": true,
+    "followup_date": "2026-11-02T22:36:00.226083"
   },
   "83118e387aaa": {
     "email": "recruiting@ptrglobal.com",
@@ -657,7 +670,7 @@
   "9612d0773cfe": {
     "email": "recruiting@usbank.com",
     "date": "2026-10-30T19:06:45.100957",
-    "last_contact": "2026-10-30T19:06:45.100957",
+    "last_contact": "2026-11-02T22:36:00.226083",
     "job": "Java Developer C2C",
     "company": "U.S. Bank",
     "recruiter": "Recruiting Team",
@@ -666,7 +679,9 @@
     "url": "",
     "replied": false,
     "bounced": false,
-    "re_engage_count": 0
+    "re_engage_count": 0,
+    "followed_up": true,
+    "followup_date": "2026-11-02T22:36:00.226083"
   },
   "767f55efdf4d": {
     "email": "alisha@luzontech.com",
@@ -1172,6 +1187,80 @@
     "last_contact": "2026-11-01T23:04:49.723580",
     "job": "Java Developer C2C",
     "company": "ImmunityBio",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": false,
+    "re_engage_count": 0
+  },
+  "f116102525e6": {
+    "email": "origin.allow@ssipeople.com",
+    "date": "2026-11-02T22:45:33.248323",
+    "job": "Senior Java Developer",
+    "company": "SSi People",
+    "url": "https://www.linkedin.com/jobs/view/4484373219",
+    "recruiter": "origin allow",
+    "source": "linkedin+guess",
+    "bounced": true
+  },
+  "1ddbe03999ff": {
+    "email": "origin.allow@indotronixinternationalcorporation.com",
+    "date": "2026-11-02T22:45:36.422288",
+    "job": "Senior Java Developer",
+    "company": "Indotronix International Corporation",
+    "url": "https://www.linkedin.com/jobs/view/4485737532",
+    "recruiter": "origin allow",
+    "source": "linkedin+guess",
+    "bounced": true
+  },
+  "fb4dcfb427d2": {
+    "email": "origin.allow@newresourcesconsulting.com",
+    "date": "2026-11-02T22:45:37.605196",
+    "job": "Java Developer",
+    "company": "New Resources Consulting",
+    "url": "https://www.linkedin.com/jobs/view/4486419731",
+    "recruiter": "origin allow",
+    "source": "linkedin+guess",
+    "bounced": true
+  },
+  "3cf1ca7fbc0d": {
+    "email": "origin.allow@lighthousetechnologyservices.com",
+    "date": "2026-11-02T22:45:38.784410",
+    "job": "Senior API Developer",
+    "company": "Lighthouse Technology Services",
+    "url": "https://www.linkedin.com/jobs/view/4484373085",
+    "recruiter": "origin allow",
+    "source": "linkedin+guess",
+    "bounced": true
+  },
+  "e1c61d83641e": {
+    "email": "origin.allow@senecaresources.com",
+    "date": "2026-11-02T22:45:43.787763",
+    "job": "Senior Software Engineer X3",
+    "company": "Seneca Resources",
+    "url": "https://www.linkedin.com/jobs/view/4485752786",
+    "recruiter": "origin allow",
+    "source": "linkedin+guess",
+    "bounced": true
+  },
+  "5d93e8d325cc": {
+    "email": "origin.allow@amtexsystemsinc.com",
+    "date": "2026-11-02T22:45:44.827870",
+    "job": "Java with AI role- Remote",
+    "company": "Amtex Systems Inc",
+    "url": "https://www.linkedin.com/jobs/view/4486421413",
+    "recruiter": "origin allow",
+    "source": "linkedin+guess",
+    "bounced": true
+  },
+  "89b86ec921b4": {
+    "email": "recruiting@atlassian.com",
+    "date": "2026-11-02T22:46:26.535204",
+    "last_contact": "2026-11-02T22:46:26.535204",
+    "job": "Java Developer C2C",
+    "company": "Atlassian",
     "recruiter": "Recruiting Team",
     "title": "Recruiter",
     "source": "smtp_verified",
