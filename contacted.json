@@ -408,5 +408,101 @@
     "replied": false,
     "bounced": true,
     "re_engage_count": 0
+  },
+  "6c9d59893dee": {
+    "email": "askhr.us@fiserv.com",
+    "date": "2026-11-03T20:23:16.062355",
+    "job": "Lead Full Stack Software Engineer",
+    "company": "Fiserv",
+    "url": "https://www.indeed.com/viewjob?jk=eb9515351d1792b8",
+    "recruiter": null,
+    "smtp_verified": true,
+    "us_score": 1,
+    "us_reasons": [
+      "corp-domain"
+    ]
+  },
+  "0d08867b0579": {
+    "email": "recruiting@crowdstrike.com",
+    "date": "2026-11-03T20:23:18.779990",
+    "job": "Engineer III - Cloud (Remote)",
+    "company": "CrowdStrike",
+    "url": "https://www.indeed.com/viewjob?jk=6f2686b749a406a3",
+    "recruiter": null,
+    "smtp_verified": true,
+    "us_score": 1,
+    "us_reasons": [
+      "corp-domain"
+    ]
+  },
+  "2033299ae3c5": {
+    "email": "careers@charterglobal.com",
+    "date": "2026-11-03T20:34:12.365553",
+    "last_contact": "2026-11-03T20:34:12.365553",
+    "job": "Java Developer C2C",
+    "company": "Charter Global",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": true,
+    "re_engage_count": 0
+  },
+  "585965c01916": {
+    "email": "careers@ice.com",
+    "date": "2026-11-03T20:34:14.291735",
+    "last_contact": "2026-11-03T20:34:14.291735",
+    "job": "Java Developer C2C",
+    "company": "ICE",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": true,
+    "re_engage_count": 0
+  },
+  "50d7170dab9c": {
+    "email": "careers@intellibus.com",
+    "date": "2026-11-03T20:34:16.379428",
+    "last_contact": "2026-11-03T20:34:16.379428",
+    "job": "Java Developer C2C",
+    "company": "Intellibus",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": true,
+    "re_engage_count": 0
+  },
+  "b8aa3e61c8e8": {
+    "email": "recruiting@bluewaveautomation.com",
+    "date": "2026-11-03T20:34:18.377859",
+    "last_contact": "2026-11-03T20:34:18.377859",
+    "job": "Java Developer C2C",
+    "company": "Blue Wave Automation",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": false,
+    "re_engage_count": 0
+  },
+  "30facd915761": {
+    "email": "recruiting@leidos.com",
+    "date": "2026-11-03T20:34:23.899858",
+    "last_contact": "2026-11-03T20:34:23.899858",
+    "job": "Java Developer C2C",
+    "company": "Leidos",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": false,
+    "re_engage_count": 0
   }
 }
