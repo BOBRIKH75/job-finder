@@ -504,5 +504,155 @@
     "replied": false,
     "bounced": false,
     "re_engage_count": 0
+  },
+  "4b738429b210": {
+    "email": "ta-operations@addepar.com",
+    "date": "2026-11-04T00:17:32.082126",
+    "job": "Staff Software Engineer - Developer Experience",
+    "company": "Addepar",
+    "url": "https://www.indeed.com/viewjob?jk=3cd7d60d8b5f3adf",
+    "recruiter": null,
+    "smtp_verified": true,
+    "us_score": 1,
+    "us_reasons": [
+      "corp-domain"
+    ]
+  },
+  "2ba5d5e12b15": {
+    "email": "recruitingaccommodation@capitalone.com",
+    "date": "2026-11-04T00:17:35.400708",
+    "job": "Full-stack Engineer 4",
+    "company": "Capital One",
+    "url": "https://www.indeed.com/viewjob?jk=bbb5d1491437b15e",
+    "recruiter": "Capital One",
+    "smtp_verified": true,
+    "us_score": 1,
+    "us_reasons": [
+      "corp-domain"
+    ]
+  },
+  "0ee3de0e45d7": {
+    "email": "origin.allow@addisongroup.io",
+    "date": "2026-11-04T00:27:49.652282",
+    "job": "Senior Backend Software Engineer",
+    "company": "Addison Group",
+    "url": "https://www.linkedin.com/jobs/view/4487033131",
+    "recruiter": "origin allow",
+    "source": "linkedin+guess",
+    "bounced": true
+  },
+  "8b94d83c1e92": {
+    "email": "origin.allow@pyramidconsultinginc.com",
+    "date": "2026-11-04T00:27:54.183013",
+    "job": "Java Developer",
+    "company": "Pyramid Consulting, Inc",
+    "url": "https://www.linkedin.com/jobs/view/4486436719",
+    "recruiter": "origin allow",
+    "source": "linkedin+guess",
+    "bounced": true
+  },
+  "cd1f866b9d07": {
+    "email": "origin.allow@floridablue.com",
+    "date": "2026-11-04T00:27:58.033597",
+    "job": "Sr. Java Developer",
+    "company": "Florida Blue",
+    "url": "https://www.linkedin.com/jobs/view/4485220084",
+    "recruiter": "origin allow",
+    "source": "linkedin+guess",
+    "bounced": true
+  },
+  "f290b1209bb7": {
+    "email": "origin.allow@eliassengroup.io",
+    "date": "2026-11-04T00:28:06.478946",
+    "job": "Full Stack Developer (Java & React), Risk and Compliance AI Platform",
+    "company": "Eliassen Group",
+    "url": "https://www.linkedin.com/jobs/view/4483062107",
+    "recruiter": "origin allow",
+    "source": "linkedin+guess",
+    "bounced": true
+  },
+  "551a8f0ad44d": {
+    "email": "info@matlensilver.com",
+    "date": "2026-11-04T00:29:53.971955",
+    "last_contact": "2026-11-04T00:29:53.971955",
+    "job": "Java Developer C2C",
+    "company": "Matlen Silver",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": true,
+    "re_engage_count": 0
+  },
+  "9612d0773cfe": {
+    "email": "recruiting@usbank.com",
+    "date": "2026-11-04T00:29:56.094218",
+    "last_contact": "2026-11-04T00:29:56.094218",
+    "job": "Java Developer C2C",
+    "company": "U.S. Bank",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": false,
+    "re_engage_count": 0
+  },
+  "65c4e61982aa": {
+    "email": "recruiting@ssipeople.com",
+    "date": "2026-11-04T00:29:57.976330",
+    "last_contact": "2026-11-04T00:29:57.976330",
+    "job": "Java Developer C2C",
+    "company": "SSi People",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": false,
+    "re_engage_count": 0
+  },
+  "6ed8a2c0e632": {
+    "email": "recruiting@bokfinancial.com",
+    "date": "2026-11-04T00:30:00.390702",
+    "last_contact": "2026-11-04T00:30:00.390702",
+    "job": "Java Developer C2C",
+    "company": "BOK Financial",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": false,
+    "re_engage_count": 0
+  },
+  "db96acec6ac1": {
+    "email": "recruiting@bny.com",
+    "date": "2026-11-04T00:30:02.651114",
+    "last_contact": "2026-11-04T00:30:02.651114",
+    "job": "Java Developer C2C",
+    "company": "BNY",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": false,
+    "re_engage_count": 0
+  },
+  "d5f45a524db5": {
+    "email": "hr@intellecteu.com",
+    "date": "2026-11-04T00:30:04.835772",
+    "last_contact": "2026-11-04T00:30:04.835772",
+    "job": "Java Developer C2C",
+    "company": "IntellectEU",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": true,
+    "re_engage_count": 0
   }
 }
