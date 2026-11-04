@@ -654,5 +654,199 @@
     "replied": false,
     "bounced": true,
     "re_engage_count": 0
+  },
+  "938ef68f569b": {
+    "email": "talentacquisition@dhhs.nc.gov",
+    "date": "2026-11-04T20:39:53.334395",
+    "job": "Technical Lead",
+    "company": "State of North Carolina - Health & Human Services",
+    "url": "https://www.indeed.com/viewjob?jk=13c7f7dd12b59ca8",
+    "recruiter": "Talent Acquisition",
+    "smtp_verified": true,
+    "us_score": 1,
+    "us_reasons": [
+      "corp-domain"
+    ]
+  },
+  "d6379f8e683a": {
+    "email": "suman.kumar@oraninc.com",
+    "date": "2026-11-04T20:39:58.839386",
+    "job": "Full Stack Developer",
+    "company": "Oran Inc",
+    "url": "https://www.indeed.com/viewjob?jk=19393960c940f93b",
+    "recruiter": null,
+    "smtp_verified": true,
+    "us_score": 1,
+    "us_reasons": [
+      "corp-domain"
+    ]
+  },
+  "08178a343189": {
+    "email": "origin.allow@kornferry.com",
+    "date": "2026-11-04T20:49:37.345613",
+    "job": "Java / React Full stack Developer",
+    "company": "Korn Ferry",
+    "url": "https://www.linkedin.com/jobs/view/4487259073",
+    "recruiter": "origin allow",
+    "source": "linkedin+guess",
+    "bounced": true
+  },
+  "13f8acba2063": {
+    "email": "origin.allow@govansystemsinc.com",
+    "date": "2026-11-04T20:49:38.665887",
+    "job": "Senior Java Developer (Spring Boot / Angular 21)",
+    "company": "Govan Systems inc",
+    "url": "https://www.linkedin.com/jobs/view/4486519835",
+    "recruiter": "origin allow",
+    "source": "linkedin+guess",
+    "bounced": true
+  },
+  "887bffc80c89": {
+    "email": "origin.allow@precisiontechnologies.com",
+    "date": "2026-11-04T20:49:46.732061",
+    "job": "Java FullStack Developer",
+    "company": "Precision Technologies",
+    "url": "https://www.linkedin.com/jobs/view/4486376805",
+    "recruiter": "origin allow",
+    "source": "linkedin+guess",
+    "bounced": true
+  },
+  "f371c87a108c": {
+    "email": "origin.allow@fustisllc.com",
+    "date": "2026-11-04T20:49:48.256567",
+    "job": "Senior Java Developer IV",
+    "company": "FUSTIS LLC",
+    "url": "https://www.linkedin.com/jobs/view/4487274789",
+    "recruiter": "origin allow",
+    "source": "linkedin+guess",
+    "bounced": true
+  },
+  "ede33c936e5b": {
+    "email": "origin.allow@torentify.com",
+    "date": "2026-11-04T20:50:06.908178",
+    "job": "Full Stack Developer (Java & React)",
+    "company": "Torentify",
+    "url": "https://www.linkedin.com/jobs/view/4487296345",
+    "recruiter": "origin allow",
+    "source": "linkedin+guess",
+    "bounced": true
+  },
+  "d0f89c077924": {
+    "email": "origin.allow@iodatasphereinc.com",
+    "date": "2026-11-04T20:50:09.134787",
+    "job": "Java Developer",
+    "company": "IO Datasphere, Inc.",
+    "url": "https://www.linkedin.com/jobs/view/4487269679",
+    "recruiter": "origin allow",
+    "source": "linkedin+guess",
+    "bounced": true
+  },
+  "ad8a82bc4db6": {
+    "email": "origin.allow@mitchellmartininc.com",
+    "date": "2026-11-04T20:50:10.740674",
+    "job": "Java Developer",
+    "company": "Mitchell Martin Inc.",
+    "url": "https://www.linkedin.com/jobs/view/4485076448",
+    "recruiter": "origin allow",
+    "source": "linkedin+guess",
+    "bounced": true
+  },
+  "57726907f08d": {
+    "email": "hr@largetongroup.com",
+    "date": "2026-11-04T20:53:10.367610",
+    "last_contact": "2026-11-04T20:53:10.367610",
+    "job": "Java Developer C2C",
+    "company": "Largeton Group",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": true,
+    "re_engage_count": 0
+  },
+  "500f460b908d": {
+    "email": "recruiting@akkodis.com",
+    "date": "2026-11-04T20:53:14.219345",
+    "last_contact": "2026-11-04T20:53:14.219345",
+    "job": "Java Developer C2C",
+    "company": "Akkodis",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": false,
+    "re_engage_count": 0
+  },
+  "b84b7955fcd7": {
+    "email": "jobs@vertexsolutionsinc.com",
+    "date": "2026-11-04T20:53:19.064741",
+    "last_contact": "2026-11-04T20:53:19.064741",
+    "job": "Java Developer C2C",
+    "company": "Vertex Solutions Inc.",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": true,
+    "re_engage_count": 0
+  },
+  "d583773f327c": {
+    "email": "recruiting@kaizentechnologies.com",
+    "date": "2026-11-04T20:53:23.415376",
+    "last_contact": "2026-11-04T20:53:23.415376",
+    "job": "Java Developer C2C",
+    "company": "Kaizen Technologies",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": false,
+    "re_engage_count": 0
+  },
+  "517338c1004f": {
+    "email": "recruiting@insyncstaffing.com",
+    "date": "2026-11-04T20:53:25.087073",
+    "last_contact": "2026-11-04T20:53:25.087073",
+    "job": "Java Developer C2C",
+    "company": "inSync Staffing",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": false,
+    "re_engage_count": 0
+  },
+  "4136ce16affb": {
+    "email": "hr@fico.com",
+    "date": "2026-11-04T20:53:26.703515",
+    "last_contact": "2026-11-04T20:53:26.703515",
+    "job": "Java Developer C2C",
+    "company": "FICO",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": true,
+    "re_engage_count": 0
+  },
+  "a923970ab399": {
+    "email": "info@prominent.com",
+    "date": "2026-11-04T20:53:29.313520",
+    "last_contact": "2026-11-04T20:53:29.313520",
+    "job": "Java Developer C2C",
+    "company": "Prominent",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": true,
+    "re_engage_count": 0
   }
 }
