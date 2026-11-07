@@ -469,7 +469,7 @@ def main():
         time.sleep(0.5)
 
     # ── Extra source: Ashby boards of the same companies (same browser engine) ──
-    if os.environ.get('GH_ASHBY', '1') == '1' and os.environ.get('CV_MATCH_OFF') != '1':
+    if os.environ.get('GH_ASHBY', '0') == '1' and os.environ.get('CV_MATCH_OFF') != '1':
         try:
             from src.ashby_scan import scan_ashby
             from src.cv_match import should_apply as _cv_ok2

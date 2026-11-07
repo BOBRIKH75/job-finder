@@ -550,13 +550,8 @@ def handle_email_verification(page, skip_detection: bool = False, company: str =
         # application to <Company>" and skips confirmation emails.
         ("__subject__", 120 if _ci_mode else 45),
         ("greenhouse", 60 if _ci_mode else 25),
-        ("lever", 40 if _ci_mode else 20),
-        ("ashby", 20 if _ci_mode else 15),
-        ("workday", 20 if _ci_mode else 15),
-        ("no-reply", 20 if _ci_mode else 15),
-        ("noreply", 15 if _ci_mode else 10),
-        ("verify", 15 if _ci_mode else 10),
-        ("confirm", 15 if _ci_mode else 10),
+        ("lever", 20 if _ci_mode else 12),
+        ("ashby", 15 if _ci_mode else 10),
         ("", 15 if _ci_mode else 10),  # Last resort: any recent email
     ]
     code = None
