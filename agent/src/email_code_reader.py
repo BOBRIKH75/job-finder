@@ -588,7 +588,8 @@ def retry_after_rejection(page, company: str = "") -> bool:
                 continue
         note_submit_time()
         page.wait_for_timeout(2000)
-        if not handle_email_verification(page, skip_detection=True, company=company):
+        code = get_verification_code(sender_filter="__subject__", max_wait_seconds=40, company=company)
+        if not code or not enter_verification_code(page, code):
             return False
         try:
             page.wait_for_function(

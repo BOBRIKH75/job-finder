@@ -1397,6 +1397,16 @@ def submit_and_verify(page, page_data, original_url, _live=False) -> dict:
                         # close popups, scroll, then force-click or submit the form via JS.
                         print(f"      ⚠ submit click blocked ({str(click_err)[:40]}) — scroll + force")
                         try:
+                            _diag = page.evaluate(
+                                "() => ({forms: document.forms.length,"
+                                " inputs: document.querySelectorAll('input,textarea').length,"
+                                " btns: Array.from(document.querySelectorAll('button,input[type=submit]'))"
+                                ".map(b => (b.innerText||b.value||'').trim().slice(0,25)).filter(Boolean).slice(0,10),"
+                                " body: (document.body.innerText||'').replace(/\\s+/g,' ').slice(0,160)})")
+                            print(f"      🔬 DIAG path={page.url.split('?')[0][-60:]} {_diag}")
+                        except Exception:
+                            pass
+                        try:
                             page.keyboard.press("Escape")
                             page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
                             page.wait_for_timeout(1200)
@@ -1997,10 +2007,11 @@ def apply_to_job(page, profile, job, learned, dry_run=False, db=None, site_needs
                                     const t = (document.body.innerText || '').toLowerCase();
                                     return t.includes('thank you') || t.includes('application received')
                                         || t.includes('successfully applied')
-                                        || t.includes('invalid') || t.includes('expired')
-                                        || t.includes('incorrect') || t.includes('try again');
+                                        || t.includes('incorrect code') || t.includes('invalid code')
+                                        || t.includes('code is incorrect') || t.includes('code has expired')
+                                        || t.includes("didn't match") || t.includes('code expired');
                                 }""",
-                                timeout=12000,
+                                timeout=25000,
                             )
                         except Exception:
                             page.wait_for_timeout(4000)  # fallback: just wait 4s
@@ -2014,8 +2025,11 @@ def apply_to_job(page, profile, job, learned, dry_run=False, db=None, site_needs
                         real_success_ev = ["thank you for applying", "application received",
                                            "thank you for your application", "successfully applied",
                                            "thank you for submitting"]
-                        failure_signals_ev = ["invalid", "expired", "incorrect", "try again",
-                                              "security code", "verification code", "enter the code", "enter code"]
+                        # ONLY explicit rejection text counts. The OTP screen's own words
+                        # ("security code", "enter code"...) linger for a few seconds after a
+                        # CORRECT code and used to be mistaken for a rejection (false negatives).
+                        failure_signals_ev = ["incorrect code", "invalid code", "code is incorrect",
+                                              "code has expired", "code expired", "didn't match"]
                         has_success = (any(s in post_verify_text for s in real_success_ev)
                                        or ("confirmation" in post_verify_url and "thank" in post_verify_text))
                         has_failure = any(s in post_verify_text for s in failure_signals_ev)
@@ -2055,10 +2069,11 @@ def apply_to_job(page, profile, job, learned, dry_run=False, db=None, site_needs
                                     const t = (document.body.innerText || '').toLowerCase();
                                     return t.includes('thank you') || t.includes('application received')
                                         || t.includes('successfully applied')
-                                        || t.includes('invalid') || t.includes('expired')
-                                        || t.includes('incorrect') || t.includes('try again');
+                                        || t.includes('incorrect code') || t.includes('invalid code')
+                                        || t.includes('code is incorrect') || t.includes('code has expired')
+                                        || t.includes("didn't match") || t.includes('code expired');
                                 }""",
-                                timeout=12000,
+                                timeout=25000,
                             )
                         except Exception:
                             page.wait_for_timeout(4000)  # fallback: just wait 4s
@@ -2067,8 +2082,10 @@ def apply_to_job(page, profile, job, learned, dry_run=False, db=None, site_needs
                         except Exception:
                             post_verify_text = ""
                         post_verify_url = page.url.lower()
-                        success_signals_ev = ["thank", "success", "received", "submitted", "confirmation", "applied", "complete"]
-                        failure_signals_ev = ["invalid", "expired", "incorrect", "try again", "error", "security code", "verification code", "enter the code", "enter code"]
+                        success_signals_ev = ["thank you for applying", "application received", "thank you for your application",
+                                              "successfully applied", "thank you for submitting"]
+                        failure_signals_ev = ["incorrect code", "invalid code", "code is incorrect",
+                                              "code has expired", "code expired", "didn't match"]
                         has_success = any(s in post_verify_url for s in success_signals_ev) or any(s in post_verify_text for s in success_signals_ev)
                         has_failure = any(s in post_verify_text for s in failure_signals_ev)
                         if has_success and not has_failure:
@@ -2085,7 +2102,7 @@ def apply_to_job(page, profile, job, learned, dry_run=False, db=None, site_needs
                                 submit_result = {"submitted": True, "method": "email_verification_redirect"}
                             else:
                                 print(f"      ❌ URL changed but page still shows code content (fallback) — NOT submitted")
-                                submit_result = {"submitted": False, "reason": "verification_code_rejected"}
+                                submit_result = {"submitted": False, "reason": "no_confirmation_after_code"}
                 except Exception as ev_err:
                     print(f"      ⚠️ Email verification fallback check failed: {str(ev_err)[:60]}")
 

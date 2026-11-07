@@ -489,7 +489,8 @@ def main():
                 if res.get('url') in submitted_urls:
                     continue
                 _errs = ' '.join(str(a.get('error', '')) for a in res.get('attempts', []))
-                if 'url_changed_no_confirmation' in _errs or 'No success signal' in _errs:
+                if ('url_changed_no_confirmation' in _errs or 'No success signal' in _errs
+                        or 'no_confirmation_after_code' in _errs):
                     _unconfirmed.append(res)
             print(f"  🌐 Browser results: {browser_applied} submitted")
 
