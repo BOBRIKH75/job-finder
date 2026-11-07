@@ -11,7 +11,7 @@ on:
     # Weekday/business-hours gating removed — jobs post nights + weekends; freshness filter
     # (DICE_POSTED_DATE / _posted_date_filter) auto-limits to the newest jobs after week 1,
     # and the TTL dedup re-opens reposts, so continuous running keeps catching fresh postings.
-    - cron: '30 */2 * * *'   # every 2h, 24/7
+    - cron: '30 1-23/2 * * *'   # every 2h on ODD hours :30 (Indeed runs EVEN hours :00) -> 90min gap on the single runner
   workflow_dispatch:
     inputs:
       dice_term:
@@ -49,6 +49,12 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Dynamic knobs (cv_dynamic - optional, defaults if anything is missing)
+        continue-on-error: true
+        run: |
+          export PATH="/usr/local/homebrew/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
+          python3 scripts/cv_dynamic.py --platform dice || true
 
       - name: Trust corporate SSL (fixes CERTIFICATE_VERIFY_FAILED on corp network)
         run: |
@@ -106,7 +112,7 @@ jobs:
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
           GH_TOKEN: ${{ secrets.GH_PAT || github.token }}
           DICE_TERM: ${{ github.event.inputs.dice_term || 'Java Spring Boot' }}
-          DICE_TARGET: ${{ github.event.inputs.dice_target || '40' }}
+          DICE_TARGET: ${{ github.event.inputs.dice_target || env.CV_DICE_TARGET || '40' }}
           DICE_SEARCH_PAGES: ${{ github.event.inputs.dice_pages || '4' }}
           DICE_FRESH_TARGET: '120'   # search wide: gather ~120 fresh jobs before stopping (dynamic — more inventory = more applies)
           DICE_POSTED_DATE: ${{ github.event.inputs.posted_date || 'THREE' }}   # last 3 days = fresh/real-time jobs
