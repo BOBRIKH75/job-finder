@@ -2124,7 +2124,29 @@ def run_applications(jobs: list[dict], dry_run: bool = True, max_apps: int = 10,
     context = None
     # Try CloakBrowser first (stealth), fall back to regular Playwright
     try:
-        if cloakbrowser:
+        if os.environ.get("GH_REAL_CHROME") == "1":
+            # Real installed Google Chrome, persistent profile, headed when a display exists
+            # (the bundled headless-shell is NOT installed on the runner -> launch crashed and
+            # the whole browser queue was lost). reCAPTCHA Enterprise also trusts real Chrome.
+            from src.human_behavior import get_playwright_module as _gpm
+            _pw0 = _gpm()().start()
+            _prof = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".chrome-profile-gh")
+            os.makedirs(_prof, exist_ok=True)
+            for _lk in ("SingletonLock", "SingletonCookie", "SingletonSocket"):
+                try:
+                    os.unlink(os.path.join(_prof, _lk))
+                except OSError:
+                    pass
+            _kw = dict(user_data_dir=_prof, headless=os.environ.get("GH_HEADLESS") == "1",
+                       no_viewport=True, channel="chrome")
+            try:
+                context = _pw0.chromium.launch_persistent_context(**_kw)
+            except Exception as _e1:
+                print(f"  ⚠ real Chrome launch failed ({str(_e1)[:90]}) — bundled Chromium")
+                _kw.pop("channel", None)
+                context = _pw0.chromium.launch_persistent_context(**_kw)
+            print("  🧑 Real Chrome persistent context")
+        elif cloakbrowser:
             context = cloakbrowser.launch_context(headless=True)
             print(f"  CloakBrowser — stealth Chromium for automation")
         else:
@@ -2151,7 +2173,7 @@ def run_applications(jobs: list[dict], dry_run: bool = True, max_apps: int = 10,
 
     # Rate limiting
     from cookie_agent import can_apply, record_apply, human_delay
-    page = context.new_page()
+    page = context.pages[0] if (os.environ.get("GH_REAL_CHROME") == "1" and context.pages) else context.new_page()
     applied = 0
 
     for job in jobs:
@@ -2250,7 +2272,7 @@ def run_applications(jobs: list[dict], dry_run: bool = True, max_apps: int = 10,
             print(f"    ⚠️ Lever API failed ({_api.get('error','?')[:80]}) — browser fallback")
 
         # For Greenhouse jobs: try direct multipart POST first (no browser / no CAPTCHA risk)
-        if "greenhouse.io" in url:
+        if "greenhouse.io" in url and os.environ.get("GH_SKIP_API") != "1":
             from src.greenhouse_api import submit_greenhouse_api
             _resume = str(RESUME_PATH) if RESUME_PATH.exists() else profile.get("resume_path",
                                   "~/Downloads/CV/Bob_Rikh_Java_Backend_Developer_C2C.pdf")

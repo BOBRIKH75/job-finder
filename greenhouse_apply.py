@@ -252,6 +252,7 @@ def main():
     MAX_APPS = 30
     company_failures: dict = {}
     browser_queue: list = []
+    _api_dead = 0
 
     companies_file = 'agent/data/companies.json'
     healer = DeepHeal(db, companies_file, browser_queue)
@@ -349,7 +350,17 @@ def main():
             continue
 
         # ── Strategy 1: Direct API POST ──────────────────────────────────────
-        result = submit_greenhouse_api(url, profile, resume)
+        # Greenhouse now demands a reCAPTCHA token (HTTP 428 captcha-failed / 400), so the bare
+        # POST can never pass. After 3 straight 400/428 stop wasting 5s/job and go to the browser.
+        if _api_dead >= 3:
+            result = {'submitted': False, 'error': 'HTTP 400: api disabled this run (captcha required)'}
+        else:
+            result = submit_greenhouse_api(url, profile, resume)
+            _err0 = str(result.get('error', ''))
+            if not result.get('submitted') and ('HTTP 400' in _err0 or 'HTTP 428' in _err0 or 'captcha' in _err0.lower()):
+                _api_dead += 1
+            elif result.get('submitted'):
+                _api_dead = 0
 
         if result.get('submitted'):
             applied += 1
@@ -436,6 +447,7 @@ def main():
     # ── Strategy 2: Browser batch (Playwright, one session for all queued jobs) ──
     if browser_queue and applied < MAX_APPS:
         remaining = MAX_APPS - applied
+        remaining = min(remaining, int(os.environ.get('GH_BROWSER_MAX', '10')))
         bq_slice = browser_queue[:remaining]
         browser_jobs = [{'url': j['url'], 'title': j['title'], 'company': j['company']}
                         for j in bq_slice]
