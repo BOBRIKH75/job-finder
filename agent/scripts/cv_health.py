@@ -23,14 +23,29 @@ SELF_HOSTED = {"indeed", "dice", "linkedin"}          # need the laptop runner
 ZERO_WINDOW_H = {"indeed": 24, "dice": 24, "greenhouse": 24, "linkedin": 48}  # linkedin runs ~1x/day
 WORKFLOWS = {"indeed": "indeed-apply.yml", "dice": "dice-apply.yml",
              "greenhouse": "greenhouse-apply.yml", "linkedin": "linkedin-apply.yml"}
-SOURCES = {  # same markers as verify_real_applications.py
+# IMAP query is SUBJECT-narrowed server-side (FROM-only queries hit job-alert spam and the
+# [-400:] cap then dropped the real confirmations -> false 'zero_indeed' alerts).
+_NOT_OTHERS = 'NOT FROM "indeed.com" NOT FROM "linkedin.com" NOT FROM "dice.com"'
+SOURCES = {  # same markers as verify_real_applications.py (+ real 'Indeed Application: <job>' subjects)
     "dice": ('(FROM "applyonline@dice.com")', ("application for", "sent", "submitted", "received")),
-    "indeed": ('(FROM "indeed.com")', ("application submitted", "you applied", "application was submitted",
-                                       "has been submitted", "application sent")),
-    "linkedin": ('(FROM "jobs-noreply@linkedin.com")', ("your application was sent", "application was sent", "you applied")),
-    "greenhouse": ('(OR SUBJECT "thank you for applying" SUBJECT "application received")',
-                   ("thank you for applying", "application received", "we received your application", "successfully submitted")),
+    "indeed": ('(FROM "indeed.com" OR OR SUBJECT "Indeed Application" SUBJECT "application submitted" SUBJECT "you applied")',
+               ("indeed application", "application submitted", "you applied", "application was submitted",
+                "has been submitted", "application sent")),
+    "linkedin": ('(FROM "linkedin.com" SUBJECT "application was sent")',
+                 ("your application was sent to", "your application was sent", "application was sent", "you applied")),
+    "greenhouse": ('(%s OR OR OR SUBJECT "thank you for applying" SUBJECT "thanks for applying" '
+                   'SUBJECT "application received" SUBJECT "thank you for your application")' % _NOT_OTHERS,
+                   ("thank you for applying", "thanks for applying", "application received", "thank you for your application",
+                    "we received your application", "successfully submitted")),
 }
+
+
+def subject_matches(plat, subject):
+    """True if an email subject is a real confirmation for this platform."""
+    sl = (subject or "").lower()
+    return any(mk in sl for mk in SOURCES[plat][1])
+
+
 EXPIRY_RE = re.compile(r"cookies?\W{0,20}(have |has |are |is )?(expired|invalid|stale)|session\W{0,15}expired|"
                        r"not logged in|login (wall|required)|redirected to (the )?login|please log ?in|"
                        r"cookie.{0,20}(dead|rejected)", re.I)
@@ -86,7 +101,7 @@ def gmail_counts():
             ids = data[0].split() if data and data[0] else []
         except Exception:
             ids = []
-        for i in ids[-400:]:
+        for i in ids[-1500:]:
             try:
                 _, md = M.fetch(i, "(BODY.PEEK[HEADER.FIELDS (SUBJECT DATE)])")
                 m = email.message_from_string(md[0][1].decode("utf-8", "ignore"))
@@ -95,7 +110,7 @@ def gmail_counts():
                     when = when.replace(tzinfo=timezone.utc)
             except Exception:
                 continue
-            if not any(mk in dec(m.get("Subject")).lower() for mk in markers):
+            if not subject_matches(plat, dec(m.get("Subject"))):
                 continue
             age = NOW - when
             if age <= timedelta(days=7):

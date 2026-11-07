@@ -64,13 +64,13 @@ def _dec(s):
 SOURCES = [
     ('Dice', '(FROM "applyonline@dice.com")',
      ('application for', 'sent', 'submitted', 'received')),
-    ('Indeed', '(FROM "indeed.com")',
-     ('application submitted', 'you applied', 'application was submitted',
+    ('Indeed', '(FROM "indeed.com" OR OR SUBJECT "Indeed Application" SUBJECT "application submitted" SUBJECT "you applied")',
+     ('indeed application', 'application submitted', 'you applied', 'application was submitted',
       'has been submitted', 'application sent')),
-    ('LinkedIn', '(FROM "jobs-noreply@linkedin.com")',
-     ('your application was sent', 'application was sent', 'you applied')),
-    ('Greenhouse/ATS', '(OR SUBJECT "thank you for applying" SUBJECT "application received")',
-     ('thank you for applying', 'application received', 'we received your application',
+    ('LinkedIn', '(FROM "linkedin.com" SUBJECT "application was sent")',
+     ('your application was sent to', 'your application was sent', 'application was sent', 'you applied')),
+    ('Greenhouse/ATS', '(NOT FROM "indeed.com" NOT FROM "linkedin.com" NOT FROM "dice.com" OR OR OR SUBJECT "thank you for applying" SUBJECT "thanks for applying" SUBJECT "application received" SUBJECT "thank you for your application")',
+     ('thank you for applying', 'thanks for applying', 'thank you for your application', 'application received', 'we received your application',
       'successfully submitted')),
 ]
 

@@ -21,6 +21,7 @@ defaults:
 jobs:
   discover:
     runs-on: ubuntu-latest   # CLOUD runner — clean IP, no Cloudflare block on ZipRecruiter
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
         with:

@@ -2,7 +2,7 @@ name: "LinkedIn Session Keep-Alive (Daily)"
 
 on:
   schedule:
-    - cron: "0 12 * * *"  # 6:00 AM MT — early morning, before job runs
+    - cron: "50 11 * * *"  # 5:50 AM MT, odd hour :50 (off the Indeed :00 slot)
   workflow_dispatch: {}
 
 permissions:
