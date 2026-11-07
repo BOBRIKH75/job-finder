@@ -564,14 +564,25 @@ def _open_easy_apply(driver, btn, job_id="") -> bool:
             "var e=arguments[0];return e.tagName+' '+Array.from(e.attributes).map(a=>a.name+'='+a.value.slice(0,60)).join(' ');", btn) or "")[:300])
     except Exception:
         pass
+    # Close the Premium upsell / other overlays that can swallow the click.
+    for el in driver.find_elements("css selector", "button[aria-label^='Dismiss']"):
+        try:
+            lab = (el.get_attribute("aria-label") or "")
+            if el.is_displayed() and "job" in lab.lower() and "premium" in lab.lower():
+                el.click()
+                print("    🔬 dismissed premium upsell")
+                time.sleep(1)
+        except Exception:
+            pass
     try:
-        from selenium.webdriver.common.action_chains import ActionChains
         driver.execute_script("arguments[0].scrollIntoView({block:'center'});", btn)
         time.sleep(0.7)
-        ActionChains(driver).move_to_element(btn).pause(0.4).click().perform()
-    except Exception:
+        btn.click()
+    except Exception as exc:
+        print(f"    🔬 native click failed: {type(exc).__name__}: {str(exc)[:120]}")
         try:
-            driver.execute_script("arguments[0].click();", btn)
+            from selenium.webdriver.common.action_chains import ActionChains
+            ActionChains(driver).move_to_element(btn).pause(0.4).click().perform()
         except Exception:
             pass
     for attempt in range(2):
@@ -636,6 +647,21 @@ def _diag_apply_state(driver, tag):
         n_dlg = len(_root(driver).find_elements("css selector", "[role='dialog'], .artdeco-modal"))
         n_shadow = driver.execute_script("return [...document.querySelectorAll('*')].filter(e=>e.shadowRoot).map(e=>e.tagName+'#'+e.id).slice(0,8).join(',');")
         print(f"    🔬 {tag} shadow-hosts={n_shadow}")
+        try:
+            names = sorted(c.get("name", "") for c in driver.get_cookies())
+            print(f"    🔬 {tag} cookie-names={names[:20]}")
+        except Exception:
+            pass
+        try:
+            outlet = driver.execute_script("var o=document.querySelector('#interop-outlet');return o&&o.shadowRoot?o.shadowRoot.innerHTML.length:-1;")
+            print(f"    🔬 {tag} outlet-html-len={outlet}")
+        except Exception:
+            pass
+        try:
+            for entry in driver.get_log("browser")[-6:]:
+                print(f"    🔬 {tag} console {entry.get('level')}: {str(entry.get('message',''))[:160]}")
+        except Exception as exc:
+            print(f"    🔬 {tag} console n/a: {str(exc)[:60]}")
         body = (driver.find_element("css selector", "body").text or "")[:200].replace("\n", " | ")
         print(f"    🔬 {tag} url={driver.current_url[:90]} tabs={len(driver.window_handles)} iframes={n_if} dialogs={n_dlg}")
         print(f"    🔬 {tag} buttons={[b for b in btns if b][:25]}")
@@ -731,6 +757,7 @@ def main():
         options.add_argument("--no-sandbox")
         options.add_argument("--disable-dev-shm-usage")
         options.add_argument("--disable-blink-features=AutomationControlled")
+        options.set_capability("goog:loggingPrefs", {"browser": "ALL"})
         driver = uc.Chrome(options=options, version_main=_version_main)
     except Exception as e:
         print(f"❌ Browser launch failed: {e}")
