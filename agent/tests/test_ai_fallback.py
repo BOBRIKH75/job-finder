@@ -28,3 +28,15 @@ def test_cover_letter_fallback_without_key():
     result = ask_ai_cover_letter("Java Dev", "Acme", "Java Spring Boot developer needed")
     assert "Java" in result
     assert len(result) > 50
+
+
+def test_profile_summary_is_built_from_profile_not_hardcoded():
+    import re
+    from src import ai_fallback
+    src = open(ai_fallback.__file__).read()
+    # no literal phone/email in source any more
+    assert not re.search(r"\d{3}[ .-]\d{3}[ .-]\d{4}", src)
+    assert not re.search(r"[\w.]+@[\w.]+\.(com|net)", src)
+    out = ai_fallback.build_profile_summary({"name": "Test User", "email": "t@example.test", "phone": "555-000-0000"})
+    assert "Test User" in out and "t@example.test" in out
+    assert "<EMAIL>" in ai_fallback.build_profile_summary({})

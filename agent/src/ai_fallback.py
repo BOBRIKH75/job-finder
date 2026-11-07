@@ -5,12 +5,34 @@ import httpx
 GEMINI_KEY = os.environ.get("GEMINI_API_KEY", "")
 GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
 
-PROFILE_SUMMARY = """Candidate: Bob Rikh, Senior Java Backend Developer, 10+ years.
-Email: bobrikh75@gmail.com | Phone: 347-268-5917 | Location: Parker, CO 80314
-Skills: Java 17, Spring Boot, Kafka, Kubernetes, Docker, AWS, MongoDB, Cassandra, GraphQL, REST APIs
-Work type: C2C (Corp-to-Corp) contractor | Rate: $55-90/hr | Green Card holder, no sponsorship needed.
-LinkedIn: https://www.linkedin.com/in/bobrikh75/
-Available immediately. Will not relocate (remote preferred)."""
+def _load_profile() -> dict:
+    """Profile comes from the PROFILE_JSON env/secret first, then agent/config/profile.json
+    (kept out of source so no personal data lives in code or prompts)."""
+    raw = os.environ.get("PROFILE_JSON", "")
+    try:
+        if raw:
+            return json.loads(raw)
+        path = os.path.join(os.path.dirname(__file__), "..", "config", "profile.json")
+        with open(path) as fh:
+            return json.load(fh)
+    except Exception:
+        return {}
+
+
+def build_profile_summary(p: dict | None = None) -> str:
+    p = _load_profile() if p is None else p
+    g = lambda k, d="": p.get(k) or d
+    return (
+        f"Candidate: {g('name', '<NAME>')}, {g('title', '<TITLE>')}, {g('years_experience', '10')}+ years.\n"
+        f"Email: {g('email', '<EMAIL>')} | Phone: {g('phone', '<PHONE>')} | Location: {g('location', '<LOCATION>')}\n"
+        f"Skills: {', '.join(list(g('skills', []))[:12]) or '<SKILLS>'}\n"
+        f"Work type: {g('work_type', 'C2C')} | Rate: ${g('rate_min', '?')}-{g('rate_max', '?')}/hr | {g('visa_status', '')}, no sponsorship needed.\n"
+        f"LinkedIn: {g('linkedin', '<LINKEDIN>')}\n"
+        "Available immediately. Will not relocate (remote preferred)."
+    )
+
+
+PROFILE_SUMMARY = build_profile_summary()
 
 
 def ask_ai_about_field(label: str, field_type: str, options: list[str] = None) -> str | None:
