@@ -519,7 +519,7 @@ Answer with ONLY the answer (1-3 words max). No explanation.
         return "Yes"  # safe default
 
 
-def _open_easy_apply(driver, btn) -> bool:
+def _open_easy_apply(driver, btn, job_id="") -> bool:
     """Open the Easy Apply modal. LinkedIn's 2026 SDUI flow is an <a href=".../apply/...">
     whose dialog may render in the top document OR inside an iframe. Returns True when a
     dialog is visible; leaves the driver switched into the frame that holds it."""
@@ -529,9 +529,17 @@ def _open_easy_apply(driver, btn) -> bool:
     except Exception:
         pass
     try:
+        print("    🔬 btn " + (driver.execute_script(
+            "var e=arguments[0];return e.tagName+' '+Array.from(e.attributes).map(a=>a.name+'='+a.value.slice(0,60)).join(' ');", btn) or "")[:300])
+    except Exception:
+        pass
+    if not href and job_id:
+        href = f"https://www.linkedin.com/jobs/view/{job_id}/apply/?openSDUIApplyFlow=true"
+    try:
+        from selenium.webdriver.common.action_chains import ActionChains
         driver.execute_script("arguments[0].scrollIntoView({block:'center'});", btn)
-        time.sleep(0.5)
-        btn.click()
+        time.sleep(0.7)
+        ActionChains(driver).move_to_element(btn).pause(0.4).click().perform()
     except Exception:
         try:
             driver.execute_script("arguments[0].click();", btn)
@@ -895,7 +903,7 @@ def main():
                                 ("xpath", "//a[contains(@aria-label,'Easy Apply')]"),
                                 ("xpath", "//*[self::button or self::a][.//span[contains(normalize-space(.),'Easy Apply')]]"),
                             ):
-                                _f = driver.find_elements(_by, _q)
+                                _f = [x for x in driver.find_elements(_by, _q) if x.is_displayed()]
                                 if _f:
                                     easy_apply_btn = _f[0]
                                     break
@@ -911,7 +919,7 @@ def main():
 
                         # Click Easy Apply
                         print(f"    📝 Applying (job {job_id})...")
-                        if not _open_easy_apply(driver, easy_apply_btn):
+                        if not _open_easy_apply(driver, easy_apply_btn, job_id):
                             try:
                                 print(f"    🔬 no dialog; apply href={(easy_apply_btn.get_attribute('href') or '')[:90]}")
                             except Exception:
