@@ -291,6 +291,11 @@ def _profile_answer(question: str, field_type: str, options, profile: dict):
                 "with strong Spring Boot, microservices, Kafka, and AWS experience. "
                 "I'm excited to contribute reliable, well-tested backend systems to your team.")
 
+    # Portfolio / website / personal site -> public profile links from profile.json
+    if _has_word(q, "portfolio", "website", "personal site", "personal website", "web site") \
+            and field_type in ("text", "textarea"):
+        return profile.get("github") or profile.get("linkedin")
+
     # Phone / email / name — from profile
     if "phone" in q:
         return profile.get("phone")
@@ -447,5 +452,9 @@ def _safe_default(question: str, field_type: str, options, profile: dict | None 
     if field_type == "textarea":
         return ("Experienced Java / Spring Boot backend engineer with microservices, "
                 "Kafka, Kubernetes and AWS. Available immediately, remote, no sponsorship needed.")
-    # single-line text we genuinely don't recognize -> a minimal safe token
-    return "Yes" if field_type in ("text",) else None
+    # single-line text we genuinely don't recognize: "Yes" only fits a yes/no style question.
+    # Typing "Yes" into 'Address 2' / 'Graduation year' / 'Portfolio URL' is garbage that
+    # fails validation (Indeed stuck at 43%), so return None and let the job skip.
+    if field_type == "text" and re.match(r"^(are|do|does|did|will|would|can|could|have|has|is|was)\b", q.strip()):
+        return "Yes"
+    return None

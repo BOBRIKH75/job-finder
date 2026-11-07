@@ -212,7 +212,8 @@ def resolve_option(question: str, opts, ans, profile: dict, field_type: str = "r
                     return o
 
     # 5. numeric-range options (years of experience, counts)
-    if sum(1 for o in opts if parse_range(o)) >= max(2, len(opts) - 1):
+    n_rng = sum(1 for o in opts if parse_range(o))
+    if n_rng >= max(2, len(opts) - 1) or (n_rng >= 2 and re.search(r"years?\b", ql)):
         if "year" in ql or "experience" in ql:
             val = 0.0 if _is_unverified_skill_claim(ql, profile) else float(profile.get("years_experience", 10))
         else:

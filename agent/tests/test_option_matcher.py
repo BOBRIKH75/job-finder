@@ -70,3 +70,20 @@ def test_checkbox_groups():
 def test_proficiency_top_level():
     assert resolve_option("How would you rate your Java proficiency?", ["Beginner", "Intermediate", "Expert"], "", PROFILE) == "Expert"
     assert resolve_option("How would you rate your COBOL proficiency?", ["Beginner", "Expert"], "", PROFILE) is None
+
+
+def test_sparse_year_options():
+    opts = ["Intern/Co-Op", "Entry Level", "1-2 Years", "3-5 Years", "6-9 Years", "10+ Years"]
+    assert resolve_option("Years of Experience (related to this role) required", opts, "10", PROFILE) == "10+ Years"
+
+
+def test_default_text_is_not_yes():
+    from question_answerer import _safe_default
+    assert _safe_default("Address 2", "text", None, PROFILE) is None
+    assert _safe_default("Graduation year", "text", None, PROFILE) is None
+    assert _safe_default("Are you open to travel?", "text", None, PROFILE) == "Yes"
+
+
+def test_portfolio_url_from_profile():
+    from question_answerer import _profile_answer
+    assert _profile_answer("Portfolio URL", "text", None, PROFILE).startswith("https://")
