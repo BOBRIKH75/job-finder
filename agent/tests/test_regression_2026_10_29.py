@@ -39,16 +39,28 @@ def test_appliers_run_every_2_hours_24x7(wf):
     text = _read(os.path.join(ROOT, ".github", "workflows", wf))
     crons = re.findall(r"cron:\s*'([^']+)'", text)
     assert crons, f"{wf}: no cron found"
-    assert any("*/2" in c for c in crons), (
-        f"{wf}: expected an every-2-hour '*/2' cron, got {crons}. "
-        "Do NOT revert to fixed weekday hours — it kills 24/7 applying."
-    )
-    # no weekday-only gate (1-5) on the 2h cron
+    # Contract: some cron fires at least every 2 hours across the full 24h day
+    # (hour field '*/2' or 'N-M/2' that wraps every day), no weekday/dom/month gate.
+    # Minute offsets may differ per workflow (staggered on the single runner).
+    ok = []
     for c in crons:
-        if "*/2" in c:
-            assert not c.strip().endswith("1-5"), (
-                f"{wf}: 2h cron must NOT be weekday-only (got '{c}')"
-            )
+        minute, hour, dom, mon, dow = c.split()
+        if (dom, mon, dow) != ("*", "*", "*"):
+            continue
+        m = re.fullmatch(r"(\*|\d+-\d+)/2", hour)
+        if not m or not re.fullmatch(r"\d+", minute):
+            continue
+        if m.group(1) == "*":
+            first, last = 0, 22
+        else:
+            first, last = map(int, m.group(1).split("-"))
+        # gaps: step 2 inside range, wrap gap from last back to first next day
+        if (first + 24 - last) <= 2:
+            ok.append(c)
+    assert ok, (
+        f"{wf}: need a 24/7 cron firing at least every 2h (e.g. '*/2' or '1-23/2', "
+        f"no weekday gate), got {crons}. Do NOT revert to fixed weekday hours."
+    )
 
 
 # ---------------------------------------------------------------------------
