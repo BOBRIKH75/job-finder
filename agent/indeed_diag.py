@@ -4,10 +4,15 @@ AUTH = ('CTK', 'SHARED_INDEED_CSRF_TOKEN', 'INDEED_CSRF_TOKEN', 'PPID', 'SOCK', 
 home = os.path.expanduser('~')
 cands = set(glob.glob(home + '/Library/Application Support/Google/Chrome/*/Cookies'))
 cands |= set(glob.glob(home + '/Library/Application Support/Google/Chrome/*/Network/Cookies'))
-for root in (home, os.getcwd(), os.path.abspath('..'), os.path.abspath('../..'), os.path.abspath('../../..')):
-    for pat in ('**/.chrome-profile/*/Network/Cookies', '**/.chrome-profile/*/Cookies', '**/.chrome-profile/Default/Network/Cookies'):
-        try: cands |= set(glob.glob(os.path.join(root, pat), recursive=True)[:20])
-        except Exception: pass
+ws = os.getcwd()
+for pat in ('.chrome-profile/*/Network/Cookies', '.chrome-profile/*/Cookies', '.chrome-profile/Default/Network/Cookies'):
+    cands |= set(glob.glob(os.path.join(ws, pat)))
+# other runner work dirs / stable locations (shallow only)
+for pat in ('~/actions-runner*/_work/*/*/agent/.chrome-profile/Default/Network/Cookies',
+            '~/*/_work/*/*/agent/.chrome-profile/Default/Network/Cookies',
+            '~/.job-finder-chrome/Default/Network/Cookies',
+            '~/Downloads/CV/*/agent/.chrome-profile/Default/Network/Cookies'):
+    cands |= set(glob.glob(os.path.expanduser(pat)))
 print('profiles found:', len(cands))
 now_chrome = (time.time() + 11644473600) * 1e6
 for p in sorted(cands):
