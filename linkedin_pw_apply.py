@@ -308,6 +308,20 @@ DIALOG_DEBUG_JS = """d => {
 }"""
 
 
+HTML_JS = "e => e.outerHTML.replace(/\\s+/g, ' ').slice(0, 900)"
+
+LEAF_OPTS_JS = """(fs) => {
+  const q = ((fs.querySelector('legend') || {}).textContent || '').trim();
+  const out = [];
+  fs.querySelectorAll('*').forEach(e => {
+    if (e.children.length) return;
+    const t = (e.textContent || '').replace(/\\s+/g, ' ').trim();
+    if (t && t.length <= 60 && t !== q && !q.includes(t) && !out.includes(t)) out.push(t);
+  });
+  return out;
+}"""
+
+
 def dialog_debug(dialog, tag):
     """Structure-only dump (labels/types/errors/buttons, never values) of a dialog that blocked us."""
     try:
@@ -396,15 +410,23 @@ def fill_step(dialog, prof) -> bool:
             for j in range(radios.count()):
                 lab = radios.nth(j).evaluate(RADIO_OPT_JS) or ""
                 labels.append(" ".join(lab.split()))
+            bad = len(set(labels)) < len(labels) or any(l.lower() in ("on", "") or l in legend for l in labels)
+            if bad:  # LinkedIn SDUI: input labels are the question; real option text is a leaf node
+                leaf = [t for t in (g.evaluate(LEAF_OPTS_JS) or []) if t.lower() not in ("required",)]
+                if len(leaf) == radios.count():
+                    labels = leaf
+                else:
+                    log("      🔬 radio DOM: " + str(g.evaluate(HTML_JS)))
             pick = resolve_option(legend, labels, ans, prof, "radio") if resolve_option else None
             chosen = False
             if pick is not None:
                 j = labels.index(pick)
-                radios.nth(j).evaluate("e => (e.labels && e.labels[0] ? e.labels[0] : e).click()")
-                if not radios.nth(j).is_checked():
-                    radios.nth(j).evaluate("e => { e.click(); }")
-                chosen = True
-                log(f"      🔘 radio '{legend[:40]}' -> '{pick[:20]}'")
+                try:
+                    radios.nth(j).check(force=True, timeout=4000)
+                except Exception:
+                    radios.nth(j).evaluate("e => (e.labels && e.labels[0] ? e.labels[0] : e).click()")
+                chosen = radios.nth(j).is_checked()
+                log(f"      🔘 radio '{legend[:40]}' -> '{pick[:20]}' checked={chosen}")
             if not chosen:
                 log(f"      ❓ unanswerable radio: '{legend[:80]}' opts={[x[:20] for x in labels][:5]}")
                 ok = False
@@ -499,6 +521,7 @@ def run_dialog(page, prof) -> str:
             dialog_debug(dialog, f"stuck{step}")
             diagnostics(page, f"stuck{step}")
             return "fail"
+        log(f"      ➡ step {step}: click '{(nxt.inner_text(timeout=1500) or '').strip()[:25]}'")
         nxt.click(timeout=8000)
         time.sleep(1.5)
         err = dialog.locator("[role='alert'], .artdeco-inline-feedback--error, [data-test-form-element-error-messages]")
@@ -509,6 +532,9 @@ def run_dialog(page, prof) -> str:
                 return "fail"
         except Exception:
             pass
+    dd = find_dialog(page)
+    if dd is not None:
+        dialog_debug(dd, "loop-end")
     return "fail"
 
 
