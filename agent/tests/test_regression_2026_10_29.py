@@ -70,7 +70,7 @@ def test_appliers_run_every_2_hours_24x7(wf):
 @pytest.mark.parametrize("wf,script", [
     ("dice-apply.yml", "dice_apply.py"),
     ("greenhouse-apply.yml", "greenhouse_apply.py"),
-    ("linkedin-apply.yml", "linkedin_easy_apply.py"),
+    ("linkedin-apply.yml", "linkedin_pw_apply.py"),
 ])
 def test_appliers_run_unbuffered(wf, script):
     """Appliers MUST run unbuffered (`python3 -u` or PYTHONUNBUFFERED) so live logs are
@@ -416,3 +416,68 @@ def test_rate_strategy_anchors_by_conditions():
     r = compute_rate("remote c2c java")
     assert r["low"] == r["target"], "quote range bottom must equal the target"
     assert r["high"] >= r["target"], "quote range top must be >= target"
+
+
+# ---------------------------------------------------------------------------
+# Round 3 — single home runner scheduling: self-hosted appliers must not share a
+#           start minute+parity slot, and agent.yml must not occupy the runner.
+# ---------------------------------------------------------------------------
+def test_self_hosted_appliers_have_distinct_slots():
+    slots = {}
+    for wf in ("indeed-apply.yml", "greenhouse-apply.yml", "dice-apply.yml"):
+        text = _read(os.path.join(ROOT, ".github", "workflows", wf))
+        c = re.findall(r"cron:\s*'([^']+)'", text)[0].split()
+        minute, hour = c[0], c[1]
+        parity = "odd" if hour.startswith("1-23") else "even"
+        slots[wf] = (parity, minute)
+    assert len(set(slots.values())) == len(slots), f"overlapping runner slots: {slots}"
+    assert slots["dice-apply.yml"][0] == "odd"
+    assert slots["indeed-apply.yml"][0] == "even"
+
+
+def test_agent_runs_on_cloud_not_home_runner():
+    text = _read(os.path.join(ROOT, ".github", "workflows", "agent.yml"))
+    assert re.search(r"runs-on:\s*ubuntu-latest", text)
+    assert "self-hosted" not in re.search(r"runs-on:[^\n]*", text).group(0)
+
+
+def test_every_workflow_job_has_timeout():
+    import glob
+    missing = []
+    for f in glob.glob(os.path.join(ROOT, ".github", "workflows", "*.yml")):
+        t = _read(f)
+        if "timeout-minutes" not in t and os.path.basename(f) not in (
+                "count-real-activity.yml", "mark-done.yml", "run-all.yml", "calendar-booking-alert.yml", "lever-apply.yml"):
+            missing.append(os.path.basename(f))
+    assert not missing, f"workflows without timeout-minutes: {missing}"
+
+
+# ---------------------------------------------------------------------------
+# Round 3 — cv_health Gmail ground truth must recognise every platform's real subjects
+#           (false 'zero_indeed' alerts came from 'Indeed Application: ...' not matching).
+# ---------------------------------------------------------------------------
+def _cv_health():
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("cv_health_mod", os.path.join(AGENT, "scripts", "cv_health.py"))
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+@pytest.mark.parametrize("plat,subject,expected", [
+    ("indeed", "Indeed Application: Senior Java Developer", True),
+    ("indeed", "5 new jobs for you", False),
+    ("linkedin", "Your application was sent to Acme Corp", True),
+    ("linkedin", "You appeared in 3 searches", False),
+    ("greenhouse", "Thank you for applying to Acme", True),
+    ("greenhouse", "Thanks for applying to Acme!", True),
+    ("greenhouse", "Your weekly digest", False),
+    ("dice", "Application for Java Dev at Acme sent", True),
+])
+def test_cv_health_subject_markers(plat, subject, expected):
+    assert _cv_health().subject_matches(plat, subject) is expected
+
+
+def test_cv_health_indeed_query_is_subject_narrowed():
+    q = _cv_health().SOURCES["indeed"][0]
+    assert "Indeed Application" in q

@@ -111,7 +111,7 @@ jobs:
         env:
           INDEED_COOKIES: ${{ secrets.INDEED_COOKIES }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          NOPECHA_API_KEY: ${{ secrets.NOPECHA_API_KEY }}
+          NOPECHA_API_KEY: ${{ secrets.NOPECHA_API_KEY || '' }}   # optional: empty is tolerated (feature skipped)
           CAPSOLVER_KEY: ${{ secrets.CAPSOLVER_KEY }}
           CAPSOLVER_API_KEY: ${{ secrets.CAPSOLVER_KEY }}
           GH_TOKEN: ${{ secrets.GH_PAT || github.token }}

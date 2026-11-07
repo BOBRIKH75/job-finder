@@ -11,7 +11,7 @@ on:
     # Weekday/business-hours gating removed — jobs post nights + weekends; freshness filter
     # (DICE_POSTED_DATE / _posted_date_filter) auto-limits to the newest jobs after week 1,
     # and the TTL dedup re-opens reposts, so continuous running keeps catching fresh postings.
-    - cron: '30 1-23/2 * * *'   # every 2h on ODD hours :30 (Indeed runs EVEN hours :00) -> 90min gap on the single runner
+    - cron: '10 1-23/2 * * *'   # every 2h ODD hours :10 (slot: Dice ~30m, done by ~:45)
   workflow_dispatch:
     inputs:
       dice_term:

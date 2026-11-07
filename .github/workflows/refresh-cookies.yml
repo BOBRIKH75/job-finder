@@ -2,7 +2,7 @@ name: Refresh Indeed Cookies (Weekly)
 
 on:
   schedule:
-    - cron: '0 14 * * 0'  # Every Sunday 8 AM MT
+    - cron: '50 13 * * 0'  # Sunday 7:50 AM MT, odd hour :50 (off the Indeed :00 slot)
   workflow_dispatch: {}
 
 defaults:
