@@ -894,8 +894,10 @@ def submit_one(pg, url, db, profile):
     try:
         job_title = pg.evaluate(
             """() => {
-                const el = document.querySelector('[data-testid="jobsearch-JobInfoHeader-title"], [data-testid*="jobTitle" i], .jobsearch-JobInfoHeader-title, h1');
-                return el ? el.textContent.trim() : '';
+                const el = document.querySelector('[data-testid="jobsearch-JobInfoHeader-title"], [data-testid*="jobTitle" i], .jobsearch-JobInfoHeader-title');
+                if (el) return el.textContent.trim();
+                const t = (document.title || '').split(' - ')[0].trim();
+                return t.toLowerCase().includes('indeed') ? '' : t;
             }""") or ''
     except Exception:
         job_title = ''
@@ -914,6 +916,10 @@ def submit_one(pg, url, db, profile):
                 should_apply = None
         if should_apply is not None:
             _jd = ''
+            try:
+                pg.wait_for_selector('#jobDescriptionText, [data-testid*="jobDescription" i]', timeout=6000)
+            except Exception:
+                pass
             try:
                 _jd = pg.evaluate(
                     """() => {
@@ -967,11 +973,16 @@ def submit_one(pg, url, db, profile):
     # FIX (cv-health): Indeed renamed/reshaped the button — 10/10 runs = 100% no_apply_button.
     # Accept the current variants (testid/id/aria + "Apply now"/"Easy apply"), but NEVER the
     # "Apply on company site" external link (that leaves Indeed).
-    ab = pg.locator('button:has-text("Apply with Indeed"), span:has-text("Apply with Indeed"), '
+    ab = pg.locator('[data-testid="viewjob-indeed-apply"], #viewjob-indeed-apply, '
+                    'button:has-text("Apply with Indeed"), a:has-text("Apply with Indeed"), '
                     '[data-testid="indeedApplyButton"], #indeedApplyButton, '
                     'button[id^="indeedApplyButton"], button[aria-label*="Apply with Indeed" i], '
                     'button:text-is("Apply now"), button:text-is("Easy apply"), '
                     'button:text-is("Easily apply")')
+    try:  # the button renders late (SPA) - wait for it instead of counting immediately
+        ab.first.wait_for(state='attached', timeout=12000)
+    except Exception:
+        pass
     if ab.count() == 0:
         print("  no 'Apply with Indeed' button on this job")
         try:  # DIAGNOSTIC (cv-health): log what buttons ARE on the page so the next run reveals the real selector
@@ -1002,6 +1013,17 @@ def submit_one(pg, url, db, profile):
 
     # STEP 4: screenshot after redirect
     snap(pg, "after_apply_click")
+
+    # LOGIN GATE: Apply bounced to the Indeed sign-in page => INDEED_COOKIES session is expired.
+    # Nothing can be submitted logged out; stop the whole run instead of looping 20 steps per job.
+    try:
+        if '/auth' in (pg.url or '').lower() or 'indeed.com/account/login' in (pg.url or '').lower():
+            print("  \U0001F6D1 LOGIN_REQUIRED: Indeed asked to sign in -> INDEED_COOKIES is expired. "
+                  "Re-login in Chrome and refresh the INDEED_COOKIES secret.")
+            snap(pg, "SKIP_login_required")
+            return 'login_required'
+    except Exception:
+        pass
 
     # FIRST-PAGE FAST-SKIP (Bobur): if Apply-with-Indeed did NOT reach the SmartApply
     # flow (still on the job view, no apply form), skip fast — don't waste time.
@@ -1963,6 +1985,9 @@ def main():
                 # RATE-LIMIT: stop the run to protect the IP. The lesson is already
                 # recorded (record_lesson in submit_one), so the NEXT run auto-cools
                 # down + paces + avoids audio. Fighting it now only digs deeper.
+                if result == 'login_required':
+                    print("  \U0001F6D1 stopping run: Indeed session expired (user must refresh cookies)")
+                    break
                 if result == 'rate_limited':
                     print("  🛑 rate-limited — stopping run to protect the IP. Next run will "
                           "auto-cooldown + pace (self-learned). Let the IP rest ~1-2h.")
