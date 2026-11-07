@@ -1406,6 +1406,19 @@ def submit_and_verify(page, page_data, original_url, _live=False) -> dict:
                             print(f"      🔬 DIAG path={page.url.split('?')[0][-60:]} {_diag}")
                         except Exception:
                             pass
+                        # The click often SUCCEEDS and navigates away; Playwright then times out
+                        # "waiting for locator". If we are on a thank-you/confirmation page the
+                        # application REALLY went through (Affirm/Capco were misreported as failures).
+                        try:
+                            _txt = page.locator("body").inner_text(timeout=3000).lower()
+                            _real = ("thank you for applying", "application received", "thank you for your application",
+                                     "successfully applied", "thank you for submitting", "have received your application",
+                                     "application has been received", "application was successfully submitted")
+                            if any(x in _txt for x in _real) and not ("security code" in _txt and "enter" in _txt):
+                                print("      ✅ Confirmation page reached after click (navigation raced the click)")
+                                return {"submitted": True, "method": "confirmation_after_click"}
+                        except Exception:
+                            pass
                         try:
                             page.keyboard.press("Escape")
                             page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
@@ -1910,6 +1923,12 @@ def apply_to_job(page, profile, job, learned, dry_run=False, db=None, site_needs
             # Pass any sitekey captured from network requests
             _net_sitekey = _captured_recaptcha_sitekey[0] if _captured_recaptcha_sitekey else ""
             captcha_solved = _try_auto_captcha_solve(page, captured_sitekey=_net_sitekey)
+
+            if not captcha_solved and "ashbyhq.com" in url and os.environ.get("ASHBY_SUBMIT_ANYWAY", "1") == "1":
+                # Ashby uses an INVISIBLE reCAPTCHA scored from the (real, headed) Chrome session —
+                # there is no token to solve; just submit and let the page decide.
+                print("      🧩 Ashby: no solvable token — submitting anyway (invisible captcha)")
+                captcha_solved = True
 
             if not captcha_solved:
                 # CAPTCHA unsolvable — don't waste time submitting (will timeout)
