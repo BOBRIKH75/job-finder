@@ -917,6 +917,10 @@ def submit_one(pg, url, db, profile):
         if should_apply is not None:
             _jd = ''
             try:
+                pg.wait_for_selector('#jobDescriptionText, [data-testid*="jobDescription" i]', timeout=6000)
+            except Exception:
+                pass
+            try:
                 _jd = pg.evaluate(
                     """() => {
                         const el = document.querySelector('#jobDescriptionText, [data-testid*="jobDescription" i], .jobsearch-JobComponent-description');
@@ -1009,6 +1013,17 @@ def submit_one(pg, url, db, profile):
 
     # STEP 4: screenshot after redirect
     snap(pg, "after_apply_click")
+
+    # LOGIN GATE: Apply bounced to the Indeed sign-in page => INDEED_COOKIES session is expired.
+    # Nothing can be submitted logged out; stop the whole run instead of looping 20 steps per job.
+    try:
+        if '/auth' in (pg.url or '').lower() or 'indeed.com/account/login' in (pg.url or '').lower():
+            print("  \U0001F6D1 LOGIN_REQUIRED: Indeed asked to sign in -> INDEED_COOKIES is expired. "
+                  "Re-login in Chrome and refresh the INDEED_COOKIES secret.")
+            snap(pg, "SKIP_login_required")
+            return 'login_required'
+    except Exception:
+        pass
 
     # FIRST-PAGE FAST-SKIP (Bobur): if Apply-with-Indeed did NOT reach the SmartApply
     # flow (still on the job view, no apply form), skip fast — don't waste time.
@@ -1970,6 +1985,9 @@ def main():
                 # RATE-LIMIT: stop the run to protect the IP. The lesson is already
                 # recorded (record_lesson in submit_one), so the NEXT run auto-cools
                 # down + paces + avoids audio. Fighting it now only digs deeper.
+                if result == 'login_required':
+                    print("  \U0001F6D1 stopping run: Indeed session expired (user must refresh cookies)")
+                    break
                 if result == 'rate_limited':
                     print("  🛑 rate-limited — stopping run to protect the IP. Next run will "
                           "auto-cooldown + pace (self-learned). Let the IP rest ~1-2h.")
