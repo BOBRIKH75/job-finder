@@ -379,7 +379,7 @@ def _fill_form_fields_with_ai(driver):
     from selenium.webdriver.support.ui import Select
     
     # Find all visible form fields in the modal
-    form_groups = driver.find_elements(By.CSS_SELECTOR, 
+    form_groups = _root(driver).find_elements(By.CSS_SELECTOR, 
         ".jobs-easy-apply-form-section__grouping, "
         ".fb-dash-form-element, "
         "[data-test-form-element], "
@@ -519,6 +519,37 @@ Answer with ONLY the answer (1-3 words max). No explanation.
         return "Yes"  # safe default
 
 
+_APPLY_ROOT = None   # driver, or the ShadowRoot that holds the Easy Apply dialog
+
+_JS_FIND_SHADOW_DIALOG = """
+const hosts = [document.querySelector('#interop-outlet'), ...document.querySelectorAll('*')];
+for (const h of hosts) {
+  if (h && h.shadowRoot && h.shadowRoot.querySelector("[role='dialog'], .jobs-easy-apply-modal, form")) return h;
+}
+return null;
+"""
+
+
+def _root(driver):
+    return _APPLY_ROOT if _APPLY_ROOT is not None else driver
+
+
+def _apply_text(driver) -> str:
+    """Visible text of the apply dialog (top doc + shadow DOM), lowercase."""
+    txt = ""
+    try:
+        txt = driver.find_element("css selector", "body").text or ""
+    except Exception:
+        pass
+    try:
+        host = driver.execute_script(_JS_FIND_SHADOW_DIALOG)
+        if host is not None:
+            txt += " " + (driver.execute_script("return arguments[0].shadowRoot.textContent;", host) or "")
+    except Exception:
+        pass
+    return txt.lower()
+
+
 def _open_easy_apply(driver, btn, job_id="") -> bool:
     """Open the Easy Apply modal. LinkedIn's 2026 SDUI flow is an <a href=".../apply/...">
     whose dialog may render in the top document OR inside an iframe. Returns True when a
@@ -533,8 +564,6 @@ def _open_easy_apply(driver, btn, job_id="") -> bool:
             "var e=arguments[0];return e.tagName+' '+Array.from(e.attributes).map(a=>a.name+'='+a.value.slice(0,60)).join(' ');", btn) or "")[:300])
     except Exception:
         pass
-    if not href and job_id:
-        href = f"https://www.linkedin.com/jobs/view/{job_id}/apply/?openSDUIApplyFlow=true"
     try:
         from selenium.webdriver.common.action_chains import ActionChains
         driver.execute_script("arguments[0].scrollIntoView({block:'center'});", btn)
@@ -549,6 +578,16 @@ def _open_easy_apply(driver, btn, job_id="") -> bool:
         for _ in range(10):
             time.sleep(1)
             driver.switch_to.default_content()
+            global _APPLY_ROOT
+            _APPLY_ROOT = None
+            try:
+                host = driver.execute_script(_JS_FIND_SHADOW_DIALOG)
+            except Exception:
+                host = None
+            if host is not None:
+                _APPLY_ROOT = host.shadow_root
+                print("    🔬 apply dialog found in shadow DOM")
+                return True
             if driver.find_elements("css selector", "[role='dialog'], .jobs-easy-apply-modal, .artdeco-modal"):
                 return True
             for fr in driver.find_elements("css selector", "iframe"):
@@ -568,9 +607,10 @@ def _open_easy_apply(driver, btn, job_id="") -> bool:
 
 def _find_step_button(driver, words):
     """Find a visible button whose aria-label or text contains one of `words` (case-insens)."""
-    roots = driver.find_elements("css selector", "[role='dialog'], .jobs-easy-apply-modal")
+    base = _root(driver)
+    roots = base.find_elements("css selector", "[role='dialog'], .jobs-easy-apply-modal")
     pool = roots[-1].find_elements("css selector", "button") if roots else \
-        driver.find_elements("css selector", "button, a[role='button']")
+        base.find_elements("css selector", "button, a[role='button']")
     for el in pool:
         try:
             if not el.is_displayed():
@@ -586,14 +626,16 @@ def _find_step_button(driver, words):
 def _diag_apply_state(driver, tag):
     try:
         btns = []
-        for el in driver.find_elements("css selector", "button, a[role='button']"):
+        for el in _root(driver).find_elements("css selector", "button, a[role='button']"):
             try:
                 if el.is_displayed():
                     btns.append(((el.get_attribute("aria-label") or el.text or "").strip()[:40]))
             except Exception:
                 pass
         n_if = len(driver.find_elements("css selector", "iframe"))
-        n_dlg = len(driver.find_elements("css selector", "[role='dialog'], .artdeco-modal"))
+        n_dlg = len(_root(driver).find_elements("css selector", "[role='dialog'], .artdeco-modal"))
+        n_shadow = driver.execute_script("return [...document.querySelectorAll('*')].filter(e=>e.shadowRoot).map(e=>e.tagName+'#'+e.id).slice(0,8).join(',');")
+        print(f"    🔬 {tag} shadow-hosts={n_shadow}")
         body = (driver.find_element("css selector", "body").text or "")[:200].replace("\n", " | ")
         print(f"    🔬 {tag} url={driver.current_url[:90]} tabs={len(driver.window_handles)} iframes={n_if} dialogs={n_dlg}")
         print(f"    🔬 {tag} buttons={[b for b in btns if b][:25]}")
@@ -956,7 +998,7 @@ def main():
                                 _confirmed = False
                                 for _ in range(6):   # poll up to ~6s for the confirmation
                                     try:
-                                        _pt = (driver.find_element("css selector", "body").text or "").lower()
+                                        _pt = _apply_text(driver)
                                     except Exception:
                                         _pt = ""
                                     if any(s in _pt for s in (
