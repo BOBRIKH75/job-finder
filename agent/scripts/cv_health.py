@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """CV pipeline health: truthful metrics + de-duplicated phone alerts (cloud job, stdlib + gh CLI).
 
-Writes agent/data/cv_health.json (report) and agent/data/cv_health_state.json (alert dedup).
+Writes agent/data/cv_health.json (report) and agent/data/cv_health_alerts.json (alert dedup).
 Real application counts come from Gmail confirmation emails (same sources/markers as
 verify_real_applications.py). Alerts go through ntfy (same mechanism as alert_hot_replies.py).
 Never prints secrets / full emails / log lines.
@@ -15,7 +15,7 @@ from email.utils import parsedate_to_datetime
 
 REPO = os.environ.get("GITHUB_REPOSITORY", "BOBRIKH75/job-finder")
 DATA = "data" if os.path.isdir("data") else "agent/data"
-REPORT, STATE = os.path.join(DATA, "cv_health.json"), os.path.join(DATA, "cv_health_state.json")
+REPORT, STATE = os.path.join(DATA, "cv_health.json"), os.path.join(DATA, "cv_health_alerts.json")
 NOW = datetime.now(timezone.utc)
 RUNNER_OFFLINE_HOURS = 2
 ALERT_COOLDOWN_H = 12

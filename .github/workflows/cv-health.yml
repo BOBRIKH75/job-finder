@@ -42,6 +42,6 @@ jobs:
           cd $GITHUB_WORKSPACE
           git config user.email "bot@bobrikh.dev"
           git config user.name "CV Health Bot"
-          git add agent/data/cv_health.json agent/data/cv_health_state.json 2>/dev/null || true
+          git add agent/data/cv_health.json agent/data/cv_health_alerts.json 2>/dev/null || true
           git diff --staged --quiet || git commit -m "cv-health: report + alert state [skip ci]"
           for i in 1 2 3; do git pull --rebase --autostash && git push && break || sleep 5; done
