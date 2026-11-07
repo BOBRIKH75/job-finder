@@ -1754,7 +1754,9 @@ def main():
             # with a fake UA + manual --disable-blink-features (which patchright
             # already adds itself) gives a near-zero trust score. A persistent
             # profile keeps cookies/history across runs so Google trusts the session.
-            _prof_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '.chrome-profile')
+            # Stable profile dir OUTSIDE the checkout (actions/checkout wipes ignored files each run,
+            # which logged us out every time). Holds the auto-login session across runs.
+            _prof_dir = os.environ.get('INDEED_PROFILE_DIR') or os.path.expanduser('~/.cv-indeed-profile')
             os.makedirs(_prof_dir, exist_ok=True)
             # Clear STALE Chrome singleton locks left by a crashed/killed prior run.
             # Without this, launch_persistent_context() fails with "profile in use"
@@ -1779,10 +1781,8 @@ def main():
                 # Fallback: some machines lack channel="chrome" — retry on bundled Chromium.
                 _launch_kw.pop('channel', None)
                 _ctx = pw.chromium.launch_persistent_context(**_launch_kw)
-            try:
-                _ctx.add_cookies(cookies)
-            except Exception:
-                pass
+            # NOTE: secret cookies are NOT blindly added here any more - stale ones would clobber
+            # the profile's live session. _ensure_login() below adds them only if needed.
             # launch_persistent_context returns the context (its own browser); reuse
             # an existing page if Chrome opened one, else create a fresh page.
             _pg = _ctx.pages[0] if _ctx.pages else _ctx.new_page()
@@ -1790,6 +1790,31 @@ def main():
             # <<< LOCKED FIX #1
 
         b, ctx, pg = _launch()
+
+        def _ensure_login():
+            """Valid Indeed session or False: (1) profile already logged in, (2) INDEED_COOKIES
+            secret, (3) automatic login (Gmail email-code / Google SSO) via indeed_login."""
+            try:
+                import indeed_login as _il
+                if _il.is_logged_in(pg):
+                    return True
+                if cookies:
+                    try:
+                        ctx.add_cookies(cookies)
+                    except Exception:
+                        pass
+                    if _il.is_logged_in(pg):
+                        print("  \U0001F36A logged in via INDEED_COOKIES secret")
+                        return True
+                return _il.ensure_logged_in(pg)
+            except Exception as _e:
+                print(f"  \u26a0 ensure_login error: {str(_e)[:80]}")
+                return False
+
+        if not _ensure_login():
+            print("  \U0001F6D1 LOGIN_REQUIRED: automatic login failed - cannot apply logged out")
+            b.close()
+            return
         print("  🧑 human-like context (rotating UA/viewport/timezone)")
 
         def _page_alive(_pg):
@@ -1986,7 +2011,11 @@ def main():
                 # recorded (record_lesson in submit_one), so the NEXT run auto-cools
                 # down + paces + avoids audio. Fighting it now only digs deeper.
                 if result == 'login_required':
-                    print("  \U0001F6D1 stopping run: Indeed session expired (user must refresh cookies)")
+                    print("  \U0001F6D1 session expired mid-run - trying automatic re-login")
+                    if _ensure_login():
+                        print("  \u2705 re-login OK - continuing")
+                        continue
+                    print("  \U0001F6D1 stopping run: automatic re-login failed")
                     break
                 if result == 'rate_limited':
                     print("  🛑 rate-limited — stopping run to protect the IP. Next run will "
