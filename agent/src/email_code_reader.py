@@ -21,6 +21,16 @@ from typing import Optional
 # This prevents reusing the same code even if IMAP returns the same email.
 _USED_CODES: set = set()
 
+# Time the form's Submit was last clicked (set by applier.submit_and_verify). A valid code
+# email can only arrive AFTER this moment, so older emails are never considered.
+_SUBMIT_TS: float = 0.0
+
+
+def note_submit_time() -> None:
+    """Record 'now' as the last submit click time (used as the OTP freshness floor)."""
+    global _SUBMIT_TS
+    _SUBMIT_TS = time.time()
+
 
 def get_verification_code(
     sender_filter: str = "greenhouse",
@@ -74,8 +84,12 @@ def get_verification_code(
     # _USED_CODES only dedups within one process, this guards across processes.
     from email.utils import parsedate_to_datetime
     from datetime import timezone
-    _freshness_cutoff = datetime.now(timezone.utc) - timedelta(minutes=5)
-    time.sleep(12)
+    # Floor = last submit click minus 20s clock-skew slack (falls back to 2 min ago). The
+    # old 5-min window let a code from the PREVIOUS application be picked up and rejected.
+    _floor_secs = (time.time() - _SUBMIT_TS + 20) if _SUBMIT_TS else 120
+    _floor_secs = max(30, min(_floor_secs, 600))
+    _freshness_cutoff = datetime.now(timezone.utc) - timedelta(seconds=_floor_secs)
+    time.sleep(8)
     
     start_time = time.time()
     while time.time() - start_time < max_wait_seconds:
@@ -111,17 +125,9 @@ def get_verification_code(
                     raw_email = msg_data[0][1]
                     msg = email.message_from_bytes(raw_email)
 
-                    # COMPANY MATCH: when we know the employer, skip code emails
-                    # whose subject is for a DIFFERENT company. The subject is
-                    # "Security code for your application to <Company>". This
-                    # stops us entering Airbnb's code on an Affirm application.
-                    if company:
-                        subj = str(msg.get("Subject", "")).lower()
-                        comp = company.lower().strip()
-                        # only enforce when this looks like a security-code email
-                        if 'security code' in subj and comp and comp[:12] not in subj:
-                            mail.store(msg_id, '+FLAGS', '\\Seen')
-                            continue
+                    # (No company filtering: board slugs like 'doordashusa' never match the
+                    # email subject 'DoorDash', so filtering dropped valid codes. Runs are serial,
+                    # and the submit-time floor + used-code set already pick the newest code.)
 
                     # FRESHNESS GUARD: reject emails that arrived before this OTP
                     # attempt began (minus a 5-min buffer). A real Greenhouse code
@@ -563,3 +569,40 @@ def handle_email_verification(page, skip_detection: bool = False, company: str =
         return enter_verification_code(page, code)
     
     return False
+
+
+def retry_after_rejection(page, company: str = "") -> bool:
+    """The code was rejected: click 'Resend' (if offered) and enter the NEWEST code once more.
+
+    Returns True when the page then shows a real confirmation ('thank you' text)."""
+    print("      🔁 Code rejected — requesting a fresh code and retrying once")
+    try:
+        for sel in ('button:has-text("Resend")', 'a:has-text("Resend")', 'button:has-text("resend")',
+                    'text=/send (me )?(a )?new code/i', 'text=/resend/i'):
+            try:
+                el = page.locator(sel).first
+                if el.is_visible(timeout=1000):
+                    el.click()
+                    break
+            except Exception:
+                continue
+        note_submit_time()
+        page.wait_for_timeout(2000)
+        if not handle_email_verification(page, skip_detection=True, company=company):
+            return False
+        try:
+            page.wait_for_function(
+                "() => { const t=(document.body.innerText||'').toLowerCase();"
+                " return t.includes('thank you') || t.includes('application received')"
+                " || t.includes('invalid') || t.includes('incorrect') || t.includes('expired'); }",
+                timeout=12000)
+        except Exception:
+            page.wait_for_timeout(4000)
+        text = page.locator("body").inner_text(timeout=5000).lower()
+        ok = any(s in text for s in ("thank you for applying", "application received",
+                                     "thank you for your application", "successfully applied",
+                                     "thank you for submitting"))
+        return ok
+    except Exception as exc:
+        print(f"      ⚠ code retry error: {str(exc)[:60]}")
+        return False

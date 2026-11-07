@@ -630,6 +630,67 @@ def _try_auto_captcha_solve(page, captured_sitekey: str = "") -> bool:
     return True
 
 
+# Truthful work history (from resume.pdf) for the Greenhouse "Employment" section.
+_EMPLOYMENT = (
+    {"company": "Spectrum Charter Communication", "title": "Java Back-End Developer",
+     "start_month": "August", "start_year": "2024", "current": True},
+    {"company": "OnTrac", "title": "Java Back-End Developer",
+     "start_month": "September", "start_year": "2022", "end_month": "August", "end_year": "2024",
+     "current": False},
+)
+
+
+def _fill_employment_section(page) -> int:
+    """Fill the Greenhouse 'Employment' block (company-name-N / title-N / start-date-month-N
+    react-select / start-date-year-N / end-date-* / current-role-N) with REAL resume history.
+    Root cause of 'Start date month is required' failures: the month is a react-select combobox,
+    not a <select>, so the generic filler never set it. Only touches fields that are present."""
+    filled = 0
+
+    def _combo(fid, text):
+        loc = page.locator(f"#{fid}")
+        if loc.count() == 0 or not loc.first.is_enabled():
+            return False
+        loc.first.click(timeout=4000)
+        page.wait_for_timeout(250)
+        loc.first.fill(text, timeout=4000)
+        page.wait_for_timeout(350)
+        opt = page.locator("[role=option]:visible").first
+        if opt.count() == 0:
+            return False
+        opt.click(timeout=4000)
+        page.wait_for_timeout(200)
+        return True
+
+    for idx, job in enumerate(_EMPLOYMENT):
+        if page.locator(f"#company-name-{idx}").count() == 0:
+            break
+        try:
+            page.fill(f"#company-name-{idx}", job["company"], timeout=4000)
+            if page.locator(f"#title-{idx}").count():
+                page.fill(f"#title-{idx}", job["title"], timeout=4000)
+            if _combo(f"start-date-month-{idx}", job["start_month"]):
+                filled += 1
+            if page.locator(f"#start-date-year-{idx}").count():
+                page.fill(f"#start-date-year-{idx}", job["start_year"], timeout=4000)
+                filled += 1
+            cur = page.locator(f"#current-role-{idx}_1")
+            if job["current"]:
+                if cur.count():
+                    cur.first.check(force=True, timeout=4000)
+            else:
+                if cur.count() and cur.first.is_checked():
+                    cur.first.uncheck(force=True, timeout=4000)
+                if _combo(f"end-date-month-{idx}", job["end_month"]):
+                    filled += 1
+                if page.locator(f"#end-date-year-{idx}").count():
+                    page.fill(f"#end-date-year-{idx}", job["end_year"], timeout=4000)
+                    filled += 1
+        except Exception as exc:
+            print(f"      ⚠ employment[{idx}] fill issue: {str(exc)[:60]}")
+    return filled
+
+
 def _fill_date_fields(page) -> int:
     """Fill education/employment Start/End month+year fields that Greenhouse requires.
 
@@ -696,7 +757,8 @@ def _fill_date_fields(page) -> int:
                 meta = (inp.evaluate(
                     "(el)=>((el.getAttribute('name')||'')+' '+(el.getAttribute('placeholder')||'')"
                     "+' '+(el.getAttribute('aria-label')||'')+' '+(el.id||'')).toLowerCase()") or "")
-                if ("year" in meta or "yyyy" in meta) and not (inp.input_value() or "").strip():
+                if ("year" in meta or "yyyy" in meta) and not (inp.input_value() or "").strip() \
+                        and "date-year" not in meta:
                     is_edu = any(w in meta for w in ("school", "education", "degree", "university", "college"))
                     is_end = any(w in meta for w in ("end", "graduat", "completion"))
                     inp.fill((EDU_END_YEAR if is_end else EDU_START_YEAR) if is_edu else (END_YEAR if is_end else START_YEAR))
@@ -1320,6 +1382,11 @@ def submit_and_verify(page, page_data, original_url) -> dict:
             if st in btn_lower:
                 try:
                     post_responses.clear()
+                    try:
+                        from src.email_code_reader import note_submit_time
+                        note_submit_time()
+                    except Exception:
+                        pass
                     if btn["selector"]:
                         page.locator(btn["selector"]).click()
                     else:
@@ -1756,6 +1823,13 @@ def apply_to_job(page, profile, job, learned, dry_run=False, db=None, site_needs
             # Fill education/employment DATE fields (Start/End month+year) — these caused
             # 'End year is required' / 'Start year is required' submit failures on Greenhouse.
             try:
+                emp_filled = _fill_employment_section(page)
+                if emp_filled:
+                    attempt_result["filled"] += emp_filled
+                    print(f"      💼 Filled {emp_filled} employment field(s) from resume")
+            except Exception as _ee:
+                print(f"      ⚠ employment fill skipped: {str(_ee)[:50]}")
+            try:
                 date_filled = _fill_date_fields(page)
                 if date_filled:
                     attempt_result["filled"] += date_filled
@@ -1909,7 +1983,11 @@ def apply_to_job(page, profile, job, learned, dry_run=False, db=None, site_needs
                             submit_result = {"submitted": True, "method": "email_verification"}
                         elif has_failure:
                             print(f"      ❌ Code was REJECTED — page still shows verification/error signals")
-                            submit_result = {"submitted": False, "reason": "verification_code_rejected"}
+                            from src.email_code_reader import retry_after_rejection
+                            if retry_after_rejection(page, job.get("company", "")):
+                                submit_result = {"submitted": True, "method": "email_verification_retry"}
+                            else:
+                                submit_result = {"submitted": False, "reason": "verification_code_rejected"}
                         else:
                             # URL may have changed but no "thank you" — do NOT count as submitted
                             print(f"      ❌ No 'thank you' text found after code entry — NOT submitted")
@@ -1957,7 +2035,11 @@ def apply_to_job(page, profile, job, learned, dry_run=False, db=None, site_needs
                             submit_result = {"submitted": True, "method": "email_verification"}
                         elif has_failure:
                             print(f"      ❌ Code was REJECTED (fallback) — page still shows verification/error signals")
-                            submit_result = {"submitted": False, "reason": "verification_code_rejected"}
+                            from src.email_code_reader import retry_after_rejection
+                            if retry_after_rejection(page, job.get("company", "")):
+                                submit_result = {"submitted": True, "method": "email_verification_retry"}
+                            else:
+                                submit_result = {"submitted": False, "reason": "verification_code_rejected"}
                         elif post_verify_url != url.lower().rstrip("/") and not has_failure:
                             if "security" not in post_verify_text and "verification" not in post_verify_text and "code" not in post_verify_text:
                                 submit_result = {"submitted": True, "method": "email_verification_redirect"}

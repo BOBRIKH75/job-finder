@@ -11,6 +11,7 @@ Env overrides:
   CV_MATCH_MIN=<int>    -> minimum score to apply (default 2)
 """
 import os
+import re
 
 # --- Core role signals: at least one MUST be present (this is a Java backend role) ---
 CORE_MUST = (
@@ -42,8 +43,25 @@ TITLE_NEGATIVES = (
     "qa manual", "manual tester", "servicenow", "sharepoint", "cobol", "mainframe",
     "android developer", "ios developer", "mobile developer", "golang only", "python developer",
     "data scientist", "machine learning engineer", "devops engineer only", "network engineer",
+    "security engineer", "security architect", "solutions engineer", "solutions architect",
+    "sales engineer", "support engineer", "sdet", "qa engineer", "data engineer",
+    "analytics engineer", "site reliability", "engineering manager", "program manager",
     "business analyst", "project manager", "scrum master", "product manager",
 )
+
+
+# Other-language/stack tags in the TITLE (e.g. "Backend Engineer (Ruby)", "Python Engineer"):
+# skip unless the title also says Java.
+_OTHER_LANG_TITLE = re.compile(
+    r"\b(ruby|rails|python|golang|go|rust|scala|php|c\+\+|c#|\.net|node(\.?js)?|typescript|react|"
+    r"angular|vue|kotlin|swift|elixir|perl|clojure|haskell|android|ios|flutter|unity|unreal)\b", re.I)
+# Titles that are clearly in Bob's lane even when the JD is thin.
+_LANE_TITLE = re.compile(
+    r"\b(back[- ]?end|backend|platform|api|integration|services?|distributed|infrastructure|"
+    r"software (engineer|developer)|java)\b", re.I)
+# Stack signals that make a non-Java-worded JD a credible fit for the CV (needs >= 3).
+_STACK_SIGNALS = ("microservice", "kafka", "kubernetes", "aws", "distributed system",
+                  "rest api", "restful", "event-driven", "spring", "jvm", "grpc", "postgres")
 
 
 def _norm(s):
@@ -63,6 +81,10 @@ def score_job(title, description="", location=""):
         if neg in t:
             return (-100, [f"title negative: '{neg.strip()}'"])
 
+    # Other-language title tag without Java in the title -> different stack, skip.
+    if "java" not in t and _OTHER_LANG_TITLE.search(t):
+        return (-100, ["title is another language/stack"])
+
     # Must look like a Java/backend role somewhere.
     if not any(k in blob for k in CORE_MUST):
         return (-10, ["no core Java/backend signal"])
@@ -73,6 +95,12 @@ def score_job(title, description="", location=""):
     if hits:
         reasons.append(f"skills:{len(set(hits))}")
     # Strong core boost if Java + Spring both present.
+    if "java" in t and "javascript" not in t:
+        score += 3                     # "Java Developer / Senior Java Engineer" in the TITLE
+        reasons.append("java-in-title")
+    if re.search(r"back[- ]?end", t):
+        score += 2
+        reasons.append("backend-in-title")
     if "java" in blob and "spring" in blob:
         score += 2
         reasons.append("java+spring")
@@ -91,6 +119,11 @@ def score_job(title, description="", location=""):
         "java", "spring", "spring boot", "microservice", "microservices",
         "backend", "back-end", "back end", "j2ee", "jakarta"))
     if not _real_skill:
+        # Platform/API/Integration/Software Engineer titles whose JD is rich in Bob's stack
+        # (microservices, Kafka, Kubernetes, AWS, distributed systems...) are credible fits.
+        _stack = sum(1 for k in _STACK_SIGNALS if k in blob)
+        if _LANE_TITLE.search(t) and _stack >= 3:
+            return (max(score, 2), reasons + [f"stack-rich:{_stack}"])
         return (-5, ["no real Java/Spring/backend skill (generic title only)"])
     return (score, reasons)
 

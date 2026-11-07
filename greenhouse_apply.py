@@ -254,7 +254,8 @@ def main():
     applied = 0
     failed = []
     skipped = 0
-    MAX_APPS = 30
+    MAX_APPS = int(os.environ.get('GH_MAX_APPS', '40'))
+    _prio: dict = {}   # url -> priority (remote-US + Java-strong first)
     company_failures: dict = {}
     browser_queue: list = []
     _api_dead = 0
@@ -337,6 +338,12 @@ def main():
                     print(f"  ⏭ wrong-role title: '{title[:45]}' @ {company_name[:20]}")
                     continue
                 _ok, _score, _why = _cv_ok(title, _desc, _loc)
+                _tl = title.lower()
+                _prio[url] = (_score
+                              + (4 if ('remote' in (_loc or '').lower() or 'remote' in _tl) else 0)
+                              + (3 if 'java' in _tl else 0)
+                              + (2 if re.search(r'\b(senior|sr|staff|lead|principal)\b', _tl) else 0)
+                              + (2 if re.search(r'back[- ]?end|platform|api|integration', _tl) else 0))
                 if not _ok:
                     skipped += 1
                     print(f"  ⏭️ off-CV: '{title[:40]}' @ {company_name[:20]} "
@@ -453,10 +460,11 @@ def main():
     # ── Strategy 2: Browser batch (Playwright, one session for all queued jobs) ──
     if browser_queue and applied < MAX_APPS:
         remaining = MAX_APPS - applied
-        remaining = min(remaining, int(os.environ.get('GH_BROWSER_MAX', '10')))
+        remaining = min(remaining, int(os.environ.get('GH_BROWSER_MAX', '30')))
+        browser_queue.sort(key=lambda j: -_prio.get(j.get('url', ''), 0))   # best fits first
         bq_slice = browser_queue[:remaining]
-        browser_jobs = [{'url': j['url'], 'title': j['title'], 'company': j['company']}
-                        for j in bq_slice]
+        browser_jobs = [{'url': j['url'], 'title': j['title'], 'company': j['company'],
+                         'ats_type': 'greenhouse'} for j in bq_slice]
 
         print(f"\n🌐 Browser Strategy: {len(browser_jobs)} jobs (Playwright)...")
         try:
