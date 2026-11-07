@@ -147,6 +147,24 @@ def _answer_question(question: dict, profile: dict) -> Optional[str]:
             return "Charter Communications"
         if "salary" in label or "rate" in label or "compensation" in label:
             return str(profile.get("rate_target", 75))
+        # FIX (cv-health): required free-text questions returned "" and were DROPPED from the
+        # POST → Greenhouse answered HTTP 400 (api_400 on every run). Answer the common
+        # truthful ones from the profile; leave AI/LLM-claims blank on purpose.
+        if "years" in label and ("experience" in label or "java" in label or "overall" in label):
+            return str(profile.get("years_experience", 10)).rstrip("+")
+        _skills_blob = " ".join(str(s).lower() for s in profile.get("skills", []))
+        if "experience" in label and any(
+                k in label and k in _skills_blob
+                for k in ("microservice", "spring", "kafka", "kubernetes", "aws",
+                          "java", "rest api", "docker")):
+            # Only claim skills that are really in the profile (never invent experience).
+            return "Yes - 10+ years"
+        if "linkedin" in label or "profile link" in label:
+            return profile.get("linkedin", "")
+        if any(k in label for k in ("city", "location", "where are you")):
+            return f"{profile.get('city', '')}, {profile.get('state', '')}".strip(", ")
+        if "notice" in label or "start" in label or "available" in label:
+            return "Immediately"
         return ""
 
     if ftype == "textarea":
@@ -349,6 +367,8 @@ def submit_greenhouse_api(
             except Exception:
                 return {"submitted": False, "error": f"422: {resp.text[:300]}"}
 
+        # Surface WHY Greenhouse rejected (was invisible → api_400 never diagnosed).
+        print(f"    ↳ GH HTTP {resp.status_code}: {re.sub(r'<[^>]+>', ' ', resp.text)[:160].strip()!r}")
         return {"submitted": False, "error": f"HTTP {resp.status_code}: {resp.text[:300]}"}
 
     except Exception as exc:

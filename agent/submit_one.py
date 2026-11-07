@@ -894,7 +894,7 @@ def submit_one(pg, url, db, profile):
     try:
         job_title = pg.evaluate(
             """() => {
-                const el = document.querySelector('h1, h2, [data-testid*="jobTitle" i], .jobsearch-JobInfoHeader-title');
+                const el = document.querySelector('[data-testid="jobsearch-JobInfoHeader-title"], [data-testid*="jobTitle" i], .jobsearch-JobInfoHeader-title, h1');
                 return el ? el.textContent.trim() : '';
             }""") or ''
     except Exception:
@@ -964,9 +964,23 @@ def submit_one(pg, url, db, profile):
         pass
 
     # STEP 3: click Apply with Indeed
-    ab = pg.locator('button:has-text("Apply with Indeed"), span:has-text("Apply with Indeed")')
+    # FIX (cv-health): Indeed renamed/reshaped the button — 10/10 runs = 100% no_apply_button.
+    # Accept the current variants (testid/id/aria + "Apply now"/"Easy apply"), but NEVER the
+    # "Apply on company site" external link (that leaves Indeed).
+    ab = pg.locator('button:has-text("Apply with Indeed"), span:has-text("Apply with Indeed"), '
+                    '[data-testid="indeedApplyButton"], #indeedApplyButton, '
+                    'button[id^="indeedApplyButton"], button[aria-label*="Apply with Indeed" i], '
+                    'button:text-is("Apply now"), button:text-is("Easy apply"), '
+                    'button:text-is("Easily apply")')
     if ab.count() == 0:
         print("  no 'Apply with Indeed' button on this job")
+        try:  # DIAGNOSTIC (cv-health): log what buttons ARE on the page so the next run reveals the real selector
+            _btns = pg.evaluate("""() => [...document.querySelectorAll('button,a[role=button],a[href*="apply"]')]
+                .slice(0,25).map(b => ((b.id||'')+'|'+(b.getAttribute('data-testid')||'')+'|'+
+                (b.getAttribute('aria-label')||'')+'|'+(b.textContent||'').trim().slice(0,30)))""")
+            print("  DIAG buttons:", " ;; ".join(_btns)[:600])
+        except Exception:
+            pass
         snap(pg, "SKIP_no_apply_button")
         return 'no_apply_button'
     print("  clicking 'Apply with Indeed'...")
