@@ -47,7 +47,8 @@ CURSOR_FILE = 'data/lever_cursor.json'
 TTL_DAYS = int(os.environ.get('LEVER_TTL_DAYS', '30'))
 FAIL_TTL_DAYS = int(os.environ.get('LEVER_FAIL_TTL_DAYS', '3'))
 TARGET = int(os.environ.get('LEVER_TARGET', '8'))
-COMPANIES_PER_RUN = int(os.environ.get('LEVER_COMPANIES', '40'))
+MAX_COMPANIES_ALL = 200
+COMPANIES_PER_RUN = int(os.environ.get('LEVER_COMPANIES', '120'))
 
 
 def _jload(p, d):
@@ -160,6 +161,41 @@ def _fill_basic(page, profile):
             break
 
 
+def _answer_required(page, profile):
+    """Answer sponsorship/work-auth yes-no radios from profile.json; return False if any other
+    required field is still empty (never invent an answer)."""
+    sponsor = 'Yes' if profile.get('requires_sponsorship') else 'No'
+    auth = 'Yes' if profile.get('work_authorization') else 'No'
+    ok = True
+    try:
+        items = page.evaluate(r"""() => Array.from(document.querySelectorAll('li.application-question, div.application-question'))
+            .map(li => {
+              const q = (li.querySelector('.application-label, label') || {}).innerText || '';
+              const req = /required|\*|✱/i.test(q) || !!li.querySelector('[required]');
+              const radios = Array.from(li.querySelectorAll('input[type=radio]')).map(r => (r.closest('label') || {}).innerText || r.value);
+              const filled = Array.from(li.querySelectorAll('input:not([type=radio]):not([type=checkbox]):not([type=file]):not([type=hidden]), textarea, select'))
+                  .some(e => (e.value || '').trim().length > 0);
+              return {q: q.trim().slice(0, 120), req, radios, filled};
+            })""") or []
+    except Exception:
+        return True
+    for it in items:
+        q = it['q'].lower()
+        if not it['req'] or it['filled'] or q.startswith(('name', 'email', 'phone', 'resume', 'current company', 'linkedin', 'github')):
+            continue
+        if it['radios']:
+            want = sponsor if 'sponsor' in q else auth if ('authoriz' in q or 'legally' in q or 'eligible to work' in q) else None
+            if want:
+                try:
+                    page.locator('label', has_text=re.compile(rf'^\s*{want}\s*$', re.I)).first.click(timeout=2000)
+                    continue
+                except Exception:
+                    pass
+        print(f"    needs answer (skip): {it['q'][:70]}")
+        ok = False
+    return ok
+
+
 def _body(page):
     try:
         return (page.locator('body').inner_text(timeout=3000) or '').lower()
@@ -176,11 +212,10 @@ def apply_one(page, job, profile, db):
     if not page.locator('input[name="email"]').count():
         return 'no_form'
     _fill_basic(page, profile)
-    if fill_questions_page:
-        try:
-            fill_questions_page(page, db, profile, job['co'])
-        except Exception:
-            pass
+    # NOTE: questions_filler is Indeed-specific and wrote junk ('Yes' into text fields) on Lever.
+    # Only truthful profile-based answers below; any other REQUIRED unanswered field => skip.
+    if not _answer_required(page, profile):
+        return 'needs_answers'
     # EEO / optional selects are left default; required custom selects handled by filler
     btn = page.locator('button#btn-submit, button[type=submit]:has-text("Submit")')
     if not btn.count():

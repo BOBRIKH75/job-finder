@@ -2,8 +2,8 @@ name: Lever Apply
 
 # Lever direct apply (browser). Self-hosted: real Chrome + home IP. Added by cv-dice.
 on:
-  schedule:
-    - cron: '55 3,9,15,21 * * *'   # 4x/day, staggered off Indeed :00 / GH :15 / Dice :30 / agent :45
+  # NO schedule: measured pool = 1 CV-fit fresh job across all 108 Lever companies (2026-11-07),
+  # so a scheduled run would only burn runner time. Dispatch manually if the pool grows.
   workflow_dispatch:
     inputs:
       lever_target:
