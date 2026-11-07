@@ -63,7 +63,7 @@ jobs:
 
       - name: pytest (agent/tests)
         working-directory: agent
-        run: python -m pytest -q
+        run: python -m pytest -q --ignore=tests/test_captcha_live.py  # live browser tests
 
       - name: pytest (repo root)
         run: python -m pytest -q test_career_ops_scorer.py test_deep_search.py
