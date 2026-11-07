@@ -1,0 +1,9 @@
+name: Lever Apply
+# Placeholder so the workflow is dispatchable by --ref from feature branches. Real file arrives with the cv-dice PR.
+on:
+  workflow_dispatch: {}
+jobs:
+  noop:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "placeholder"
