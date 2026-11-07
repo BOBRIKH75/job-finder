@@ -11,6 +11,7 @@ Healing levels:
 """
 import json
 import os
+import re
 import sys
 import time
 import random
@@ -117,6 +118,37 @@ def _record_applied(db, company, title, url):
     upsert_application(db, company=company, job_title=title, job_url=url,
                        ats_type='greenhouse', match_score=80, status='applied')
     _save_gh_applied(company, title)   # persist to git-tracked JSON (survives CI runs)
+
+
+_NON_US = ('india', 'bangalore', 'bengaluru', 'hyderabad', 'pune', 'london', 'uk', 'united kingdom',
+           'canada', 'toronto', 'germany', 'berlin', 'dublin', 'ireland', 'singapore', 'tokyo',
+           'japan', 'australia', 'sydney', 'brazil', 'mexico', 'poland', 'warsaw', 'israel',
+           'tel aviv', 'netherlands', 'amsterdam', 'france', 'paris', 'spain', 'latam', 'emea', 'apac')
+
+
+def _non_us_location(loc):
+    l = (loc or '').lower()
+    return any(k in l for k in _NON_US) and not any(k in l for k in ('united states', ', us', ' usa'))
+
+
+def _fetch_gh_jd(url):
+    """Return (description_text, location) from the public Greenhouse boards API. Never raises."""
+    import re as _re, html as _html
+    try:
+        import requests as _rq
+        m = _re.search(r"greenhouse\.io/([^/?#]+)/jobs/(\d+)", url or '')
+        if not m:
+            m2 = _re.search(r"gh_jid=(\d+)", url or '')
+            return '', ''
+        r = _rq.get(f"https://boards-api.greenhouse.io/v1/boards/{m.group(1)}/jobs/{m.group(2)}",
+                    timeout=10)
+        if r.status_code != 200:
+            return '', ''
+        d = r.json()
+        txt = _re.sub(r'<[^>]+>', ' ', _html.unescape(d.get('content', '') or ''))
+        return txt[:6000], (d.get('location') or {}).get('name', '')
+    except Exception:
+        return '', ''
 
 
 def main():
@@ -277,6 +309,26 @@ def main():
             if _cv_ok is not None:
                 _desc = job.get('description', '') or ''
                 _loc = job.get('location', '') or ''
+                # FIX (cv-health 2026-11): scan gives NO description, so every generic title
+                # ("Senior Software Engineer") scored -5 and was skipped (Greenhouse applied 0
+                # in 10/10 runs, ~97% off-CV). Pull the real JD + location from the public
+                # boards API once, then score on the full text. Non-US onsite roles are skipped.
+                if not _desc and os.environ.get('GH_JD_ENRICH', '1') == '1':
+                    _desc, _loc2 = _fetch_gh_jd(url)
+                    _loc = _loc or _loc2
+                if _loc and _non_us_location(_loc) and 'remote' not in _loc.lower():
+                    skipped += 1
+                    print(f"  ⏭ non-US location: '{title[:40]}' @ {company_name[:20]} ({_loc[:30]})")
+                    continue
+                # Wrong-role guard: JD enrichment lets generic text through, so block titles
+                # that are clearly not Java/backend/senior (intern, mobile, frontend, embedded...).
+                if re.search(r"\b(intern(ship)?|new grad|university|ios|android|front[- ]?end|"
+                             r"embedded|firmware|designer|recruit|sales|marketing|manager|"
+                             r"data scientist|machine learning|ml engineer|security analyst)\b",
+                             title, re.I):
+                    skipped += 1
+                    print(f"  ⏭ wrong-role title: '{title[:45]}' @ {company_name[:20]}")
+                    continue
                 _ok, _score, _why = _cv_ok(title, _desc, _loc)
                 if not _ok:
                     skipped += 1

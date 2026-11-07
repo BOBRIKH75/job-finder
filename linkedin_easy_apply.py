@@ -568,7 +568,11 @@ def main():
         except Exception:
             pass
         options = uc.ChromeOptions()
-        options.add_argument("--headless=new")
+        # FIX (cv-health): headless Chrome gets LinkedIn's "Something went wrong" / 0 jobs.
+        # On the self-hosted Mac (real display, home IP) run a REAL window instead.
+        # Override with LINKEDIN_HEADLESS=1.
+        if os.environ.get("LINKEDIN_HEADLESS", "0" if platform.system() == "Darwin" else "1") == "1":
+            options.add_argument("--headless=new")
         options.add_argument("--no-sandbox")
         options.add_argument("--disable-dev-shm-usage")
         options.add_argument("--disable-blink-features=AutomationControlled")
