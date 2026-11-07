@@ -894,8 +894,10 @@ def submit_one(pg, url, db, profile):
     try:
         job_title = pg.evaluate(
             """() => {
-                const el = document.querySelector('[data-testid="jobsearch-JobInfoHeader-title"], [data-testid*="jobTitle" i], .jobsearch-JobInfoHeader-title, h1');
-                return el ? el.textContent.trim() : '';
+                const el = document.querySelector('[data-testid="jobsearch-JobInfoHeader-title"], [data-testid*="jobTitle" i], .jobsearch-JobInfoHeader-title');
+                if (el) return el.textContent.trim();
+                const t = (document.title || '').split(' - ')[0].trim();
+                return t.toLowerCase().includes('indeed') ? '' : t;
             }""") or ''
     except Exception:
         job_title = ''
@@ -967,11 +969,16 @@ def submit_one(pg, url, db, profile):
     # FIX (cv-health): Indeed renamed/reshaped the button — 10/10 runs = 100% no_apply_button.
     # Accept the current variants (testid/id/aria + "Apply now"/"Easy apply"), but NEVER the
     # "Apply on company site" external link (that leaves Indeed).
-    ab = pg.locator('button:has-text("Apply with Indeed"), span:has-text("Apply with Indeed"), '
+    ab = pg.locator('[data-testid="viewjob-indeed-apply"], #viewjob-indeed-apply, '
+                    'button:has-text("Apply with Indeed"), a:has-text("Apply with Indeed"), '
                     '[data-testid="indeedApplyButton"], #indeedApplyButton, '
                     'button[id^="indeedApplyButton"], button[aria-label*="Apply with Indeed" i], '
                     'button:text-is("Apply now"), button:text-is("Easy apply"), '
                     'button:text-is("Easily apply")')
+    try:  # the button renders late (SPA) - wait for it instead of counting immediately
+        ab.first.wait_for(state='attached', timeout=12000)
+    except Exception:
+        pass
     if ab.count() == 0:
         print("  no 'Apply with Indeed' button on this job")
         try:  # DIAGNOSTIC (cv-health): log what buttons ARE on the page so the next run reveals the real selector
