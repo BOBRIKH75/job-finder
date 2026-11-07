@@ -1387,10 +1387,29 @@ def submit_and_verify(page, page_data, original_url, _live=False) -> dict:
                         note_submit_time()
                     except Exception:
                         pass
-                    if btn["selector"]:
-                        page.locator(btn["selector"]).first.click()
-                    else:
-                        page.locator(f'button:has-text("{btn["text"]}")').first.click(timeout=8000)
+                    try:
+                        if btn["selector"]:
+                            page.locator(btn["selector"]).first.click(timeout=8000)
+                        else:
+                            page.locator(f'button:has-text("{btn["text"]}")').first.click(timeout=8000)
+                    except Exception as click_err:
+                        # Button hidden behind an open dropdown / below the fold / not yet rendered:
+                        # close popups, scroll, then force-click or submit the form via JS.
+                        print(f"      ⚠ submit click blocked ({str(click_err)[:40]}) — scroll + force")
+                        try:
+                            page.keyboard.press("Escape")
+                            page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+                            page.wait_for_timeout(1200)
+                            cand = page.locator('button[type="submit"], input[type="submit"]')
+                            if cand.count() == 0:
+                                cand = page.locator('button:has-text("Submit")')
+                            cand.last.scroll_into_view_if_needed(timeout=3000)
+                            cand.last.click(force=True, timeout=5000)
+                        except Exception:
+                            if not page.evaluate(
+                                "() => { const f=document.querySelector('form');"
+                                " if(!f) return false; f.requestSubmit(); return true; }"):
+                                raise click_err
                     wait(2, 4)
 
                     # Check success
@@ -2092,7 +2111,8 @@ def apply_to_job(page, profile, job, learned, dry_run=False, db=None, site_needs
                 # EMAIL VERIFICATION REQUIRED or REJECTED: don't retry submit.
                 # Retrying after code rejection burns more codes without fixing anything.
                 # The form has unfixed validation errors that keep the submit button disabled.
-                if submit_result.get("reason") in ("email_verification_required", "verification_code_rejected", "no_confirmation_after_code"):
+                if submit_result.get("reason") in ("email_verification_required", "verification_code_rejected", "no_confirmation_after_code",
+                                                  "url_changed_no_confirmation"):
                     result["status"] = "email_verification_failed"
                     result["fields_filled"] = attempt_result.get("filled", 0)
                     reason = submit_result.get("reason", "unknown")

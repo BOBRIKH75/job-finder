@@ -46,6 +46,7 @@ TITLE_NEGATIVES = (
     "security engineer", "security architect", "solutions engineer", "solutions architect",
     "sales engineer", "support engineer", "sdet", "qa engineer", "data engineer",
     "analytics engineer", "site reliability", "engineering manager", "program manager",
+    "data architect", "enterprise architect", "ai engineer", "ai integration", "llm ", "prompt engineer",
     "business analyst", "project manager", "scrum master", "product manager",
 )
 
