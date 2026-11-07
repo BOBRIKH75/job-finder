@@ -24,7 +24,7 @@ RESUME_PATH = Path(__file__).parent.parent / "resume.pdf"
 SCREENSHOTS = Path(__file__).parent.parent / "screenshots"
 LEARNED_FILE = Path(__file__).parent.parent / "data" / "learned.json"
 INDEED_COOKIES_FILE = Path(__file__).parent.parent / "data" / "indeed_cookies.json"
-MAX_RETRIES = 2
+MAX_RETRIES = int(os.environ.get("AGENT_MAX_RETRIES", "2"))
 
 
 def load_indeed_cookies() -> list[dict]:
@@ -1397,6 +1397,29 @@ def submit_and_verify(page, page_data, original_url, _live=False) -> dict:
                         # close popups, scroll, then force-click or submit the form via JS.
                         print(f"      ⚠ submit click blocked ({str(click_err)[:40]}) — scroll + force")
                         try:
+                            _diag = page.evaluate(
+                                "() => ({forms: document.forms.length,"
+                                " inputs: document.querySelectorAll('input,textarea').length,"
+                                " btns: Array.from(document.querySelectorAll('button,input[type=submit]'))"
+                                ".map(b => (b.innerText||b.value||'').trim().slice(0,25)).filter(Boolean).slice(0,10),"
+                                " body: (document.body.innerText||'').replace(/\\s+/g,' ').slice(0,160)})")
+                            print(f"      🔬 DIAG path={page.url.split('?')[0][-60:]} {_diag}")
+                        except Exception:
+                            pass
+                        # The click often SUCCEEDS and navigates away; Playwright then times out
+                        # "waiting for locator". If we are on a thank-you/confirmation page the
+                        # application REALLY went through (Affirm/Capco were misreported as failures).
+                        try:
+                            _txt = page.locator("body").inner_text(timeout=3000).lower()
+                            _real = ("thank you for applying", "application received", "thank you for your application",
+                                     "successfully applied", "thank you for submitting", "have received your application",
+                                     "application has been received", "application was successfully submitted")
+                            if any(x in _txt for x in _real) and not ("security code" in _txt and "enter" in _txt):
+                                print("      ✅ Confirmation page reached after click (navigation raced the click)")
+                                return {"submitted": True, "method": "confirmation_after_click"}
+                        except Exception:
+                            pass
+                        try:
                             page.keyboard.press("Escape")
                             page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
                             page.wait_for_timeout(1200)
@@ -1424,7 +1447,10 @@ def submit_and_verify(page, page_data, original_url, _live=False) -> dict:
                     # — those all appear on non-confirmation pages and cause fake submissions
                     real_success_signals = ["thank you for applying", "application received",
                                             "thank you for your application", "successfully applied",
-                                            "thank you for submitting", "thank you for your interest"]
+                                            "thank you for submitting", "thank you for your interest",
+                                            "application was successfully submitted",
+                                            "your application has been submitted",
+                                            "we've received your application", "we have received your application"]
                     is_verification_page = ("security" in text or "verification code" in text
                                             or "paste this code" in text or "enter the" in text)
                     if not is_verification_page and any(s in text for s in real_success_signals):
@@ -1898,6 +1924,12 @@ def apply_to_job(page, profile, job, learned, dry_run=False, db=None, site_needs
             _net_sitekey = _captured_recaptcha_sitekey[0] if _captured_recaptcha_sitekey else ""
             captcha_solved = _try_auto_captcha_solve(page, captured_sitekey=_net_sitekey)
 
+            if not captcha_solved and "ashbyhq.com" in url and os.environ.get("ASHBY_SUBMIT_ANYWAY", "1") == "1":
+                # Ashby uses an INVISIBLE reCAPTCHA scored from the (real, headed) Chrome session —
+                # there is no token to solve; just submit and let the page decide.
+                print("      🧩 Ashby: no solvable token — submitting anyway (invisible captcha)")
+                captcha_solved = True
+
             if not captcha_solved:
                 # CAPTCHA unsolvable — don't waste time submitting (will timeout)
                 # Mark as captcha_blocked and route to email outreach
@@ -1997,10 +2029,11 @@ def apply_to_job(page, profile, job, learned, dry_run=False, db=None, site_needs
                                     const t = (document.body.innerText || '').toLowerCase();
                                     return t.includes('thank you') || t.includes('application received')
                                         || t.includes('successfully applied')
-                                        || t.includes('invalid') || t.includes('expired')
-                                        || t.includes('incorrect') || t.includes('try again');
+                                        || t.includes('incorrect code') || t.includes('invalid code')
+                                        || t.includes('code is incorrect') || t.includes('code has expired')
+                                        || t.includes("didn't match") || t.includes('code expired');
                                 }""",
-                                timeout=12000,
+                                timeout=25000,
                             )
                         except Exception:
                             page.wait_for_timeout(4000)  # fallback: just wait 4s
@@ -2014,8 +2047,11 @@ def apply_to_job(page, profile, job, learned, dry_run=False, db=None, site_needs
                         real_success_ev = ["thank you for applying", "application received",
                                            "thank you for your application", "successfully applied",
                                            "thank you for submitting"]
-                        failure_signals_ev = ["invalid", "expired", "incorrect", "try again",
-                                              "security code", "verification code", "enter the code", "enter code"]
+                        # ONLY explicit rejection text counts. The OTP screen's own words
+                        # ("security code", "enter code"...) linger for a few seconds after a
+                        # CORRECT code and used to be mistaken for a rejection (false negatives).
+                        failure_signals_ev = ["incorrect code", "invalid code", "code is incorrect",
+                                              "code has expired", "code expired", "didn't match"]
                         has_success = (any(s in post_verify_text for s in real_success_ev)
                                        or ("confirmation" in post_verify_url and "thank" in post_verify_text))
                         has_failure = any(s in post_verify_text for s in failure_signals_ev)
@@ -2055,10 +2091,11 @@ def apply_to_job(page, profile, job, learned, dry_run=False, db=None, site_needs
                                     const t = (document.body.innerText || '').toLowerCase();
                                     return t.includes('thank you') || t.includes('application received')
                                         || t.includes('successfully applied')
-                                        || t.includes('invalid') || t.includes('expired')
-                                        || t.includes('incorrect') || t.includes('try again');
+                                        || t.includes('incorrect code') || t.includes('invalid code')
+                                        || t.includes('code is incorrect') || t.includes('code has expired')
+                                        || t.includes("didn't match") || t.includes('code expired');
                                 }""",
-                                timeout=12000,
+                                timeout=25000,
                             )
                         except Exception:
                             page.wait_for_timeout(4000)  # fallback: just wait 4s
@@ -2067,8 +2104,10 @@ def apply_to_job(page, profile, job, learned, dry_run=False, db=None, site_needs
                         except Exception:
                             post_verify_text = ""
                         post_verify_url = page.url.lower()
-                        success_signals_ev = ["thank", "success", "received", "submitted", "confirmation", "applied", "complete"]
-                        failure_signals_ev = ["invalid", "expired", "incorrect", "try again", "error", "security code", "verification code", "enter the code", "enter code"]
+                        success_signals_ev = ["thank you for applying", "application received", "thank you for your application",
+                                              "successfully applied", "thank you for submitting"]
+                        failure_signals_ev = ["incorrect code", "invalid code", "code is incorrect",
+                                              "code has expired", "code expired", "didn't match"]
                         has_success = any(s in post_verify_url for s in success_signals_ev) or any(s in post_verify_text for s in success_signals_ev)
                         has_failure = any(s in post_verify_text for s in failure_signals_ev)
                         if has_success and not has_failure:
@@ -2085,7 +2124,7 @@ def apply_to_job(page, profile, job, learned, dry_run=False, db=None, site_needs
                                 submit_result = {"submitted": True, "method": "email_verification_redirect"}
                             else:
                                 print(f"      ❌ URL changed but page still shows code content (fallback) — NOT submitted")
-                                submit_result = {"submitted": False, "reason": "verification_code_rejected"}
+                                submit_result = {"submitted": False, "reason": "no_confirmation_after_code"}
                 except Exception as ev_err:
                     print(f"      ⚠️ Email verification fallback check failed: {str(ev_err)[:60]}")
 

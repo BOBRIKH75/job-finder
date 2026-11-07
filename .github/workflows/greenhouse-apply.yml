@@ -99,6 +99,7 @@ jobs:
           GH_SKIP_API: "1"           # bare HTTP POST always 428 captcha-failed
           GH_BROWSER_MAX: ${{ vars.GH_BROWSER_MAX || '30' }}
           AGENT_MAX_SECONDS: "2700"
+          AGENT_MAX_RETRIES: "1"      # a 2nd identical attempt costs ~2 min and rarely differs
           GH_SCAN_COUNT: "150"
           GH_DEDUP_DAYS: "14"
           MAX_POSTING_AGE_DAYS: "14"

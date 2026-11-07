@@ -550,13 +550,8 @@ def handle_email_verification(page, skip_detection: bool = False, company: str =
         # application to <Company>" and skips confirmation emails.
         ("__subject__", 120 if _ci_mode else 45),
         ("greenhouse", 60 if _ci_mode else 25),
-        ("lever", 40 if _ci_mode else 20),
-        ("ashby", 20 if _ci_mode else 15),
-        ("workday", 20 if _ci_mode else 15),
-        ("no-reply", 20 if _ci_mode else 15),
-        ("noreply", 15 if _ci_mode else 10),
-        ("verify", 15 if _ci_mode else 10),
-        ("confirm", 15 if _ci_mode else 10),
+        ("lever", 20 if _ci_mode else 12),
+        ("ashby", 15 if _ci_mode else 10),
         ("", 15 if _ci_mode else 10),  # Last resort: any recent email
     ]
     code = None
@@ -588,7 +583,8 @@ def retry_after_rejection(page, company: str = "") -> bool:
                 continue
         note_submit_time()
         page.wait_for_timeout(2000)
-        if not handle_email_verification(page, skip_detection=True, company=company):
+        code = get_verification_code(sender_filter="__subject__", max_wait_seconds=40, company=company)
+        if not code or not enter_verification_code(page, code):
             return False
         try:
             page.wait_for_function(

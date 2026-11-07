@@ -127,8 +127,18 @@ _NON_US = ('india', 'bangalore', 'bengaluru', 'hyderabad', 'pune', 'vadodara', '
            'sydney', 'melbourne', 'brazil', 'sao paulo', 'mexico', 'poland', 'warsaw', 'krakow',
            'israel', 'tel aviv', 'netherlands', 'amsterdam', 'france', 'paris', 'spain', 'madrid',
            'barcelona', 'portugal', 'lisbon', 'romania', 'bucharest', 'philippines', 'manila',
+           'são paulo', 'zurich', 'switzerland', 'sweden', 'stockholm', 'denmark', 'copenhagen', 'belgium',
+           'italy', 'milan', 'austria', 'vienna', 'czech', 'prague', 'hungary', 'budapest', 'argentina',
+           'buenos aires', 'colombia', 'chile', 'new zealand', 'nigeria', 'kenya', 'south africa', 'turkey',
+           'istanbul', 'pakistan', 'vietnam', 'thailand', 'indonesia', 'taiwan', 'hong kong', 'europe',
            'china', 'shanghai', 'beijing', 'korea', 'seoul', 'dubai', 'uae', 'latam', 'emea', 'apac')
 _NON_US_RE = re.compile(r"\b(" + "|".join(re.escape(k) for k in _NON_US) + r")\b", re.I)
+
+
+_TITLE_BLOCK_RE = re.compile(
+    r"\b(intern(ship)?|new grad|university|ios|android|front[- ]?end|embedded|firmware|designer|"
+    r"recruit|sales|marketing|customer support|forward deployed|manager|data scientist|machine learning|ml engineer|security analyst)\b",
+    re.I)
 
 
 def _non_us_location(loc):
@@ -458,6 +468,35 @@ def main():
 
         time.sleep(0.5)
 
+    # ── Extra source: Ashby boards of the same companies (same browser engine) ──
+    if os.environ.get('GH_ASHBY', '0') == '1' and os.environ.get('CV_MATCH_OFF') != '1':
+        try:
+            from src.ashby_scan import scan_ashby
+            from src.cv_match import should_apply as _cv_ok2
+            _slugs = list(companies.get('greenhouse', [])) + list(companies.get('lever', []))
+            _ash = scan_ashby(_slugs, _cv_ok2, _non_us_location, _TITLE_BLOCK_RE)
+            _ash_max = int(os.environ.get('GH_ASHBY_MAX', '8'))
+            _ash_q = 0
+            for aj in _ash:
+                if _ash_q >= _ash_max:
+                    break
+                _ak = _gh_key(aj['company'], aj['title'])
+                if (_ak and _ak in _run_seen) or _applied_recently(_gh_applied, aj['company'], aj['title'], _now) \
+                        or application_exists(db, aj['url']):
+                    continue
+                if not claim_job(db, aj['company'], aj['title']):
+                    continue
+                aj_entry = {'url': aj['url'], 'title': aj['title'], 'company': aj['company'],
+                            'ats_type': 'ashby', 'reason': 'ashby source', 'error_type': 'ashby',
+                            'platform': 'ashby', 'strategy_tried': 'none'}
+                browser_queue.append(aj_entry)
+                _prio[aj['url']] = aj['score'] + (4 if aj['remote'] else 0) \
+                    + (3 if 'java' in aj['title'].lower() else 0)
+                _ash_q += 1
+            print(f"\n🧩 Ashby: {len(_ash)} CV-fit fresh US/remote jobs found, {_ash_q} queued")
+        except Exception as _ae:
+            print(f"  ⚠ Ashby source skipped: {str(_ae)[:80]}")
+
     # ── Strategy 2: Browser batch (Playwright, one session for all queued jobs) ──
     if browser_queue and applied < MAX_APPS:
         remaining = MAX_APPS - applied
@@ -465,7 +504,7 @@ def main():
         browser_queue.sort(key=lambda j: -_prio.get(j.get('url', ''), 0))   # best fits first
         bq_slice = browser_queue[:remaining]
         browser_jobs = [{'url': j['url'], 'title': j['title'], 'company': j['company'],
-                         'ats_type': 'greenhouse'} for j in bq_slice]
+                         'ats_type': j.get('ats_type', 'greenhouse')} for j in bq_slice]
 
         print(f"\n🌐 Browser Strategy: {len(browser_jobs)} jobs (Playwright)...")
         try:
@@ -489,7 +528,8 @@ def main():
                 if res.get('url') in submitted_urls:
                     continue
                 _errs = ' '.join(str(a.get('error', '')) for a in res.get('attempts', []))
-                if 'url_changed_no_confirmation' in _errs or 'No success signal' in _errs:
+                if ('url_changed_no_confirmation' in _errs or 'No success signal' in _errs
+                        or 'no_confirmation_after_code' in _errs):
                     _unconfirmed.append(res)
             print(f"  🌐 Browser results: {browser_applied} submitted")
 
