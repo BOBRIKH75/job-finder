@@ -91,6 +91,10 @@ def _is_unverified_skill_claim(q: str, profile: dict) -> bool:
     return not any(g in q for g in _GENERIC_EXPERIENCE)
 
 
+_CRITICAL_Q = re.compile(r"sponsor|authori[sz]ed to work|legally|eligible to work|citizen|green card|"
+                         r"permanent resident|clearance|felony|convicted|relocat")
+
+
 def _profile_answer(question: str, field_type: str, options, profile: dict):
     """Return an answer from the profile, or None if no rule matches."""
     q = question.lower()
@@ -346,6 +350,14 @@ def answer_question(db, question: str, field_type: str = "text",
 
     # 1. MEMORY
     remembered = get_approved_answer(db, question)
+    if remembered and _CRITICAL_Q.search(question.lower()):
+        # Legal/eligibility answers must ALWAYS follow profile.json, never a stale cache
+        # (a cached "Yes" for the sponsorship question was typed into a text box).
+        fresh = _profile_answer(question, field_type, options, profile)
+        if fresh and str(fresh).strip().lower() != remembered.strip().lower():
+            print(f"      memory override (critical question): {question[:40]!r} {remembered[:12]!r} -> {str(fresh)[:12]!r}")
+            save_approved_answer(db, question, str(fresh), source="profile")
+            return str(fresh)
     if remembered:
         return remembered
 

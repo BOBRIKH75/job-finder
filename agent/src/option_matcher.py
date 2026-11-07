@@ -20,6 +20,15 @@ _YES = {"yes", "y", "true", "yeah", "yep"}
 _NO = {"no", "n", "false", "nope"}
 
 
+def canon(s: str) -> str:
+    """Lowercase + straighten curly quotes + collapse spaces (page labels use curly apostrophes)."""
+    return " ".join((s or "").replace("\u2019", "'").replace("\u2018", "'").lower().split())
+
+
+_DECLINE = ("decline", "prefer not", "do not wish", "don't wish", "not to answer", "wish to answer",
+            "self-identify", "choose not")
+
+
 def _norm(s: str) -> str:
     return re.sub(r"[^a-z0-9+$ ]", "", (s or "").lower()).strip()
 
@@ -42,7 +51,7 @@ def _bool_opts(opts):
         p = polarity(o)
         if p and p not in d:
             d[p] = o
-    return d if len(d) == 2 and len(opts) <= 3 else None
+    return d if len(d) == 2 and len(opts) <= 3 and all(polarity(o) for o in opts) else None
 
 
 def _ans_polarity(ans):
@@ -195,7 +204,7 @@ def resolve_option(question: str, opts, ans, profile: dict, field_type: str = "r
 
     # exact match of the answer to an option label (non yes/no lists)
     for o in opts:
-        if a and o.lower().strip() == a.lower():
+        if a and canon(o) == canon(a):
             return o
 
     # 4. salary / rate options (annualised from profile)
@@ -233,12 +242,21 @@ def resolve_option(question: str, opts, ans, profile: dict, field_type: str = "r
 
     # 7. text match (substring / first-word) as a last resort
     if a:
+        ac = canon(a)
         for o in opts:
-            if a.lower() in o.lower() or o.lower() in a.lower():
+            if canon(o) == ac:
                 return o
-        a0 = a.lower().split()[0]
+        # EEO-style decline answers ("I don't wish to answer", "Decline to self-identify")
+        if any(k in ac for k in _DECLINE):
+            for o in opts:
+                if any(k in canon(o) for k in _DECLINE):
+                    return o
         for o in opts:
-            if o.lower().split()[0] == a0:
+            if ac in canon(o) or canon(o) in ac:
+                return o
+        a0 = ac.split()[0]
+        for o in opts:
+            if canon(o).split()[0] == a0:
                 return o
     return None
 

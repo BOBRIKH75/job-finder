@@ -87,3 +87,19 @@ def test_default_text_is_not_yes():
 def test_portfolio_url_from_profile():
     from question_answerer import _profile_answer
     assert _profile_answer("Portfolio URL", "text", None, PROFILE).startswith("https://")
+
+
+def test_curly_apostrophe_decline():
+    opts = ["Yes, I Have A Disability, Or Have A History/Record Of Having A Disability",
+            "No, I Don\u2019t Have A Disability, Or A History/Record Of Having A Disability",
+            "I Don\u2019t Wish To Answer"]
+    assert resolve_option("Select Disability Status", opts, "I do not wish to answer", PROFILE) == opts[2]
+    assert resolve_option("Select Disability Status", opts, "I Don't Wish To Answer", PROFILE) == opts[2]
+
+
+def test_memory_cannot_override_sponsorship(monkeypatch):
+    import question_answerer as qa
+    monkeypatch.setattr(qa, "get_approved_answer", lambda db, q: "Yes")
+    monkeypatch.setattr(qa, "save_approved_answer", lambda *a, **k: None)
+    q = "Will you now or in the future require sponsorship for employment visa status?"
+    assert qa.answer_question(None, q, "textarea", None, PROFILE) == "No"

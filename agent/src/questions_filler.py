@@ -197,7 +197,7 @@ def _fill_radios(page, db, profile, company):
                 or any(k in opts_l for k in ["prefer not", "decline", "self-identify", "self identify",
                                              "hispanic", "do not wish", "non-binary"])
             declineish = any(k in ans.lower() for k in ["decline", "prefer not", "do not wish",
-                                                        "not to answer", "self-identify"])
+                                                        "not to answer", "self-identify", "don't wish", "wish to answer"])
             if is_eeo and declineish:
                 target = next((o for o in opts if any(k in o.lower() for k in
                               ["prefer not", "decline", "do not wish", "not to answer",
@@ -563,6 +563,28 @@ def _fill_checkbox_groups(page, db, profile, company):
             except Exception:
                 continue
     return filled
+
+
+def debug_state(page, tag="stuck"):
+    """Log STRUCTURE of a stuck questions page (labels/types/errors/buttons - never values)."""
+    try:
+        info = page.evaluate("""() => {
+            const vis = e => e.offsetParent !== null;
+            const t = e => (e.textContent || '').replace(/\\s+/g, ' ').trim().slice(0, 70);
+            const controls = [...document.querySelectorAll('input,select,textarea,[role=combobox]')].filter(vis).map(e => {
+                let lab = '';
+                if (e.id) { const l = document.querySelector(`label[for="${e.id}"]`); if (l) lab = t(l); }
+                if (!lab) lab = e.getAttribute('aria-label') || '';
+                return `${e.tagName.toLowerCase()}:${e.type || e.getAttribute('role') || ''}:${lab.slice(0,50)}:req=${e.required || e.getAttribute('aria-required') === 'true'}:inv=${e.getAttribute('aria-invalid') === 'true'}:filled=${(e.value || '').length > 0 || e.checked === true}`;
+            }).slice(0, 25);
+            const errs = [...document.querySelectorAll('[role=alert],[id*=error i],[class*=error i],[data-testid*=error i]')].filter(vis).map(t).filter(Boolean).slice(0, 8);
+            const btns = [...document.querySelectorAll('button')].filter(vis).map(b => t(b) + (b.disabled ? '(disabled)' : '')).filter(Boolean).slice(0, 10);
+            return {controls, errs, btns};
+        }""")
+        print(f"      DEBUG[{tag}] controls={info['controls']}")
+        print(f"      DEBUG[{tag}] errors={info['errs']} buttons={info['btns']}")
+    except Exception as exc:
+        print(f"      DEBUG[{tag}] failed: {str(exc)[:60]}")
 
 
 def fill_questions_page(page, db, profile, company: str = "") -> bool:

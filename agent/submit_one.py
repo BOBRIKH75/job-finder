@@ -77,7 +77,7 @@ except Exception:
     from playwright.sync_api import sync_playwright
     _STEALTH = 'playwright'
 from memory import init_db, application_exists, upsert_application
-from questions_filler import is_questions_page, fill_questions_page
+from questions_filler import is_questions_page, fill_questions_page, debug_state
 
 # Bobur's existing auto-captcha solver chain (NopeCHA -> audio -> Gemini -> hCaptcha token
 # -> reCAPTCHA Enterprise). Try these FIRST; human handoff is the last resort.
@@ -1364,6 +1364,7 @@ def submit_one(pg, url, db, profile):
                     time.sleep(3)
                     if _force_tries >= 3 and pct(pg) == _pnow:
                         print(f"  🛑 3 force-advance tries failed at {_pnow} — screenshot + skip")
+                        debug_state(pg, "force3")
                         snap(pg, f"NOPROGRESS_step{step}")
                         record_lesson('stuck', step, _pnow)
                         return 'stuck'
@@ -1376,6 +1377,7 @@ def submit_one(pg, url, db, profile):
             _last_pct = _pnow
             if _no_progress >= 2:
                 print(f"  🛑 no progress 2x at {_pnow} — screenshot + capture + skip (learn for next run)")
+                debug_state(pg, "noprog")
                 snap(pg, f"NOPROGRESS_step{step}")
                 try:
                     qtexts = pg.evaluate(r"""() => {
