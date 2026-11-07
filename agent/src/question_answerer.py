@@ -66,7 +66,10 @@ _GENERIC_EXPERIENCE = ("total", "overall", "professional", "software", "developm
 _SKILL_CLAIM_PHRASES = ("experience with", "experience in", "experience using", "experience on",
                         "proficient", "proficiency", "familiar with", "familiarity", "hands-on",
                         "hands on", "worked with", "working knowledge", "knowledge of",
-                        "expertise", "expert in", "skilled in", "comfortable with", "background in")
+                        "expertise", "expert in", "skilled in", "comfortable with", "background in",
+                        "have you worked", "have you shipped", "have you built", "have you used",
+                        "have you designed", "have you implemented", "experience designing",
+                        "experience building", "experience developing", "experience implementing")
 
 
 def _mentions_profile_skill(q: str, profile: dict) -> bool:
