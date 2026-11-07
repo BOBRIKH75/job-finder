@@ -1434,7 +1434,10 @@ def submit_and_verify(page, page_data, original_url, _live=False) -> dict:
                     # — those all appear on non-confirmation pages and cause fake submissions
                     real_success_signals = ["thank you for applying", "application received",
                                             "thank you for your application", "successfully applied",
-                                            "thank you for submitting", "thank you for your interest"]
+                                            "thank you for submitting", "thank you for your interest",
+                                            "application was successfully submitted",
+                                            "your application has been submitted",
+                                            "we've received your application", "we have received your application"]
                     is_verification_page = ("security" in text or "verification code" in text
                                             or "paste this code" in text or "enter the" in text)
                     if not is_verification_page and any(s in text for s in real_success_signals):
