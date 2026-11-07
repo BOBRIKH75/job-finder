@@ -74,9 +74,8 @@ def answer_for(label: str, prof: dict, kind: str = "text"):
         return prof.get("country")
     if "year" in q and ("experience" in q or "work" in q):
         # per-skill question: only answer when the skill is in the profile skills list
-        m = re.search(r"(?:experience|work(?:ing)?)\s+(?:with|in|using|on)\s+(.+?)(?:\?|$)", q) or \
-            re.search(r"years?\s+(?:of\s+)?(.+?)\s+experience", q) or \
-            re.search(r"\b(?:with|in|using)\s+(.+?)(?:\?|$)", q)
+        m = re.search(r"\b(?:with|in|using)\s+(.+?)(?:\?|$)", q) or \
+            re.search(r"years?\s+(?:of\s+)?(.+?)\s+experience", q)
         topic = (m.group(1) if m else "").strip(" ?.")
         if not topic or any(w in skills for w in re.findall(r"[a-z0-9+#.]+", topic) if len(w) > 2 and w not in ("the", "and", "with")):
             return yrs
