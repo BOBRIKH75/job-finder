@@ -16,6 +16,7 @@ Run locally:
 import base64
 import json
 import os
+import random
 import re
 import sys
 import time
@@ -220,6 +221,8 @@ def _load_failed_fresh():
 ATTEMPTS_FILE = 'data/dice_attempts.json'
 REASONS_FILE = 'data/dice_failed_reasons.json'
 STATS_FILE = 'data/dice_stats.json'
+DEEP_CV_MAX = int(os.environ.get('DICE_DEEP_CV_MAX', '60'))   # description re-checks per run
+DAILY_ATTEMPT_CAP = int(os.environ.get('DICE_DAILY_CAP', '150'))   # account-safety ceiling
 DEAD_TTL_DAYS = int(os.environ.get('DEAD_TTL_DAYS', '30'))
 # per-reason retry window (days). Transient reasons retry fast; 'no_apply_button' (usually an
 # external-site apply the bot cannot do) stays blocked longer. Env FAIL_TTL_DAYS is the default.
@@ -967,10 +970,15 @@ def main():
         print(f"🔍 {len(jobs)} unique Dice jobs found ({_fresh} fresh to apply)")
 
         submitted = 0
+        _deep_checks = 0
+        _today_attempts = _jload(STATS_FILE, {}).get(time.strftime('%Y-%m-%d'), {}).get('attempted', 0)
         _seen_titles = set()
         _login_redirect_seen = False
         for url, title, jid in jobs:
             if submitted >= target:
+                break
+            if _today_attempts >= DAILY_ATTEMPT_CAP:
+                print(f"  🛑 daily attempt cap {DAILY_ATTEMPT_CAP} reached — stop (account safety)")
                 break
             # ---- 5-layer dedup, all BEFORE opening ----
             if jid and jid in dead:
@@ -998,7 +1006,9 @@ def main():
                     # re-check with the real description before skipping — recovers Java jobs
                     # hidden behind generic titles. Hard negatives (.NET/Python/C++, score<=-10)
                     # skip fast (no wasted page open).
-                    if score is not None and score >= -5 and os.environ.get('DICE_DEEP_CV', '1') == '1':
+                    if score is not None and score >= -10 and _deep_checks < DEEP_CV_MAX \
+                            and 'title negative' not in ' '.join(why) and os.environ.get('DICE_DEEP_CV', '1') == '1':
+                        _deep_checks += 1
                         try:
                             page.goto(url, wait_until='domcontentloaded', timeout=25000)
                             time.sleep(2)
@@ -1033,6 +1043,7 @@ def main():
             # still allowing the same title at a DIFFERENT company (fixes global starvation).
             nt = _title_key(company, title)
             _log_attempt(jid, title, company, result)
+            _today_attempts += 1
             if result == 'submitted':
                 submitted += 1
                 applied_ids.add(jid); _add_applied(JK_FILE, jid)
@@ -1067,7 +1078,7 @@ def main():
                 except Exception:
                     pass
                 print(f"  -> {result}: {title[:40]}")
-            time.sleep(2)
+            time.sleep(random.uniform(2, 7))   # jitter
 
         # Save FRESH cookies after the run — browsing refreshes the session, so this keeps
         # the DICE_COOKIES refresh source (dice_cookies.json) as new as possible. Dynamic:
