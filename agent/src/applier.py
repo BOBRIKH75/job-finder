@@ -747,15 +747,15 @@ def _fill_remaining_required(page, profile: dict) -> int:
         # Background
         "background check": "Yes", "consent": "Yes", "agree": "Yes",
         "acknowledge": "Yes", "terms": "Yes", "privacy": "Yes",
-        # Demographics (use real answers — works better than "Decline" on most forms)
-        "gender": "Male", "gender identity": "Male", "sex": "Male",
-        "identify your race": "White", "race": "White", "ethnicity": "White",
+        # Demographics: never state personal facts we have not verified -> always decline.
+        "gender": "Decline to state", "gender identity": "Decline to state", "sex": "Decline to state",
+        "identify your race": "Decline to state", "race": "Decline to state", "ethnicity": "Decline to state",
         "veteran": "I am not a protected veteran", "military": "No",
         "disability": "I do not want to answer", "i do not wish": "I do not want to answer",
         "don't wish to answer": "I do not want to answer",
-        "hispanic": "No", "latino": "No", "latina": "No",
-        "transgender": "No",
-        "sexual orientation": "Heterosexual", "orientation": "Heterosexual",
+        "hispanic": "Decline to state", "latino": "Decline to state", "latina": "Decline to state",
+        "transgender": "Decline to state",
+        "sexual orientation": "Decline to state", "orientation": "Decline to state",
         # Planning/state questions
         "planning to work": "Yes", "plan to work": "Yes", "work from these states": "Yes",
         "intend to work": "Yes",

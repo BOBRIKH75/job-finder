@@ -56,6 +56,38 @@ def _has_word(text: str, *words) -> bool:
     return False
 
 
+
+# --- Truthfulness guard: never claim skills/years that are not in profile.json ---
+_GENERIC_EXPERIENCE = ("total", "overall", "professional", "software", "development", "developer",
+                       "engineering", "engineer", "backend", "back-end", "back end", "programming",
+                       "industry", "it experience", "relevant", "work experience", "full-time", "full time", "senior", "this role", "the role", "position",
+                       "field", "similar", "technical", "technology", "cloud", "web ", "application",
+                       "systems", "enterprise", "lead", "contract", "consult", "this type", "related")
+_SKILL_CLAIM_PHRASES = ("experience with", "experience in", "experience using", "experience on",
+                        "proficient", "proficiency", "familiar with", "familiarity", "hands-on",
+                        "hands on", "worked with", "working knowledge", "knowledge of",
+                        "expertise", "expert in", "skilled in", "comfortable with", "background in")
+
+
+def _mentions_profile_skill(q: str, profile: dict) -> bool:
+    """True if the question text names a skill that is listed in profile.json."""
+    for skill in profile.get("skills", []) or []:
+        sk = str(skill).lower().strip()
+        if len(sk) >= 2 and re.search(r"(?<![a-z0-9])" + re.escape(sk) + r"(?![a-z0-9])", q):
+            return True
+    return False
+
+
+def _is_unverified_skill_claim(q: str, profile: dict) -> bool:
+    """True when the question asks about experience with some specific thing that is NOT
+    in profile.json and is not a generic 'total experience' question."""
+    if not any(p in q for p in _SKILL_CLAIM_PHRASES) and not ("years" in q and "experience" in q):
+        return False
+    if _mentions_profile_skill(q, profile):
+        return False
+    return not any(g in q for g in _GENERIC_EXPERIENCE)
+
+
 def _profile_answer(question: str, field_type: str, options, profile: dict):
     """Return an answer from the profile, or None if no rule matches."""
     q = question.lower()
@@ -169,10 +201,18 @@ def _profile_answer(question: str, field_type: str, options, profile: dict):
             return pick_option("yes", "eligible") or "Yes"
         return pick_option("no") or "No"
 
-    # Experience (years)
+    # Experience (years) — only claim years for skills that are in profile.json.
     if "years" in q and any(k in q for k in ["experience", "exp"]):
+        if _is_unverified_skill_claim(q, profile):
+            # Candidate has no such skill on record: be honest ("0"), never invent years.
+            return pick_option("0", "none", "less than") or "0"
         yrs = str(profile.get("years_experience", 10))
         return pick_option(yrs) or yrs
+
+    # Yes/No "do you have experience with X?" for X not in profile.json -> honest "No".
+    if field_type in ("radio", "select") and opts and _is_unverified_skill_claim(q, profile):
+        if set(o.lower().strip() for o in opts) <= {"yes", "no"}:
+            return pick_option("no") or "No"
 
     # Education (never a Yes/No answer — guard against misfiring on Yes/No radios)
     yn_only = set(o.lower() for o in opts) <= {"yes", "no"} and len(opts) > 0
@@ -315,6 +355,11 @@ def answer_question(db, question: str, field_type: str = "text",
         except Exception:
             from ai_fallback import ask_ai_about_field
         ai = ask_ai_about_field(question, field_type, options)
+        # Truthfulness guard: AI must not claim an unverified skill (Yes / years > 0).
+        if ai and _is_unverified_skill_claim(question.lower(), profile) \
+                and (ai.strip().lower() in ("yes", "y", "true") or re.match(r"^\s*[1-9]\d*\+?\s*$", ai)):
+            print(f"      ⛔ AI claim rejected (skill not in profile): {question[:40]!r}")
+            ai = None
         if ai:
             # If options exist, snap the AI answer to the closest real option.
             if options:
@@ -341,7 +386,7 @@ def answer_question(db, question: str, field_type: str = "text",
     #    a safe, honest, non-committal answer so the form can ADVANCE. Only kicks in when
     #    we truly can't ask a human. Disable with ANSWERER_NO_DEFAULT=1.
     if os.environ.get("ANSWERER_NO_DEFAULT", "0") != "1":
-        fallback = _safe_default(question, field_type, options)
+        fallback = _safe_default(question, field_type, options, profile)
         if fallback is not None:
             save_approved_answer(db, question, str(fallback), source="default")
             print(f"      🧯 safe-default: {question[:40]!r} -> {str(fallback)[:30]!r}")
@@ -351,7 +396,7 @@ def answer_question(db, question: str, field_type: str = "text",
     return None
 
 
-def _safe_default(question: str, field_type: str, options) -> str | None:
+def _safe_default(question: str, field_type: str, options, profile: dict | None = None) -> str | None:
     """Last-resort answer so a REQUIRED field is never left empty in headless CI.
 
     Rules (conservative + honest for Bob's profile):
@@ -365,8 +410,14 @@ def _safe_default(question: str, field_type: str, options) -> str | None:
     """
     q = (question or "").lower()
     opts = [str(o) for o in (options or [])]
+    profile = profile or {}
+    unverified = _is_unverified_skill_claim(q, profile)
 
     if field_type in ("radio", "select") and opts:
+        if unverified:  # never claim experience that is not in profile.json
+            for o in opts:
+                if o.lower().strip() in ("no", "n", "none", "0"):
+                    return o
         low = [o.lower() for o in opts]
         # EEO / demographic -> decline
         if any(k in q for k in ("gender", "race", "ethnic", "veteran", "disab", "sex")) \
@@ -385,7 +436,7 @@ def _safe_default(question: str, field_type: str, options) -> str | None:
 
     # number-ish
     if any(k in q for k in ("years", "how many", "experience")):
-        return "8"
+        return "0" if unverified else str(profile.get("years_experience", 10))
     if any(k in q for k in ("salary", "rate", "compensation", "pay", "amount", "hourly")):
         return "85"
 
