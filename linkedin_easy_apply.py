@@ -519,6 +519,36 @@ Answer with ONLY the answer (1-3 words max). No explanation.
         return "Yes"  # safe default
 
 
+def discover_job_ids(keyword: str, max_ids: int = 25) -> list:
+    """Find Easy Apply / Remote job IDs via LinkedIn's public guest endpoint.
+
+    The logged-in /jobs/search/ SPA now often shows "Something went wrong" to automation.
+    The guest endpoint returns plain HTML cards (no login, 1 light request) — we take the
+    IDs and then open /jobs/view/<id> with the real session to apply.
+    """
+    import re as _re
+    import urllib.parse, urllib.request
+    ids = []
+    try:
+        url = (
+            "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search"
+            f"?keywords={urllib.parse.quote(keyword)}&location=United%20States"
+            "&f_AL=true&f_WT=2&f_TPR=r604800&sortBy=DD&start=0"
+        )
+        req = urllib.request.Request(url, headers={
+            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
+                          "(KHTML, like Gecko) Chrome/120.0 Safari/537.36",
+            "Accept-Language": "en-US,en;q=0.9",
+        })
+        html = urllib.request.urlopen(req, timeout=25).read().decode("utf-8", "ignore")
+        for m in _re.finditer(r"jobPosting:(\d+)", html):
+            if m.group(1) not in ids:
+                ids.append(m.group(1))
+    except Exception as exc:
+        print(f"    ⚠ guest discovery failed: {str(exc)[:80]}")
+    return ids[:max_ids]
+
+
 def main():
     # Time-of-day safety check first — before any browser launch
     ok, reason = is_safe_run_time()
@@ -625,13 +655,18 @@ def main():
                 f"?keywords={keyword.replace(' ', '%20')}"
                 f"&f_AL=true&f_WT=2&f_TPR=r604800&sortBy=DD"
             )
-            driver.get(search_url)
-            time.sleep(6)
+            job_cards = discover_job_ids(keyword)
+            print(f"    Guest discovery: {len(job_cards)} job ids")
+            if job_cards:
+                job_cards = job_cards[:8]
+            else:
+                driver.get(search_url)
+                time.sleep(6)
 
             # LinkedIn sometimes serves a transient "Something went wrong / Refresh the
             # page" error on first load (especially headless). The page ITSELF says to
             # refresh — so do exactly that, up to 3 times, before giving up.
-            for _retry in range(3):
+            for _retry in range(0 if job_cards else 3):
                 try:
                     _bt = (driver.find_element("css selector", "body").text or "").lower()
                 except Exception:
@@ -643,7 +678,7 @@ def main():
                 else:
                     break
 
-            if check_for_restrictions(driver):
+            if not job_cards and check_for_restrictions(driver):
                 break
 
             # Scroll the RESULTS CONTAINER (not the window) to trigger LinkedIn's
@@ -651,6 +686,8 @@ def main():
             # scrolling window alone leaves it empty → "find 0 jobs". Scroll both the
             # known container selectors AND the window as a fallback.
             try:
+                if job_cards:
+                    raise RuntimeError('skip scroll')
                 _scroll_containers = [
                     "div.jobs-search-results-list",
                     "div.scaffold-layout__list",
@@ -697,15 +734,14 @@ def main():
                     "li[data-chameleon-result-urn]",
                     "a[href*='/jobs/view/']",
                 ]
-                job_cards = []
-                _used = ""
-                for _sel in _card_selectors:
+                _used = "guest-api" if job_cards else ""
+                for _sel in ([] if job_cards else _card_selectors):
                     job_cards = driver.find_elements("css selector", _sel)
                     if job_cards:
                         _used = _sel
                         break
                 # Last-resort fallback: any anchor linking to a job view = a result card.
-                if not job_cards:
+                if not job_cards and not _used:
                     _links = driver.find_elements("css selector", "a[href*='/jobs/view/']")
                     if _links:
                         # de-dup by href, keep the clickable anchors themselves as "cards"
@@ -737,11 +773,17 @@ def main():
 
                     try:
                         # Click the job to open details — view it first (human behavior)
-                        card.click()
-                        time.sleep(random.uniform(3, 6))  # dwell time on job post
-
-                        # Get job ID to check if already applied
-                        job_id = card.get_attribute("data-job-id") or card.get_attribute("data-occludable-job-id") or ""
+                        if isinstance(card, str):
+                            job_id = card
+                            if job_id in applied_data["applied_ids"]:
+                                print(f"    ⏭ Already applied to {job_id}")
+                                continue
+                            driver.get(f"https://www.linkedin.com/jobs/view/{job_id}/")
+                            time.sleep(random.uniform(4, 7))
+                        else:
+                            card.click()
+                            time.sleep(random.uniform(3, 6))  # dwell time on job post
+                            job_id = card.get_attribute("data-job-id") or card.get_attribute("data-occludable-job-id") or ""
                         # link-fallback: extract id from /jobs/view/<id>/ href
                         if not job_id:
                             _href = card.get_attribute("href") or ""
@@ -767,8 +809,20 @@ def main():
 
                         # Check for Easy Apply button
                         try:
-                            easy_apply_btn = driver.find_element("css selector", ".jobs-apply-button, button.jobs-apply-button")
-                            btn_text = easy_apply_btn.text.lower()
+                            easy_apply_btn = None
+                            for _by, _q in (
+                                ("css selector", ".jobs-apply-button, button.jobs-apply-button"),
+                                ("xpath", "//button[contains(@aria-label,'Easy Apply')]"),
+                                ("xpath", "//a[contains(@aria-label,'Easy Apply')]"),
+                                ("xpath", "//*[self::button or self::a][.//span[contains(normalize-space(.),'Easy Apply')]]"),
+                            ):
+                                _f = driver.find_elements(_by, _q)
+                                if _f:
+                                    easy_apply_btn = _f[0]
+                                    break
+                            if easy_apply_btn is None:
+                                raise RuntimeError("no apply button")
+                            btn_text = (easy_apply_btn.text or easy_apply_btn.get_attribute("aria-label") or "").lower()
                             if "easy apply" not in btn_text:
                                 print(f"    ⏭️ Not Easy Apply")
                                 continue
