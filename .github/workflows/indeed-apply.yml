@@ -95,8 +95,18 @@ jobs:
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
         run: python3 -u indeed_diag.py
 
+      - name: Auto-login test (mode=login)
+        if: github.event.inputs.mode == 'login'
+        timeout-minutes: 10
+        env:
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          CAPSOLVER_KEY: ${{ secrets.CAPSOLVER_KEY }}
+          CLOUDFLARE_WAIT: '30'
+        run: python3 -u indeed_login.py
+
       - name: Run Indeed applicator
-        if: github.event.inputs.mode != 'diag'
+        if: (github.event.inputs.mode != 'diag' && github.event.inputs.mode != 'login')
         timeout-minutes: 25
         env:
           INDEED_COOKIES: ${{ secrets.INDEED_COOKIES }}
