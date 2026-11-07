@@ -120,15 +120,20 @@ def _record_applied(db, company, title, url):
     _save_gh_applied(company, title)   # persist to git-tracked JSON (survives CI runs)
 
 
-_NON_US = ('india', 'bangalore', 'bengaluru', 'hyderabad', 'pune', 'london', 'uk', 'united kingdom',
-           'canada', 'toronto', 'germany', 'berlin', 'dublin', 'ireland', 'singapore', 'tokyo',
-           'japan', 'australia', 'sydney', 'brazil', 'mexico', 'poland', 'warsaw', 'israel',
-           'tel aviv', 'netherlands', 'amsterdam', 'france', 'paris', 'spain', 'latam', 'emea', 'apac')
+_NON_US = ('india', 'bangalore', 'bengaluru', 'hyderabad', 'pune', 'vadodara', 'chennai', 'mumbai',
+           'gurgaon', 'gurugram', 'noida', 'kolkata', 'ahmedabad', 'kochi', 'coimbatore', 'jaipur',
+           'london', 'uk', 'united kingdom', 'canada', 'toronto', 'vancouver', 'montreal', 'germany',
+           'berlin', 'munich', 'dublin', 'ireland', 'singapore', 'tokyo', 'japan', 'australia',
+           'sydney', 'melbourne', 'brazil', 'sao paulo', 'mexico', 'poland', 'warsaw', 'krakow',
+           'israel', 'tel aviv', 'netherlands', 'amsterdam', 'france', 'paris', 'spain', 'madrid',
+           'barcelona', 'portugal', 'lisbon', 'romania', 'bucharest', 'philippines', 'manila',
+           'china', 'shanghai', 'beijing', 'korea', 'seoul', 'dubai', 'uae', 'latam', 'emea', 'apac')
+_NON_US_RE = re.compile(r"\b(" + "|".join(re.escape(k) for k in _NON_US) + r")\b", re.I)
 
 
 def _non_us_location(loc):
     l = (loc or '').lower()
-    return any(k in l for k in _NON_US) and not any(k in l for k in ('united states', ', us', ' usa'))
+    return bool(_NON_US_RE.search(l)) and not any(k in l for k in ('united states', ', us', ' usa'))
 
 
 def _fetch_gh_jd(url):
@@ -252,6 +257,7 @@ def main():
     MAX_APPS = 30
     company_failures: dict = {}
     browser_queue: list = []
+    _api_dead = 0
 
     companies_file = 'agent/data/companies.json'
     healer = DeepHeal(db, companies_file, browser_queue)
@@ -316,7 +322,8 @@ def main():
                 if not _desc and os.environ.get('GH_JD_ENRICH', '1') == '1':
                     _desc, _loc2 = _fetch_gh_jd(url)
                     _loc = _loc or _loc2
-                if _loc and _non_us_location(_loc) and 'remote' not in _loc.lower():
+                if (_loc and _non_us_location(_loc) and 'remote' not in _loc.lower()) \
+                        or _non_us_location(title):   # title like 'Java Developer - Pune'
                     skipped += 1
                     print(f"  ⏭ non-US location: '{title[:40]}' @ {company_name[:20]} ({_loc[:30]})")
                     continue
@@ -349,7 +356,17 @@ def main():
             continue
 
         # ── Strategy 1: Direct API POST ──────────────────────────────────────
-        result = submit_greenhouse_api(url, profile, resume)
+        # Greenhouse now demands a reCAPTCHA token (HTTP 428 captcha-failed / 400), so the bare
+        # POST can never pass. After 3 straight 400/428 stop wasting 5s/job and go to the browser.
+        if _api_dead >= 3:
+            result = {'submitted': False, 'error': 'HTTP 400: api disabled this run (captcha required)'}
+        else:
+            result = submit_greenhouse_api(url, profile, resume)
+            _err0 = str(result.get('error', ''))
+            if not result.get('submitted') and ('HTTP 400' in _err0 or 'HTTP 428' in _err0 or 'captcha' in _err0.lower()):
+                _api_dead += 1
+            elif result.get('submitted'):
+                _api_dead = 0
 
         if result.get('submitted'):
             applied += 1
@@ -436,6 +453,7 @@ def main():
     # ── Strategy 2: Browser batch (Playwright, one session for all queued jobs) ──
     if browser_queue and applied < MAX_APPS:
         remaining = MAX_APPS - applied
+        remaining = min(remaining, int(os.environ.get('GH_BROWSER_MAX', '10')))
         bq_slice = browser_queue[:remaining]
         browser_jobs = [{'url': j['url'], 'title': j['title'], 'company': j['company']}
                         for j in bq_slice]

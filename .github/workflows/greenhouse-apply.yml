@@ -92,6 +92,13 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          CAPSOLVER_API_KEY: ${{ secrets.CAPSOLVER_KEY }}
+          CAPSOLVER_KEY: ${{ secrets.CAPSOLVER_KEY }}
+          NOPECHA_API_KEY: ${{ secrets.NOPECHA_API_KEY }}
+          GH_REAL_CHROME: "1"        # browser queue uses real installed Chrome (bundled shell missing)
+          GH_SKIP_API: "1"           # bare HTTP POST always 428 captcha-failed
+          GH_BROWSER_MAX: ${{ vars.GH_BROWSER_MAX || '10' }}
+          AGENT_MAX_SECONDS: "2400"
           GH_SCAN_COUNT: "120"
           GH_DEDUP_DAYS: "14"
           MAX_POSTING_AGE_DAYS: "14"
