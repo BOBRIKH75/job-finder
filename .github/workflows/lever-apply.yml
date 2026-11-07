@@ -1,9 +1,100 @@
 name: Lever Apply
-# Placeholder so the workflow is dispatchable by --ref from feature branches. Real file arrives with the cv-dice PR.
+
+# Lever direct apply (browser). Self-hosted: real Chrome + home IP. Added by cv-dice.
 on:
-  workflow_dispatch: {}
+  # NO schedule: measured pool = 1 CV-fit fresh job across all 108 Lever companies (2026-11-07),
+  # so a scheduled run would only burn runner time. Dispatch manually if the pool grows.
+  workflow_dispatch:
+    inputs:
+      lever_target:
+        description: "Max applications this run"
+        required: false
+        default: "8"
+
+concurrency:
+  group: lever-apply
+  cancel-in-progress: false
+
+defaults:
+  run:
+    working-directory: agent
+
+permissions:
+  contents: write
+
 jobs:
-  noop:
-    runs-on: ubuntu-latest
+  lever-apply:
+    runs-on: self-hosted   # MUST be self-hosted — real Chrome + home IP
+    timeout-minutes: 45
+
     steps:
-      - run: echo "placeholder"
+      - uses: actions/checkout@v4
+
+      - name: Trust corporate SSL (fixes CERTIFICATE_VERIFY_FAILED on corp network)
+        run: |
+          security find-certificate -a -p /Library/Keychains/System.keychain > $GITHUB_WORKSPACE/.corp-roots.pem 2>/dev/null || true
+          security find-certificate -a -p /System/Library/Keychains/SystemRootCertificates.keychain >> $GITHUB_WORKSPACE/.corp-roots.pem 2>/dev/null || true
+          if [ -s $GITHUB_WORKSPACE/.corp-roots.pem ]; then
+            echo "SSL_CERT_FILE=$GITHUB_WORKSPACE/.corp-roots.pem" >> $GITHUB_ENV
+            echo "REQUESTS_CA_BUNDLE=$GITHUB_WORKSPACE/.corp-roots.pem" >> $GITHUB_ENV
+            echo "certs: $(grep -c 'BEGIN CERT' $GITHUB_WORKSPACE/.corp-roots.pem || echo 0)"
+          fi
+
+      - name: Install dependencies
+        run: |
+          export PATH="/usr/local/homebrew/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
+          PY=""
+          for p in python3.14 python3.13 python3.12 python3.11 python3.10 python3; do
+            if command -v "$p" >/dev/null 2>&1 && "$p" -c 'import sys; sys.exit(0 if sys.version_info >= (3,10) else 1)'; then PY="$p"; break; fi
+          done
+          echo "using python: $PY ($($PY --version 2>&1))"
+          "$PY" -m venv $GITHUB_WORKSPACE/.venv || true
+          echo "$GITHUB_WORKSPACE/.venv/bin" >> $GITHUB_PATH
+          source $GITHUB_WORKSPACE/.venv/bin/activate || true
+          python3 -m pip install --upgrade pip setuptools wheel
+          python3 -m pip install -r requirements.txt
+          # Use the runner's ALREADY-INSTALLED Chrome (this laptop uses Chrome daily). patchright
+          # channel="chrome" launches that system Chrome — no download needed. Only install the
+          # bundled browser as a fallback; never fail the step (|| true).
+          if [ -d "/Applications/Google Chrome.app" ] || command -v google-chrome >/dev/null 2>&1; then
+            echo "✅ system Chrome present — patchright will use channel=chrome (no install)"
+          else
+            echo "⚠️ no system Chrome — installing patchright chrome"
+            python3 -m patchright install chrome || python3 -m playwright install chromium || true
+          fi
+
+      - name: Initialize database
+        run: python3 -c "from src.memory import get_db, init_db; db = get_db(); init_db(db)"
+
+      - name: Restore dedup state (pull latest applied records)
+        if: always()
+        continue-on-error: true
+        run: |
+          cd $GITHUB_WORKSPACE
+          git config user.email "bot@bobrikh.dev"
+          git config user.name "Dice Bot"
+          git pull --rebase --autostash || true
+
+      - name: Run Lever applicator
+        timeout-minutes: 35
+        env:
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          LEVER_TARGET: ${{ github.event.inputs.lever_target || '8' }}
+          HEADFUL: '1'
+        run: |
+          cd $GITHUB_WORKSPACE/agent
+          PYTHONUNBUFFERED=1 python3 -u lever_apply.py
+
+      - name: Commit dedup state
+        if: always()
+        continue-on-error: true
+        run: |
+          cd $GITHUB_WORKSPACE
+          git config user.email "bot@bobrikh.dev"
+          git config user.name "Lever Bot"
+          git add agent/data/lever_applied.json agent/data/lever_failed.json agent/data/lever_stats.json agent/data/lever_cursor.json 2>/dev/null || true
+          git diff --staged --quiet || git commit -m "lever: sync dedup/stats state [skip ci]"
+          git pull --rebase --autostash || true
+          git push || true
