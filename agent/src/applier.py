@@ -24,7 +24,7 @@ RESUME_PATH = Path(__file__).parent.parent / "resume.pdf"
 SCREENSHOTS = Path(__file__).parent.parent / "screenshots"
 LEARNED_FILE = Path(__file__).parent.parent / "data" / "learned.json"
 INDEED_COOKIES_FILE = Path(__file__).parent.parent / "data" / "indeed_cookies.json"
-MAX_RETRIES = 2
+MAX_RETRIES = int(os.environ.get("AGENT_MAX_RETRIES", "2"))
 
 
 def load_indeed_cookies() -> list[dict]:
