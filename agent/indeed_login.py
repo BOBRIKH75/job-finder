@@ -201,9 +201,56 @@ def _login_google(page) -> bool:
     return True
 
 
+def import_from_real_chrome(page) -> bool:
+    """Copy Indeed cookies from the Mac's REAL Chrome profiles (the user's own logged-in browser)
+    into this context, one profile at a time, until the account page stops redirecting to /auth.
+    Reports only profile names + counts. Keychain read happens in a thread with a timeout."""
+    import glob
+    import threading
+    base = os.path.expanduser('~/Library/Application Support/Google/Chrome')
+    files = sorted(glob.glob(base + '/*/Network/Cookies') + glob.glob(base + '/*/Cookies'))
+    for f in files:
+        name = f.split('/Chrome/')[1].split('/')[0]
+        res = {}
+
+        def work():
+            try:
+                import browser_cookie3
+                cj = browser_cookie3.chrome(cookie_file=f, domain_name='indeed.com')
+                res['c'] = [{'name': c.name, 'value': c.value, 'domain': c.domain, 'path': c.path or '/',
+                             'secure': bool(c.secure), 'expires': c.expires or -1,
+                             'sameSite': 'Lax'} for c in cj]
+            except Exception as e:
+                res['err'] = str(e)[:80]
+        t = threading.Thread(target=work, daemon=True)
+        t.start()
+        t.join(40)
+        cs = res.get('c') or []
+        names = {c['name'] for c in cs}
+        print(f"  \U0001F4C2 chrome profile '{name}': decrypted={len(cs)} err={res.get('err', 'timeout' if t.is_alive() else '')} "
+              f"auth_names={sorted(n for n in names if n in ('CTK', 'PPID', 'SOCK', 'RF'))}")
+        if not any(n in names for n in ('PPID', 'SOCK')):
+            continue
+        try:
+            page.context.add_cookies(cs)
+        except Exception as e:
+            print('  \u26a0 add_cookies', str(e)[:60])
+            continue
+        if is_logged_in(page):
+            print(f"  \u2705 logged in using real Chrome profile '{name}'")
+            return True
+        try:
+            page.context.clear_cookies()
+        except Exception:
+            pass
+    return False
+
+
 def ensure_logged_in(page, tries=2) -> bool:
     """Return True when the page's browser context has a valid Indeed session."""
     if is_logged_in(page):
+        return True
+    if import_from_real_chrome(page):
         return True
     for i in range(tries):
         print(f"  \U0001F511 auto-login attempt {i + 1}")
