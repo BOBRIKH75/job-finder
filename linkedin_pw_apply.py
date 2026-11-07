@@ -283,12 +283,40 @@ RADIO_Q_JS = """e => {
 
 RADIO_OPT_JS = """e => {
   const g = (x) => (x && (x.innerText || x.textContent) || '').trim();
-  if (e.labels && e.labels[0] && g(e.labels[0])) return g(e.labels[0]);
-  if (e.getAttribute('aria-label')) return e.getAttribute('aria-label');
-  const sib = e.nextElementSibling; if (sib && g(sib)) return g(sib);
-  const p = e.closest('label,div'); if (p && g(p)) return g(p);
-  return e.value || '';
+  const v = (e.value || '').trim();
+  if (/^(yes|no|true|false)$/i.test(v)) return v[0].toUpperCase() + v.slice(1).toLowerCase();
+  let t = (e.labels && e.labels[0]) ? g(e.labels[0]) : '';
+  if (t && t.length <= 80) return t;
+  if (e.getAttribute('aria-label') && e.getAttribute('aria-label').length <= 80) return e.getAttribute('aria-label');
+  const sib = e.nextElementSibling; if (sib && g(sib) && g(sib).length <= 80) return g(sib);
+  const lab = e.closest('label'); if (lab && g(lab).length <= 80) return g(lab);
+  return v || t.slice(0, 40);
 }"""
+
+DIALOG_DEBUG_JS = """d => {
+  const vis = e => e.offsetParent !== null;
+  const t = e => (e.textContent || '').replace(/\\s+/g, ' ').trim().slice(0, 60);
+  const controls = [...d.querySelectorAll('input,select,textarea')].filter(vis).map(e => {
+    let lab = '';
+    if (e.labels && e.labels[0]) lab = t(e.labels[0]);
+    if (!lab) lab = e.getAttribute('aria-label') || '';
+    return `${e.tagName.toLowerCase()}:${e.type}:${lab.slice(0, 45)}:req=${e.required || e.getAttribute('aria-required') === 'true'}:inv=${e.getAttribute('aria-invalid') === 'true'}:filled=${(e.value || '').length > 0 || e.checked === true}`;
+  }).slice(0, 18);
+  const errs = [...d.querySelectorAll('[role=alert],[class*=error i],[data-test-form-element-error-messages]')].filter(vis).map(t).filter(Boolean).slice(0, 6);
+  const btns = [...d.querySelectorAll('button')].filter(vis).map(b => t(b)).filter(Boolean).slice(0, 8);
+  return {controls, errs, btns};
+}"""
+
+
+def dialog_debug(dialog, tag):
+    """Structure-only dump (labels/types/errors/buttons, never values) of a dialog that blocked us."""
+    try:
+        info = dialog.evaluate(DIALOG_DEBUG_JS)
+        log(f"      DEBUG[{tag}] controls={info['controls']}")
+        log(f"      DEBUG[{tag}] errors={info['errs']} buttons={info['btns']}")
+    except Exception as exc:
+        log(f"      DEBUG[{tag}] failed: {str(exc)[:60]}")
+
 
 LABEL_JS = """e => {
   const g = (x) => (x && (x.innerText || x.textContent) || '').trim();
@@ -422,6 +450,19 @@ CONFIRM = ("application sent", "your application was sent", "application was sen
            "we've sent your application", "your application has been submitted")
 
 
+def applied_badge(page) -> bool:
+    """After Submit: close any overlay, reload the job page and look for LinkedIn's own
+    'Applied 2m ago' marker (the only reliable server-side proof when the modal text is missed)."""
+    try:
+        dismiss(page)
+        page.reload(wait_until="domcontentloaded", timeout=45000)
+        time.sleep(4)
+        txt = body_text(page)
+        return bool(re.search(r"\bapplied\s+(\d+\s*(s|sec|m|min|h|hr|hour|d|day|w|week)\w*\s+ago|just now|today)", txt))
+    except Exception:
+        return False
+
+
 def run_dialog(page, prof) -> str:
     """Returns 'sent' | 'skip' (unanswerable question, not a failure) | 'fail'."""
     for step in range(9):
@@ -446,11 +487,16 @@ def run_dialog(page, prof) -> str:
                 if any(s in txt for s in CONFIRM):
                     log("    📨 LinkedIn confirmed: application sent")
                     return "sent"
+            if applied_badge(page):
+                log("    📨 LinkedIn job page now shows 'Applied' — counting as sent")
+                return "sent"
             log("    ⚠ Submit clicked but NO confirmation seen — NOT counting")
+            dialog_debug(dialog, "noconfirm")
             diagnostics(page, "no-confirm")
             return "fail"
         nxt = step_button(dialog, ("review your application", "review", "continue to next", "next", "continue"))
         if nxt is None:
+            dialog_debug(dialog, f"stuck{step}")
             diagnostics(page, f"stuck{step}")
             return "fail"
         nxt.click(timeout=8000)
@@ -459,6 +505,7 @@ def run_dialog(page, prof) -> str:
         try:
             if err.count() and any(e.is_visible() for e in [err.nth(k) for k in range(min(err.count(), 5))]):
                 log("      ⚠ validation error after Next — aborting this job")
+                dialog_debug(dialog, f"valerr{step}")
                 return "fail"
         except Exception:
             pass

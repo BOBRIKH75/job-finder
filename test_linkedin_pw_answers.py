@@ -41,3 +41,11 @@ def test_phone_type_and_state():
     assert m.answer_for("Type*", p) == "Mobile"
     assert m.answer_for("State or Province*", p) == "CO"
     assert m.answer_for("Secondary Phone Number", p) is None
+
+
+def test_applied_badge_regex():
+    import re
+    rx = r"\bapplied\s+(\d+\s*(s|sec|m|min|h|hr|hour|d|day|w|week)\w*\s+ago|just now|today)"
+    assert re.search(rx, "easy apply applied 2m ago see application")
+    assert re.search(rx, "applied 3 hours ago")
+    assert not re.search(rx, "be among the first 25 applicants applied filter")
