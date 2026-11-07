@@ -312,6 +312,12 @@ def inject_cookies(driver, cookies: list[dict]):
                 name, _, value = cookie.partition('=')
                 cookie = {"name": name.strip(), "value": value.strip(),
                           "domain": ".linkedin.com", "path": "/"}
+            # ROOT-CAUSE FIX: never inject JSESSIONID. LinkedIn builds its csrf-token
+            # header from JSESSIONID; our .linkedin.com copy duplicated the one LinkedIn
+            # mints on www.linkedin.com -> every XHR threw "setRequestHeader"/"fetch headers"
+            # TypeError -> search "Something went wrong" and Easy Apply modal never opened.
+            if cookie.get("name") == "JSESSIONID":
+                continue
             # Selenium requires domain without leading dot for some cookies
             c = {k: v for k, v in cookie.items() if k in ("name", "value", "domain", "path", "secure", "httpOnly")}
             driver.add_cookie(c)
@@ -379,7 +385,7 @@ def _fill_form_fields_with_ai(driver):
     from selenium.webdriver.support.ui import Select
     
     # Find all visible form fields in the modal
-    form_groups = driver.find_elements(By.CSS_SELECTOR, 
+    form_groups = _root(driver).find_elements(By.CSS_SELECTOR, 
         ".jobs-easy-apply-form-section__grouping, "
         ".fb-dash-form-element, "
         "[data-test-form-element], "
@@ -519,6 +525,187 @@ Answer with ONLY the answer (1-3 words max). No explanation.
         return "Yes"  # safe default
 
 
+_APPLY_ROOT = None   # driver, or the ShadowRoot that holds the Easy Apply dialog
+
+_JS_FIND_SHADOW_DIALOG = """
+const hosts = [document.querySelector('#interop-outlet'), ...document.querySelectorAll('*')];
+for (const h of hosts) {
+  if (h && h.shadowRoot && h.shadowRoot.querySelector("[role='dialog'], .jobs-easy-apply-modal, form")) return h;
+}
+return null;
+"""
+
+
+def _root(driver):
+    return _APPLY_ROOT if _APPLY_ROOT is not None else driver
+
+
+def _apply_text(driver) -> str:
+    """Visible text of the apply dialog (top doc + shadow DOM), lowercase."""
+    txt = ""
+    try:
+        txt = driver.find_element("css selector", "body").text or ""
+    except Exception:
+        pass
+    try:
+        host = driver.execute_script(_JS_FIND_SHADOW_DIALOG)
+        if host is not None:
+            txt += " " + (driver.execute_script("return arguments[0].shadowRoot.textContent;", host) or "")
+    except Exception:
+        pass
+    return txt.lower()
+
+
+def _open_easy_apply(driver, btn, job_id="") -> bool:
+    """Open the Easy Apply modal. LinkedIn's 2026 SDUI flow is an <a href=".../apply/...">
+    whose dialog may render in the top document OR inside an iframe. Returns True when a
+    dialog is visible; leaves the driver switched into the frame that holds it."""
+    href = ""
+    try:
+        href = btn.get_attribute("href") or ""
+    except Exception:
+        pass
+    try:
+        print("    🔬 btn " + (driver.execute_script(
+            "var e=arguments[0];return e.tagName+' '+Array.from(e.attributes).map(a=>a.name+'='+a.value.slice(0,60)).join(' ');", btn) or "")[:300])
+    except Exception:
+        pass
+    # Close the Premium upsell / other overlays that can swallow the click.
+    for el in driver.find_elements("css selector", "button[aria-label^='Dismiss']"):
+        try:
+            lab = (el.get_attribute("aria-label") or "")
+            if el.is_displayed() and "job" in lab.lower() and "premium" in lab.lower():
+                el.click()
+                print("    🔬 dismissed premium upsell")
+                time.sleep(1)
+        except Exception:
+            pass
+    try:
+        driver.execute_script("arguments[0].scrollIntoView({block:'center'});", btn)
+        time.sleep(0.7)
+        btn.click()
+    except Exception as exc:
+        print(f"    🔬 native click failed: {type(exc).__name__}: {str(exc)[:120]}")
+        try:
+            from selenium.webdriver.common.action_chains import ActionChains
+            ActionChains(driver).move_to_element(btn).pause(0.4).click().perform()
+        except Exception:
+            pass
+    for attempt in range(2):
+        for _ in range(10):
+            time.sleep(1)
+            driver.switch_to.default_content()
+            global _APPLY_ROOT
+            _APPLY_ROOT = None
+            try:
+                host = driver.execute_script(_JS_FIND_SHADOW_DIALOG)
+            except Exception:
+                host = None
+            if host is not None:
+                _APPLY_ROOT = host.shadow_root
+                print("    🔬 apply dialog found in shadow DOM")
+                return True
+            if driver.find_elements("css selector", "[role='dialog'], .jobs-easy-apply-modal, .artdeco-modal"):
+                return True
+            for fr in driver.find_elements("css selector", "iframe"):
+                try:
+                    driver.switch_to.frame(fr)
+                    if driver.find_elements("css selector", "[role='dialog'], .jobs-easy-apply-modal, form"):
+                        return True
+                except Exception:
+                    pass
+                driver.switch_to.default_content()
+        if attempt == 0 and "/apply" in href:
+            print(f"    ↪ opening apply URL directly")
+            driver.get(href)
+    driver.switch_to.default_content()
+    return False
+
+
+def _find_step_button(driver, words):
+    """Find a visible button whose aria-label or text contains one of `words` (case-insens)."""
+    base = _root(driver)
+    roots = base.find_elements("css selector", "[role='dialog'], .jobs-easy-apply-modal")
+    pool = roots[-1].find_elements("css selector", "button") if roots else \
+        base.find_elements("css selector", "button, a[role='button']")
+    for el in pool:
+        try:
+            if not el.is_displayed():
+                continue
+            t = ((el.get_attribute("aria-label") or "") + " " + (el.text or "")).lower()
+            if any(w in t for w in words):
+                return el
+        except Exception:
+            continue
+    return None
+
+
+def _diag_apply_state(driver, tag):
+    try:
+        btns = []
+        for el in _root(driver).find_elements("css selector", "button, a[role='button']"):
+            try:
+                if el.is_displayed():
+                    btns.append(((el.get_attribute("aria-label") or el.text or "").strip()[:40]))
+            except Exception:
+                pass
+        n_if = len(driver.find_elements("css selector", "iframe"))
+        n_dlg = len(_root(driver).find_elements("css selector", "[role='dialog'], .artdeco-modal"))
+        n_shadow = driver.execute_script("return [...document.querySelectorAll('*')].filter(e=>e.shadowRoot).map(e=>e.tagName+'#'+e.id).slice(0,8).join(',');")
+        print(f"    🔬 {tag} shadow-hosts={n_shadow}")
+        try:
+            names = sorted(c.get("name", "") for c in driver.get_cookies())
+            print(f"    🔬 {tag} cookie-names={names[:20]}")
+        except Exception:
+            pass
+        try:
+            outlet = driver.execute_script("var o=document.querySelector('#interop-outlet');return o&&o.shadowRoot?o.shadowRoot.innerHTML.length:-1;")
+            print(f"    🔬 {tag} outlet-html-len={outlet}")
+        except Exception:
+            pass
+        try:
+            for entry in driver.get_log("browser")[-6:]:
+                print(f"    🔬 {tag} console {entry.get('level')}: {str(entry.get('message',''))[:160]}")
+        except Exception as exc:
+            print(f"    🔬 {tag} console n/a: {str(exc)[:60]}")
+        body = (driver.find_element("css selector", "body").text or "")[:200].replace("\n", " | ")
+        print(f"    🔬 {tag} url={driver.current_url[:90]} tabs={len(driver.window_handles)} iframes={n_if} dialogs={n_dlg}")
+        print(f"    🔬 {tag} buttons={[b for b in btns if b][:25]}")
+        print(f"    🔬 {tag} body={body}")
+    except Exception as exc:
+        print(f"    🔬 diag failed: {str(exc)[:60]}")
+
+
+def discover_job_ids(keyword: str, max_ids: int = 25) -> list:
+    """Find Easy Apply / Remote job IDs via LinkedIn's public guest endpoint.
+
+    The logged-in /jobs/search/ SPA now often shows "Something went wrong" to automation.
+    The guest endpoint returns plain HTML cards (no login, 1 light request) — we take the
+    IDs and then open /jobs/view/<id> with the real session to apply.
+    """
+    import re as _re
+    import urllib.parse, urllib.request
+    ids = []
+    try:
+        url = (
+            "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search"
+            f"?keywords={urllib.parse.quote(keyword)}&location=United%20States"
+            "&f_AL=true&f_WT=2&f_TPR=r604800&sortBy=DD&start=0"
+        )
+        req = urllib.request.Request(url, headers={
+            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
+                          "(KHTML, like Gecko) Chrome/120.0 Safari/537.36",
+            "Accept-Language": "en-US,en;q=0.9",
+        })
+        html = urllib.request.urlopen(req, timeout=25).read().decode("utf-8", "ignore")
+        for m in _re.finditer(r"jobPosting:(\d+)", html):
+            if m.group(1) not in ids:
+                ids.append(m.group(1))
+    except Exception as exc:
+        print(f"    ⚠ guest discovery failed: {str(exc)[:80]}")
+    return ids[:max_ids]
+
+
 def main():
     # Time-of-day safety check first — before any browser launch
     ok, reason = is_safe_run_time()
@@ -576,12 +763,14 @@ def main():
         options.add_argument("--no-sandbox")
         options.add_argument("--disable-dev-shm-usage")
         options.add_argument("--disable-blink-features=AutomationControlled")
+        options.set_capability("goog:loggingPrefs", {"browser": "ALL"})
         driver = uc.Chrome(options=options, version_main=_version_main)
     except Exception as e:
         print(f"❌ Browser launch failed: {e}")
         return
 
     applied_count = 0
+    _fail_streak = 0
 
     try:
         # Inject cookies instead of logging in
@@ -600,6 +789,11 @@ def main():
             return
 
         print(f"  ✅ Session valid — at {current[:60]}")
+        try:
+            _n_js = sum(1 for c in driver.get_cookies() if c.get("name") == "JSESSIONID")
+            print(f"  🔬 JSESSIONID cookies after login: {_n_js} (must be 1)")
+        except Exception:
+            pass
 
         if check_for_restrictions(driver):
             driver.quit()
@@ -614,7 +808,7 @@ def main():
 
         # Search for jobs — include f_TPR=r86400 to filter last 24h, sort by date
         for keyword in SEARCH_KEYWORDS:
-            if applied_count >= MAX_APPLICATIONS_PER_RUN:
+            if applied_count >= MAX_APPLICATIONS_PER_RUN or _fail_streak >= 4:
                 break
 
             print(f"\n  🔍 Searching: '{keyword}'")
@@ -625,13 +819,18 @@ def main():
                 f"?keywords={keyword.replace(' ', '%20')}"
                 f"&f_AL=true&f_WT=2&f_TPR=r604800&sortBy=DD"
             )
-            driver.get(search_url)
-            time.sleep(6)
+            job_cards = discover_job_ids(keyword)
+            print(f"    Guest discovery: {len(job_cards)} job ids")
+            if job_cards:
+                job_cards = job_cards[:8]
+            else:
+                driver.get(search_url)
+                time.sleep(6)
 
             # LinkedIn sometimes serves a transient "Something went wrong / Refresh the
             # page" error on first load (especially headless). The page ITSELF says to
             # refresh — so do exactly that, up to 3 times, before giving up.
-            for _retry in range(3):
+            for _retry in range(0 if job_cards else 3):
                 try:
                     _bt = (driver.find_element("css selector", "body").text or "").lower()
                 except Exception:
@@ -643,7 +842,7 @@ def main():
                 else:
                     break
 
-            if check_for_restrictions(driver):
+            if not job_cards and check_for_restrictions(driver):
                 break
 
             # Scroll the RESULTS CONTAINER (not the window) to trigger LinkedIn's
@@ -651,6 +850,8 @@ def main():
             # scrolling window alone leaves it empty → "find 0 jobs". Scroll both the
             # known container selectors AND the window as a fallback.
             try:
+                if job_cards:
+                    raise RuntimeError('skip scroll')
                 _scroll_containers = [
                     "div.jobs-search-results-list",
                     "div.scaffold-layout__list",
@@ -697,15 +898,14 @@ def main():
                     "li[data-chameleon-result-urn]",
                     "a[href*='/jobs/view/']",
                 ]
-                job_cards = []
-                _used = ""
-                for _sel in _card_selectors:
+                _used = "guest-api" if job_cards else ""
+                for _sel in ([] if job_cards else _card_selectors):
                     job_cards = driver.find_elements("css selector", _sel)
                     if job_cards:
                         _used = _sel
                         break
                 # Last-resort fallback: any anchor linking to a job view = a result card.
-                if not job_cards:
+                if not job_cards and not _used:
                     _links = driver.find_elements("css selector", "a[href*='/jobs/view/']")
                     if _links:
                         # de-dup by href, keep the clickable anchors themselves as "cards"
@@ -734,14 +934,23 @@ def main():
                 for card in job_cards[:8]:  # check up to 8, apply to max 5 per keyword
                     if applied_count >= MAX_APPLICATIONS_PER_RUN:
                         break
+                    if _fail_streak >= 4:
+                        print("    🛑 4 failures in a row — stopping early (account safety)")
+                        break
 
                     try:
                         # Click the job to open details — view it first (human behavior)
-                        card.click()
-                        time.sleep(random.uniform(3, 6))  # dwell time on job post
-
-                        # Get job ID to check if already applied
-                        job_id = card.get_attribute("data-job-id") or card.get_attribute("data-occludable-job-id") or ""
+                        if isinstance(card, str):
+                            job_id = card
+                            if job_id in applied_data["applied_ids"]:
+                                print(f"    ⏭ Already applied to {job_id}")
+                                continue
+                            driver.get(f"https://www.linkedin.com/jobs/view/{job_id}/")
+                            time.sleep(random.uniform(4, 7))
+                        else:
+                            card.click()
+                            time.sleep(random.uniform(3, 6))  # dwell time on job post
+                            job_id = card.get_attribute("data-job-id") or card.get_attribute("data-occludable-job-id") or ""
                         # link-fallback: extract id from /jobs/view/<id>/ href
                         if not job_id:
                             _href = card.get_attribute("href") or ""
@@ -767,8 +976,20 @@ def main():
 
                         # Check for Easy Apply button
                         try:
-                            easy_apply_btn = driver.find_element("css selector", ".jobs-apply-button, button.jobs-apply-button")
-                            btn_text = easy_apply_btn.text.lower()
+                            easy_apply_btn = None
+                            for _by, _q in (
+                                ("css selector", ".jobs-apply-button, button.jobs-apply-button"),
+                                ("xpath", "//button[contains(@aria-label,'Easy Apply')]"),
+                                ("xpath", "//a[contains(@aria-label,'Easy Apply')]"),
+                                ("xpath", "//*[self::button or self::a][.//span[contains(normalize-space(.),'Easy Apply')]]"),
+                            ):
+                                _f = [x for x in driver.find_elements(_by, _q) if x.is_displayed()]
+                                if _f:
+                                    easy_apply_btn = _f[0]
+                                    break
+                            if easy_apply_btn is None:
+                                raise RuntimeError("no apply button")
+                            btn_text = (easy_apply_btn.text or easy_apply_btn.get_attribute("aria-label") or "").lower()
                             if "easy apply" not in btn_text:
                                 print(f"    ⏭️ Not Easy Apply")
                                 continue
@@ -778,8 +999,11 @@ def main():
 
                         # Click Easy Apply
                         print(f"    📝 Applying (job {job_id})...")
-                        easy_apply_btn.click()
-                        time.sleep(3)
+                        if not _open_easy_apply(driver, easy_apply_btn, job_id):
+                            try:
+                                print(f"    🔬 no dialog; apply href={(easy_apply_btn.get_attribute('href') or '')[:90]}")
+                            except Exception:
+                                pass
 
                         if check_for_restrictions(driver):
                             break
@@ -798,7 +1022,9 @@ def main():
                             
                             try:
                                 # Look for Submit button
-                                submit_btn = driver.find_element("css selector", "button[aria-label*='Submit'], button[aria-label*='submit']")
+                                submit_btn = _find_step_button(driver, ("submit application", "submit"))
+                                if submit_btn is None:
+                                    raise RuntimeError("no submit")
                                 submit_btn.click()
                                 time.sleep(3)
                                 # HONESTY FIX (Bobur): a button CLICK is NOT proof the
@@ -810,7 +1036,7 @@ def main():
                                 _confirmed = False
                                 for _ in range(6):   # poll up to ~6s for the confirmation
                                     try:
-                                        _pt = (driver.find_element("css selector", "body").text or "").lower()
+                                        _pt = _apply_text(driver)
                                     except Exception:
                                         _pt = ""
                                     if any(s in _pt for s in (
@@ -837,11 +1063,15 @@ def main():
 
                             try:
                                 # Look for Next/Review button
-                                next_btn = driver.find_element("css selector", "button[aria-label*='Continue'], button[aria-label*='Next'], button[aria-label*='Review']")
+                                next_btn = _find_step_button(driver, ("continue to next", "next", "review your application", "review"))
+                                if next_btn is None:
+                                    raise RuntimeError("no next")
                                 next_btn.click()
                                 time.sleep(2)
                             except Exception:
                                 # Try dismiss if stuck
+                                if _fail_streak < 3:
+                                    _diag_apply_state(driver, f"STUCK step{step}")
                                 try:
                                     driver.find_element("css selector", "button[aria-label='Dismiss']").click()
                                 except Exception:
@@ -850,6 +1080,7 @@ def main():
 
                         if submitted:
                             applied_count += 1
+                            _fail_streak = 0
                             applied_data["applied_ids"].append(job_id)
                             applied_data["total"] += 1
                             print(f"    ✅ Applied! ({applied_count}/{MAX_APPLICATIONS_PER_RUN})")
@@ -861,6 +1092,7 @@ def main():
                                 pass
                         else:
                             print(f"    ⚠️ Could not complete application")
+                            _fail_streak += 1
                             # Close the modal
                             try:
                                 driver.find_element("css selector", "button[aria-label='Dismiss']").click()
@@ -869,6 +1101,7 @@ def main():
                             except Exception:
                                 pass
 
+                        driver.switch_to.default_content()
                         # CRITICAL: Human-like delay between applications
                         human_delay()
 
