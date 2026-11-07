@@ -81,6 +81,11 @@ def score_job(title, description="", location=""):
         if neg in t:
             return (-100, [f"title negative: '{neg.strip()}'"])
 
+    # Title must be an engineering/dev role at all (JD text alone must not rescue e.g. "Operations Associate").
+    if not re.search(r"\b(engineer|developer|programmer|architect|swe|sde|software|backend|back-end|"
+                     r"platform|java)\b", t):
+        return (-50, ["title is not an engineering role"])
+
     # Other-language title tag without Java in the title -> different stack, skip.
     if "java" not in t and _OTHER_LANG_TITLE.search(t):
         return (-100, ["title is another language/stack"])

@@ -31,3 +31,7 @@ def test_other_language_title_rejected():
 def test_security_and_sales_roles_rejected():
     assert not should_apply("Staff Security Engineer", "backend", "")[0]
     assert not should_apply("Sr. Solutions Engineer", "java", "")[0]
+
+
+def test_non_engineering_title_rejected():
+    assert not should_apply("Operations Associate", "java spring backend microservices kafka", "")[0]
