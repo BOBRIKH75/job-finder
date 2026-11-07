@@ -524,5 +524,112 @@
     "replied": false,
     "bounced": true,
     "re_engage_count": 0
+  },
+  "66c6399502a9": {
+    "email": "harry@bvteck.com",
+    "date": "2026-11-06T23:55:16.988258",
+    "job": "React Developer",
+    "company": "BV Teck",
+    "url": "https://www.indeed.com/viewjob?jk=e067569df436536a",
+    "recruiter": "Vision Technologies",
+    "smtp_verified": true,
+    "us_score": 1,
+    "us_reasons": [
+      "corp-domain"
+    ]
+  },
+  "a4191896903e": {
+    "email": "origin.allow@roseinternational.com",
+    "date": "2026-11-07T00:04:26.890672",
+    "job": "Senior Java Application Developer (PostgreSQL, JEE, JPA & RESTful Web Services)",
+    "company": "Rose International",
+    "url": "https://www.linkedin.com/jobs/view/4485841317",
+    "recruiter": "origin allow",
+    "source": "linkedin+guess",
+    "bounced": true
+  },
+  "65c4e61982aa": {
+    "email": "recruiting@ssipeople.com",
+    "date": "2026-11-07T00:05:19.431810",
+    "last_contact": "2026-11-07T00:05:19.431810",
+    "job": "Java Developer C2C",
+    "company": "SSi People",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": false,
+    "re_engage_count": 0
+  },
+  "cb61c4cc4d72": {
+    "email": "recruiting@usaa.com",
+    "date": "2026-11-07T00:05:22.427326",
+    "last_contact": "2026-11-07T00:05:22.427326",
+    "job": "Java Developer C2C",
+    "company": "USAA",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": false,
+    "re_engage_count": 0
+  },
+  "b0d5bfa74e0c": {
+    "email": "hr@reqrouteinc.com",
+    "date": "2026-11-07T00:05:24.525304",
+    "last_contact": "2026-11-07T00:05:24.525304",
+    "job": "Java Developer C2C",
+    "company": "Reqroute, Inc",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": true,
+    "re_engage_count": 0
+  },
+  "320ffdc4ef35": {
+    "email": "recruiting@fanatics.com",
+    "date": "2026-11-07T00:05:27.253141",
+    "last_contact": "2026-11-07T00:05:27.253141",
+    "job": "Java Developer C2C",
+    "company": "Fanatics",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": false,
+    "re_engage_count": 0
+  },
+  "61d5d296b0eb": {
+    "email": "info@pacergroup.com",
+    "date": "2026-11-07T00:05:31.514782",
+    "last_contact": "2026-11-07T00:05:31.514782",
+    "job": "Java Developer C2C",
+    "company": "Pacer Group",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": true,
+    "re_engage_count": 0
+  },
+  "9e58943779f6": {
+    "email": "recruiting@modis.com",
+    "date": "2026-11-07T00:05:35.829470",
+    "last_contact": "2026-11-07T00:05:35.829470",
+    "job": "Java Developer C2C",
+    "company": "Modis",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": false,
+    "re_engage_count": 0
   }
 }
