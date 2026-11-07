@@ -19,6 +19,12 @@ from pathlib import Path
 
 import linkedin_easy_apply as base
 
+sys.path.insert(0, str(Path(__file__).parent / "agent" / "src"))
+try:
+    from option_matcher import resolve_option  # truthful option mapping (shared with Indeed/Dice)
+except Exception:  # pragma: no cover - keep engine alive if the module is missing
+    resolve_option = None
+
 PROFILE_PATH = Path(__file__).parent / "agent" / "config" / "profile.json"
 RESUME_PATH = Path(__file__).parent / "agent" / "resume.pdf"
 SHOT_DIR = Path(__file__).parent / "agent" / "screenshots"
@@ -40,6 +46,14 @@ def load_profile() -> dict:
 
 def log(msg: str):
     print(msg, flush=True)
+
+
+NEEDS_FILE = Path(__file__).parent / "docs" / "NEEDS-FROM-USER.md"
+
+
+def note_needed(label: str):
+    """Log (structure only, no personal data) a question we could not answer from profile.json."""
+    log(f"      NEEDS-FROM-USER: {label[:90]}")
 
 
 # ------------------------------------------------------------------ answers (truthful)
@@ -78,14 +92,19 @@ def answer_for(label: str, prof: dict, kind: str = "text"):
         return prof.get("zip")
     if "country" in q:
         return prof.get("country")
-    if "year" in q and ("experience" in q or "work" in q):
+    if "hear about" in q or "how did you find" in q or "referral source" in q:
+        return "LinkedIn"
+    if re.search(r"address line|street address|address 1|^address\b", q):
+        note_needed(label)
+        return None
+    if "year" in q and (re.search(r"exp\w*", q) or "work" in q):
         # per-skill question: only answer when the skill is in the profile skills list
         m = re.search(r"\b(?:with|in|using)\s+(.+?)(?:\?|$)", q) or \
             re.search(r"years?\s+(?:of\s+)?(.+?)\s+experience", q)
         topic = (m.group(1) if m else "").strip(" ?.")
         if not topic or any(w in skills for w in re.findall(r"[a-z0-9+#.]+", topic) if len(w) > 2 and w not in ("the", "and", "with")):
             return yrs
-        return None
+        return "0"  # skill/domain not in profile: truthful zero (same rule as Indeed answerer)
     if re.search(r"salary|compensation|pay|rate", q):
         target = prof.get("rate_target", 75)
         if re.search(r"annual|yearly|per year|salary", q) and "hour" not in q:
@@ -262,6 +281,15 @@ RADIO_Q_JS = """e => {
   return t.replace(/\\s+/g, ' ').trim();
 }"""
 
+RADIO_OPT_JS = """e => {
+  const g = (x) => (x && (x.innerText || x.textContent) || '').trim();
+  if (e.labels && e.labels[0] && g(e.labels[0])) return g(e.labels[0]);
+  if (e.getAttribute('aria-label')) return e.getAttribute('aria-label');
+  const sib = e.nextElementSibling; if (sib && g(sib)) return g(sib);
+  const p = e.closest('label,div'); if (p && g(p)) return g(p);
+  return e.value || '';
+}"""
+
 LABEL_JS = """e => {
   const g = (x) => (x && (x.innerText || x.textContent) || '').trim();
   let t = '';
@@ -312,12 +340,12 @@ def fill_step(dialog, prof) -> bool:
             label = el.evaluate(LABEL_JS)
             ans = answer_for(label, prof)
             opts = el.evaluate("e => [...e.options].map(o => o.text.trim())")
-            pick = None
-            if ans:
-                pick = next((o for o in opts if o.lower() == ans.lower()), None) or \
-                    next((o for o in opts if ans.lower() in o.lower()), None)
+            real = [o for o in opts if o and not re.match(r"^select", o.lower())]
+            pick = resolve_option(label, real, ans, prof, "select") if resolve_option else None
+            if pick is None and ans:
+                pick = next((o for o in real if o.lower() == ans.lower()), None)
             if pick is None:
-                log(f"      ❓ unanswerable select: '{label[:60]}'")
+                log(f"      ❓ unanswerable select: '{label[:60]}' opts={[o[:25] for o in real][:6]}")
                 ok = False
                 continue
             el.select_option(label=pick)
@@ -336,16 +364,21 @@ def fill_step(dialog, prof) -> bool:
                 continue
             legend = g.evaluate(RADIO_Q_JS)
             ans = answer_for(legend, prof)
+            labels = []
+            for j in range(radios.count()):
+                lab = radios.nth(j).evaluate(RADIO_OPT_JS) or ""
+                labels.append(" ".join(lab.split()))
+            pick = resolve_option(legend, labels, ans, prof, "radio") if resolve_option else None
             chosen = False
-            if ans:
-                for j in range(radios.count()):
-                    lab = radios.nth(j).evaluate("e => (e.labels && e.labels[0] ? e.labels[0].innerText : e.value)") or ""
-                    if lab.strip().lower() == ans.lower():
-                        radios.nth(j).evaluate("e => (e.labels && e.labels[0] ? e.labels[0] : e).click()")
-                        chosen = True
-                        break
+            if pick is not None:
+                j = labels.index(pick)
+                radios.nth(j).evaluate("e => (e.labels && e.labels[0] ? e.labels[0] : e).click()")
+                if not radios.nth(j).is_checked():
+                    radios.nth(j).evaluate("e => { e.click(); }")
+                chosen = True
+                log(f"      🔘 radio '{legend[:40]}' -> '{pick[:20]}'")
             if not chosen:
-                log(f"      ❓ unanswerable radio: '{legend[:80]}'")
+                log(f"      ❓ unanswerable radio: '{legend[:80]}' opts={[x[:20] for x in labels][:5]}")
                 ok = False
         except Exception:
             continue

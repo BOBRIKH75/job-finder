@@ -65,3 +65,8 @@ def test_checkbox_groups():
     assert resolve_checkboxes("Which do you know?", ["Java", "COBOL", "Kafka"], PROFILE) == ["Java", "Kafka"]
     assert resolve_checkboxes("Which?", ["COBOL", "None of the above"], PROFILE) == ["None of the above"]
     assert resolve_checkboxes("Which?", ["COBOL", "Fortran"], PROFILE) == []
+
+
+def test_proficiency_top_level():
+    assert resolve_option("How would you rate your Java proficiency?", ["Beginner", "Intermediate", "Expert"], "", PROFILE) == "Expert"
+    assert resolve_option("How would you rate your COBOL proficiency?", ["Beginner", "Expert"], "", PROFILE) is None

@@ -16,8 +16,20 @@ def test_known_skill_years():
     assert m.answer_for("How many years of work experience do you have with Java?", P) == "10"
 
 
-def test_unknown_skill_returns_none():
-    assert m.answer_for("How many years of experience with COBOL?", P) is None
+def test_unknown_skill_returns_zero():
+    assert m.answer_for("How many years of experience with COBOL?", P) == "0"
+
+
+def test_typo_years_known_skill():
+    assert m.answer_for("How many years expereince with Java and Spring Boot do you have?", P) == "10"
+
+
+def test_hear_about():
+    assert m.answer_for("How did you first hear about this job?", P) == "LinkedIn"
+
+
+def test_address_line_unknown():
+    assert m.answer_for("Address Line 1*", P) is None
 
 
 def test_unknown_question_none():

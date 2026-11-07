@@ -222,6 +222,14 @@ def resolve_option(question: str, opts, ans, profile: dict, field_type: str = "r
             return pick_by_number(opts, val) or _nearest_not_above(opts, val)
         return None
 
+    # 6b. self-rated proficiency in a skill that IS in profile.json (10+ yrs) -> top level
+    if re.search(r"proficien|rate your|skill level|level of expertise", ql) and not _is_unverified_skill_claim(ql, profile) \
+            and any(s in ql for s in [str(x).lower() for x in (profile.get("skills") or []) if len(str(x)) > 2]):
+        for kw in ("expert", "advanced", "senior", "proficient", "strong", "excellent"):
+            for o in opts:
+                if kw in o.lower():
+                    return o
+
     # 7. text match (substring / first-word) as a last resort
     if a:
         for o in opts:
