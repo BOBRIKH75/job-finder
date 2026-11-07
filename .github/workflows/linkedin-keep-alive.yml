@@ -8,6 +8,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: linkedin-keep-alive
+  cancel-in-progress: false
+
 jobs:
   keep-alive:
     runs-on: [self-hosted, macOS, linkedin]

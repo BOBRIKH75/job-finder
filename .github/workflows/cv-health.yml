@@ -1,0 +1,47 @@
+name: CV Health (truthful metrics + alerts)
+
+# Hourly, cloud. Real confirmed applications from Gmail, runner status, last success per
+# apply workflow, cookie-expiry detection. Writes agent/data/cv_health.json (read by
+# scripts/cv_dynamic.py) and pushes de-duplicated ntfy alerts.
+on:
+  schedule:
+    - cron: '10 * * * *'
+  workflow_dispatch: {}
+
+concurrency:
+  group: cv-health
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  actions: read
+
+defaults:
+  run:
+    working-directory: agent
+
+jobs:
+  health:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build health report + alerts
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT || github.token }}
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+        run: python3 -u scripts/cv_health.py
+      - name: Persist report + alert dedup state
+        if: always()
+        run: |
+          cd $GITHUB_WORKSPACE
+          git config user.email "bot@bobrikh.dev"
+          git config user.name "CV Health Bot"
+          git add agent/data/cv_health.json agent/data/cv_health_state.json 2>/dev/null || true
+          git diff --staged --quiet || git commit -m "cv-health: report + alert state [skip ci]"
+          for i in 1 2 3; do git pull --rebase --autostash && git push && break || sleep 5; done

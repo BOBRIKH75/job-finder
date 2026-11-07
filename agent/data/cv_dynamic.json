@@ -1,0 +1,19 @@
+{
+  "_doc": "Safe-bounds config for scripts/cv_dynamic.py. Missing file or enabled=false => workflow defaults are used unchanged.",
+  "enabled": true,
+  "max_health_age_hours": 48,
+  "min_total_confirmed_7d": 5,
+  "scale_min": 0.7,
+  "scale_max": 1.5,
+  "platforms": {
+    "indeed": {
+      "TARGET_SUBMITS": {"default": 15, "min": 8, "max": 25},
+      "RESULTS_WANTED": {"default": 50, "min": 30, "max": 80}
+    },
+    "dice": {
+      "DICE_TARGET": {"default": 40, "min": 20, "max": 60}
+    },
+    "greenhouse": {},
+    "linkedin": {}
+  }
+}

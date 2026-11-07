@@ -9,6 +9,10 @@ defaults:
   run:
     working-directory: agent
 
+concurrency:
+  group: refresh-cookies
+  cancel-in-progress: false
+
 jobs:
   refresh:
     # MUST run on self-hosted — needs local Chrome with your logged-in session

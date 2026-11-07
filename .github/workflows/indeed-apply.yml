@@ -25,6 +25,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Dynamic knobs (cv_dynamic - optional, defaults if anything is missing)
+        continue-on-error: true
+        run: |
+          export PATH="/usr/local/homebrew/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
+          python3 scripts/cv_dynamic.py --platform indeed || true
+
       - name: Trust corporate SSL (fixes CERTIFICATE_VERIFY_FAILED on corp network)
         run: |
           security find-certificate -a -p /Library/Keychains/System.keychain > $GITHUB_WORKSPACE/.corp-roots.pem 2>/dev/null || true
@@ -88,8 +94,8 @@ jobs:
           CAPSOLVER_API_KEY: ${{ secrets.CAPSOLVER_KEY }}
           GH_TOKEN: ${{ secrets.GH_PAT || github.token }}
           ANSWERER_NO_ASK: '1'
-          TARGET_SUBMITS: '15'
-          RESULTS_WANTED: '50'
+          TARGET_SUBMITS: ${{ env.CV_TARGET_SUBMITS || '15' }}
+          RESULTS_WANTED: ${{ env.CV_RESULTS_WANTED || '50' }}
           INDEED_HOURS_OLD: '72'
           HEADFUL: '1'
           CLOUDFLARE_WAIT: '30'   # wait up to 30s for Turnstile to auto-pass (headful real

@@ -11,6 +11,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: refresh-dice-cookies
+  cancel-in-progress: false
+
 jobs:
   refresh:
     runs-on: self-hosted
