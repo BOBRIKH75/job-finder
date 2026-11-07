@@ -10,6 +10,8 @@ truthful answer, it skips that job instead of guessing. These gaps came from rea
 | Willing to relocate? (now always answered "No") | Indeed + LinkedIn | `willing_to_relocate` |
 | Willing to work on-site / hybrid / commute outside Colorado? (now "No") | Indeed + LinkedIn | `open_to_onsite`, `onsite_locations` |
 | Willing to attend in-person interviews in other cities? | LinkedIn | `in_person_interview_ok` |
+| Start year of your most recent job (Indeed/Infosys form blocks without it) | Indeed | `current_job_start_year` |
+| Graduation year | Indeed | `graduation_year` |
 | Self-rated skill levels / years per technology (big data, system design, etc.) | LinkedIn dropdowns | `skill_years: {"kafka": 6, ...}` |
 | Domain experience years (banking, order management, ...) - now answered 0 | LinkedIn / Indeed | `domain_years: {...}` |
 

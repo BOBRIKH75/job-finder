@@ -103,3 +103,12 @@ def test_memory_cannot_override_sponsorship(monkeypatch):
     monkeypatch.setattr(qa, "save_approved_answer", lambda *a, **k: None)
     q = "Will you now or in the future require sponsorship for employment visa status?"
     assert qa.answer_question(None, q, "textarea", None, PROFILE) == "No"
+
+
+def test_never_invent_start_year(monkeypatch):
+    import question_answerer as qa
+    monkeypatch.setattr(qa, "get_approved_answer", lambda db, q: None)
+    monkeypatch.setattr(qa, "save_approved_answer", lambda *a, **k: None)
+    assert qa.answer_question(None, "Start year *", "text", None, PROFILE) is None
+    assert qa.answer_question(None, "Start year *", "text", None, dict(PROFILE, current_job_start_year=2019)) == "2019"
+    assert qa.answer_question(None, "Address Line 1", "text", None, PROFILE) is None

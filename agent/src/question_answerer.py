@@ -95,6 +95,13 @@ _CRITICAL_Q = re.compile(r"sponsor|authori[sz]ed to work|legally|eligible to wor
                          r"permanent resident|clearance|felony|convicted|relocat")
 
 
+_NEVER_INVENT = [
+    (re.compile(r"\bstart year\b|year (you )?started|\bfrom year\b"), "current_job_start_year"),
+    (re.compile(r"graduation year|year of graduation|year graduated"), "graduation_year"),
+    (re.compile(r"address line|street address|\baddress 1\b|^address$"), "address_line1"),
+]
+
+
 def _profile_answer(question: str, field_type: str, options, profile: dict):
     """Return an answer from the profile, or None if no rule matches."""
     q = question.lower()
@@ -360,6 +367,17 @@ def answer_question(db, question: str, field_type: str = "text",
             return str(fresh)
     if remembered:
         return remembered
+
+    # 1b. FACTS WE MUST NEVER INVENT (not in profile.json): answer from an optional profile key
+    #     or return None so the job is skipped. See docs/NEEDS-FROM-USER.md.
+    ql = question.lower()
+    for rx, key in _NEVER_INVENT:
+        if rx.search(ql):
+            val = profile.get(key)
+            if val not in (None, ""):
+                return str(val)
+            print(f"      NEEDS-FROM-USER profile.{key}: {question[:50]!r}")
+            return None
 
     # 2. PROFILE RULES
     ans = _profile_answer(question, field_type, options, profile)

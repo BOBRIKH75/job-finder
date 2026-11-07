@@ -565,6 +565,35 @@ def _fill_checkbox_groups(page, db, profile, company):
     return filled
 
 
+def _upload_resume(page, profile):
+    """Attach resume.pdf to an EMPTY file input whose label says resume/CV (required uploads)."""
+    import os
+    path = profile.get("resume_path") or "resume.pdf"
+    if not os.path.isabs(path):
+        for base in (os.getcwd(), os.path.join(os.path.dirname(__file__), "..")):
+            cand = os.path.join(base, path)
+            if os.path.exists(cand):
+                path = cand
+                break
+    if not os.path.exists(path):
+        return 0
+    done = 0
+    try:
+        files = page.locator('input[type="file"]')
+        for i in range(files.count()):
+            el = files.nth(i)
+            empty = el.evaluate("e => e.files.length === 0")
+            lab = el.evaluate("""e => { let t=''; if (e.id){const l=document.querySelector(`label[for="${e.id}"]`); if(l)t=l.textContent;}
+                  if(!t) t=e.getAttribute('aria-label')||''; if(!t&&e.parentElement) t=e.parentElement.textContent||''; return t.toLowerCase(); }""")
+            if empty and any(k in lab for k in ("resume", "cv", "curriculum")):
+                el.set_input_files(path)
+                done += 1
+                print("      uploaded resume file")
+    except Exception as exc:
+        print(f"      resume upload err: {str(exc)[:50]}")
+    return done
+
+
 def debug_state(page, tag="stuck"):
     """Log STRUCTURE of a stuck questions page (labels/types/errors/buttons - never values)."""
     try:
@@ -595,6 +624,7 @@ def fill_questions_page(page, db, profile, company: str = "") -> bool:
     total += _fill_textareas(page, db, profile, company)
     total += _fill_text_inputs(page, db, profile, company)
     total += _fill_selects(page, db, profile, company)
+    total += _upload_resume(page, profile)
     total += _fill_checkbox_groups(page, db, profile, company)
     total += _fill_checkboxes(page, db, profile, company)
     print(f"    📝 filled {total} field(s)")
