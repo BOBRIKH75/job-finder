@@ -254,9 +254,11 @@ def main():
     applied = 0
     failed = []
     skipped = 0
-    MAX_APPS = 30
+    MAX_APPS = int(os.environ.get('GH_MAX_APPS', '40'))
+    _prio: dict = {}   # url -> priority (remote-US + Java-strong first)
     company_failures: dict = {}
     browser_queue: list = []
+    _unconfirmed: list = []   # submitted-but-no-thank-you-page; resolved via Gmail
     _api_dead = 0
 
     companies_file = 'agent/data/companies.json'
@@ -337,6 +339,12 @@ def main():
                     print(f"  ⏭ wrong-role title: '{title[:45]}' @ {company_name[:20]}")
                     continue
                 _ok, _score, _why = _cv_ok(title, _desc, _loc)
+                _tl = title.lower()
+                _prio[url] = (_score
+                              + (4 if ('remote' in (_loc or '').lower() or 'remote' in _tl) else 0)
+                              + (3 if 'java' in _tl else 0)
+                              + (2 if re.search(r'\b(senior|sr|staff|lead|principal)\b', _tl) else 0)
+                              + (2 if re.search(r'back[- ]?end|platform|api|integration', _tl) else 0))
                 if not _ok:
                     skipped += 1
                     print(f"  ⏭️ off-CV: '{title[:40]}' @ {company_name[:20]} "
@@ -453,10 +461,11 @@ def main():
     # ── Strategy 2: Browser batch (Playwright, one session for all queued jobs) ──
     if browser_queue and applied < MAX_APPS:
         remaining = MAX_APPS - applied
-        remaining = min(remaining, int(os.environ.get('GH_BROWSER_MAX', '10')))
+        remaining = min(remaining, int(os.environ.get('GH_BROWSER_MAX', '30')))
+        browser_queue.sort(key=lambda j: -_prio.get(j.get('url', ''), 0))   # best fits first
         bq_slice = browser_queue[:remaining]
-        browser_jobs = [{'url': j['url'], 'title': j['title'], 'company': j['company']}
-                        for j in bq_slice]
+        browser_jobs = [{'url': j['url'], 'title': j['title'], 'company': j['company'],
+                         'ats_type': 'greenhouse'} for j in bq_slice]
 
         print(f"\n🌐 Browser Strategy: {len(browser_jobs)} jobs (Playwright)...")
         try:
@@ -474,6 +483,14 @@ def main():
                     _k3=_gh_key(res.get('company',''), res.get('title',''));  _run_seen.add(_k3) if _k3 else None   # same-run dup
 
             applied += browser_applied
+            # Submits whose page never showed a thank-you (redirect to a company page etc.):
+            # keep them aside, Gmail reconciliation below decides if they really landed.
+            for res in (browser_results or []):
+                if res.get('url') in submitted_urls:
+                    continue
+                _errs = ' '.join(str(a.get('error', '')) for a in res.get('attempts', []))
+                if 'url_changed_no_confirmation' in _errs or 'No success signal' in _errs:
+                    _unconfirmed.append(res)
             print(f"  🌐 Browser results: {browser_applied} submitted")
 
             # Jobs browser also failed → save for next run
@@ -500,6 +517,25 @@ def main():
         for j in browser_queue:
             release_claim(db, j.get('company', ''), j.get('title', ''))
         failed.extend(browser_queue)
+
+    # ── Gmail reconciliation: ground truth for what REALLY landed ────────────
+    try:
+        from src.gh_reconcile import reconcile, fetch_confirmations, confirmed_for
+        if applied or _unconfirmed:
+            time.sleep(int(os.environ.get('GH_RECONCILE_WAIT', '60')))   # let emails arrive
+        _new, _tot = reconcile(days=2)
+        print(f"\n📬 Gmail: {_tot} ATS confirmation emails in last 2 days ({_new} new recorded)")
+        _confs = fetch_confirmations(days=1) if _unconfirmed else []
+        _rescued = 0
+        for res in _unconfirmed:
+            if confirmed_for(res.get('company', ''), _confs):
+                _record_applied(db, res.get('company', ''), res.get('title', ''), res['url'])
+                _rescued += 1
+                print(f"  📬 Gmail-confirmed (no thank-you page): {res.get('title','')[:40]} @ {res.get('company','')}")
+        applied += _rescued
+        print(f"📬 Recorded submits this run: {applied} | rescued via Gmail: {_rescued}")
+    except Exception as _re_err:
+        print(f"  ⚠ Gmail reconcile skipped: {str(_re_err)[:60]}")
 
     # ── Persist remaining failures for next run ──────────────────────────────
     failed_file = 'agent/data/failed_jobs.json'
