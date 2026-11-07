@@ -195,26 +195,66 @@ FAIL_TTL_DAYS = int(os.environ.get('FAIL_TTL_DAYS', '7'))
 
 
 def _load_failed_fresh():
-    """Return the set of failed job-ids that are still WITHIN the TTL window.
-
-    Backward compatible:
-      - new format: {id: last_fail_epoch}  -> keep only if age < FAIL_TTL_DAYS
-      - old format: [id, id, ...]          -> no timestamp; treat as fresh ONCE, then the
-        next _save_failed writes the timestamped form so it can expire later.
-    """
+    """Return failed job-ids still blocked. The block window depends on the failure REASON
+    (data/dice_failed_reasons.json): transient reasons (incomplete/error) retry after 1 day,
+    login_redirect never blocks, no_apply_button blocks 14d, unknown reasons use FAIL_TTL_DAYS.
+    Legacy list format is honored once."""
     try:
         raw = json.load(open(FAILED_FILE))
     except Exception:
         return set()
+    reasons = _jload(REASONS_FILE, {})
     now = time.time()
-    ttl = FAIL_TTL_DAYS * 86400
     if isinstance(raw, dict):
-        return {jid for jid, ts in raw.items()
-                if (now - float(ts)) < ttl}
+        out = set()
+        for jid, ts in raw.items():
+            ttl = REASON_TTL_DAYS.get(reasons.get(jid), FAIL_TTL_DAYS) * 86400
+            if (now - float(ts)) < ttl:
+                out.add(jid)
+        return out
     if isinstance(raw, list):
-        # legacy list — no timestamps; honor them this run (they migrate on next save)
         return set(str(x) for x in raw)
     return set()
+
+
+ATTEMPTS_FILE = 'data/dice_attempts.json'
+REASONS_FILE = 'data/dice_failed_reasons.json'
+STATS_FILE = 'data/dice_stats.json'
+DEAD_TTL_DAYS = int(os.environ.get('DEAD_TTL_DAYS', '30'))
+# per-reason retry window (days). Transient reasons retry fast; 'no_apply_button' (usually an
+# external-site apply the bot cannot do) stays blocked longer. Env FAIL_TTL_DAYS is the default.
+REASON_TTL_DAYS = {'incomplete': 1, 'error': 1, 'login_redirect': 0, 'no_apply_button': 14}
+
+
+def _jload(path, default):
+    try:
+        return json.load(open(path))
+    except Exception:
+        return default
+
+
+def _jsave(path, obj):
+    try:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        json.dump(obj, open(path, 'w'), indent=0)
+    except Exception:
+        pass
+
+
+def _log_attempt(jid, title, company, result):
+    """Truthful per-attempt log (used by check_dice_confirmations to reconcile with Gmail)."""
+    a = _jload(ATTEMPTS_FILE, [])
+    cutoff = time.time() - 14 * 86400
+    a = [x for x in a if x.get('ts', 0) > cutoff]
+    a.append({'jid': jid, 'title': title, 'company': company, 'result': result, 'ts': time.time()})
+    _jsave(ATTEMPTS_FILE, a)
+    day = time.strftime('%Y-%m-%d')
+    st = _jload(STATS_FILE, {})
+    d = st.setdefault(day, {'attempted': 0, 'signal_submitted': 0, 'email_confirmed': 0})
+    d['attempted'] += 1
+    if result == 'submitted':
+        d['signal_submitted'] += 1
+    _jsave(STATS_FILE, st)
 
 
 LESSONS_FILE = 'data/dice_lessons.json'
@@ -376,6 +416,32 @@ def _search_urls(page, term, want=50, pages=3):
         base = 'https://www.dice.com'
         out += [(base + r['href'] if r['href'].startswith('/') else r['href'], r['title']) for r in rows]
     return out
+
+
+def _diag_incomplete(page, title):
+    """Save NON-sensitive post-submit signals (url path, visible buttons, headings) for
+    'incomplete' results so confirmation detection can be tuned. Capped to 25 entries."""
+    try:
+        info = page.evaluate(r"""() => ({
+            btns: Array.from(document.querySelectorAll('button,a[data-testid]'))
+                .filter(e => e.offsetParent !== null).slice(0, 12)
+                .map(e => (e.textContent || '').trim().slice(0, 30)),
+            heads: Array.from(document.querySelectorAll('h1,h2,h3,[role=dialog] *'))
+                .slice(0, 6).map(e => (e.textContent || '').trim().slice(0, 50)),
+            dialog: !!document.querySelector('[role=dialog]')
+        })""") or {}
+        info['path'] = re.sub(r'[0-9a-f-]{20,}', 'ID', (page.url or '').split('?')[0])[-80:]
+        info['title'] = (title or '')[:40]
+        info['ts'] = int(time.time())
+        try:
+            cur = json.load(open('data/dice_incomplete_debug.json'))
+        except Exception:
+            cur = []
+        cur = (cur + [info])[-25:]
+        json.dump(cur, open('data/dice_incomplete_debug.json', 'w'), indent=0)
+        print(f"    diag: path={info['path']} dialog={info.get('dialog')} btns={info.get('btns')}")
+    except Exception:
+        pass
 
 
 def _apply_one(page, url, title, db=None, profile=None):
@@ -551,6 +617,16 @@ def _apply_one(page, url, title, db=None, profile=None):
     # instant check undercounted real submits that Dice had actually emailed confirmation for).
     if _confirm_with_wait(page):
         return 'submitted', company
+    # Reload the job page: Dice flips the apply control to 'Applied' on the job page itself,
+    # but the wizard page we are on may never show it. A reload reads Dice's own record.
+    try:
+        page.goto(url, wait_until='domcontentloaded', timeout=25000)
+        time.sleep(3)
+        if _real_confirmation(page):
+            return 'submitted', company
+    except Exception:
+        pass
+    _diag_incomplete(page, title)
     return 'incomplete', company
 
 
@@ -563,13 +639,17 @@ def main():
 
     applied_ids = _load_fresh_applied(JK_FILE)
     failed_ids = _load_failed_fresh()
-    dead = {k for k, c in _load_dead().items() if int(c) >= MAX_FAILS}
+    _fts = _jload(FAILED_FILE, {})
+    _fts = _fts if isinstance(_fts, dict) else {}
+    # retired only while the last failure is within DEAD_TTL_DAYS (dead used to be forever)
+    dead = {k for k, c in _load_dead().items()
+            if int(c) >= MAX_FAILS and (time.time() - float(_fts.get(k, 0))) < DEAD_TTL_DAYS * 86400}
     applied_titles = _load_fresh_applied(APPLIED_FILE)
     _apply_lessons_to_env()   # SELF-LEARNING: apply fixes learned from past failures
     print(f"🗂️  Dice dedup (TTL={APPLIED_TTL_DAYS}d): {len(applied_ids)} ids applied, "
           f"{len(applied_titles)} titles, {len(dead)} retired")
 
-    def _save_failed(jid):
+    def _save_failed(jid, reason=''):
         # Write the failed-id with a timestamp so it can EXPIRE after FAIL_TTL_DAYS
         # (transient failures get retried later instead of blocked forever). Migrates the
         # legacy list format to {id: epoch} on first write.
@@ -582,6 +662,8 @@ def main():
         elif not isinstance(raw, dict):
             raw = {}
         raw[jid] = time.time()
+        if reason:
+            _r = _jload(REASONS_FILE, {}); _r[jid] = reason; _jsave(REASONS_FILE, _r)
         try:
             os.makedirs(os.path.dirname(FAILED_FILE), exist_ok=True)
             json.dump(raw, open(FAILED_FILE, 'w'), indent=0)
@@ -950,6 +1032,7 @@ def main():
             # applied to so we never re-apply to the SAME title at the SAME company — while
             # still allowing the same title at a DIFFERENT company (fixes global starvation).
             nt = _title_key(company, title)
+            _log_attempt(jid, title, company, result)
             if result == 'submitted':
                 submitted += 1
                 applied_ids.add(jid); _add_applied(JK_FILE, jid)
@@ -970,8 +1053,8 @@ def main():
                     applied_titles.add(nt); _add_applied(APPLIED_FILE, nt)
             else:
                 release_claim(db, 'dice:' + (title or ''), title)   # not applied → free claim
-                if jid:
-                    _save_failed(jid)
+                if jid and result != 'login_redirect':
+                    _save_failed(jid, result)
                 _record_dice_lesson(result)   # SELF-LEARNING: next run auto-applies the fix
                 if result == 'login_redirect':
                     _login_redirect_seen = True
@@ -1032,7 +1115,8 @@ def main():
             print("  ⚠️ SESSION EXPIRED (login_redirect) — DICE_COOKIES needs refresh. The "
                   "refresh-dice-cookies workflow will update it; or run DICE_MANUAL_LOGIN=1 locally.")
 
-        print(f"\n=== Dice: SUBMITTED {submitted} application(s) ===")
+        print(f"\n=== Dice: SUBMITTED {submitted} application(s) (page-signal; Gmail reconcile "
+              f"in the next step gives the confirmed count) ===")
         ctx.close()
 
 

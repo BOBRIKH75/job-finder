@@ -130,7 +130,8 @@ jobs:
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
         run: |
           cd $GITHUB_WORKSPACE/agent
-          python3 check_dice_confirmations.py --since-min 45 || true
+          sleep 90   # let Dice's confirmation emails arrive
+          python3 check_dice_confirmations.py --since-min 60 --days 2 || true
 
       - name: Upload login debug screenshots (if any)
         if: always()
@@ -152,7 +153,9 @@ jobs:
           git add agent/data/dice_applied_ids.json agent/data/dice_applied.json \
                   agent/data/dice_email_confirmed_titles.json agent/data/dice_failed_ids.json \
                   agent/data/dice_dead_ids.json agent/data/dice_lessons.json \
-                  agent/data/dice_first_run.json 2>/dev/null || true
+                  agent/data/dice_first_run.json agent/data/dice_attempts.json \
+                  agent/data/dice_failed_reasons.json agent/data/dice_stats.json \
+                  agent/data/dice_incomplete_debug.json 2>/dev/null || true
           git diff --staged --quiet || git commit -m "dice: sync applied/dedup/lessons state [skip ci]"
           git pull --rebase --autostash || true
           git push || true
