@@ -463,8 +463,12 @@ def _apply_one(page, url, title, db=None, profile=None):
     try:
         company = page.evaluate(
             """() => {
-                const el = document.querySelector('a[href*="/company/"], [data-cy="companyNameLink"], [data-testid*="company" i]');
-                return el ? el.textContent.trim().slice(0,60) : '';
+                const els = document.querySelectorAll('a[href*="/company/"], a[href*="/company-profile/"], [data-cy="companyNameLink"], [data-testid*="company" i]');
+                for (const el of els) {
+                    const t = (el.textContent || '').trim();
+                    if (t && !/^dice id/i.test(t) && t.length < 80) return t.slice(0, 60);
+                }
+                return '';
             }""") or ''
     except Exception:
         company = ''

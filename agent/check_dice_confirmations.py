@@ -129,8 +129,6 @@ for a in attempts:
     for k, (subj, title, company, dt) in enumerate(confs):
         if k in used or norm(title) != nt:
             continue
-        if comp and company and comp[0] not in company.lower() and company.lower().split()[0] not in (a.get('company') or '').lower():
-            continue
         if dt and abs(dt.timestamp() - a.get('ts', 0)) > 3 * 3600:
             continue   # email must come within 3h of the attempt
         used.add(k)
