@@ -164,7 +164,11 @@ def _login_email_code(page) -> bool:
     (sb.click() if sb else cbox.press('Enter'))
     time.sleep(7)
     _cf(page)
-    print("  after code:", _short(page.url), _controls(page)[:8])
+    nn = _first(page, ['button:has-text("Not now")', 'a:has-text("Not now")'])
+    if nn:  # passkey upsell
+        nn.click()
+        time.sleep(3)
+    print("  after code:", _short(page.url))
     return True
 
 
@@ -250,8 +254,6 @@ def ensure_logged_in(page, tries=2) -> bool:
     """Return True when the page's browser context has a valid Indeed session."""
     if is_logged_in(page):
         return True
-    if import_from_real_chrome(page):
-        return True
     for i in range(tries):
         print(f"  \U0001F511 auto-login attempt {i + 1}")
         for fn in (_login_email_code, _login_google):
@@ -262,7 +264,8 @@ def ensure_logged_in(page, tries=2) -> bool:
             if is_logged_in(page):
                 print(f"  \u2705 logged in via {fn.__name__}")
                 return True
-    return False
+    # last resort only (macOS keychain usually blocks this on the runner)
+    return import_from_real_chrome(page)
 
 
 if __name__ == '__main__':
