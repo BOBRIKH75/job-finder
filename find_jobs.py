@@ -9,6 +9,7 @@ Bob Rikh — Cloud C2C Job Finder v4 (Self-Learning)
 """
 import json, os, hashlib, re, sys, urllib.request, ssl, subprocess, tempfile
 from datetime import datetime
+from pathlib import Path
 from jobspy import scrape_jobs
 import pandas as pd
 EMAIL = 'bobrikh75@gmail.com'
