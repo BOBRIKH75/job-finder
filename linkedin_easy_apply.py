@@ -103,7 +103,7 @@ def is_safe_run_time() -> tuple[bool, str]:
 def send_restriction_alert(signal: str):
     """Email alert when LinkedIn restriction is detected — needs immediate human action."""
     resend_key = os.environ.get("RESEND_KEY", "")
-    gmail_user = os.environ.get("GMAIL_USER", "bobrikh75@gmail.com")
+    gmail_user = os.environ.get("GMAIL_USER", "")
     if not resend_key:
         return
     import urllib.request
@@ -268,7 +268,7 @@ def load_linkedin_cookies() -> list[dict]:
 def alert_cookie_expired():
     """Send an email alert when LinkedIn cookies need refreshing."""
     resend_key = os.environ.get("RESEND_KEY", "")
-    gmail_user = os.environ.get("GMAIL_USER", "bobrikh75@gmail.com")
+    gmail_user = os.environ.get("GMAIL_USER", "")
     if not resend_key:
         print("  ⚠️  LINKEDIN_COOKIES expired — update the LINKEDIN_COOKIES secret")
         return
@@ -368,8 +368,8 @@ def _fill_form_fields_with_ai(driver):
         "education level": "Bachelor",
         "city": "Parker",
         "location": "Parker, CO",
-        "phone": "347-268-5917",
-        "email": "bobrikh75@gmail.com",
+        "phone": os.environ.get("APPLICANT_PHONE", ""),
+        "email": os.environ.get("APPLICANT_EMAIL", ""),
         "linkedin": "https://www.linkedin.com/in/bobrikh75/",
         "website": "https://www.linkedin.com/in/bobrikh75/",
         "gender": "Male",
