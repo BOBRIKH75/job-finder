@@ -45,7 +45,7 @@ def log(msg: str):
 # ------------------------------------------------------------------ answers (truthful)
 def answer_for(label: str, prof: dict, kind: str = "text"):
     """Return an answer string from profile data, or None if we do not know (=> abort job)."""
-    q = " ".join(label.lower().split())
+    q = " ".join(label.lower().replace("*", " ").split())
     yrs = str(prof.get("years_experience", ""))
     skills = " ".join(prof.get("skills", [])).lower()
     if "sponsor" in q:
@@ -58,8 +58,14 @@ def answer_for(label: str, prof: dict, kind: str = "text"):
         return prof.get("last_name")
     if "email" in q:
         return prof.get("email")
+    if re.search(r"secondary|alternate|alternative|other phone|fax", q):
+        return None
+    if re.search(r"phone.*(type)|^type$|phone type", q):
+        return "Mobile"
     if "phone" in q or "mobile" in q:
         return prof.get("phone")
+    if re.search(r"\bstate\b|province", q):
+        return prof.get("state")
     if "linkedin" in q:
         return prof.get("linkedin")
     if "github" in q:
@@ -246,6 +252,16 @@ def open_easy_apply(page, job_id) -> bool:
 
 
 # ------------------------------------------------------------------ form
+RADIO_Q_JS = """e => {
+  const g = (x) => (x && (x.innerText || x.textContent) || '').trim();
+  const opts = [...e.querySelectorAll('input[type=radio]')].map(r => (r.labels && r.labels[0] ? g(r.labels[0]) : r.value));
+  let t = g(e.querySelector('legend')) || e.getAttribute('aria-label') || '';
+  if (!t && e.getAttribute('aria-labelledby')) t = e.getAttribute('aria-labelledby').split(' ').map(i => g(document.getElementById(i))).join(' ');
+  if (!t) { let p = e.parentElement; for (let k = 0; k < 3 && p && !t; k++, p = p.parentElement) {
+      t = g(p).split('\\n').map(x => x.trim()).filter(x => x && !opts.includes(x))[0] || ''; } }
+  return t.replace(/\\s+/g, ' ').trim();
+}"""
+
 LABEL_JS = """e => {
   const g = (x) => (x && (x.innerText || x.textContent) || '').trim();
   let t = '';
@@ -318,7 +334,7 @@ def fill_step(dialog, prof) -> bool:
                 continue
             if g.locator("input[type='radio']:checked").count():
                 continue
-            legend = (g.inner_text(timeout=2000) or "").split("\n")[0]
+            legend = g.evaluate(RADIO_Q_JS)
             ans = answer_for(legend, prof)
             chosen = False
             if ans:
@@ -329,7 +345,7 @@ def fill_step(dialog, prof) -> bool:
                         chosen = True
                         break
             if not chosen:
-                log(f"      ❓ unanswerable radio: '{legend[:60]}'")
+                log(f"      ❓ unanswerable radio: '{legend[:80]}'")
                 ok = False
         except Exception:
             continue
@@ -373,14 +389,15 @@ CONFIRM = ("application sent", "your application was sent", "application was sen
            "we've sent your application", "your application has been submitted")
 
 
-def run_dialog(page, prof) -> bool:
+def run_dialog(page, prof) -> str:
+    """Returns 'sent' | 'skip' (unanswerable question, not a failure) | 'fail'."""
     for step in range(9):
         time.sleep(random.uniform(1.5, 2.5))
         dialog = find_dialog(page)
         if dialog is None:
-            return False
+            return "fail"
         if not fill_step(dialog, prof):
-            return False
+            return "skip"
         sub = step_button(dialog, ("submit application",))
         if sub:
             time.sleep(random.uniform(1, 2))
@@ -395,24 +412,24 @@ def run_dialog(page, prof) -> bool:
                         pass
                 if any(s in txt for s in CONFIRM):
                     log("    📨 LinkedIn confirmed: application sent")
-                    return True
+                    return "sent"
             log("    ⚠ Submit clicked but NO confirmation seen — NOT counting")
             diagnostics(page, "no-confirm")
-            return False
+            return "fail"
         nxt = step_button(dialog, ("review your application", "review", "continue to next", "next", "continue"))
         if nxt is None:
             diagnostics(page, f"stuck{step}")
-            return False
+            return "fail"
         nxt.click(timeout=8000)
         time.sleep(1.5)
         err = dialog.locator("[role='alert'], .artdeco-inline-feedback--error, [data-test-form-element-error-messages]")
         try:
             if err.count() and any(e.is_visible() for e in [err.nth(k) for k in range(min(err.count(), 5))]):
                 log("      ⚠ validation error after Next — aborting this job")
-                return False
+                return "fail"
         except Exception:
             pass
-    return False
+    return "fail"
 
 
 def dismiss(page):
@@ -487,7 +504,7 @@ def main():
                         if fails >= MAX_FAIL_STREAK:
                             log("    🛑 4 failures in a row — stopping (account safety)")
                         break
-                    if job_id in applied["applied_ids"]:
+                    if job_id in applied["applied_ids"] or job_id in applied.get("skipped_ids", []):
                         continue
                     try:
                         page.goto(f"https://www.linkedin.com/jobs/view/{job_id}/", wait_until="domcontentloaded", timeout=60000)
@@ -500,7 +517,11 @@ def main():
                             continue
                         if restricted(page):
                             return
-                        if run_dialog(page, prof):
+                        res = run_dialog(page, prof)
+                        if res == "skip":
+                            log("    ⏭ Skipped (needs info we do not have in profile) — not a failure")
+                            applied.setdefault("skipped_ids", []).append(job_id)
+                        elif res == "sent":
                             count += 1
                             fails = 0
                             applied["applied_ids"].append(job_id)
@@ -516,7 +537,10 @@ def main():
                             except Exception:
                                 pass
                         base.save_applied(applied)
-                        base.human_delay()
+                        if res == "skip":
+                            time.sleep(random.uniform(10, 20))
+                        else:
+                            base.human_delay()
                     except Exception as exc:
                         fails += 1
                         log(f"    ⚠ Error on job: {type(exc).__name__}: {str(exc)[:80]}")

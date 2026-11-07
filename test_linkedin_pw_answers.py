@@ -22,3 +22,10 @@ def test_unknown_skill_returns_none():
 
 def test_unknown_question_none():
     assert m.answer_for("Favorite color?", P) is None
+
+
+def test_phone_type_and_state():
+    p = dict(P, state="CO")
+    assert m.answer_for("Type*", p) == "Mobile"
+    assert m.answer_for("State or Province*", p) == "CO"
+    assert m.answer_for("Secondary Phone Number", p) is None
