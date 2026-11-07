@@ -1362,7 +1362,7 @@ def _fill_remaining_required(page, profile: dict) -> int:
     return filled
 
 
-def submit_and_verify(page, page_data, original_url) -> dict:
+def submit_and_verify(page, page_data, original_url, _live=False) -> dict:
     """Find submit button, click it, verify success."""
     submit_texts = ["submit application", "submit", "apply now", "apply for this job", "send application"]
     skip_texts = ["linkedin", "google", "facebook", "twitter", "sign in", "log in", "dismiss"]
@@ -1388,7 +1388,7 @@ def submit_and_verify(page, page_data, original_url) -> dict:
                     except Exception:
                         pass
                     if btn["selector"]:
-                        page.locator(btn["selector"]).click()
+                        page.locator(btn["selector"]).first.click()
                     else:
                         page.locator(f'button:has-text("{btn["text"]}")').first.click(timeout=8000)
                     wait(2, 4)
@@ -1461,6 +1461,27 @@ def submit_and_verify(page, page_data, original_url) -> dict:
                 except Exception as e:
                     return {"submitted": False, "reason": str(e)[:200]}
 
+    if not _live:
+        # LIVE FALLBACK: the button list was scanned before React finished rendering (or the
+        # button sits below the fold). Scroll to the bottom, re-scan real submit buttons and retry.
+        try:
+            page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+            page.wait_for_timeout(1500)
+            live = []
+            for sel in ('button:has-text("Submit application")', 'button:has-text("Submit Application")',
+                        'button[type="submit"]', 'input[type="submit"]', 'button:has-text("Submit")'):
+                loc = page.locator(sel)
+                if loc.count() > 0 and loc.first.is_visible():
+                    loc.first.scroll_into_view_if_needed(timeout=3000)
+                    txt = (loc.first.inner_text(timeout=2000) or "Submit application").strip() or "Submit application"
+                    live.append({"text": txt if "submit" in txt.lower() else "Submit application",
+                                 "selector": sel})
+                    break
+            if live:
+                print("      🔎 Submit button found by live re-scan — retrying submit")
+                return submit_and_verify(page, {"buttons": live}, original_url, _live=True)
+        except Exception as exc:
+            print(f"      ⚠ live submit re-scan failed: {str(exc)[:60]}")
     return {"submitted": False, "reason": "No submit button found"}
 
 
