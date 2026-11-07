@@ -631,5 +631,67 @@
     "replied": false,
     "bounced": false,
     "re_engage_count": 0
+  },
+  "64a8b1d08023": {
+    "email": "origin.allow@taskverse.io",
+    "date": "2026-11-07T18:24:40.921193",
+    "job": "Java Developer",
+    "company": "TaskVerse",
+    "url": "https://www.linkedin.com/jobs/view/4488719874",
+    "recruiter": "origin allow",
+    "source": "linkedin+guess",
+    "bounced": true
+  },
+  "1bd7f1c22eb5": {
+    "email": "origin.allow@optomi.com",
+    "date": "2026-11-07T18:24:46.130349",
+    "job": "Lead Software Engineer (Java / Kafka / MongoDB)",
+    "company": "Optomi",
+    "url": "https://www.linkedin.com/jobs/view/4486751914",
+    "recruiter": "origin allow",
+    "source": "linkedin+guess",
+    "bounced": true
+  },
+  "50d7170dab9c": {
+    "email": "careers@intellibus.com",
+    "date": "2026-11-07T18:27:56.166046",
+    "last_contact": "2026-11-07T18:27:56.166046",
+    "job": "Java Developer C2C",
+    "company": "Intellibus",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": true,
+    "re_engage_count": 0
+  },
+  "b086dc1077ae": {
+    "email": "recruiting@aditiconsulting.com",
+    "date": "2026-11-07T18:27:59.260441",
+    "last_contact": "2026-11-07T18:27:59.260441",
+    "job": "Java Developer C2C",
+    "company": "Aditi Consulting",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": false,
+    "re_engage_count": 0
+  },
+  "4ea8fbe48f70": {
+    "email": "recruiting@peraton.com",
+    "date": "2026-11-07T18:28:01.346310",
+    "last_contact": "2026-11-07T18:28:01.346310",
+    "job": "Java Developer C2C",
+    "company": "Peraton",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": false,
+    "re_engage_count": 0
   }
 }
