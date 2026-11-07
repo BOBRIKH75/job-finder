@@ -519,6 +519,39 @@ Answer with ONLY the answer (1-3 words max). No explanation.
         return "Yes"  # safe default
 
 
+def _find_step_button(driver, words):
+    """Find a visible button whose aria-label or text contains one of `words` (case-insens)."""
+    for el in driver.find_elements("css selector", "button, a[role='button']"):
+        try:
+            if not el.is_displayed():
+                continue
+            t = ((el.get_attribute("aria-label") or "") + " " + (el.text or "")).lower()
+            if any(w in t for w in words):
+                return el
+        except Exception:
+            continue
+    return None
+
+
+def _diag_apply_state(driver, tag):
+    try:
+        btns = []
+        for el in driver.find_elements("css selector", "button, a[role='button']"):
+            try:
+                if el.is_displayed():
+                    btns.append(((el.get_attribute("aria-label") or el.text or "").strip()[:40]))
+            except Exception:
+                pass
+        n_if = len(driver.find_elements("css selector", "iframe"))
+        n_dlg = len(driver.find_elements("css selector", "[role='dialog'], .artdeco-modal"))
+        body = (driver.find_element("css selector", "body").text or "")[:200].replace("\n", " | ")
+        print(f"    🔬 {tag} url={driver.current_url[:90]} tabs={len(driver.window_handles)} iframes={n_if} dialogs={n_dlg}")
+        print(f"    🔬 {tag} buttons={[b for b in btns if b][:25]}")
+        print(f"    🔬 {tag} body={body}")
+    except Exception as exc:
+        print(f"    🔬 diag failed: {str(exc)[:60]}")
+
+
 def discover_job_ids(keyword: str, max_ids: int = 25) -> list:
     """Find Easy Apply / Remote job IDs via LinkedIn's public guest endpoint.
 
@@ -612,6 +645,7 @@ def main():
         return
 
     applied_count = 0
+    _fail_streak = 0
 
     try:
         # Inject cookies instead of logging in
@@ -644,7 +678,7 @@ def main():
 
         # Search for jobs — include f_TPR=r86400 to filter last 24h, sort by date
         for keyword in SEARCH_KEYWORDS:
-            if applied_count >= MAX_APPLICATIONS_PER_RUN:
+            if applied_count >= MAX_APPLICATIONS_PER_RUN or _fail_streak >= 4:
                 break
 
             print(f"\n  🔍 Searching: '{keyword}'")
@@ -770,6 +804,9 @@ def main():
                 for card in job_cards[:8]:  # check up to 8, apply to max 5 per keyword
                     if applied_count >= MAX_APPLICATIONS_PER_RUN:
                         break
+                    if _fail_streak >= 4:
+                        print("    🛑 4 failures in a row — stopping early (account safety)")
+                        break
 
                     try:
                         # Click the job to open details — view it first (human behavior)
@@ -852,7 +889,9 @@ def main():
                             
                             try:
                                 # Look for Submit button
-                                submit_btn = driver.find_element("css selector", "button[aria-label*='Submit'], button[aria-label*='submit']")
+                                submit_btn = _find_step_button(driver, ("submit application", "submit"))
+                                if submit_btn is None:
+                                    raise RuntimeError("no submit")
                                 submit_btn.click()
                                 time.sleep(3)
                                 # HONESTY FIX (Bobur): a button CLICK is NOT proof the
@@ -891,11 +930,15 @@ def main():
 
                             try:
                                 # Look for Next/Review button
-                                next_btn = driver.find_element("css selector", "button[aria-label*='Continue'], button[aria-label*='Next'], button[aria-label*='Review']")
+                                next_btn = _find_step_button(driver, ("continue to next", "next", "review your application", "review"))
+                                if next_btn is None:
+                                    raise RuntimeError("no next")
                                 next_btn.click()
                                 time.sleep(2)
                             except Exception:
                                 # Try dismiss if stuck
+                                if _fail_streak < 3:
+                                    _diag_apply_state(driver, f"STUCK step{step}")
                                 try:
                                     driver.find_element("css selector", "button[aria-label='Dismiss']").click()
                                 except Exception:
@@ -904,6 +947,7 @@ def main():
 
                         if submitted:
                             applied_count += 1
+                            _fail_streak = 0
                             applied_data["applied_ids"].append(job_id)
                             applied_data["total"] += 1
                             print(f"    ✅ Applied! ({applied_count}/{MAX_APPLICATIONS_PER_RUN})")
@@ -915,6 +959,7 @@ def main():
                                 pass
                         else:
                             print(f"    ⚠️ Could not complete application")
+                            _fail_streak += 1
                             # Close the modal
                             try:
                                 driver.find_element("css selector", "button[aria-label='Dismiss']").click()
