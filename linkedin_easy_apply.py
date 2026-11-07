@@ -519,9 +519,51 @@ Answer with ONLY the answer (1-3 words max). No explanation.
         return "Yes"  # safe default
 
 
+def _open_easy_apply(driver, btn) -> bool:
+    """Open the Easy Apply modal. LinkedIn's 2026 SDUI flow is an <a href=".../apply/...">
+    whose dialog may render in the top document OR inside an iframe. Returns True when a
+    dialog is visible; leaves the driver switched into the frame that holds it."""
+    href = ""
+    try:
+        href = btn.get_attribute("href") or ""
+    except Exception:
+        pass
+    try:
+        driver.execute_script("arguments[0].scrollIntoView({block:'center'});", btn)
+        time.sleep(0.5)
+        btn.click()
+    except Exception:
+        try:
+            driver.execute_script("arguments[0].click();", btn)
+        except Exception:
+            pass
+    for attempt in range(2):
+        for _ in range(10):
+            time.sleep(1)
+            driver.switch_to.default_content()
+            if driver.find_elements("css selector", "[role='dialog'], .jobs-easy-apply-modal, .artdeco-modal"):
+                return True
+            for fr in driver.find_elements("css selector", "iframe"):
+                try:
+                    driver.switch_to.frame(fr)
+                    if driver.find_elements("css selector", "[role='dialog'], .jobs-easy-apply-modal, form"):
+                        return True
+                except Exception:
+                    pass
+                driver.switch_to.default_content()
+        if attempt == 0 and "/apply" in href:
+            print(f"    ↪ opening apply URL directly")
+            driver.get(href)
+    driver.switch_to.default_content()
+    return False
+
+
 def _find_step_button(driver, words):
     """Find a visible button whose aria-label or text contains one of `words` (case-insens)."""
-    for el in driver.find_elements("css selector", "button, a[role='button']"):
+    roots = driver.find_elements("css selector", "[role='dialog'], .jobs-easy-apply-modal")
+    pool = roots[-1].find_elements("css selector", "button") if roots else \
+        driver.find_elements("css selector", "button, a[role='button']")
+    for el in pool:
         try:
             if not el.is_displayed():
                 continue
@@ -869,8 +911,11 @@ def main():
 
                         # Click Easy Apply
                         print(f"    📝 Applying (job {job_id})...")
-                        easy_apply_btn.click()
-                        time.sleep(3)
+                        if not _open_easy_apply(driver, easy_apply_btn):
+                            try:
+                                print(f"    🔬 no dialog; apply href={(easy_apply_btn.get_attribute('href') or '')[:90]}")
+                            except Exception:
+                                pass
 
                         if check_for_restrictions(driver):
                             break
@@ -968,6 +1013,7 @@ def main():
                             except Exception:
                                 pass
 
+                        driver.switch_to.default_content()
                         # CRITICAL: Human-like delay between applications
                         human_delay()
 
