@@ -1323,7 +1323,7 @@ def submit_and_verify(page, page_data, original_url) -> dict:
                     if btn["selector"]:
                         page.locator(btn["selector"]).click()
                     else:
-                        page.locator(f'button:has-text("{btn["text"]}")').first.click()
+                        page.locator(f'button:has-text("{btn["text"]}")').first.click(timeout=8000)
                     wait(2, 4)
 
                     # Check success

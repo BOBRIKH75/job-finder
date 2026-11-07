@@ -120,15 +120,20 @@ def _record_applied(db, company, title, url):
     _save_gh_applied(company, title)   # persist to git-tracked JSON (survives CI runs)
 
 
-_NON_US = ('india', 'bangalore', 'bengaluru', 'hyderabad', 'pune', 'london', 'uk', 'united kingdom',
-           'canada', 'toronto', 'germany', 'berlin', 'dublin', 'ireland', 'singapore', 'tokyo',
-           'japan', 'australia', 'sydney', 'brazil', 'mexico', 'poland', 'warsaw', 'israel',
-           'tel aviv', 'netherlands', 'amsterdam', 'france', 'paris', 'spain', 'latam', 'emea', 'apac')
+_NON_US = ('india', 'bangalore', 'bengaluru', 'hyderabad', 'pune', 'vadodara', 'chennai', 'mumbai',
+           'gurgaon', 'gurugram', 'noida', 'kolkata', 'ahmedabad', 'kochi', 'coimbatore', 'jaipur',
+           'london', 'uk', 'united kingdom', 'canada', 'toronto', 'vancouver', 'montreal', 'germany',
+           'berlin', 'munich', 'dublin', 'ireland', 'singapore', 'tokyo', 'japan', 'australia',
+           'sydney', 'melbourne', 'brazil', 'sao paulo', 'mexico', 'poland', 'warsaw', 'krakow',
+           'israel', 'tel aviv', 'netherlands', 'amsterdam', 'france', 'paris', 'spain', 'madrid',
+           'barcelona', 'portugal', 'lisbon', 'romania', 'bucharest', 'philippines', 'manila',
+           'china', 'shanghai', 'beijing', 'korea', 'seoul', 'dubai', 'uae', 'latam', 'emea', 'apac')
+_NON_US_RE = re.compile(r"\b(" + "|".join(re.escape(k) for k in _NON_US) + r")\b", re.I)
 
 
 def _non_us_location(loc):
     l = (loc or '').lower()
-    return any(k in l for k in _NON_US) and not any(k in l for k in ('united states', ', us', ' usa'))
+    return bool(_NON_US_RE.search(l)) and not any(k in l for k in ('united states', ', us', ' usa'))
 
 
 def _fetch_gh_jd(url):
@@ -317,7 +322,8 @@ def main():
                 if not _desc and os.environ.get('GH_JD_ENRICH', '1') == '1':
                     _desc, _loc2 = _fetch_gh_jd(url)
                     _loc = _loc or _loc2
-                if _loc and _non_us_location(_loc) and 'remote' not in _loc.lower():
+                if (_loc and _non_us_location(_loc) and 'remote' not in _loc.lower()) \
+                        or _non_us_location(title):   # title like 'Java Developer - Pune'
                     skipped += 1
                     print(f"  ⏭ non-US location: '{title[:40]}' @ {company_name[:20]} ({_loc[:30]})")
                     continue
