@@ -312,6 +312,12 @@ def inject_cookies(driver, cookies: list[dict]):
                 name, _, value = cookie.partition('=')
                 cookie = {"name": name.strip(), "value": value.strip(),
                           "domain": ".linkedin.com", "path": "/"}
+            # ROOT-CAUSE FIX: never inject JSESSIONID. LinkedIn builds its csrf-token
+            # header from JSESSIONID; our .linkedin.com copy duplicated the one LinkedIn
+            # mints on www.linkedin.com -> every XHR threw "setRequestHeader"/"fetch headers"
+            # TypeError -> search "Something went wrong" and Easy Apply modal never opened.
+            if cookie.get("name") == "JSESSIONID":
+                continue
             # Selenium requires domain without leading dot for some cookies
             c = {k: v for k, v in cookie.items() if k in ("name", "value", "domain", "path", "secure", "httpOnly")}
             driver.add_cookie(c)
@@ -783,6 +789,11 @@ def main():
             return
 
         print(f"  ✅ Session valid — at {current[:60]}")
+        try:
+            _n_js = sum(1 for c in driver.get_cookies() if c.get("name") == "JSESSIONID")
+            print(f"  🔬 JSESSIONID cookies after login: {_n_js} (must be 1)")
+        except Exception:
+            pass
 
         if check_for_restrictions(driver):
             driver.quit()
