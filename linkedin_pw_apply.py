@@ -222,8 +222,15 @@ def open_easy_apply(page, job_id) -> bool:
     for role in ("button", "link"):
         loc = page.get_by_role(role, name=re.compile(r"easy apply", re.I))
         for i in range(loc.count()):
-            if loc.nth(i).is_visible():
-                btn = loc.nth(i)
+            el = loc.nth(i)
+            try:
+                href = el.get_attribute("href") or ""
+            except Exception:
+                href = ""
+            if "search-results" in href or "/jobs/search" in href:
+                continue  # that is the search-filter "Easy Apply" chip, not this job's apply button
+            if el.is_visible():
+                btn = el
                 break
         if btn:
             break
@@ -482,6 +489,35 @@ def page_shows_applied(page):
     return txt[max(0, m.start() - 20):m.end() + 20].replace("\n", " ") if m else None
 
 
+APPLIED_LIST_URL = "https://www.linkedin.com/my-items/saved-jobs/?cardType=APPLIED"
+
+
+def applied_list_ids(ctx) -> set:
+    """Job ids on LinkedIn's own 'My jobs > Applied' list (server-side ground truth). Read-only."""
+    ids = set()
+    pg = None
+    try:
+        pg = ctx.new_page()
+        pg.goto(APPLIED_LIST_URL, wait_until="domcontentloaded", timeout=45000)
+        time.sleep(random.uniform(5, 8))
+        for _ in range(3):
+            html = pg.content()
+            ids |= set(re.findall(r"/jobs/view/(\d{8,})", html))
+            ids |= set(re.findall(r"currentJobId=(\d{8,})", html))
+            ids |= set(re.findall(r"jobPosting:(\d{8,})", html))
+            pg.mouse.wheel(0, random.randint(600, 1000))
+            time.sleep(random.uniform(1.5, 3))
+    except Exception as exc:
+        log(f"  ⚠ applied-list read failed: {str(exc)[:60]}")
+    finally:
+        if pg is not None:
+            try:
+                pg.close()
+            except Exception:
+                pass
+    return ids
+
+
 def post_submit_probe(page):
     """Log what LinkedIn shows right after Submit (visible alerts/headings only, no personal data)."""
     try:
@@ -513,7 +549,7 @@ def applied_badge(page) -> bool:
 
 
 def run_dialog(page, prof) -> str:
-    """Returns 'sent' | 'skip' (unanswerable question, not a failure) | 'fail'."""
+    """Returns 'sent' | 'submitted_unconfirmed' | 'skip' (unanswerable, not a failure) | 'fail'."""
     for step in range(9):
         time.sleep(random.uniform(1.5, 2.5))
         dialog = find_dialog(page)
@@ -544,10 +580,8 @@ def run_dialog(page, prof) -> str:
             if applied_badge(page):
                 log("    📨 LinkedIn job page now shows 'Applied' — counting as sent")
                 return "sent"
-            log("    ⚠ Submit clicked but NO confirmation seen — NOT counting")
-            dialog_debug(dialog, "noconfirm")
-            diagnostics(page, "no-confirm")
-            return "fail"
+            log("    ⚠ Submit clicked but NO confirmation text seen — verifying on Applied list")
+            return "submitted_unconfirmed"
         nxt = step_button(dialog, ("review your application", "review", "continue to next", "next", "continue"))
         if nxt is None:
             dialog_debug(dialog, f"stuck{step}")
@@ -629,6 +663,16 @@ def main():
             log("  ✅ Session valid")
             if restricted(page):
                 return
+            pend = list(dict.fromkeys(applied.get("unconfirmed_ids", [])))
+            on_list = applied_list_ids(ctx)
+            log(f"  📋 LinkedIn 'Applied' list shows {len(on_list)} job ids; {len(pend)} unconfirmed submits to check")
+            for jid in pend:
+                if jid in on_list and jid not in applied["applied_ids"]:
+                    applied["applied_ids"].append(jid)
+                    applied["total"] += 1
+                    log(f"    ✅ CONFIRMED by LinkedIn Applied list: job {jid}")
+            applied["unconfirmed_ids"] = [j for j in pend if j not in on_list]
+            base.save_applied(applied)
             for _ in range(3):
                 page.mouse.wheel(0, random.randint(300, 700))
                 time.sleep(random.uniform(1.5, 3))
@@ -642,7 +686,8 @@ def main():
                         if fails >= MAX_FAIL_STREAK:
                             log("    🛑 4 failures in a row — stopping (account safety)")
                         break
-                    if job_id in applied["applied_ids"] or job_id in applied.get("skipped_ids", []):
+                    if job_id in applied["applied_ids"] or job_id in applied.get("skipped_ids", []) \
+                            or job_id in applied.get("unconfirmed_ids", []) or job_id in on_list:
                         continue
                     try:
                         page.goto(f"https://www.linkedin.com/jobs/view/{job_id}/", wait_until="domcontentloaded", timeout=60000)
@@ -672,6 +717,16 @@ def main():
                             applied["applied_ids"].append(job_id)
                             applied["total"] += 1
                             log(f"    ✅ Applied! ({count}/{max_apps})")
+                        elif res == "submitted_unconfirmed":
+                            fails = 0  # Submit WAS clicked; verify via LinkedIn's Applied list
+                            if job_id in applied_list_ids(ctx):
+                                count += 1
+                                applied["applied_ids"].append(job_id)
+                                applied["total"] += 1
+                                log(f"    ✅ Applied! confirmed by LinkedIn Applied list ({count}/{max_apps})")
+                            else:
+                                applied.setdefault("unconfirmed_ids", []).append(job_id)
+                                log("    ⏳ Submit clicked; not yet on Applied list — will re-check next run")
                         else:
                             fails += 1
                             log("    ⚠ Could not complete application")
