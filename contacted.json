@@ -775,5 +775,57 @@
     "replied": false,
     "bounced": false,
     "re_engage_count": 0
+  },
+  "6381c6629a72": {
+    "email": "origin.allow@chateckinc.com",
+    "date": "2026-11-08T18:45:33.048787",
+    "job": "Java Application Developer",
+    "company": "ChaTeck,Inc",
+    "url": "https://www.linkedin.com/jobs/view/4486528665",
+    "recruiter": "origin allow",
+    "source": "linkedin+guess",
+    "bounced": true
+  },
+  "83118e387aaa": {
+    "email": "recruiting@ptrglobal.com",
+    "date": "2026-11-08T18:46:14.503775",
+    "last_contact": "2026-11-08T18:46:14.503775",
+    "job": "Java Developer C2C",
+    "company": "PTR Global",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": false,
+    "re_engage_count": 0
+  },
+  "963f8a99f307": {
+    "email": "careers@kingland.com",
+    "date": "2026-11-08T18:46:17.387929",
+    "last_contact": "2026-11-08T18:46:17.387929",
+    "job": "Java Developer C2C",
+    "company": "Kingland",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": true,
+    "re_engage_count": 0
+  },
+  "9d5268857260": {
+    "email": "careers@exiger.com",
+    "date": "2026-11-08T18:46:21.529971",
+    "last_contact": "2026-11-08T18:46:21.529971",
+    "job": "Java Developer C2C",
+    "company": "Exiger",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": true,
+    "re_engage_count": 0
   }
 }
