@@ -43,6 +43,7 @@ Headed. Submits exactly ONE application, then stops.
 import json
 import os
 import random
+import re
 import sqlite3
 import sys
 import time
