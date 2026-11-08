@@ -472,6 +472,16 @@ CONFIRM = ("application sent", "your application was sent", "application was sen
            "we've sent your application", "your application has been submitted")
 
 
+APPLIED_RX = r"\bapplied\s+(\d+\s*(s|sec|m|min|h|hr|hour|d|day|w|week)\w*\s+ago|just now|today)"
+
+
+def page_shows_applied(page):
+    """Return the matching 'Applied 2h ago' snippet if LinkedIn itself says this job was applied to."""
+    txt = body_text(page)[:3500]  # top card only (right-rail similar jobs also say "Applied")
+    m = re.search(APPLIED_RX, txt)
+    return txt[max(0, m.start() - 20):m.end() + 20].replace("\n", " ") if m else None
+
+
 def post_submit_probe(page):
     """Log what LinkedIn shows right after Submit (visible alerts/headings only, no personal data)."""
     try:
@@ -494,10 +504,10 @@ def applied_badge(page) -> bool:
         dismiss(page)
         page.reload(wait_until="domcontentloaded", timeout=45000)
         time.sleep(4)
-        txt = body_text(page)
+        txt = body_text(page)[:3500]
         ctx = [txt[max(0, m.start() - 25):m.end() + 25].replace("\n", " ") for m in re.finditer(r"applied", txt)][:4]
         log(f"      APPLIED-CHECK contexts={ctx}")
-        return bool(re.search(r"\bapplied\s+(\d+\s*(s|sec|m|min|h|hr|hour|d|day|w|week)\w*\s+ago|just now|today)", txt))
+        return bool(re.search(APPLIED_RX, txt))
     except Exception:
         return False
 
@@ -640,6 +650,13 @@ def main():
                         if restricted(page):
                             return
                         log(f"    📝 Applying (job {job_id})...")
+                        seen = page_shows_applied(page)
+                        if seen:
+                            log(f"    ✅ LinkedIn page itself says applied: '{seen}' — recording, not a failure")
+                            applied["applied_ids"].append(job_id)
+                            base.save_applied(applied)
+                            time.sleep(random.uniform(8, 15))
+                            continue
                         if not open_easy_apply(page, job_id):
                             fails += 1
                             continue
