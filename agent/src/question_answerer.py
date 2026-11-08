@@ -66,7 +66,10 @@ _GENERIC_EXPERIENCE = ("total", "overall", "professional", "software", "developm
 _SKILL_CLAIM_PHRASES = ("experience with", "experience in", "experience using", "experience on",
                         "proficient", "proficiency", "familiar with", "familiarity", "hands-on",
                         "hands on", "worked with", "working knowledge", "knowledge of",
-                        "expertise", "expert in", "skilled in", "comfortable with", "background in")
+                        "expertise", "expert in", "skilled in", "comfortable with", "background in",
+                        "have you worked", "have you shipped", "have you built", "have you used",
+                        "have you designed", "have you implemented", "experience designing",
+                        "experience building", "experience developing", "experience implementing")
 
 
 def _mentions_profile_skill(q: str, profile: dict) -> bool:
@@ -86,6 +89,17 @@ def _is_unverified_skill_claim(q: str, profile: dict) -> bool:
     if _mentions_profile_skill(q, profile):
         return False
     return not any(g in q for g in _GENERIC_EXPERIENCE)
+
+
+_CRITICAL_Q = re.compile(r"sponsor|authori[sz]ed to work|legally|eligible to work|citizen|green card|"
+                         r"permanent resident|clearance|felony|convicted|relocat")
+
+
+_NEVER_INVENT = [
+    (re.compile(r"\bstart year\b|year (you )?started|\bfrom year\b"), "current_job_start_year"),
+    (re.compile(r"graduation year|year of graduation|year graduated"), "graduation_year"),
+    (re.compile(r"address line|street address|\baddress 1\b|^address$"), "address_line1"),
+]
 
 
 def _profile_answer(question: str, field_type: str, options, profile: dict):
@@ -288,6 +302,11 @@ def _profile_answer(question: str, field_type: str, options, profile: dict):
                 "with strong Spring Boot, microservices, Kafka, and AWS experience. "
                 "I'm excited to contribute reliable, well-tested backend systems to your team.")
 
+    # Portfolio / website / personal site -> public profile links from profile.json
+    if _has_word(q, "portfolio", "website", "personal site", "personal website", "web site") \
+            and field_type in ("text", "textarea"):
+        return profile.get("github") or profile.get("linkedin")
+
     # Phone / email / name — from profile
     if "phone" in q:
         return profile.get("phone")
@@ -338,8 +357,27 @@ def answer_question(db, question: str, field_type: str = "text",
 
     # 1. MEMORY
     remembered = get_approved_answer(db, question)
+    if remembered and _CRITICAL_Q.search(question.lower()):
+        # Legal/eligibility answers must ALWAYS follow profile.json, never a stale cache
+        # (a cached "Yes" for the sponsorship question was typed into a text box).
+        fresh = _profile_answer(question, field_type, options, profile)
+        if fresh and str(fresh).strip().lower() != remembered.strip().lower():
+            print(f"      memory override (critical question): {question[:40]!r} {remembered[:12]!r} -> {str(fresh)[:12]!r}")
+            save_approved_answer(db, question, str(fresh), source="profile")
+            return str(fresh)
     if remembered:
         return remembered
+
+    # 1b. FACTS WE MUST NEVER INVENT (not in profile.json): answer from an optional profile key
+    #     or return None so the job is skipped. See docs/NEEDS-FROM-USER.md.
+    ql = question.lower()
+    for rx, key in _NEVER_INVENT:
+        if rx.search(ql):
+            val = profile.get(key)
+            if val not in (None, ""):
+                return str(val)
+            print(f"      NEEDS-FROM-USER profile.{key}: {question[:50]!r}")
+            return None
 
     # 2. PROFILE RULES
     ans = _profile_answer(question, field_type, options, profile)
@@ -444,5 +482,9 @@ def _safe_default(question: str, field_type: str, options, profile: dict | None 
     if field_type == "textarea":
         return ("Experienced Java / Spring Boot backend engineer with microservices, "
                 "Kafka, Kubernetes and AWS. Available immediately, remote, no sponsorship needed.")
-    # single-line text we genuinely don't recognize -> a minimal safe token
-    return "Yes" if field_type in ("text",) else None
+    # single-line text we genuinely don't recognize: "Yes" only fits a yes/no style question.
+    # Typing "Yes" into 'Address 2' / 'Graduation year' / 'Portfolio URL' is garbage that
+    # fails validation (Indeed stuck at 43%), so return None and let the job skip.
+    if field_type == "text" and re.match(r"^(are|do|does|did|will|would|can|could|have|has|is|was)\b", q.strip()):
+        return "Yes"
+    return None

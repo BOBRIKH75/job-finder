@@ -16,8 +16,20 @@ def test_known_skill_years():
     assert m.answer_for("How many years of work experience do you have with Java?", P) == "10"
 
 
-def test_unknown_skill_returns_none():
-    assert m.answer_for("How many years of experience with COBOL?", P) is None
+def test_unknown_skill_returns_zero():
+    assert m.answer_for("How many years of experience with COBOL?", P) == "0"
+
+
+def test_typo_years_known_skill():
+    assert m.answer_for("How many years expereince with Java and Spring Boot do you have?", P) == "10"
+
+
+def test_hear_about():
+    assert m.answer_for("How did you first hear about this job?", P) == "LinkedIn"
+
+
+def test_address_line_unknown():
+    assert m.answer_for("Address Line 1*", P) is None
 
 
 def test_unknown_question_none():
@@ -29,3 +41,11 @@ def test_phone_type_and_state():
     assert m.answer_for("Type*", p) == "Mobile"
     assert m.answer_for("State or Province*", p) == "CO"
     assert m.answer_for("Secondary Phone Number", p) is None
+
+
+def test_applied_badge_regex():
+    import re
+    rx = r"\bapplied\s+(\d+\s*(s|sec|m|min|h|hr|hour|d|day|w|week)\w*\s+ago|just now|today)"
+    assert re.search(rx, "easy apply applied 2m ago see application")
+    assert re.search(rx, "applied 3 hours ago")
+    assert not re.search(rx, "be among the first 25 applicants applied filter")

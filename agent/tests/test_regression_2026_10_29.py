@@ -211,10 +211,11 @@ def test_answerer_never_returns_none_in_ci(monkeypatch):
     for q, ft, opts in [
         ("Some brand new question we never saw", "radio", ["Yes", "No", "Maybe"]),
         ("Describe a hard problem", "textarea", None),
-        ("Totally unknown single line", "text", None),
     ]:
         a = answer_question(db, q, ft, opts, prof)
         assert a is not None and str(a).strip() != "", f"left empty (stalls wizard): {q}"
+    # unknown free-text is NOT guessed ("Yes" in a text box is garbage and fails validation)
+    assert answer_question(db, "Totally unknown single line", "text", None, prof) is None
 
 
 # ===========================================================================

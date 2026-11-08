@@ -419,7 +419,10 @@ def get_recruiter(db: sqlite3.Connection, email: str) -> dict | None:
 
 def get_approved_answer(db: sqlite3.Connection, question: str) -> str | None:
     h = hashlib.md5(question.lower().strip().encode()).hexdigest()[:16]
-    row = db.execute("SELECT approved_answer FROM approved_answers WHERE question_hash=?", (h,)).fetchone()
+    # source='default' rows are untrusted last-resort guesses (e.g. "Yes" typed into a text
+    # box) - never replay them; re-derive from profile.json instead.
+    row = db.execute("SELECT approved_answer FROM approved_answers WHERE question_hash=? "
+                     "AND COALESCE(source,'') != 'default'", (h,)).fetchone()
     if row:
         db.execute("UPDATE approved_answers SET times_used=times_used+1 WHERE question_hash=?", (h,))
         db.commit()

@@ -19,6 +19,12 @@ from pathlib import Path
 
 import linkedin_easy_apply as base
 
+sys.path.insert(0, str(Path(__file__).parent / "agent" / "src"))
+try:
+    from option_matcher import resolve_option  # truthful option mapping (shared with Indeed/Dice)
+except Exception:  # pragma: no cover - keep engine alive if the module is missing
+    resolve_option = None
+
 PROFILE_PATH = Path(__file__).parent / "agent" / "config" / "profile.json"
 RESUME_PATH = Path(__file__).parent / "agent" / "resume.pdf"
 SHOT_DIR = Path(__file__).parent / "agent" / "screenshots"
@@ -40,6 +46,14 @@ def load_profile() -> dict:
 
 def log(msg: str):
     print(msg, flush=True)
+
+
+NEEDS_FILE = Path(__file__).parent / "docs" / "NEEDS-FROM-USER.md"
+
+
+def note_needed(label: str):
+    """Log (structure only, no personal data) a question we could not answer from profile.json."""
+    log(f"      NEEDS-FROM-USER: {label[:90]}")
 
 
 # ------------------------------------------------------------------ answers (truthful)
@@ -78,14 +92,19 @@ def answer_for(label: str, prof: dict, kind: str = "text"):
         return prof.get("zip")
     if "country" in q:
         return prof.get("country")
-    if "year" in q and ("experience" in q or "work" in q):
+    if "hear about" in q or "how did you find" in q or "referral source" in q:
+        return "LinkedIn"
+    if re.search(r"address line|street address|address 1|^address\b", q):
+        note_needed(label)
+        return None
+    if "year" in q and (re.search(r"exp\w*", q) or "work" in q):
         # per-skill question: only answer when the skill is in the profile skills list
         m = re.search(r"\b(?:with|in|using)\s+(.+?)(?:\?|$)", q) or \
             re.search(r"years?\s+(?:of\s+)?(.+?)\s+experience", q)
         topic = (m.group(1) if m else "").strip(" ?.")
         if not topic or any(w in skills for w in re.findall(r"[a-z0-9+#.]+", topic) if len(w) > 2 and w not in ("the", "and", "with")):
             return yrs
-        return None
+        return "0"  # skill/domain not in profile: truthful zero (same rule as Indeed answerer)
     if re.search(r"salary|compensation|pay|rate", q):
         target = prof.get("rate_target", 75)
         if re.search(r"annual|yearly|per year|salary", q) and "hour" not in q:
@@ -203,8 +222,15 @@ def open_easy_apply(page, job_id) -> bool:
     for role in ("button", "link"):
         loc = page.get_by_role(role, name=re.compile(r"easy apply", re.I))
         for i in range(loc.count()):
-            if loc.nth(i).is_visible():
-                btn = loc.nth(i)
+            el = loc.nth(i)
+            try:
+                href = el.get_attribute("href") or ""
+            except Exception:
+                href = ""
+            if "search-results" in href or "/jobs/search" in href:
+                continue  # that is the search-filter "Easy Apply" chip, not this job's apply button
+            if el.is_visible():
+                btn = el
                 break
         if btn:
             break
@@ -262,6 +288,57 @@ RADIO_Q_JS = """e => {
   return t.replace(/\\s+/g, ' ').trim();
 }"""
 
+RADIO_OPT_JS = """e => {
+  const g = (x) => (x && (x.innerText || x.textContent) || '').trim();
+  const v = (e.value || '').trim();
+  if (/^(yes|no|true|false)$/i.test(v)) return v[0].toUpperCase() + v.slice(1).toLowerCase();
+  let t = (e.labels && e.labels[0]) ? g(e.labels[0]) : '';
+  if (t && t.length <= 80) return t;
+  if (e.getAttribute('aria-label') && e.getAttribute('aria-label').length <= 80) return e.getAttribute('aria-label');
+  const sib = e.nextElementSibling; if (sib && g(sib) && g(sib).length <= 80) return g(sib);
+  const lab = e.closest('label'); if (lab && g(lab).length <= 80) return g(lab);
+  return v || t.slice(0, 40);
+}"""
+
+DIALOG_DEBUG_JS = """d => {
+  const vis = e => e.offsetParent !== null;
+  const t = e => (e.textContent || '').replace(/\\s+/g, ' ').trim().slice(0, 60);
+  const controls = [...d.querySelectorAll('input,select,textarea')].filter(vis).map(e => {
+    let lab = '';
+    if (e.labels && e.labels[0]) lab = t(e.labels[0]);
+    if (!lab) lab = e.getAttribute('aria-label') || '';
+    return `${e.tagName.toLowerCase()}:${e.type}:${lab.slice(0, 45)}:req=${e.required || e.getAttribute('aria-required') === 'true'}:inv=${e.getAttribute('aria-invalid') === 'true'}:filled=${(e.value || '').length > 0 || e.checked === true}`;
+  }).slice(0, 18);
+  const errs = [...d.querySelectorAll('[role=alert],[class*=error i],[data-test-form-element-error-messages]')].filter(vis).map(t).filter(Boolean).slice(0, 6);
+  const btns = [...d.querySelectorAll('button')].filter(vis).map(b => t(b)).filter(Boolean).slice(0, 8);
+  return {controls, errs, btns};
+}"""
+
+
+HTML_JS = "e => e.outerHTML.replace(/\\s+/g, ' ').slice(0, 900)"
+
+LEAF_OPTS_JS = """(fs) => {
+  const q = ((fs.querySelector('legend') || {}).textContent || '').trim();
+  const out = [];
+  fs.querySelectorAll('*').forEach(e => {
+    if (e.children.length) return;
+    const t = (e.textContent || '').replace(/\\s+/g, ' ').trim();
+    if (t && t.length <= 60 && t !== q && !q.includes(t) && !out.includes(t)) out.push(t);
+  });
+  return out;
+}"""
+
+
+def dialog_debug(dialog, tag):
+    """Structure-only dump (labels/types/errors/buttons, never values) of a dialog that blocked us."""
+    try:
+        info = dialog.evaluate(DIALOG_DEBUG_JS, timeout=3000)
+        log(f"      DEBUG[{tag}] controls={info['controls']}")
+        log(f"      DEBUG[{tag}] errors={info['errs']} buttons={info['btns']}")
+    except Exception as exc:
+        log(f"      DEBUG[{tag}] failed: {str(exc)[:60]}")
+
+
 LABEL_JS = """e => {
   const g = (x) => (x && (x.innerText || x.textContent) || '').trim();
   let t = '';
@@ -312,12 +389,12 @@ def fill_step(dialog, prof) -> bool:
             label = el.evaluate(LABEL_JS)
             ans = answer_for(label, prof)
             opts = el.evaluate("e => [...e.options].map(o => o.text.trim())")
-            pick = None
-            if ans:
-                pick = next((o for o in opts if o.lower() == ans.lower()), None) or \
-                    next((o for o in opts if ans.lower() in o.lower()), None)
+            real = [o for o in opts if o and not re.match(r"^select", o.lower())]
+            pick = resolve_option(label, real, ans, prof, "select") if resolve_option else None
+            if pick is None and ans:
+                pick = next((o for o in real if o.lower() == ans.lower()), None)
             if pick is None:
-                log(f"      ❓ unanswerable select: '{label[:60]}'")
+                log(f"      ❓ unanswerable select: '{label[:60]}' opts={[o[:25] for o in real][:6]}")
                 ok = False
                 continue
             el.select_option(label=pick)
@@ -336,16 +413,29 @@ def fill_step(dialog, prof) -> bool:
                 continue
             legend = g.evaluate(RADIO_Q_JS)
             ans = answer_for(legend, prof)
+            labels = []
+            for j in range(radios.count()):
+                lab = radios.nth(j).evaluate(RADIO_OPT_JS) or ""
+                labels.append(" ".join(lab.split()))
+            bad = len(set(labels)) < len(labels) or any(l.lower() in ("on", "") or l in legend for l in labels)
+            if bad:  # LinkedIn SDUI: input labels are the question; real option text is a leaf node
+                leaf = [t for t in (g.evaluate(LEAF_OPTS_JS) or []) if t.lower() not in ("required",)]
+                if len(leaf) == radios.count():
+                    labels = leaf
+                else:
+                    log("      🔬 radio DOM: " + str(g.evaluate(HTML_JS)))
+            pick = resolve_option(legend, labels, ans, prof, "radio") if resolve_option else None
             chosen = False
-            if ans:
-                for j in range(radios.count()):
-                    lab = radios.nth(j).evaluate("e => (e.labels && e.labels[0] ? e.labels[0].innerText : e.value)") or ""
-                    if lab.strip().lower() == ans.lower():
-                        radios.nth(j).evaluate("e => (e.labels && e.labels[0] ? e.labels[0] : e).click()")
-                        chosen = True
-                        break
+            if pick is not None:
+                j = labels.index(pick)
+                try:
+                    radios.nth(j).check(force=True, timeout=4000)
+                except Exception:
+                    radios.nth(j).evaluate("e => (e.labels && e.labels[0] ? e.labels[0] : e).click()")
+                chosen = radios.nth(j).is_checked()
+                log(f"      🔘 radio '{legend[:40]}' -> '{pick[:20]}' checked={chosen}")
             if not chosen:
-                log(f"      ❓ unanswerable radio: '{legend[:80]}'")
+                log(f"      ❓ unanswerable radio: '{legend[:80]}' opts={[x[:20] for x in labels][:5]}")
                 ok = False
         except Exception:
             continue
@@ -389,8 +479,84 @@ CONFIRM = ("application sent", "your application was sent", "application was sen
            "we've sent your application", "your application has been submitted")
 
 
+APPLIED_RX = r"\bapplied\s+(\d+\s*(s|sec|m|min|h|hr|hour|d|day|w|week)\w*\s+ago|just now|today)"
+
+
+def page_shows_applied(page):
+    """Return the matching 'Applied 2h ago' snippet if LinkedIn itself says this job was applied to."""
+    txt = body_text(page)[:3500]  # top card only (right-rail similar jobs also say "Applied")
+    m = re.search(APPLIED_RX, txt)
+    return txt[max(0, m.start() - 20):m.end() + 20].replace("\n", " ") if m else None
+
+
+APPLIED_LIST_URL = "https://www.linkedin.com/my-items/saved-jobs/?cardType=APPLIED"
+
+
+def applied_list_ids(ctx) -> set:
+    """Job ids on LinkedIn's own 'My jobs > Applied' list (server-side ground truth). Read-only."""
+    ids = set()
+    pg = None
+    try:
+        pg = ctx.new_page()
+        pg.goto(APPLIED_LIST_URL, wait_until="domcontentloaded", timeout=45000)
+        time.sleep(random.uniform(5, 8))
+        for _ in range(3):
+            html = pg.content()
+            ids |= set(re.findall(r"/jobs/view/(\d{8,})", html))
+            ids |= set(re.findall(r"currentJobId=(\d{8,})", html))
+            ids |= set(re.findall(r"jobPosting:(\d{8,})", html))
+            pg.mouse.wheel(0, random.randint(600, 1000))
+            time.sleep(random.uniform(1.5, 3))
+    except Exception as exc:
+        log(f"  ⚠ applied-list read failed: {str(exc)[:60]}")
+    finally:
+        if pg is not None:
+            try:
+                pg.close()
+            except Exception:
+                pass
+    return ids
+
+
+def post_submit_probe(page):
+    """Log what LinkedIn shows right after Submit (visible alerts/headings only, no personal data)."""
+    try:
+        info = page.evaluate("""() => {
+            const vis = e => e.offsetParent !== null;
+            const t = e => (e.textContent || '').replace(/\\s+/g, ' ').trim().slice(0, 120);
+            const sel = '[role=dialog],[role=alertdialog],[role=alert],[aria-live],[data-test-modal],.artdeco-toast-item,h1,h2';
+            return [...document.querySelectorAll(sel)].filter(vis).map(t).filter(Boolean).slice(0, 8);
+        }""")
+        log(f"      POST-SUBMIT visible: {info}")
+        shot(page, "postsubmit")
+    except Exception as exc:
+        log(f"      POST-SUBMIT probe failed: {str(exc)[:60]}")
+
+
+def applied_badge(page) -> bool:
+    """After Submit: close any overlay, reload the job page and look for LinkedIn's own
+    'Applied 2m ago' marker (the only reliable server-side proof when the modal text is missed)."""
+    try:
+        dismiss(page)
+        page.reload(wait_until="domcontentloaded", timeout=45000)
+        time.sleep(4)
+        txt = body_text(page)[:3500]
+        ctx = [txt[max(0, m.start() - 25):m.end() + 25].replace("\n", " ") for m in re.finditer(r"applied", txt)][:4]
+        log(f"      APPLIED-CHECK contexts={ctx}")
+        if re.search(APPLIED_RX, txt):
+            return True
+        # LinkedIn renders an "Application status" card on the job page only after you applied.
+        status = re.search(r"application status\s*(\S.{0,60})", txt)
+        if status:
+            log(f"      APPLIED-CHECK status card: '{status.group(0)[:70]}'")
+            return "submitted" in status.group(0) or "applied" in status.group(0) or "viewed" in status.group(0)
+        return False
+    except Exception:
+        return False
+
+
 def run_dialog(page, prof) -> str:
-    """Returns 'sent' | 'skip' (unanswerable question, not a failure) | 'fail'."""
+    """Returns 'sent' | 'submitted_unconfirmed' | 'skip' (unanswerable, not a failure) | 'fail'."""
     for step in range(9):
         time.sleep(random.uniform(1.5, 2.5))
         dialog = find_dialog(page)
@@ -402,8 +568,13 @@ def run_dialog(page, prof) -> str:
         if sub:
             time.sleep(random.uniform(1, 2))
             sub.click(timeout=8000)
+            probed = False
             for _ in range(10):
                 time.sleep(1)
+                if not probed:
+                    probed = True
+                    time.sleep(2)
+                    post_submit_probe(page)
                 txt = body_text(page)
                 for fr in page.frames:
                     try:
@@ -413,22 +584,30 @@ def run_dialog(page, prof) -> str:
                 if any(s in txt for s in CONFIRM):
                     log("    📨 LinkedIn confirmed: application sent")
                     return "sent"
-            log("    ⚠ Submit clicked but NO confirmation seen — NOT counting")
-            diagnostics(page, "no-confirm")
-            return "fail"
+            if applied_badge(page):
+                log("    📨 LinkedIn job page now shows 'Applied' — counting as sent")
+                return "sent"
+            log("    ⚠ Submit clicked but NO confirmation text seen — verifying on Applied list")
+            return "submitted_unconfirmed"
         nxt = step_button(dialog, ("review your application", "review", "continue to next", "next", "continue"))
         if nxt is None:
+            dialog_debug(dialog, f"stuck{step}")
             diagnostics(page, f"stuck{step}")
             return "fail"
+        log(f"      ➡ step {step}: click '{(nxt.inner_text(timeout=1500) or '').strip()[:25]}'")
         nxt.click(timeout=8000)
         time.sleep(1.5)
         err = dialog.locator("[role='alert'], .artdeco-inline-feedback--error, [data-test-form-element-error-messages]")
         try:
             if err.count() and any(e.is_visible() for e in [err.nth(k) for k in range(min(err.count(), 5))]):
                 log("      ⚠ validation error after Next — aborting this job")
+                dialog_debug(dialog, f"valerr{step}")
                 return "fail"
         except Exception:
             pass
+    dd = find_dialog(page)
+    if dd is not None:
+        dialog_debug(dd, "loop-end")
     return "fail"
 
 
@@ -478,6 +657,7 @@ def main():
         from playwright.sync_api import sync_playwright
 
     count, fails = 0, 0
+    deadline = time.time() + int(os.environ.get("LINKEDIN_TIME_BUDGET_S", "2100"))  # < 45-min job timeout
     with sync_playwright() as pw:
         ctx, page = launch(pw, cookies)
         try:
@@ -491,6 +671,16 @@ def main():
             log("  ✅ Session valid")
             if restricted(page):
                 return
+            pend = list(dict.fromkeys(applied.get("unconfirmed_ids", [])))
+            on_list = applied_list_ids(ctx)
+            log(f"  📋 LinkedIn 'Applied' list shows {len(on_list)} job ids; {len(pend)} unconfirmed submits to check")
+            for jid in pend:
+                if jid in on_list and jid not in applied["applied_ids"]:
+                    applied["applied_ids"].append(jid)
+                    applied["total"] += 1
+                    log(f"    ✅ CONFIRMED by LinkedIn Applied list: job {jid}")
+            applied["unconfirmed_ids"] = [j for j in pend if j not in on_list]
+            base.save_applied(applied)
             for _ in range(3):
                 page.mouse.wheel(0, random.randint(300, 700))
                 time.sleep(random.uniform(1.5, 3))
@@ -500,11 +690,15 @@ def main():
                 ids = base.discover_job_ids(keyword)[:8]
                 log(f"\n  🔍 '{keyword}': {len(ids)} ids")
                 for job_id in ids:
+                    if time.time() > deadline:
+                        log("    ⏱ time budget reached — stopping cleanly so state is saved")
+                        break
                     if count >= max_apps or fails >= MAX_FAIL_STREAK:
                         if fails >= MAX_FAIL_STREAK:
                             log("    🛑 4 failures in a row — stopping (account safety)")
                         break
-                    if job_id in applied["applied_ids"] or job_id in applied.get("skipped_ids", []):
+                    if job_id in applied["applied_ids"] or job_id in applied.get("skipped_ids", []) \
+                            or job_id in applied.get("unconfirmed_ids", []) or job_id in on_list:
                         continue
                     try:
                         page.goto(f"https://www.linkedin.com/jobs/view/{job_id}/", wait_until="domcontentloaded", timeout=60000)
@@ -512,6 +706,13 @@ def main():
                         if restricted(page):
                             return
                         log(f"    📝 Applying (job {job_id})...")
+                        seen = page_shows_applied(page)
+                        if seen:
+                            log(f"    ✅ LinkedIn page itself says applied: '{seen}' — recording, not a failure")
+                            applied["applied_ids"].append(job_id)
+                            base.save_applied(applied)
+                            time.sleep(random.uniform(8, 15))
+                            continue
                         if not open_easy_apply(page, job_id):
                             fails += 1
                             continue
@@ -527,6 +728,16 @@ def main():
                             applied["applied_ids"].append(job_id)
                             applied["total"] += 1
                             log(f"    ✅ Applied! ({count}/{max_apps})")
+                        elif res == "submitted_unconfirmed":
+                            fails = 0  # Submit WAS clicked; verify via LinkedIn's Applied list
+                            if job_id in applied_list_ids(ctx):
+                                count += 1
+                                applied["applied_ids"].append(job_id)
+                                applied["total"] += 1
+                                log(f"    ✅ Applied! confirmed by LinkedIn Applied list ({count}/{max_apps})")
+                            else:
+                                applied.setdefault("unconfirmed_ids", []).append(job_id)
+                                log("    ⏳ Submit clicked; not yet on Applied list — will re-check next run")
                         else:
                             fails += 1
                             log("    ⚠ Could not complete application")

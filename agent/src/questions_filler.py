@@ -16,8 +16,10 @@ import time
 
 try:
     from src.question_answerer import answer_question
+    from src.option_matcher import resolve_option, resolve_checkboxes
 except Exception:
     from question_answerer import answer_question
+    from option_matcher import resolve_option, resolve_checkboxes
 
 
 def _clean(text: str) -> str:
@@ -184,24 +186,8 @@ def _fill_radios(page, db, profile, company):
         if not ans:
             print(f"      ⚠️ no answer for radio: {q[:50]!r} opts={opts}")
             continue
-        # find the option text that best matches the answer (exact/substring first)
-        target = None
-        for opt in opts:
-            if opt.lower() == ans.lower():
-                target = opt
-                break
-        if target is None:
-            for opt in opts:
-                if ans.lower() in opt.lower() or opt.lower() in ans.lower():
-                    target = opt
-                    break
-        if target is None and opts:
-            # map short canonical answers (e.g. "No active clearance" -> "No")
-            a0 = ans.lower().split()[0] if ans.split() else ''
-            for opt in opts:
-                if a0 and opt.lower().split()[0] == a0:
-                    target = opt
-                    break
+        # map the answer onto an option that REALLY exists (Yes/No, True/False, ranges...)
+        target = resolve_option(q, opts, ans, profile, 'radio')
         # EEO/demographic fallback: 'Decline to self-identify' may not literally exist.
         # Match any prefer-not/decline/don't-wish option; else use the last option.
         if target is None and opts:
@@ -211,7 +197,7 @@ def _fill_radios(page, db, profile, company):
                 or any(k in opts_l for k in ["prefer not", "decline", "self-identify", "self identify",
                                              "hispanic", "do not wish", "non-binary"])
             declineish = any(k in ans.lower() for k in ["decline", "prefer not", "do not wish",
-                                                        "not to answer", "self-identify"])
+                                                        "not to answer", "self-identify", "don't wish", "wish to answer"])
             if is_eeo and declineish:
                 target = next((o for o in opts if any(k in o.lower() for k in
                               ["prefer not", "decline", "do not wish", "not to answer",
@@ -350,6 +336,13 @@ def _fill_custom_combobox(page, db, profile, company):
                 decline = next((o for o in opts if any(k in o.lower() for k in
                                ["decline", "do not wish", "prefer not", "not to answer", "don't wish"])), None)
                 ans = decline or (opts[-1] if opts else ans)
+            if ans and not is_eeo:
+                snap = resolve_option(q, [o for o in opts if o.lower() != 'select an option'], ans, profile, 'select')
+                if snap:
+                    ans = snap
+                elif not any(ans.lower() in o.lower() or o.lower() in ans.lower() for o in opts):
+                    print(f"      NO-TRUTHFUL-OPTION dropdown {q[:45]!r} ans={ans[:20]!r} (skip job)")
+                    ans = None
             if not ans:
                 print(f"      ⚠️ no answer for dropdown: {q[:45]!r} opts={opts[:3]}")
                 try:
@@ -436,6 +429,12 @@ def _fill_selects(page, db, profile, company):
             q = _clean(label)
             ans = answer_question(db, q, field_type='select', options=opts, profile=profile, company=company)
             if ans:
+                real = [o for o in opts if o and o.lower() != 'select an option']
+                snap = resolve_option(q, real, ans, profile, 'select')
+                if not snap:
+                    print(f"      NO-TRUTHFUL-OPTION select {q[:45]!r} ans={ans[:20]!r} (skip job)")
+                    continue
+                ans = snap
                 try:
                     el.select_option(label=ans)
                 except Exception:
@@ -513,6 +512,110 @@ def _fill_checkboxes(page, db, profile, company):
     return filled
 
 
+def _fill_checkbox_groups(page, db, profile, company):
+    """'Select all that apply' groups (>=2 checkboxes, same name): tick ONLY truthful options
+    (skills in profile.json), else a 'none of the above' option."""
+    filled = 0
+    try:
+        groups = page.evaluate(
+            """() => {
+                const by = {};
+                document.querySelectorAll('input[type=checkbox]').forEach(c => {
+                    if (!c.name || !c.offsetParent) return;
+                    (by[c.name] = by[c.name] || []).push(c);
+                });
+                const out = [];
+                for (const [name, cbs] of Object.entries(by)) {
+                    if (cbs.length < 2 || cbs.some(c => c.checked)) continue;
+                    const labs = cbs.map(c => {
+                        let t = '';
+                        if (c.id) { const l = document.querySelector(`label[for="${c.id}"]`); if (l) t = l.textContent; }
+                        if (!t && c.closest('label')) t = c.closest('label').textContent;
+                        return (t || '').trim();
+                    });
+                    const fs = cbs[0].closest('fieldset');
+                    const lg = fs ? fs.querySelector('legend') : null;
+                    out.push({name, question: lg ? lg.textContent.trim() : '', options: labs});
+                }
+                return out;
+            }""")
+    except Exception:
+        return 0
+    for g in groups:
+        q = _clean(g['question'])
+        for pick in resolve_checkboxes(q, g['options'], profile):
+            try:
+                ok = page.evaluate(
+                    """(a) => {
+                        const cbs = [...document.querySelectorAll(`input[type=checkbox][name="${a.name}"]`)];
+                        for (const c of cbs) {
+                            let t = '';
+                            if (c.id) { const l = document.querySelector(`label[for="${c.id}"]`); if (l) t = l.textContent; }
+                            if (!t && c.closest('label')) t = c.closest('label').textContent;
+                            if (t.trim() === a.pick) { c.click(); return c.checked; }
+                        }
+                        return false;
+                    }""",
+                    {"name": g['name'], "pick": pick})
+                if ok:
+                    filled += 1
+                    print(f"      checkbox-group: {q[:40]!r} -> {pick[:30]!r}")
+            except Exception:
+                continue
+    return filled
+
+
+def _upload_resume(page, profile):
+    """Attach resume.pdf to an EMPTY file input whose label says resume/CV (required uploads)."""
+    import os
+    path = profile.get("resume_path") or "resume.pdf"
+    if not os.path.isabs(path):
+        for base in (os.getcwd(), os.path.join(os.path.dirname(__file__), "..")):
+            cand = os.path.join(base, path)
+            if os.path.exists(cand):
+                path = cand
+                break
+    if not os.path.exists(path):
+        return 0
+    done = 0
+    try:
+        files = page.locator('input[type="file"]')
+        for i in range(files.count()):
+            el = files.nth(i)
+            empty = el.evaluate("e => e.files.length === 0")
+            lab = el.evaluate("""e => { let t=''; if (e.id){const l=document.querySelector(`label[for="${e.id}"]`); if(l)t=l.textContent;}
+                  if(!t) t=e.getAttribute('aria-label')||''; if(!t&&e.parentElement) t=e.parentElement.textContent||''; return t.toLowerCase(); }""")
+            if empty and any(k in lab for k in ("resume", "cv", "curriculum")):
+                el.set_input_files(path)
+                done += 1
+                print("      uploaded resume file")
+    except Exception as exc:
+        print(f"      resume upload err: {str(exc)[:50]}")
+    return done
+
+
+def debug_state(page, tag="stuck"):
+    """Log STRUCTURE of a stuck questions page (labels/types/errors/buttons - never values)."""
+    try:
+        info = page.evaluate("""() => {
+            const vis = e => e.offsetParent !== null;
+            const t = e => (e.textContent || '').replace(/\\s+/g, ' ').trim().slice(0, 70);
+            const controls = [...document.querySelectorAll('input,select,textarea,[role=combobox]')].filter(vis).map(e => {
+                let lab = '';
+                if (e.id) { const l = document.querySelector(`label[for="${e.id}"]`); if (l) lab = t(l); }
+                if (!lab) lab = e.getAttribute('aria-label') || '';
+                return `${e.tagName.toLowerCase()}:${e.type || e.getAttribute('role') || ''}:${lab.slice(0,50)}:req=${e.required || e.getAttribute('aria-required') === 'true'}:inv=${e.getAttribute('aria-invalid') === 'true'}:filled=${(e.value || '').length > 0 || e.checked === true}`;
+            }).slice(0, 25);
+            const errs = [...document.querySelectorAll('[role=alert],[id*=error i],[class*=error i],[data-testid*=error i]')].filter(vis).map(t).filter(Boolean).slice(0, 8);
+            const btns = [...document.querySelectorAll('button')].filter(vis).map(b => t(b) + (b.disabled ? '(disabled)' : '')).filter(Boolean).slice(0, 10);
+            return {controls, errs, btns};
+        }""")
+        print(f"      DEBUG[{tag}] controls={info['controls']}")
+        print(f"      DEBUG[{tag}] errors={info['errs']} buttons={info['btns']}")
+    except Exception as exc:
+        print(f"      DEBUG[{tag}] failed: {str(exc)[:60]}")
+
+
 def fill_questions_page(page, db, profile, company: str = "") -> bool:
     """Fill all required fields on the questions page. Returns True if it looks complete."""
     print("    📝 Questions page detected — filling required fields")
@@ -521,6 +624,8 @@ def fill_questions_page(page, db, profile, company: str = "") -> bool:
     total += _fill_textareas(page, db, profile, company)
     total += _fill_text_inputs(page, db, profile, company)
     total += _fill_selects(page, db, profile, company)
+    total += _upload_resume(page, profile)
+    total += _fill_checkbox_groups(page, db, profile, company)
     total += _fill_checkboxes(page, db, profile, company)
     print(f"    📝 filled {total} field(s)")
     time.sleep(1)
