@@ -325,7 +325,7 @@ LEAF_OPTS_JS = """(fs) => {
 def dialog_debug(dialog, tag):
     """Structure-only dump (labels/types/errors/buttons, never values) of a dialog that blocked us."""
     try:
-        info = dialog.evaluate(DIALOG_DEBUG_JS)
+        info = dialog.evaluate(DIALOG_DEBUG_JS, timeout=3000)
         log(f"      DEBUG[{tag}] controls={info['controls']}")
         log(f"      DEBUG[{tag}] errors={info['errs']} buttons={info['btns']}")
     except Exception as exc:
@@ -472,6 +472,21 @@ CONFIRM = ("application sent", "your application was sent", "application was sen
            "we've sent your application", "your application has been submitted")
 
 
+def post_submit_probe(page):
+    """Log what LinkedIn shows right after Submit (visible alerts/headings only, no personal data)."""
+    try:
+        info = page.evaluate("""() => {
+            const vis = e => e.offsetParent !== null;
+            const t = e => (e.textContent || '').replace(/\\s+/g, ' ').trim().slice(0, 120);
+            const sel = '[role=dialog],[role=alertdialog],[role=alert],[aria-live],[data-test-modal],.artdeco-toast-item,h1,h2';
+            return [...document.querySelectorAll(sel)].filter(vis).map(t).filter(Boolean).slice(0, 8);
+        }""")
+        log(f"      POST-SUBMIT visible: {info}")
+        shot(page, "postsubmit")
+    except Exception as exc:
+        log(f"      POST-SUBMIT probe failed: {str(exc)[:60]}")
+
+
 def applied_badge(page) -> bool:
     """After Submit: close any overlay, reload the job page and look for LinkedIn's own
     'Applied 2m ago' marker (the only reliable server-side proof when the modal text is missed)."""
@@ -480,6 +495,8 @@ def applied_badge(page) -> bool:
         page.reload(wait_until="domcontentloaded", timeout=45000)
         time.sleep(4)
         txt = body_text(page)
+        ctx = [txt[max(0, m.start() - 25):m.end() + 25].replace("\n", " ") for m in re.finditer(r"applied", txt)][:4]
+        log(f"      APPLIED-CHECK contexts={ctx}")
         return bool(re.search(r"\bapplied\s+(\d+\s*(s|sec|m|min|h|hr|hour|d|day|w|week)\w*\s+ago|just now|today)", txt))
     except Exception:
         return False
@@ -498,8 +515,13 @@ def run_dialog(page, prof) -> str:
         if sub:
             time.sleep(random.uniform(1, 2))
             sub.click(timeout=8000)
+            probed = False
             for _ in range(10):
                 time.sleep(1)
+                if not probed:
+                    probed = True
+                    time.sleep(2)
+                    post_submit_probe(page)
                 txt = body_text(page)
                 for fr in page.frames:
                     try:
