@@ -543,7 +543,14 @@ def applied_badge(page) -> bool:
         txt = body_text(page)[:3500]
         ctx = [txt[max(0, m.start() - 25):m.end() + 25].replace("\n", " ") for m in re.finditer(r"applied", txt)][:4]
         log(f"      APPLIED-CHECK contexts={ctx}")
-        return bool(re.search(APPLIED_RX, txt))
+        if re.search(APPLIED_RX, txt):
+            return True
+        # LinkedIn renders an "Application status" card on the job page only after you applied.
+        status = re.search(r"application status\s*(\S.{0,60})", txt)
+        if status:
+            log(f"      APPLIED-CHECK status card: '{status.group(0)[:70]}'")
+            return "submitted" in status.group(0) or "applied" in status.group(0) or "viewed" in status.group(0)
+        return False
     except Exception:
         return False
 
@@ -650,6 +657,7 @@ def main():
         from playwright.sync_api import sync_playwright
 
     count, fails = 0, 0
+    deadline = time.time() + int(os.environ.get("LINKEDIN_TIME_BUDGET_S", "2100"))  # < 45-min job timeout
     with sync_playwright() as pw:
         ctx, page = launch(pw, cookies)
         try:
@@ -682,6 +690,9 @@ def main():
                 ids = base.discover_job_ids(keyword)[:8]
                 log(f"\n  🔍 '{keyword}': {len(ids)} ids")
                 for job_id in ids:
+                    if time.time() > deadline:
+                        log("    ⏱ time budget reached — stopping cleanly so state is saved")
+                        break
                     if count >= max_apps or fails >= MAX_FAIL_STREAK:
                         if fails >= MAX_FAIL_STREAK:
                             log("    🛑 4 failures in a row — stopping (account safety)")

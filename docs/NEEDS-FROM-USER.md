@@ -16,3 +16,15 @@ truthful answer, it skips that job instead of guessing. These gaps came from rea
 | Domain experience years (banking, order management, ...) - now answered 0 | LinkedIn / Indeed | `domain_years: {...}` |
 
 Until these exist, the bot answers "No" / "0" (truthful default) or skips the job.
+
+## Open issues found in round 3 (not blocked on you, but worth knowing)
+
+- LinkedIn sends no "Your application was sent" email to the Gmail the bot reads (0 in 24h),
+  even when the job page afterwards shows an "Application status" card. Check that LinkedIn
+  job-application emails are enabled for the Gmail inbox the bot reads (LinkedIn > Settings >
+  Notifications > Job seeking).
+- Before the fix in this round, LinkedIn job 4478570438 (Seattle area) got "Yes" to
+  "comfortable commuting to this job's location". That is now fixed: we answer "No" unless the
+  place named is in Colorado / the US in general. Withdraw that one by hand if you want.
+- Some LinkedIn forms loop on "Review" with no error shown (jobs 4485827936, 4487008372). Needs one
+  more debug run.

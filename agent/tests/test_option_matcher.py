@@ -112,3 +112,14 @@ def test_never_invent_start_year(monkeypatch):
     assert qa.answer_question(None, "Start year *", "text", None, PROFILE) is None
     assert qa.answer_question(None, "Start year *", "text", None, dict(PROFILE, current_job_start_year=2019)) == "2019"
     assert qa.answer_question(None, "Address Line 1", "text", None, PROFILE) is None
+
+
+@pytest.mark.parametrize("q,expected", [
+    ("Are you comfortable commuting to this job's location?", "No"),
+    ("Comfortable with In person interview in Charlotte, NC?", "No"),
+    ("Are you located in the Greater Seattle Area?", "No"),
+    ("Are you able to commute to Denver, Colorado?", "Yes"),
+    ("Are you located in the United States?", "Yes"),
+])
+def test_location_questions_truthful(q, expected):
+    assert resolve_option(q, YN, "Parker, CO 80314", PROFILE) == expected

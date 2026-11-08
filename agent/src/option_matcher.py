@@ -147,10 +147,12 @@ def desired_polarity(q: str, ans, profile: dict):
     if any(k in ql for k in ("relocate", "relocation")):
         return "no"
     if any(k in ql for k in ("on-site", "onsite", "on site", "in-office", "in office", "hybrid",
-                             "commute", "come into the office", "work from our")):
+                             "commut", "in person", "in-person", "come into the office", "work from our",
+                             "located in", "live in", "reside in", "local to")):
         # Truthful only when the place named is where the candidate lives.
         place_ok = any(str(profile.get(k, "")).lower() in ql for k in ("city",) if profile.get(k)) \
-            or re.search(r"\b(colorado|denver|parker)\b", ql)
+            or re.search(r"\b(colorado|denver|parker)\b", ql) \
+            or (re.search(r"\b(united states|u\.s\.?|usa|us)\b", ql) and not re.search(r",\s*[a-z]{2}\b|area|city|office", ql))
         return "yes" if place_ok else "no"
     if "citizen" in ql and "authorized" not in ql and "eligible" not in ql:
         return "no"
