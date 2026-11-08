@@ -1640,6 +1640,8 @@ def main():
         except Exception:
             return []
 
+    _SOFT_URLS = set()  # generic-title jobs: tried LAST (35/55 of them were off-CV on open)
+
     def _extract_cv_matched_urls(df):
         """CV-RELEVANCE FILTER (Bobur's ask): only apply to jobs that FIT the CV
         (Java/Spring/backend, remote, C2C). Reads title + description + location
@@ -1702,6 +1704,7 @@ def main():
                     # the full #jobDescriptionText) makes the real call. Hard negatives (.NET/Python/
                     # C++/Go, score<=-10) still skip here (no wasted open). Mirrors the Dice fix.
                     kept.append(u)
+                    _SOFT_URLS.add(u)
                     if len(nt) >= 12:
                         _seen_titles.add(nt)
                     if title:
@@ -1778,10 +1781,13 @@ def main():
                     _seen_u.add(_u)
                     urls.append(_u)
             print(f"  🔍 '{_t[:45]}' → {len(_found)} CV-matched ({len(urls)} unique total)")
-            if len(urls) >= (int(os.environ.get('TARGET_SUBMITS', '15')) * 4):
-                break   # enough inventory to work through this run
+            _strong = sum(1 for _x in urls if _x not in _SOFT_URLS)
+            if _strong >= (int(os.environ.get('TARGET_SUBMITS', '15')) * 3):
+                break   # enough STRONG inventory (soft/generic ones don't count)
             time.sleep(2)  # brief backoff before the next term
 
+    # Strong CV matches first, generic-title (soft) ones last.
+    urls = [u for u in urls if u not in _SOFT_URLS] + [u for u in urls if u in _SOFT_URLS]
     if not urls:
         print("❌ No jobs found (Indeed likely rate-limited/blocked the search). "
               "Try again shortly, use TARGET_URL=<job link>, or run from a residential IP.")

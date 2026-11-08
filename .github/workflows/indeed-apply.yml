@@ -118,7 +118,7 @@ jobs:
           ANSWERER_NO_ASK: '1'
           TARGET_SUBMITS: ${{ env.CV_TARGET_SUBMITS || '15' }}
           RESULTS_WANTED: ${{ env.CV_RESULTS_WANTED || '50' }}
-          INDEED_HOURS_OLD: '72'
+          INDEED_HOURS_OLD: '168'
           HEADFUL: '1'
           CLOUDFLARE_WAIT: '30'   # wait up to 30s for Turnstile to auto-pass (headful real
                                   # Chrome on the home residential IP auto-mints the token;
