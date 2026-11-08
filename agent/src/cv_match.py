@@ -48,6 +48,9 @@ TITLE_NEGATIVES = (
     "analytics engineer", "site reliability", "engineering manager", "program manager",
     "data architect", "enterprise architect", "ai engineer", "ai integration", "llm ", "prompt engineer",
     "business analyst", "project manager", "scrum master", "product manager",
+    # Off-stack titles seen being applied to on Dice (Nov 2026 audit) — not Bob's lane.
+    "django", "flask", "workfront", "rpa ", "rpa developer", "uipath", "blue prism",
+    "ai architect", "ai agent", "solution architect", "mulesoft", "pega", "appian",
 )
 
 

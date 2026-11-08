@@ -45,7 +45,7 @@ permissions:
 jobs:
   dice-apply:
     runs-on: self-hosted   # MUST be self-hosted — Dice cookies are IP-bound (cloud IP breaks session)
-    timeout-minutes: 40
+    timeout-minutes: 55
 
     steps:
       - uses: actions/checkout@v4
@@ -102,7 +102,7 @@ jobs:
           git pull --rebase --autostash || true
 
       - name: Run Dice applicator
-        timeout-minutes: 35
+        timeout-minutes: 44
         env:
           DICE_COOKIES: ${{ secrets.DICE_COOKIES }}
           DICE_EMAIL: ${{ secrets.DICE_EMAIL }}

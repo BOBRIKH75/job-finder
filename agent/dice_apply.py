@@ -20,6 +20,7 @@ import random
 import re
 import sys
 import time
+_DICE_T0 = time.time()
 
 sys.path.insert(0, '.')
 sys.path.insert(0, 'src')
@@ -948,9 +949,15 @@ def main():
         # early once we have enough to fill the apply target. Prevents wasting 20+ min
         # searching 77 queries when you're already caught up on Dice's Java inventory.
         # DICE_FRESH_TARGET (default target*3) = how many fresh jobs is "enough" to stop.
-        _fresh_needed = int(os.environ.get('DICE_FRESH_TARGET', str(max(target * 3, 30))))
+        _fresh_needed = int(os.environ.get('DICE_FRESH_TARGET', str(min(max(target * 2, 30), 80))))
         _fresh = 0
+        # Time budget for the SEARCH phase: searching all ~45 queries took ~20 min, so the
+        # 35-min step timed out mid-apply (4 'failed' runs, state/reconcile steps lost).
+        _search_deadline = time.time() + int(os.environ.get('DICE_SEARCH_BUDGET_S', '420'))
         for term in terms:
+            if time.time() > _search_deadline and _fresh > 0:
+                print(f"  ⏱ search time budget reached ({_fresh} fresh) — start applying")
+                break
             _before = len(jobs)
             for url, title in _search_urls(page, term, pages=_pages):
                 jid = _job_id(url)
@@ -978,8 +985,12 @@ def main():
         _today_attempts = _jload(STATS_FILE, {}).get(time.strftime('%Y-%m-%d'), {}).get('attempted', 0)
         _seen_titles = set()
         _login_redirect_seen = False
+        _run_deadline = _DICE_T0 + int(os.environ.get('DICE_RUN_BUDGET_S', '2280'))
         for url, title, jid in jobs:
             if submitted >= target:
+                break
+            if time.time() > _run_deadline:
+                print('  ⏱ run time budget reached — stop cleanly so state + Gmail reconcile run')
                 break
             if _today_attempts >= DAILY_ATTEMPT_CAP:
                 print(f"  🛑 daily attempt cap {DAILY_ATTEMPT_CAP} reached — stop (account safety)")
@@ -1020,6 +1031,10 @@ def main():
                                 "() => (document.querySelector('[data-testid=\"jobDescriptionHtml\"]')"
                                 " || document.body).innerText || ''")[:4000]
                             ok2, score2, why2 = should_apply(title, desc, 'Remote')
+                            # Recovery needs a STRONG description match (Java/stack signals),
+                            # not a weak 5-13 that let Workfront/RPA/AI-Architect jobs through.
+                            if ok2 and score2 is not None and score2 < int(os.environ.get('DICE_RECOVER_MIN', '15')):
+                                ok2 = False
                             if ok2:
                                 print(f"  ✅ recovered via description: '{title[:40]}' (score={score2})")
                                 ok, score, why = ok2, score2, why2
