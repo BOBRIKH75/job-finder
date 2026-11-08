@@ -43,6 +43,7 @@ Headed. Submits exactly ONE application, then stops.
 import json
 import os
 import random
+import re
 import sqlite3
 import sys
 import time
@@ -371,6 +372,53 @@ def click_continue(page):
                     return True
             except Exception:
                 continue
+    return False
+
+
+def handle_intervention(page) -> bool:
+    """Indeed 'smartapply .../intervention' interstitial (seen stuck at 43% on every
+    run, Nov 2026): a page between steps that has no 'Continue' testid. Log what it
+    shows (text only, no PII) and click a PROCEED-type control. Never click exit/back."""
+    try:
+        info = page.evaluate(r"""() => {
+            const vis = e => !!(e.offsetParent || e.getClientRects().length);
+            const ctl = [...document.querySelectorAll('button,a,[role=button],input[type=submit],label')]
+                .filter(vis).map(e => (e.innerText || e.value || e.getAttribute('aria-label') || '').trim())
+                .filter(t => t && t.length < 60).slice(0, 30);
+            const h = [...document.querySelectorAll('h1,h2,h3,legend')].filter(vis)
+                .map(e => e.innerText.trim()).slice(0, 5);
+            return {ctl, h};
+        }""")
+        print(f"  🧭 intervention page: headings={info.get('h')} controls={info.get('ctl')}")
+    except Exception:
+        pass
+    bad = re.compile(r"exit|back|cancel|return|search|home|close|not now|withdraw|save and", re.I)
+    good = re.compile(r"^(continue( applying| application| to application)?|apply anyway|"
+                      r"keep applying|proceed|next|yes, continue|continue anyway|"
+                      r"submit( (my )?application)?|review( your)? application)$", re.I)
+    try:
+        cands = page.locator('button, a[role=button], [role=button], input[type=submit]')
+        for i in range(min(cands.count(), 40)):
+            el = cands.nth(i)
+            try:
+                if not el.is_visible(timeout=500):
+                    continue
+                txt = (el.inner_text(timeout=800) or el.get_attribute('value') or '').strip()
+            except Exception:
+                continue
+            if txt and good.match(txt) and not bad.search(txt):
+                print(f"  ➡️ intervention: clicking '{txt}'")
+                try:
+                    el.click(timeout=4000)
+                except Exception:
+                    el.evaluate("(b) => b.click()")
+                try:
+                    page.wait_for_load_state('domcontentloaded', timeout=8000)
+                except Exception:
+                    pass
+                return True
+    except Exception:
+        pass
     return False
 
 
@@ -1423,6 +1471,9 @@ def submit_one(pg, url, db, profile):
                     break
 
         # advance with the VISIBLE Continue
+        if 'intervention' in (pg.url or '').lower() and handle_intervention(pg):
+            time.sleep(3)
+            continue
         if click_continue(pg):
             print("      ➡️ clicked visible Continue")
             try:
