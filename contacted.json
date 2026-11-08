@@ -827,5 +827,61 @@
     "replied": false,
     "bounced": true,
     "re_engage_count": 0
+  },
+  "fbc27a6f2d08": {
+    "email": "recruiting@roseinternational.com",
+    "date": "2026-11-08T23:21:53.443707",
+    "last_contact": "2026-11-08T23:21:53.443707",
+    "job": "Java Developer C2C",
+    "company": "Rose International",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": false,
+    "re_engage_count": 0
+  },
+  "574cdb84935b": {
+    "email": "recruiting@jackhenry.com",
+    "date": "2026-11-08T23:21:55.680299",
+    "last_contact": "2026-11-08T23:21:55.680299",
+    "job": "Java Developer C2C",
+    "company": "Jack Henry",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": false,
+    "re_engage_count": 0
+  },
+  "e6be2b34b4fd": {
+    "email": "recruiting@sharpdecisions.com",
+    "date": "2026-11-08T23:21:58.971602",
+    "last_contact": "2026-11-08T23:21:58.971602",
+    "job": "Java Developer C2C",
+    "company": "Sharp Decisions",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": false,
+    "re_engage_count": 0
+  },
+  "a10e04cb0693": {
+    "email": "info@fusionglobalsolutions.com",
+    "date": "2026-11-08T23:22:01.023703",
+    "last_contact": "2026-11-08T23:22:01.023703",
+    "job": "Java Developer C2C",
+    "company": "Fusion Global Solutions",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": true,
+    "re_engage_count": 0
   }
 }
