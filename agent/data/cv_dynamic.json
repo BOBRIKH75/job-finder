@@ -7,11 +7,23 @@
   "scale_max": 1.5,
   "platforms": {
     "indeed": {
-      "TARGET_SUBMITS": {"default": 15, "min": 8, "max": 25},
-      "RESULTS_WANTED": {"default": 50, "min": 30, "max": 80}
+      "TARGET_SUBMITS": {
+        "default": 15,
+        "min": 8,
+        "max": 25
+      },
+      "RESULTS_WANTED": {
+        "default": 80,
+        "min": 50,
+        "max": 120
+      }
     },
     "dice": {
-      "DICE_TARGET": {"default": 40, "min": 20, "max": 60}
+      "DICE_TARGET": {
+        "default": 40,
+        "min": 20,
+        "max": 60
+      }
     },
     "greenhouse": {},
     "linkedin": {}

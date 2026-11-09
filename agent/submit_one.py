@@ -1600,6 +1600,31 @@ def submit_one(pg, url, db, profile):
     return 'max_steps'
 
 
+_DAILY_FILE = os.path.expanduser('~/.cv-indeed-daily.json')
+_DAILY_CAP = int(os.environ.get('INDEED_DAILY_CAP', '80'))
+
+
+def _daily_count():
+    try:
+        d = json.load(open(_DAILY_FILE))
+        return int(d.get(time.strftime('%Y-%m-%d'), 0))
+    except Exception:
+        return 0
+
+
+def _daily_bump():
+    try:
+        try:
+            d = json.load(open(_DAILY_FILE))
+        except Exception:
+            d = {}
+        k = time.strftime('%Y-%m-%d')
+        d = {k: int(d.get(k, 0)) + 1}   # keep only today
+        json.dump(d, open(_DAILY_FILE, 'w'))
+    except Exception:
+        pass
+
+
 def main():
     from jobspy import scrape_jobs
     profile = json.load(open('config/profile.json'))
@@ -1753,6 +1778,13 @@ def main():
             'Java engineer',
         ]
         _loc = os.environ.get('SEARCH_LOCATION', 'USA')
+        # Rotate the search location each run so repeated (hourly) runs surface DIFFERENT
+        # jobs instead of the same top-N 'USA' results. Override with SEARCH_LOCATION.
+        if 'SEARCH_LOCATION' not in os.environ:
+            _locs = ['USA', 'Remote', 'Colorado', 'Texas', 'New York, NY', 'California',
+                     'Illinois', 'Georgia', 'North Carolina', 'Virginia', 'Florida', 'New Jersey']
+            _loc = _locs[int(os.environ.get('GITHUB_RUN_NUMBER', time.strftime('%H'))) % len(_locs)]
+            print(f"  📍 search location this run: {_loc}")
         _rw = int(os.environ.get('RESULTS_WANTED', '20'))
         # Freshness: only pull jobs posted in the last N hours (default 72h = 3 days).
         # Without this, every run returns the SAME top results → all already-applied →
@@ -1762,6 +1794,10 @@ def main():
         _hours_old = int(_hrs_env) if _hrs_env.strip() not in ('', '0') else None
         urls = []
         _seen_u = set()
+        try:
+            _PRE_APPLIED = set(json.load(open('data/applied_jks.json')))
+        except Exception:
+            _PRE_APPLIED = set()
         for _t in _terms:
             try:
                 _kw = dict(site_name=['indeed'], search_term=_t,
@@ -1777,6 +1813,9 @@ def main():
             # DIFFERENT jobs, so searching all of them finds far more unique roles to
             # apply to. Dedupe across terms. Stop early only once we have plenty.
             for _u in _found:
+                _m = re.search(r'jk=([0-9a-f]+)', _u or '')
+                if _m and _m.group(1) in _PRE_APPLIED:
+                    continue   # already applied -> don't let it fill the inventory
                 if _u not in _seen_u:
                     _seen_u.add(_u)
                     urls.append(_u)
@@ -1885,6 +1924,9 @@ def main():
 
         target = int(os.environ.get('TARGET_SUBMITS', '2'))
         submitted_jobs = []
+        if _daily_count() >= _DAILY_CAP:
+            print(f"🛑 Indeed daily cap {_DAILY_CAP} already reached today — skip run")
+            return
 
         # SELF-LEARNING rate-limit protection: if a PREVIOUS run hit 'Try again later',
         # cool down before starting + pace submits so we don't re-trigger it this run.
@@ -2048,6 +2090,10 @@ def main():
                 failed_jks.add(jk)
             if result == 'submitted':
                 submitted_jobs.append(url)
+                _daily_bump()
+                if _daily_count() >= _DAILY_CAP:
+                    print(f"  🛑 Indeed daily cap {_DAILY_CAP} reached — stop (account safety)")
+                    break
                 print(f"\n✅ SUBMITTED #{len(submitted_jobs)} — {url[-45:]} (took {_job_elapsed:.0f}s)")
                 if len(submitted_jobs) >= target:
                     break

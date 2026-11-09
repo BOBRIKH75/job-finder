@@ -1,0 +1,60 @@
+name: "Apply Pump (keep appliers running)"
+
+# WHY: GitHub silently DROPS many scheduled runs (Indeed: 7 of 18 expected in 36h ran),
+# and a concurrency group keeps only ONE pending run. This cheap cloud job checks every
+# ~20 min and dispatches an applier when it has been idle longer than its interval.
+# Result: Indeed ~hourly, Dice/Greenhouse ~every 2h, reliably. Safe: never stacks runs
+# (skips when anything is queued), never dispatches when the home runner is offline.
+
+on:
+  schedule:
+    - cron: "7,27,47 * * * *"
+  workflow_dispatch: {}
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  pump:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Dispatch idle appliers
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          # workflow file : minimum minutes between run STARTS
+          APPLIERS: "indeed-apply.yml:55 dice-apply.yml:115 greenhouse-apply.yml:115"
+          RUNNER_PAT: ${{ secrets.GH_PAT }}
+        run: |
+          set -u
+          now=$(date -u +%s)
+          # Runner status needs admin scope; use GH_PAT if present, else assume online.
+          online=unknown
+          if [ -n "${RUNNER_PAT:-}" ]; then
+            online=$(GH_TOKEN="$RUNNER_PAT" gh api "repos/$GH_REPO/actions/runners" \
+              --jq '[.runners[]|select(.status=="online")]|length' 2>/dev/null || echo unknown)
+          fi
+          echo "home runner online count: $online"
+          if [ "$online" = "0" ]; then echo "runner offline — nothing dispatched"; exit 0; fi
+          # Never stack: if ANY applier is already queued, wait for the runner to drain.
+          queued=0
+          for spec in $APPLIERS; do
+            wf=${spec%%:*}
+            q=$(gh run list --workflow "$wf" --status queued --json databaseId --jq 'length' 2>/dev/null || echo 0)
+            queued=$((queued + q))
+          done
+          echo "queued appliers: $queued"
+          for spec in $APPLIERS; do
+            wf=${spec%%:*}; gap=${spec##*:}
+            busy=$(gh run list --workflow "$wf" --status in_progress --json databaseId --jq 'length' 2>/dev/null || echo 0)
+            last=$(gh run list --workflow "$wf" --limit 1 --json createdAt --jq '.[0].createdAt // ""' 2>/dev/null)
+            age=99999
+            if [ -n "$last" ]; then age=$(( (now - $(date -u -d "$last" +%s)) / 60 )); fi
+            echo "$wf: last start ${age}m ago, in_progress=$busy (min gap ${gap}m)"
+            if [ "$busy" = "0" ] && [ "$queued" = "0" ] && [ "$age" -ge "$gap" ]; then
+              echo "  -> dispatching $wf"
+              gh workflow run "$wf" --ref master && queued=1
+            fi
+          done
