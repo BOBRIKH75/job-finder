@@ -109,7 +109,8 @@ def test_never_invent_start_year(monkeypatch):
     import question_answerer as qa
     monkeypatch.setattr(qa, "get_approved_answer", lambda db, q: None)
     monkeypatch.setattr(qa, "save_approved_answer", lambda *a, **k: None)
-    assert qa.answer_question(None, "Start year *", "text", None, PROFILE) is None
+    _no_year = {k: v for k, v in PROFILE.items() if k != "current_job_start_year"}
+    assert qa.answer_question(None, "Start year *", "text", None, _no_year) is None
     assert qa.answer_question(None, "Start year *", "text", None, dict(PROFILE, current_job_start_year=2019)) == "2019"
     assert qa.answer_question(None, "Address Line 1", "text", None, PROFILE) is None
 

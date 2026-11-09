@@ -385,6 +385,13 @@ def _search_urls(page, term, want=50, pages=3):
                                applies — the bot may not complete external ATS forms, but
                                nothing is MISSED from the search).
     """
+    # '@denver <query>' = LOCAL search: Denver metro (30 mi), on-site/hybrid allowed —
+    # Bob lives in Parker, CO, so Denver-area office jobs are truthful 'can commute' fits.
+    _local = ''
+    if term.startswith('@denver '):
+        term = term[len('@denver '):]
+        _local = ('&location=Denver,%20CO,%20USA&latitude=39.7392358&longitude=-104.990251'
+                  '&countryCode2=US&radius=30&radiusUnit=mi')
     q = term.replace(' ', '%20')
     posted = _posted_date_filter()
     pd = f'&filters.postedDate={posted}' if posted else ''
@@ -395,12 +402,14 @@ def _search_urls(page, term, want=50, pages=3):
     # or "Remote,Hybrid,Onsite" (widest). Dice needs PIPE-separated values in the URL
     # (verified: comma returns a near-empty page; pipe %7C returns full results).
     _wp = os.environ.get('DICE_WORKPLACE', 'Remote,Hybrid').strip()
+    if _local:
+        _wp = 'Remote,Hybrid,On-Site'
     wp = f"&filters.workplaceTypes={_wp.replace(',', '%7C')}" if _wp else ''
     out = []
     for pg_num in range(1, pages + 1):
         try:
             page.goto(f'https://www.dice.com/jobs?q={q}&countryCode=US&page={pg_num}&pageSize={want}'
-                      f'{ea}{wp}{pd}',
+                      f'{ea}{wp}{pd}{_local}',
                       wait_until='domcontentloaded', timeout=30000)
             time.sleep(4)
             rows = page.evaluate(r"""() => {
@@ -941,7 +950,9 @@ def main():
         except Exception:
             pass
         # custom term (dispatch input) always leads if provided; else default Java Spring Boot
-        terms = ([_custom] if _custom else ['Java Spring Boot']) + _pool
+        _denver = ['@denver Java developer', '@denver Java Spring Boot', '@denver backend developer Java',
+                   '@denver Java software engineer']
+        terms = ([_custom] if _custom else ['Java Spring Boot']) + _denver + _pool
         _pages = min(int(os.environ.get('DICE_SEARCH_PAGES', '4')), 4)  # data: page 5+ = 0 results
         jobs = []
         seen = set()
