@@ -1,60 +1,78 @@
 name: "Apply Pump (keep appliers running)"
 
-# WHY: GitHub silently DROPS many scheduled runs (Indeed: 7 of 18 expected in 36h ran),
-# and a concurrency group keeps only ONE pending run. This cheap cloud job checks every
-# ~20 min and dispatches an applier when it has been idle longer than its interval.
-# Result: Indeed ~hourly, Dice/Greenhouse ~every 2h, reliably. Safe: never stacks runs
-# (skips when anything is queued), never dispatches when the home runner is offline.
+# WHY: GitHub silently DROPS most scheduled runs on this repo (hot-reply-alerts set to
+# every 30 min ran ~every 4h; Indeed 7 of 18 in 36h). Cron alone cannot be trusted.
+# This pump is a LONG-RUNNING cloud loop: every 10 min it dispatches any applier/alert
+# that has been idle longer than its interval, then near the 6h job limit it RE-DISPATCHES
+# ITSELF (workflow_dispatch via GITHUB_TOKEN is allowed), so it never depends on cron.
+# The cron below is only a backup to revive the loop if the chain ever breaks.
+# Safe: self-hosted appliers are never stacked (skip when one is queued) and are not
+# dispatched when the home runner is offline. Public repo => cloud minutes are free.
 
 on:
   schedule:
-    - cron: "7,27,47 * * * *"
+    - cron: "7,37 * * * *"
   workflow_dispatch: {}
 
 permissions:
   actions: write
   contents: read
 
+concurrency:
+  group: apply-pump
+  cancel-in-progress: false
+
 jobs:
   pump:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 350
     steps:
-      - name: Dispatch idle appliers
+      - name: Pump loop
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
-          # workflow file : minimum minutes between run STARTS
-          APPLIERS: "indeed-apply.yml:55 dice-apply.yml:115 greenhouse-apply.yml:115"
           RUNNER_PAT: ${{ secrets.GH_PAT }}
+          # self-hosted (home runner)  workflow:min-minutes-between-starts
+          APPLIERS: "indeed-apply.yml:55 dice-apply.yml:115 greenhouse-apply.yml:115"
+          # cloud (always ok to dispatch)
+          CLOUD: "hot-reply-alerts.yml:30 cv-health.yml:60"
+          LOOP_MINUTES: "330"
+          TICK_SECONDS: "600"
         run: |
           set -u
-          now=$(date -u +%s)
-          # Runner status needs admin scope; use GH_PAT if present, else assume online.
-          online=unknown
-          if [ -n "${RUNNER_PAT:-}" ]; then
-            online=$(GH_TOKEN="$RUNNER_PAT" gh api "repos/$GH_REPO/actions/runners" \
-              --jq '[.runners[]|select(.status=="online")]|length' 2>/dev/null || echo unknown)
-          fi
-          echo "home runner online count: $online"
-          if [ "$online" = "0" ]; then echo "runner offline — nothing dispatched"; exit 0; fi
-          # Never stack: if ANY applier is already queued, wait for the runner to drain.
-          queued=0
-          for spec in $APPLIERS; do
-            wf=${spec%%:*}
-            q=$(gh run list --workflow "$wf" --status queued --json databaseId --jq 'length' 2>/dev/null || echo 0)
-            queued=$((queued + q))
-          done
-          echo "queued appliers: $queued"
-          for spec in $APPLIERS; do
-            wf=${spec%%:*}; gap=${spec##*:}
-            busy=$(gh run list --workflow "$wf" --status in_progress --json databaseId --jq 'length' 2>/dev/null || echo 0)
-            last=$(gh run list --workflow "$wf" --limit 1 --json createdAt --jq '.[0].createdAt // ""' 2>/dev/null)
-            age=99999
-            if [ -n "$last" ]; then age=$(( (now - $(date -u -d "$last" +%s)) / 60 )); fi
-            echo "$wf: last start ${age}m ago, in_progress=$busy (min gap ${gap}m)"
-            if [ "$busy" = "0" ] && [ "$queued" = "0" ] && [ "$age" -ge "$gap" ]; then
-              echo "  -> dispatching $wf"
-              gh workflow run "$wf" --ref master && queued=1
+          end=$(( $(date -u +%s) + LOOP_MINUTES * 60 ))
+          age_min() {  # minutes since the workflow's latest run was created
+            local last; last=$(gh run list --workflow "$1" --limit 1 --json createdAt --jq '.[0].createdAt // ""' 2>/dev/null)
+            if [ -z "$last" ]; then echo 99999; else echo $(( ($(date -u +%s) - $(date -u -d "$last" +%s)) / 60 )); fi
+          }
+          count() { gh run list --workflow "$1" --status "$2" --json databaseId --jq 'length' 2>/dev/null || echo 0; }
+          tick() {
+            echo "---- tick $(date -u +%H:%M)Z"
+            for spec in $CLOUD; do
+              wf=${spec%%:*}; gap=${spec##*:}; a=$(age_min "$wf")
+              if [ "$a" -ge "$gap" ] && [ "$(count "$wf" in_progress)" = "0" ] && [ "$(count "$wf" queued)" = "0" ]; then
+                echo "  cloud  $wf idle ${a}m -> dispatch"; gh workflow run "$wf" --ref master || true
+              fi
+            done
+            online=unknown
+            if [ -n "${RUNNER_PAT:-}" ]; then
+              online=$(GH_TOKEN="$RUNNER_PAT" gh api "repos/$GH_REPO/actions/runners" \
+                --jq '[.runners[]|select(.status=="online")]|length' 2>/dev/null || echo unknown)
             fi
+            if [ "$online" = "0" ]; then echo "  home runner OFFLINE - appliers not dispatched"; return; fi
+            queued=0
+            for spec in $APPLIERS; do queued=$(( queued + $(count "${spec%%:*}" queued) )); done
+            for spec in $APPLIERS; do
+              wf=${spec%%:*}; gap=${spec##*:}; a=$(age_min "$wf"); busy=$(count "$wf" in_progress)
+              echo "  runner $wf last ${a}m ago busy=$busy queued_total=$queued (gap ${gap}m)"
+              if [ "$busy" = "0" ] && [ "$queued" = "0" ] && [ "$a" -ge "$gap" ]; then
+                echo "    -> dispatch $wf"; gh workflow run "$wf" --ref master && queued=1
+              fi
+            done
+          }
+          while [ "$(date -u +%s)" -lt "$end" ]; do
+            tick
+            sleep "$TICK_SECONDS"
           done
+          echo "loop window done - re-dispatching myself so the pump never stops"
+          gh workflow run apply-pump.yml --ref master || true
