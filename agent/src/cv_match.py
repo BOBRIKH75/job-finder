@@ -51,6 +51,8 @@ TITLE_NEGATIVES = (
     # Off-stack titles seen being applied to on Dice (Nov 2026 audit) — not Bob's lane.
     "django", "flask", "workfront", "rpa ", "rpa developer", "uipath", "blue prism",
     "ai architect", "ai agent", "solution architect", "mulesoft", "pega", "appian",
+    "cybersecurity", "cyber security", "pam engineer", " pam ", "iam engineer", "iam architect",
+    "identity and access", "sailpoint", "cyberark", "abap", "s/4hana",
 )
 
 
