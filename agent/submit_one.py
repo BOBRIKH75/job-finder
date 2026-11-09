@@ -1940,7 +1940,6 @@ def main():
         elif _rl_pace > 0:
             print(f"  🧠 learned lesson → pacing {_rl_pace}s between submits (avoid audio={_rl_no_audio})")
 
-        import re
         JK_FILE = 'data/applied_jks.json'
 
         def _jk(u):
