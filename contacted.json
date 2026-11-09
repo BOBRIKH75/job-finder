@@ -10,7 +10,10 @@
     "us_score": 1,
     "us_reasons": [
       "corp-domain"
-    ]
+    ],
+    "last_contact": "2026-11-09T23:15:19.196282",
+    "followed_up": true,
+    "followup_date": "2026-11-09T23:15:19.196282"
   },
   "027b45e39dac": {
     "email": "_coordinators@bokf.com",
@@ -23,7 +26,10 @@
     "us_score": 1,
     "us_reasons": [
       "corp-domain"
-    ]
+    ],
+    "last_contact": "2026-11-09T23:15:19.196282",
+    "followed_up": true,
+    "followup_date": "2026-11-09T23:15:19.196282"
   },
   "767f55efdf4d": {
     "email": "alisha@luzontech.com",
@@ -37,7 +43,10 @@
     "us_reasons": [
       "corp-domain",
       "us-direct-signal"
-    ]
+    ],
+    "last_contact": "2026-11-09T23:15:19.196282",
+    "followed_up": true,
+    "followup_date": "2026-11-09T23:15:19.196282"
   },
   "c87e2ff9ac34": {
     "email": "origin.allow@kforceinc.com",
@@ -186,7 +195,10 @@
     "company": "Rang Technologies Inc",
     "url": "https://www.linkedin.com/jobs/view/4487574081",
     "recruiter": "Utsav Tiwari",
-    "source": "linkedin+guess"
+    "source": "linkedin+guess",
+    "last_contact": "2026-11-09T23:15:19.196282",
+    "followed_up": true,
+    "followup_date": "2026-11-09T23:15:19.196282"
   },
   "69e41c373791": {
     "email": "neha.pawar@rangtechnologiesinc.com",
@@ -195,7 +207,10 @@
     "company": "Rang Technologies Inc",
     "url": "https://www.linkedin.com/jobs/view/4487574081",
     "recruiter": "Neha Pawar",
-    "source": "linkedin+guess"
+    "source": "linkedin+guess",
+    "last_contact": "2026-11-09T23:15:19.196282",
+    "followed_up": true,
+    "followup_date": "2026-11-09T23:15:19.196282"
   },
   "e5a9809985a0": {
     "email": "rang.technologies@rangtechnologiesinc.com",
@@ -204,7 +219,10 @@
     "company": "Rang Technologies Inc",
     "url": "https://www.linkedin.com/jobs/view/4487574081",
     "recruiter": "Rang Technologies",
-    "source": "linkedin+guess"
+    "source": "linkedin+guess",
+    "last_contact": "2026-11-09T23:15:19.196282",
+    "followed_up": true,
+    "followup_date": "2026-11-09T23:15:19.196282"
   },
   "6477b61e3fcf": {
     "email": "bhargav.tita@rangtechnologiesinc.com",
@@ -213,7 +231,10 @@
     "company": "Rang Technologies Inc",
     "url": "https://www.linkedin.com/jobs/view/4487574081",
     "recruiter": "Bhargav Tita",
-    "source": "linkedin+guess"
+    "source": "linkedin+guess",
+    "last_contact": "2026-11-09T23:15:19.196282",
+    "followed_up": true,
+    "followup_date": "2026-11-09T23:15:19.196282"
   },
   "2c87b9016ffb": {
     "email": "anshu.singh@rangtechnologiesinc.com",
@@ -222,7 +243,10 @@
     "company": "Rang Technologies Inc",
     "url": "https://www.linkedin.com/jobs/view/4487574081",
     "recruiter": "Anshu Singh",
-    "source": "linkedin+guess"
+    "source": "linkedin+guess",
+    "last_contact": "2026-11-09T23:15:19.196282",
+    "followed_up": true,
+    "followup_date": "2026-11-09T23:15:19.196282"
   },
   "8e4860cdfe90": {
     "email": "info@talentamp.com",
@@ -255,7 +279,7 @@
   "6ba753cfb450": {
     "email": "recruiting@portx.com",
     "date": "2026-11-06T00:48:56.395730",
-    "last_contact": "2026-11-06T00:48:56.395730",
+    "last_contact": "2026-11-09T23:15:19.196282",
     "job": "Java Developer C2C",
     "company": "PortX",
     "recruiter": "Recruiting Team",
@@ -264,12 +288,14 @@
     "url": "",
     "replied": false,
     "bounced": false,
-    "re_engage_count": 0
+    "re_engage_count": 0,
+    "followed_up": true,
+    "followup_date": "2026-11-09T23:15:19.196282"
   },
   "1b1677b184c6": {
     "email": "recruiting@elastic.com",
     "date": "2026-11-06T00:48:58.453990",
-    "last_contact": "2026-11-06T00:48:58.453990",
+    "last_contact": "2026-11-09T23:15:19.196282",
     "job": "Java Developer C2C",
     "company": "Elastic",
     "recruiter": "Recruiting Team",
@@ -278,12 +304,14 @@
     "url": "",
     "replied": false,
     "bounced": false,
-    "re_engage_count": 0
+    "re_engage_count": 0,
+    "followed_up": true,
+    "followup_date": "2026-11-09T23:15:19.196282"
   },
   "871dda157045": {
     "email": "recruiting@workday.com",
     "date": "2026-11-06T00:49:00.202558",
-    "last_contact": "2026-11-06T00:49:00.202558",
+    "last_contact": "2026-11-09T23:25:15.706285",
     "job": "Java Developer C2C",
     "company": "Workday",
     "recruiter": "Recruiting Team",
@@ -292,12 +320,14 @@
     "url": "",
     "replied": false,
     "bounced": false,
-    "re_engage_count": 0
+    "re_engage_count": 0,
+    "followed_up": true,
+    "followup_date": "2026-11-09T23:25:15.706285"
   },
   "8f6490ebbb51": {
     "email": "recruiting@halvik.com",
     "date": "2026-11-06T00:49:01.844871",
-    "last_contact": "2026-11-06T00:49:01.844871",
+    "last_contact": "2026-11-09T23:25:15.706285",
     "job": "Java Developer C2C",
     "company": "Halvik",
     "recruiter": "Recruiting Team",
@@ -306,12 +336,14 @@
     "url": "",
     "replied": false,
     "bounced": false,
-    "re_engage_count": 0
+    "re_engage_count": 0,
+    "followed_up": true,
+    "followup_date": "2026-11-09T23:25:15.706285"
   },
   "a4b78cc740d6": {
     "email": "staffing@floridablue.com",
     "date": "2026-11-06T00:49:03.713028",
-    "last_contact": "2026-11-06T00:49:03.713028",
+    "last_contact": "2026-11-09T23:25:15.706285",
     "job": "Java Developer C2C",
     "company": "Florida Blue",
     "recruiter": "Recruiting Team",
@@ -320,7 +352,9 @@
     "url": "",
     "replied": false,
     "bounced": false,
-    "re_engage_count": 0
+    "re_engage_count": 0,
+    "followed_up": true,
+    "followup_date": "2026-11-09T23:25:15.706285"
   },
   "5fed30953a3a": {
     "email": "careers@themesoft.com",
@@ -339,7 +373,7 @@
   "dfa8cee69033": {
     "email": "recruiting@episodesix.com",
     "date": "2026-11-06T00:49:08.799074",
-    "last_contact": "2026-11-06T00:49:08.799074",
+    "last_contact": "2026-11-09T23:25:15.706285",
     "job": "Java Developer C2C",
     "company": "Episode Six",
     "recruiter": "Recruiting Team",
@@ -348,12 +382,14 @@
     "url": "",
     "replied": false,
     "bounced": false,
-    "re_engage_count": 0
+    "re_engage_count": 0,
+    "followed_up": true,
+    "followup_date": "2026-11-09T23:25:15.706285"
   },
   "ece13b1cb752": {
     "email": "recruiting@ice.com",
     "date": "2026-11-06T00:49:10.832089",
-    "last_contact": "2026-11-06T00:49:10.832089",
+    "last_contact": "2026-11-09T23:25:15.706285",
     "job": "Java Developer C2C",
     "company": "ICE",
     "recruiter": "Recruiting Team",
@@ -362,7 +398,9 @@
     "url": "",
     "replied": false,
     "bounced": false,
-    "re_engage_count": 0
+    "re_engage_count": 0,
+    "followed_up": true,
+    "followup_date": "2026-11-09T23:25:15.706285"
   },
   "2f4e4e83b007": {
     "email": "candidate.accommodations@hrhelp.target.com",
@@ -375,7 +413,10 @@
     "us_score": 1,
     "us_reasons": [
       "corp-domain"
-    ]
+    ],
+    "last_contact": "2026-11-09T23:25:15.706285",
+    "followed_up": true,
+    "followup_date": "2026-11-09T23:25:15.706285"
   },
   "19906d829bca": {
     "email": "origin.allow@tentialsolutions.com",
@@ -876,6 +917,99 @@
     "last_contact": "2026-11-08T23:22:01.023703",
     "job": "Java Developer C2C",
     "company": "Fusion Global Solutions",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": true,
+    "re_engage_count": 0
+  },
+  "a053794bca0c": {
+    "email": "accommodations@workday.com",
+    "date": "2026-11-09T23:15:19.117225",
+    "job": "Sr Software Development Engineer, Business Process Optimization",
+    "company": "Workday",
+    "url": "https://www.indeed.com/viewjob?jk=0eb9a72b53896565",
+    "recruiter": null,
+    "smtp_verified": true,
+    "us_score": 1,
+    "us_reasons": [
+      "corp-domain"
+    ]
+  },
+  "0efd9ac32695": {
+    "email": "origin.allow@compucomstaffing.com",
+    "date": "2026-11-09T23:23:27.105139",
+    "job": "Application Developer",
+    "company": "Compucom Staffing",
+    "url": "https://www.linkedin.com/jobs/view/4487688778",
+    "recruiter": "origin allow",
+    "source": "linkedin+guess",
+    "bounced": true
+  },
+  "c5fd6007c027": {
+    "email": "recruiting@sentinelone.com",
+    "date": "2026-11-09T23:25:07.171539",
+    "last_contact": "2026-11-09T23:25:07.171539",
+    "job": "Java Developer C2C",
+    "company": "SentinelOne",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": false,
+    "re_engage_count": 0
+  },
+  "f0e817476e30": {
+    "email": "careers@cognizant.com",
+    "date": "2026-11-09T23:25:09.753133",
+    "last_contact": "2026-11-09T23:25:09.753133",
+    "job": "Java Developer C2C",
+    "company": "Cognizant",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": true,
+    "re_engage_count": 0
+  },
+  "66a010448e4a": {
+    "email": "recruiting@infosys.com",
+    "date": "2026-11-09T23:25:11.917983",
+    "last_contact": "2026-11-09T23:25:11.917983",
+    "job": "Java Developer C2C",
+    "company": "Infosys",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": false,
+    "re_engage_count": 0
+  },
+  "b6ca32fbf6bd": {
+    "email": "staffing@cbts.com",
+    "date": "2026-11-09T23:25:14.082587",
+    "last_contact": "2026-11-09T23:25:14.082587",
+    "job": "Java Developer C2C",
+    "company": "CBTS",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": false,
+    "re_engage_count": 0
+  },
+  "4136ce16affb": {
+    "email": "hr@fico.com",
+    "date": "2026-11-09T23:25:15.641202",
+    "last_contact": "2026-11-09T23:25:15.641202",
+    "job": "Java Developer C2C",
+    "company": "FICO",
     "recruiter": "Recruiting Team",
     "title": "Recruiter",
     "source": "smtp_verified",
