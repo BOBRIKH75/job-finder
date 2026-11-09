@@ -143,4 +143,24 @@ def should_apply(title, description="", location=""):
         return True, 999, ["filter disabled"]
     min_score = int(os.environ.get("CV_MATCH_MIN", "2"))
     score, reasons = score_job(title, description, location)
+    if score >= min_score and _onsite_outside_colorado(title, description, location):
+        return False, score, reasons + ["on-site/hybrid outside Colorado (Bob is Denver-area/remote)"]
     return (score >= min_score), score, reasons
+
+
+_CO_PLACES = ("colorado", ", co", " co ", "denver", "aurora", "englewood", "lakewood", "parker",
+              "littleton", "centennial", "greenwood village", "lone tree", "castle rock",
+              "highlands ranch", "boulder", "broomfield", "westminster", "golden", "arvada")
+_ONSITE_WORDS = ("on-site", "onsite", "on site", "in-office", "in office", "hybrid")
+
+
+def _onsite_outside_colorado(title, description, location):
+    """True only when the job is clearly on-site/hybrid AND clearly NOT in Colorado AND
+    nothing says remote. Unknown/blank locations pass (never block on missing data)."""
+    loc = _norm(location)
+    blob = f"{_norm(title)} {loc} {_norm(description)[:3000]}"
+    if not loc or "remote" in blob or "work from home" in blob:
+        return False
+    if any(p in f" {loc} " for p in _CO_PLACES):
+        return False
+    return any(w in blob for w in _ONSITE_WORDS)

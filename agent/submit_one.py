@@ -1781,8 +1781,10 @@ def main():
         # Rotate the search location each run so repeated (hourly) runs surface DIFFERENT
         # jobs instead of the same top-N 'USA' results. Override with SEARCH_LOCATION.
         if 'SEARCH_LOCATION' not in os.environ:
-            _locs = ['USA', 'Remote', 'Colorado', 'Texas', 'New York, NY', 'California',
-                     'Illinois', 'Georgia', 'North Carolina', 'Virginia', 'Florida', 'New Jersey']
+            # Denver metro is weighted (Bob lives in Parker, CO: on-site/hybrid there is a real fit).
+            _locs = ['Denver, CO', 'USA', 'Remote', 'Denver, CO', 'Colorado', 'Texas',
+                     'Denver, CO', 'New York, NY', 'California', 'Aurora, CO', 'Illinois',
+                     'Denver, CO', 'Georgia', 'Englewood, CO', 'Virginia', 'Florida']
             _loc = _locs[int(os.environ.get('GITHUB_RUN_NUMBER', time.strftime('%H'))) % len(_locs)]
             print(f"  📍 search location this run: {_loc}")
         _rw = int(os.environ.get('RESULTS_WANTED', '20'))

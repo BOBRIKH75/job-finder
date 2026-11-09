@@ -7,10 +7,10 @@ truthful answer, it skips that job instead of guessing. These gaps came from rea
 |---|---|---|
 | Street address (Address Line 1) | LinkedIn Easy Apply contact form | `address_line1` |
 | Work on W2 (yes/no)? Currently only C2C is on record | LinkedIn "Can you work on W2?" | `open_to_w2` |
-| Willing to relocate? (now always answered "No") | Indeed + LinkedIn | `willing_to_relocate` |
-| Willing to work on-site / hybrid / commute outside Colorado? (now "No") | Indeed + LinkedIn | `open_to_onsite`, `onsite_locations` |
-| Willing to attend in-person interviews in other cities? | LinkedIn | `in_person_interview_ok` |
-| Start year of your most recent job (Indeed/Infosys form blocks without it) | Indeed | `current_job_start_year` |
+| ~~Willing to relocate?~~ DONE: No (`willing_to_relocate=false`) | Indeed + LinkedIn | `willing_to_relocate` |
+| ~~On-site / hybrid?~~ DONE: Denver metro / Colorado only (searches now include Denver) | Indeed + LinkedIn + Dice | `open_to_onsite`, `onsite_locations` |
+| ~~In-person interviews?~~ DONE: Denver metro only | LinkedIn | `in_person_interview_ok` |
+| ~~Start year of current job~~ DONE: 2024 (Spectrum/Charter, from CV) | Indeed | `current_job_start_year` |
 | Graduation year | Indeed | `graduation_year` |
 | Self-rated skill levels / years per technology (big data, system design, etc.) | LinkedIn dropdowns | `skill_years: {"kafka": 6, ...}` |
 | Domain experience years (banking, order management, ...) - now answered 0 | LinkedIn / Indeed | `domain_years: {...}` |
