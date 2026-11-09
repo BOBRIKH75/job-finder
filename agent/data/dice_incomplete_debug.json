@@ -6,56 +6,6 @@
 "",
 "",
 "Continue Application",
-"Create alert"
-],
-"heads": [
-"Oracle EBS Developer (ONSITE for 1 Week :: REMOTE ",
-"Dice Job Match Score\u2122",
-"Job Details",
-"Skills",
-"Summary",
-"Company Info"
-],
-"dialog": false,
-"path": "https://www.dice.com/job-detail/ID",
-"title": "Oracle EBS Developer (ONSITE for 1 Week ",
-"ts": 1794087233
-},
-{
-"btns": [
-"Career Resources",
-"BR",
-"",
-"",
-"Continue Application",
-"Show more",
-"Create alert",
-"",
-"",
-"Senior AWS Cloud Developer",
-"",
-""
-],
-"heads": [
-"AWS Developer",
-"Dice Job Match Score\u2122",
-"Job Details",
-"Skills",
-"Summary",
-"Similar Jobs"
-],
-"dialog": false,
-"path": "https://www.dice.com/job-detail/ID",
-"title": "AWS Developer",
-"ts": 1794087274
-},
-{
-"btns": [
-"Career Resources",
-"BR",
-"",
-"",
-"Continue Application",
 "Show more",
 "Create alert"
 ],
@@ -646,5 +596,56 @@
 "path": "https://www.dice.com/job-detail/ID",
 "title": "Snowflake Engineer",
 "ts": 1794159331
+},
+{
+"btns": [
+"Career Resources",
+"BR",
+"",
+"",
+"Continue Application",
+"Show more",
+"Create alert",
+"",
+"",
+"Software Engineer - Java Micro",
+"",
+""
+],
+"heads": [
+"Java Microservices Developer",
+"Dice Job Match Score\u2122",
+"Job Details",
+"Skills",
+"Summary",
+"Similar Jobs"
+],
+"dialog": false,
+"path": "https://www.dice.com/job-detail/ID",
+"title": "Java Microservices Developer",
+"ts": 1794240647
+},
+{
+"btns": [
+"Career Resources",
+"BR",
+"",
+"",
+"Continue Application",
+"Show more",
+"Create alert"
+],
+"heads": [
+"Lead Full Stack Java Developer",
+"Dice Job Match Score\u2122",
+"Job Details",
+"Skills",
+"Summary",
+"Company Info"
+],
+"dialog": false,
+"path": "https://www.dice.com/job-detail/ID",
+"title": "Lead Full Stack Java Developer",
+"ts": 1794240748
 }
 ]
