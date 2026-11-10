@@ -6,29 +6,6 @@
 "",
 "",
 "Continue Application",
-"Show more",
-"Create alert"
-],
-"heads": [
-"Google Cloud Platform Technical Architect",
-"Dice Job Match Score\u2122",
-"Job Details",
-"Skills",
-"Summary",
-"Company Info"
-],
-"dialog": false,
-"path": "https://www.dice.com/job-detail/ID",
-"title": "Google Cloud Platform Technical Architec",
-"ts": 1794087496
-},
-{
-"btns": [
-"Career Resources",
-"BR",
-"",
-"",
-"Continue Application",
 "Create alert"
 ],
 "heads": [
@@ -652,5 +629,33 @@
 "path": "https://www.dice.com/job-detail/ID",
 "title": "Java Programmer",
 "ts": 1794333278
+},
+{
+"btns": [
+"Career Resources",
+"BR",
+"",
+"",
+"Continue Application",
+"Show more",
+"Create alert",
+"",
+"",
+"Software Engineer",
+"",
+""
+],
+"heads": [
+"Software Engineer",
+"Dice Job Match Score\u2122",
+"Job Details",
+"Skills",
+"Summary",
+"Company Info"
+],
+"dialog": false,
+"path": "https://www.dice.com/job-detail/ID",
+"title": "Software Engineer",
+"ts": 1794340302
 }
 ]
