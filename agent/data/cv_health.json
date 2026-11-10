@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-10T04:19:25.516111+00:00",
+  "generated_at": "2026-11-10T04:35:38.177049+00:00",
   "runner": {
     "status": "online",
     "busy": false,
@@ -45,8 +45,8 @@
   "problems": [
     "zero_linkedin"
   ],
-  "alerts_sent": [
+  "alerts_sent": [],
+  "alerts_suppressed": [
     "zero_linkedin"
-  ],
-  "alerts_suppressed": []
+  ]
 }
