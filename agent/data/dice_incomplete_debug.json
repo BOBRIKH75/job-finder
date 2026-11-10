@@ -6,56 +6,6 @@
 "",
 "",
 "Continue Application",
-"Create alert"
-],
-"heads": [
-"Actimize Developer",
-"Dice Job Match Score\u2122",
-"Job Details",
-"Skills",
-"Summary",
-"Company Info"
-],
-"dialog": false,
-"path": "https://www.dice.com/job-detail/ID",
-"title": "Actimize Developer",
-"ts": 1794087539
-},
-{
-"btns": [
-"Career Resources",
-"BR",
-"",
-"",
-"Continue Application",
-"Create alert",
-"",
-"",
-"AI Engineer",
-"",
-"",
-"Gen AI Architect"
-],
-"heads": [
-"Principal AI Full Stack Engineer",
-"Dice Job Match Score\u2122",
-"Job Details",
-"Skills",
-"Summary",
-"Similar Jobs"
-],
-"dialog": false,
-"path": "https://www.dice.com/job-detail/ID",
-"title": "Principal AI Full Stack Engineer",
-"ts": 1794087609
-},
-{
-"btns": [
-"Career Resources",
-"BR",
-"",
-"",
-"Continue Application",
 "Create alert",
 "",
 "",
@@ -657,5 +607,56 @@
 "path": "https://www.dice.com/job-detail/ID",
 "title": "Software Engineer",
 "ts": 1794340302
+},
+{
+"btns": [
+"Career Resources",
+"BR",
+"",
+"",
+"Continue Application",
+"Show more",
+"Create alert",
+"",
+"",
+"Java Developer(mid-level)",
+"",
+""
+],
+"heads": [
+"Sr. Java Backend Developer",
+"Dice Job Match Score\u2122",
+"Job Details",
+"Skills",
+"Summary",
+"Similar Jobs"
+],
+"dialog": false,
+"path": "https://www.dice.com/job-detail/ID",
+"title": "Sr. Java Backend Developer",
+"ts": 1794346404
+},
+{
+"btns": [
+"Career Resources",
+"BR",
+"",
+"",
+"Continue Application",
+"Show more",
+"Create alert"
+],
+"heads": [
+"Programmer 6 - Full-Stack Java Developer",
+"Dice Job Match Score\u2122",
+"Job Details",
+"Skills",
+"Summary",
+"Company Info"
+],
+"dialog": false,
+"path": "https://www.dice.com/job-detail/ID",
+"title": "Programmer 6 - Full-Stack Java Developer",
+"ts": 1794346572
 }
 ]
