@@ -6,29 +6,6 @@
 "",
 "",
 "Continue Application",
-"Show more",
-"Create alert"
-],
-"heads": [
-"Lead Full Stack Java Developer",
-"Dice Job Match Score\u2122",
-"Job Details",
-"Skills",
-"Summary",
-"Company Info"
-],
-"dialog": false,
-"path": "https://www.dice.com/job-detail/ID",
-"title": "Lead Full Stack Java Developer",
-"ts": 1794240748
-},
-{
-"btns": [
-"Career Resources",
-"BR",
-"",
-"",
-"Continue Application",
 "Create alert",
 "",
 "",
@@ -671,5 +648,33 @@
 "path": "https://www.dice.com/job-detail/ID",
 "title": "Senior Java Developer",
 "ts": 1794387771
+},
+{
+"btns": [
+"Career Resources",
+"BR",
+"",
+"",
+"Continue Application",
+"Create alert",
+"",
+"",
+"Sr. Java Developer",
+"",
+"",
+"Technical Lead"
+],
+"heads": [
+"Java Lead Developer",
+"Dice Job Match Score\u2122",
+"Job Details",
+"Skills",
+"Summary",
+"Similar Jobs"
+],
+"dialog": false,
+"path": "https://www.dice.com/job-detail/ID",
+"title": "Java Lead Developer",
+"ts": 1794402527
 }
 ]
