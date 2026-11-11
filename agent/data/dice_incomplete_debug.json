@@ -6,31 +6,6 @@
 "",
 "",
 "Continue Application",
-"Create alert",
-"",
-"",
-"Senior Agentic AI Software Eng"
-],
-"heads": [
-"AI Platform and Harness Engineer",
-"Dice Job Match Score\u2122",
-"Job Details",
-"Skills",
-"Summary",
-"AI Platform and Harness Engineer"
-],
-"dialog": false,
-"path": "https://www.dice.com/job-detail/ID",
-"title": "AI Platform and Harness Engineer",
-"ts": 1794158808
-},
-{
-"btns": [
-"Career Resources",
-"BR",
-"",
-"",
-"Continue Application",
 "Show more",
 "Create alert",
 "",
@@ -668,5 +643,27 @@
 "path": "https://www.dice.com/job-detail/ID",
 "title": "Java full stack developer  / Fulll Time ",
 "ts": 1794354026
+},
+{
+"btns": [
+"Career Resources",
+"BR",
+"",
+"",
+"Continue Application",
+"Create alert"
+],
+"heads": [
+"Java Developer",
+"Dice Job Match Score\u2122",
+"Job Details",
+"Skills",
+"Summary",
+"Company Info"
+],
+"dialog": false,
+"path": "https://www.dice.com/job-detail/ID",
+"title": "Java Developer",
+"ts": 1794365613
 }
 ]
