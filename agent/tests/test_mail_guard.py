@@ -31,3 +31,22 @@ def test_role_mailboxes():
     for a in ("careers@x.com", "jobs@x.com", "noreply@x.com", "talent.team@x.com"):
         assert is_role_mailbox(a)
     assert not is_role_mailbox("jane.doe@x.com")
+
+
+def test_hr_helpdesk_domain_blocked():
+    from src.mail_guard import is_blocked_domain
+    assert is_blocked_domain("casehelp@hrhelp.target.com")
+    assert not is_blocked_domain("jane@staffingco.com")
+
+
+def test_outreach_blocks_sensitive(monkeypatch):
+    import importlib, sys as _s, os as _o
+    root = _o.path.abspath(_o.path.join(_o.path.dirname(__file__), "..", ".."))
+    _s.path.insert(0, root)
+    o = importlib.import_module("outreach")
+    sent = []
+    monkeypatch.setattr(o, "_send_via_smtp", lambda *a, **k: sent.append(a) or True, raising=False)
+    monkeypatch.setattr(o, "_send_via_resend", lambda *a, **k: sent.append(a) or True, raising=False)
+    assert o.send_outreach("recruitingaccommodation@capitalone.com", "s", "<p>x</p>") is False
+    assert o.send_outreach("x@hrhelp.target.com", "s", "<p>x</p>") is False
+    assert not sent

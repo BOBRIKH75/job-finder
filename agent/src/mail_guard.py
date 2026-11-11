@@ -74,6 +74,8 @@ def may_auto_reply(addr: str, msg=None, subject: str = "", body: str = "") -> tu
         return False, "sensitive mailbox"
     if is_role_mailbox(addr):
         return False, "role mailbox"
+    if is_blocked_domain(addr) or on_do_not_contact(addr):
+        return False, "blocked domain / do-not-contact"
     if is_automated(msg, subject, body):
         return False, "automated message"
     return True, "ok"
@@ -100,3 +102,24 @@ def replied_recently(imap_conn, addr: str, days: int = 14) -> bool:
             imap_conn.select("INBOX")
         except Exception:
             pass
+
+
+# Domains/subdomains that are HR help desks or ticket systems, never recruiters.
+_BLOCKED_DOMAIN_TOKENS = ("hrhelp", "helpdesk", "servicedesk", "service-now", "servicenow",
+                          "zendesk", "freshdesk", "ticket")
+
+
+def is_blocked_domain(addr: str) -> bool:
+    dom = (addr or "").lower().rpartition("@")[2]
+    return any(t in dom for t in _BLOCKED_DOMAIN_TOKENS)
+
+
+def on_do_not_contact(addr: str) -> bool:
+    import os
+    p = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "do_not_contact.txt")
+    try:
+        lines = {l.strip().lower() for l in open(p) if l.strip() and not l.startswith("#")}
+    except Exception:
+        return False
+    a = (addr or "").strip().lower()
+    return a in lines or ("@" + a.rpartition("@")[2]) in lines

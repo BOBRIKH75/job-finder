@@ -452,6 +452,17 @@ def send_outreach(to_email, subject, html):
     """Send outreach email. Uses Gmail SMTP (sends from your real address).
     Resend only works for sending to yourself (onboarding@resend.dev limitation).
     """
+    # SAFETY: never cold-email accommodation/HR-helpdesk/legal/privacy inboxes or
+    # anyone on do_not_contact (Capital One accommodations + Target HR help incidents).
+    try:
+        import sys as _s, os as _o
+        _s.path.insert(0, _o.path.join(_o.path.dirname(_o.path.abspath(__file__)), 'agent'))
+        from src.mail_guard import is_sensitive_mailbox, is_blocked_domain, on_do_not_contact
+        if is_sensitive_mailbox(to_email) or is_blocked_domain(to_email) or on_do_not_contact(to_email):
+            print(f'  🛑 outreach blocked (sensitive/do-not-contact): @{to_email.split("@")[-1]}')
+            return False
+    except ImportError:
+        return False   # fail closed if the guard is missing
     # Verify email is deliverable before wasting a send
     verification = verify_email_smtp(to_email)
     if verification is False:
