@@ -505,5 +505,139 @@
     "replied": false,
     "bounced": true,
     "re_engage_count": 0
+  },
+  "5d926b4c2ac8": {
+    "email": "staffing@wyetech.com",
+    "date": "2026-11-11T00:18:40.381802",
+    "job": "Agile Developer - Level 2",
+    "company": "Wyetech",
+    "url": "https://www.indeed.com/viewjob?jk=bc40c5cc878e79ad",
+    "recruiter": "Brittney Wood",
+    "smtp_verified": true,
+    "us_score": 3,
+    "us_reasons": [
+      "corp-domain",
+      "us-direct-signal"
+    ]
+  },
+  "1244e5e82f77": {
+    "email": "origin.allow@broadwayventuresllc.com",
+    "date": "2026-11-11T00:24:06.839579",
+    "job": "Application Developer (Java, JavaScript) (Full-Stack)",
+    "company": "BROADWAY VENTURES, LLC",
+    "url": "https://www.linkedin.com/jobs/view/4489630106",
+    "recruiter": "origin allow",
+    "source": "linkedin+guess",
+    "bounced": true
+  },
+  "5b3616caf332": {
+    "email": "origin.allow@netrolynxai.com",
+    "date": "2026-11-11T00:24:10.551119",
+    "job": "Java Full Stack Developer",
+    "company": "Netrolynx AI",
+    "url": "https://www.linkedin.com/jobs/view/4489617434",
+    "recruiter": "origin allow",
+    "source": "linkedin+guess",
+    "bounced": true
+  },
+  "4f9ffa977a3e": {
+    "email": "origin.allow@softwareguidanceassistanceincsgainc.com",
+    "date": "2026-11-11T00:24:14.233401",
+    "job": "Backend Engineer",
+    "company": "Software Guidance & Assistance, Inc. (SGA, Inc.)",
+    "url": "https://www.linkedin.com/jobs/view/4488364795",
+    "recruiter": "origin allow",
+    "source": "linkedin+guess",
+    "bounced": true
+  },
+  "6381c6629a72": {
+    "email": "origin.allow@chateckinc.com",
+    "date": "2026-11-11T00:24:20.044797",
+    "job": "Java Application Developer",
+    "company": "ChaTeck,Inc",
+    "url": "https://www.linkedin.com/jobs/view/4486528665",
+    "recruiter": "origin allow",
+    "source": "linkedin+guess",
+    "bounced": true
+  },
+  "3294de10b7cc": {
+    "email": "origin.allow@tekwissen.com",
+    "date": "2026-11-11T00:24:23.979302",
+    "job": "Sr. Software Engineer",
+    "company": "TekWissen \u00ae",
+    "url": "https://www.linkedin.com/jobs/view/4488616607",
+    "recruiter": "origin allow",
+    "source": "linkedin+guess",
+    "bounced": true
+  },
+  "df0b6c16b7fd": {
+    "email": "careers@theplanetgroup.com",
+    "date": "2026-11-11T00:25:07.641248",
+    "last_contact": "2026-11-11T00:25:07.641248",
+    "job": "Java Developer C2C",
+    "company": "The Planet Group",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": true,
+    "re_engage_count": 0
+  },
+  "9e58943779f6": {
+    "email": "recruiting@modis.com",
+    "date": "2026-11-11T00:25:11.073451",
+    "last_contact": "2026-11-11T00:25:11.073451",
+    "job": "Java Developer C2C",
+    "company": "Modis",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": false,
+    "re_engage_count": 0
+  },
+  "61d5d296b0eb": {
+    "email": "info@pacergroup.com",
+    "date": "2026-11-11T00:25:15.694482",
+    "last_contact": "2026-11-11T00:25:15.694482",
+    "job": "Java Developer C2C",
+    "company": "Pacer Group",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": true,
+    "re_engage_count": 0
+  },
+  "0a00e5cb755c": {
+    "email": "jobs@cloudandthings.com",
+    "date": "2026-11-11T00:25:19.407985",
+    "last_contact": "2026-11-11T00:25:19.407985",
+    "job": "Java Developer C2C",
+    "company": "Cloud and Things",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": true,
+    "re_engage_count": 0
+  },
+  "41daa14ec22b": {
+    "email": "jobs@alignerr.com",
+    "date": "2026-11-11T00:25:22.735441",
+    "last_contact": "2026-11-11T00:25:22.735441",
+    "job": "Java Developer C2C",
+    "company": "Alignerr",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": true,
+    "re_engage_count": 0
   }
 }
