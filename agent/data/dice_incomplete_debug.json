@@ -7,34 +7,6 @@
 "",
 "Continue Application",
 "Show more",
-"Create alert",
-"",
-"",
-"Software Engineer - Java Micro",
-"",
-""
-],
-"heads": [
-"Java Microservices Developer",
-"Dice Job Match Score\u2122",
-"Job Details",
-"Skills",
-"Summary",
-"Similar Jobs"
-],
-"dialog": false,
-"path": "https://www.dice.com/job-detail/ID",
-"title": "Java Microservices Developer",
-"ts": 1794240647
-},
-{
-"btns": [
-"Career Resources",
-"BR",
-"",
-"",
-"Continue Application",
-"Show more",
 "Create alert"
 ],
 "heads": [
@@ -671,5 +643,33 @@
 "path": "https://www.dice.com/job-detail/ID",
 "title": "Java Developer",
 "ts": 1794372649
+},
+{
+"btns": [
+"Career Resources",
+"BR",
+"",
+"",
+"Continue Application",
+"Create alert",
+"",
+"",
+"Java Spring Boot / Microservic",
+"",
+"",
+"Java Developer"
+],
+"heads": [
+"Senior Java Developer",
+"Dice Job Match Score\u2122",
+"Job Details",
+"Skills",
+"Summary",
+"Job Description \u2013 Senior Java Developer"
+],
+"dialog": false,
+"path": "https://www.dice.com/job-detail/ID",
+"title": "Senior Java Developer",
+"ts": 1794387771
 }
 ]
