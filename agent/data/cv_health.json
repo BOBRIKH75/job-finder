@@ -1,25 +1,25 @@
 {
-  "generated_at": "2026-11-11T18:53:00.251771+00:00",
+  "generated_at": "2026-11-11T19:53:58.774374+00:00",
   "runner": {
     "status": "online",
-    "busy": true,
+    "busy": false,
     "offline_hours": 0
   },
   "platforms": {
     "indeed": {
-      "last_success": "2026-11-11T17:49:03Z",
-      "last_run": "2026-11-11T17:49:03Z",
+      "last_success": "2026-11-11T19:46:31Z",
+      "last_run": "2026-11-11T19:46:31Z",
       "last_conclusion": "success",
       "expiry_detected": false,
       "confirmed_24h": 12,
       "confirmed_7d": 61
     },
     "dice": {
-      "last_success": "2026-11-11T17:29:57Z",
-      "last_run": "2026-11-11T17:29:57Z",
+      "last_success": "2026-11-11T18:55:25Z",
+      "last_run": "2026-11-11T18:55:25Z",
       "last_conclusion": "success",
       "expiry_detected": false,
-      "confirmed_24h": 66,
+      "confirmed_24h": 53,
       "confirmed_7d": 388
     },
     "greenhouse": {
@@ -40,7 +40,7 @@
     }
   },
   "gmail_ok": true,
-  "total_confirmed_24h": 103,
+  "total_confirmed_24h": 90,
   "total_confirmed_7d": 613,
   "problems": [
     "zero_linkedin"
