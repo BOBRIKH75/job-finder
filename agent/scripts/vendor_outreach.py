@@ -22,6 +22,8 @@ from email.mime.application import MIMEApplication
 from pathlib import Path
 
 import requests
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
+from src.mail_guard import is_sensitive_mailbox  # noqa: E402
 
 # --- Gmail SMTP (primary) ---
 GMAIL_USER         = os.environ.get("GMAIL_USER", "bobrikh75@gmail.com")
@@ -309,6 +311,9 @@ def load_suppressed() -> set:
 def should_contact(history: dict, email: str, now: datetime,
                    suppressed: set | None = None) -> tuple[bool, int]:
     em = (email or "").strip().lower()
+    # NEVER cold-email accommodation/legal/privacy/security desks (Capital One incident).
+    if is_sensitive_mailbox(em):
+        return False, -2
     # NEVER re-contact someone who replied or opted out
     if suppressed and em in suppressed:
         return False, -2   # -2 = suppressed (replied/opted-out)
