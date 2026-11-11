@@ -23,6 +23,9 @@ import re
 from datetime import datetime
 from email.header import decode_header
 from pathlib import Path
+import sys as _sys
+_sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from src.mail_guard import is_automated, may_auto_reply, replied_recently
 
 # ─── Config ───────────────────────────────────────────────────────────────────
 GMAIL_USER = os.environ.get("GMAIL_USER", "bobrikh75@gmail.com")
@@ -280,6 +283,10 @@ def find_replies(conn: imaplib.IMAP4_SSL, contacted: dict) -> list:
             date_str = raw_msg.get("Date", "")
 
             classification = classify_reply(subject, body)
+            # Machine-generated (auto-reply, ticket, accommodation desk...) is NEVER a
+            # human interview request — this misclassification caused a 17-mail loop.
+            if is_automated(raw_msg, subject, body):
+                classification = "AUTO_REPLY"
 
             replies.append({
                 "email": recruiter_email,
@@ -508,8 +515,29 @@ def main():
                 _send_interview_reply(r["email"], r["subject"])
 
 
+def _guard_ok(to_email: str, subject: str) -> bool:
+    """Block auto-replies to role/sensitive/automated senders and to anyone we already
+    mailed in the last 14 days (checked in Gmail Sent; fails closed)."""
+    ok, why = may_auto_reply(to_email, None, subject, "")
+    if not ok:
+        print(f"   🛑 auto-reply blocked ({why}): {to_email.split('@')[-1]}")
+        return False
+    try:
+        conn = connect_imap()
+        recent = replied_recently(conn, to_email, days=14)
+        conn.logout()
+    except Exception:
+        recent = True
+    if recent:
+        print(f"   🛑 auto-reply blocked (already mailed in last 14d): {to_email.split('@')[-1]}")
+        return False
+    return True
+
+
 def _send_calendar_ack_reply(to_email: str, original_subject: str):
     """When recruiter sends THEIR calendar link — auto-reply with 24hr commitment + YOUR free times."""
+    if not _guard_ok(to_email, original_subject):
+        return
     import smtplib
     from email.mime.text import MIMEText
     from email.mime.multipart import MIMEMultipart
@@ -588,6 +616,8 @@ Bob Rikh
 def _send_interview_reply(to_email: str, original_subject: str):
     """Auto-reply to interview requests with YOUR Google Calendar booking link.
     Recruiter picks a time that works for BOTH of you."""
+    if not _guard_ok(to_email, original_subject):
+        return
     import smtplib
     from email.mime.text import MIMEText
     from email.mime.multipart import MIMEMultipart
@@ -657,6 +687,8 @@ Bob Rikh
 def _send_info_reply(to_email: str, original_subject: str):
     """Auto-reply to recruiter info requests with clear, direct answers.
     No guessing — just facts."""
+    if not _guard_ok(to_email, original_subject):
+        return
     import smtplib
     from email.mime.text import MIMEText
     from email.mime.multipart import MIMEMultipart

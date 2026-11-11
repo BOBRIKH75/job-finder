@@ -20,6 +20,8 @@ import sys
 import time
 from datetime import datetime, timedelta
 from email.mime.text import MIMEText
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
+from src.mail_guard import may_auto_reply, replied_recently  # noqa: E402
 from email.mime.multipart import MIMEMultipart
 from typing import Optional
 
@@ -466,6 +468,12 @@ def main():
             break
 
         # Generate and send reply
+        _ok, _why = may_auto_reply(sender_email, msg, subject, body)
+        if _ok and replied_recently(mail, sender_email, days=14):
+            _ok, _why = False, 'already mailed in last 14d'
+        if not _ok:
+            print(f'    🛑 skip auto-reply ({_why})')
+            continue
         reply = generate_reply_with_gemini(subject, body, classification)
         if reply and sender_email:
             success = send_reply(sender_email, subject, reply)
