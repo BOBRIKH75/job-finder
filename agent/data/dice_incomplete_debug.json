@@ -6,34 +6,6 @@
 "",
 "",
 "Continue Application",
-"Create alert",
-"",
-"",
-"Integration and Application De",
-"",
-"",
-"Gen AI / LLM Engineer"
-],
-"heads": [
-"Application Developer",
-"Dice Job Match Score\u2122",
-"Job Details",
-"Skills",
-"Summary",
-"Company Info"
-],
-"dialog": false,
-"path": "https://www.dice.com/job-detail/ID",
-"title": "Application Developer",
-"ts": 1794496924
-},
-{
-"btns": [
-"Career Resources",
-"BR",
-"",
-"",
-"Continue Application",
 "Show more",
 "Create alert",
 "",
@@ -660,5 +632,27 @@
 "path": "https://www.dice.com/job-detail/ID",
 "title": "Java Developer",
 "ts": 1794517770
+},
+{
+"btns": [
+"Career Resources",
+"BR",
+"",
+"",
+"Continue Application",
+"Create alert"
+],
+"heads": [
+"Senior Platform Engineer - Confluent Kafka, AWS & ",
+"Dice Job Match Score\u2122",
+"Job Details",
+"Skills",
+"Summary",
+"Company Info"
+],
+"dialog": false,
+"path": "https://www.dice.com/job-detail/ID",
+"title": "Senior Platform Engineer - Confluent Kaf",
+"ts": 1794524831
 }
 ]
