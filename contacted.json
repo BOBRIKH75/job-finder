@@ -708,5 +708,76 @@
     "us_reasons": [
       "corp-domain"
     ]
+  },
+  "0d08867b0579": {
+    "email": "recruiting@crowdstrike.com",
+    "date": "2026-11-14T23:25:48.093005",
+    "job": "Engineer III - Cloud (Remote)",
+    "company": "CrowdStrike",
+    "url": "https://www.indeed.com/viewjob?jk=6f2686b749a406a3",
+    "recruiter": null,
+    "smtp_verified": true,
+    "us_score": 1,
+    "us_reasons": [
+      "corp-domain"
+    ]
+  },
+  "77aa1faa4f69": {
+    "email": "origin.allow@suncaptechnology.com",
+    "date": "2026-11-14T23:34:03.191433",
+    "job": "Lead Full Stack Developer /Orlando, FL (Remote)- Contractor",
+    "company": "Suncap Technology",
+    "url": "https://www.linkedin.com/jobs/view/4489861318",
+    "recruiter": "origin allow",
+    "source": "linkedin+guess",
+    "bounced": true
+  },
+  "3c32e8ec3ac9": {
+    "email": "origin.allow@earlywarning.com",
+    "date": "2026-11-14T23:34:07.557376",
+    "job": "Sr. Software Engineer - Java/Spring/AWS - Contract",
+    "company": "Early Warning",
+    "url": "https://www.linkedin.com/jobs/view/4491092389",
+    "recruiter": "origin allow",
+    "source": "linkedin+guess",
+    "bounced": true
+  },
+  "8bfbadb86bf3": {
+    "email": "origin.allow@applabsystemsinc.com",
+    "date": "2026-11-14T23:34:08.777290",
+    "job": "Senior Java Backend Developer \ufffd Reactive Systems & GenAI",
+    "company": "AppLab Systems, Inc",
+    "url": "https://www.linkedin.com/jobs/view/4491059097",
+    "recruiter": "origin allow",
+    "source": "linkedin+guess",
+    "bounced": true
+  },
+  "762448961348": {
+    "email": "recruiting@candorps.com",
+    "date": "2026-11-14T23:34:40.278077",
+    "last_contact": "2026-11-14T23:34:40.278077",
+    "job": "Java Developer C2C",
+    "company": "Candor PS",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": false,
+    "re_engage_count": 0
+  },
+  "729246afdbde": {
+    "email": "recruiting@kornferry.com",
+    "date": "2026-11-14T23:34:41.736384",
+    "last_contact": "2026-11-14T23:34:41.736384",
+    "job": "Java Developer C2C",
+    "company": "Korn Ferry",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": false,
+    "re_engage_count": 0
   }
 }
