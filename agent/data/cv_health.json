@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-15T11:14:53.542585+00:00",
+  "generated_at": "2026-11-15T12:15:27.461066+00:00",
   "runner": {
     "status": "online",
     "busy": false,
@@ -7,8 +7,8 @@
   },
   "platforms": {
     "indeed": {
-      "last_success": "2026-11-15T11:03:51Z",
-      "last_run": "2026-11-15T11:03:51Z",
+      "last_success": "2026-11-15T11:57:58Z",
+      "last_run": "2026-11-15T11:57:58Z",
       "last_conclusion": "success",
       "expiry_detected": false,
       "confirmed_24h": 1,
@@ -23,8 +23,8 @@
       "confirmed_7d": 369
     },
     "greenhouse": {
-      "last_success": "2026-11-15T09:42:56Z",
-      "last_run": "2026-11-15T09:42:56Z",
+      "last_success": "2026-11-15T11:37:56Z",
+      "last_run": "2026-11-15T11:37:56Z",
       "last_conclusion": "success",
       "expiry_detected": false,
       "confirmed_24h": 0,
@@ -46,10 +46,9 @@
     "zero_greenhouse",
     "zero_linkedin"
   ],
-  "alerts_sent": [
-    "zero_linkedin"
-  ],
+  "alerts_sent": [],
   "alerts_suppressed": [
-    "zero_greenhouse"
+    "zero_greenhouse",
+    "zero_linkedin"
   ]
 }
