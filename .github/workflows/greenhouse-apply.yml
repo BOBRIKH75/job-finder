@@ -37,7 +37,20 @@ jobs:
       - name: Pre-job cleanup (kill orphaned automation Chrome from a previous run)
         if: always()
         continue-on-error: true
-        run: bash scripts/kill-automation-chrome.sh
+        run: |
+          # Kill ONLY automation browsers (never your own Chrome / DevTools MCP browser).
+          n=0
+          for p in 'chromedriver' 'user-data-dir=.*playwright_chromiumdev_profile' 'user-data-dir=.*patchright' 'user-data-dir=.*\.dice-profile' 'user-data-dir=.*\.cv-indeed-profile' 'user-data-dir=.*linkedin.*profile' 'user-data-dir=.*undetected_chromedriver'; do
+            n=$(( n + $(pgrep -f -- "$p" 2>/dev/null | wc -l | tr -d ' ') ))
+            pkill -TERM -f -- "$p" 2>/dev/null || true
+          done
+          if [ "$n" -gt 0 ]; then
+            sleep 3
+            for p in 'chromedriver' 'user-data-dir=.*playwright_chromiumdev_profile' 'user-data-dir=.*patchright' 'user-data-dir=.*\.dice-profile' 'user-data-dir=.*\.cv-indeed-profile' 'user-data-dir=.*linkedin.*profile' 'user-data-dir=.*undetected_chromedriver'; do
+              pkill -KILL -f -- "$p" 2>/dev/null || true
+            done
+          fi
+          echo "kill-automation-chrome: cleaned $n leftover automation process(es)"
 
       - name: Trust corporate SSL (fixes CERTIFICATE_VERIFY_FAILED on corp network)
         run: |
@@ -135,4 +148,17 @@ jobs:
       - name: Post-job cleanup (never leave automation Chrome running)
         if: always()
         continue-on-error: true
-        run: bash scripts/kill-automation-chrome.sh
+        run: |
+          # Kill ONLY automation browsers (never your own Chrome / DevTools MCP browser).
+          n=0
+          for p in 'chromedriver' 'user-data-dir=.*playwright_chromiumdev_profile' 'user-data-dir=.*patchright' 'user-data-dir=.*\.dice-profile' 'user-data-dir=.*\.cv-indeed-profile' 'user-data-dir=.*linkedin.*profile' 'user-data-dir=.*undetected_chromedriver'; do
+            n=$(( n + $(pgrep -f -- "$p" 2>/dev/null | wc -l | tr -d ' ') ))
+            pkill -TERM -f -- "$p" 2>/dev/null || true
+          done
+          if [ "$n" -gt 0 ]; then
+            sleep 3
+            for p in 'chromedriver' 'user-data-dir=.*playwright_chromiumdev_profile' 'user-data-dir=.*patchright' 'user-data-dir=.*\.dice-profile' 'user-data-dir=.*\.cv-indeed-profile' 'user-data-dir=.*linkedin.*profile' 'user-data-dir=.*undetected_chromedriver'; do
+              pkill -KILL -f -- "$p" 2>/dev/null || true
+            done
+          fi
+          echo "kill-automation-chrome: cleaned $n leftover automation process(es)"
