@@ -1,14 +1,14 @@
 {
-  "generated_at": "2026-11-15T16:18:31.055721+00:00",
+  "generated_at": "2026-11-15T16:59:26.810884+00:00",
   "runner": {
     "status": "online",
-    "busy": false,
+    "busy": true,
     "offline_hours": 0
   },
   "platforms": {
     "indeed": {
-      "last_success": "2026-11-15T16:04:29Z",
-      "last_run": "2026-11-15T16:04:29Z",
+      "last_success": "2026-11-15T16:53:59Z",
+      "last_run": "2026-11-15T16:53:59Z",
       "last_conclusion": "success",
       "expiry_detected": false,
       "confirmed_24h": 3,
@@ -19,7 +19,7 @@
       "last_run": "2026-11-15T14:59:25Z",
       "last_conclusion": "success",
       "expiry_detected": false,
-      "confirmed_24h": 19,
+      "confirmed_24h": 17,
       "confirmed_7d": 369
     },
     "greenhouse": {
@@ -40,7 +40,7 @@
     }
   },
   "gmail_ok": true,
-  "total_confirmed_24h": 22,
+  "total_confirmed_24h": 20,
   "total_confirmed_7d": 566,
   "problems": [
     "zero_greenhouse",
