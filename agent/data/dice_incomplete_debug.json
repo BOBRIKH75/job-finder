@@ -6,62 +6,6 @@
 "",
 "",
 "Continue Application",
-"Show more",
-"Create alert",
-"",
-"",
-"Lead Software Engineer - Enter",
-"",
-""
-],
-"heads": [
-"Lead Software Engineer - Enterprise Email Platform",
-"Dice Job Match Score\u2122",
-"Job Details",
-"Skills",
-"Summary",
-"Company Info"
-],
-"dialog": false,
-"path": "https://www.dice.com/job-detail/ID",
-"title": "Lead Software Engineer - Enterprise Emai",
-"ts": 1794604707
-},
-{
-"btns": [
-"Career Resources",
-"BR",
-"",
-"",
-"Continue Application",
-"Show more",
-"Create alert",
-"",
-"",
-"Senior PostgreSQL DBA - TS/SCI",
-"",
-""
-],
-"heads": [
-"PostgreSQL Database Developer",
-"Dice Job Match Score\u2122",
-"Job Details",
-"Skills",
-"Summary",
-"Similar Jobs"
-],
-"dialog": false,
-"path": "https://www.dice.com/job-detail/ID",
-"title": "PostgreSQL Database Developer",
-"ts": 1794604751
-},
-{
-"btns": [
-"Career Resources",
-"BR",
-"",
-"",
-"Continue Application",
 "Create alert",
 "",
 "",
@@ -661,5 +605,56 @@
 "path": "https://www.dice.com/job-detail/ID",
 "title": "Senior Java Backend Developer - Hybrid, ",
 "ts": 1794706610
+},
+{
+"btns": [
+"Career Resources",
+"BR",
+"",
+"",
+"Continue Application",
+"Show more",
+"Create alert"
+],
+"heads": [
+"Payments Development Lead--API  DEVELOPER",
+"Dice Job Match Score\u2122",
+"Job Details",
+"Skills",
+"Summary",
+"Job Requirement \u2013 Payments Development Lead--API D"
+],
+"dialog": false,
+"path": "https://www.dice.com/job-detail/ID",
+"title": "Payments Development Lead--API  DEVELOPE",
+"ts": 1794779560
+},
+{
+"btns": [
+"Career Resources",
+"BR",
+"",
+"",
+"Continue Application",
+"Create alert",
+"",
+"",
+"Lead Java developer",
+"",
+"",
+"Java Fullstack Engineer with C"
+],
+"heads": [
+"Java Backend Developer - W2 only",
+"Dice Job Match Score\u2122",
+"Job Details",
+"Skills",
+"Summary",
+"Java Backend Developer - W2 only - F2F Interview"
+],
+"dialog": false,
+"path": "https://www.dice.com/job-detail/ID",
+"title": "Java Backend Developer - W2 only",
+"ts": 1794779625
 }
 ]
