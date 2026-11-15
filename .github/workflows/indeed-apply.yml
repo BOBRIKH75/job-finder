@@ -29,6 +29,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Pre-job cleanup (kill orphaned automation Chrome from a previous run)
+        if: always()
+        continue-on-error: true
+        run: bash scripts/kill-automation-chrome.sh
+
       - name: Dynamic knobs (cv_dynamic - optional, defaults if anything is missing)
         continue-on-error: true
         run: |
@@ -63,8 +68,8 @@ jobs:
           "$PY" -m venv $GITHUB_WORKSPACE/.venv || true
           echo "$GITHUB_WORKSPACE/.venv/bin" >> $GITHUB_PATH
           source $GITHUB_WORKSPACE/.venv/bin/activate || true
-          python3 -m pip install --upgrade pip setuptools wheel
-          python3 -m pip install -r requirements.txt
+          python3 -m pip install --quiet --disable-pip-version-check setuptools wheel
+          python3 -m pip install --quiet --disable-pip-version-check -r requirements.txt
           python3 -m pip install python-jobspy pandas browser-cookie3
           python3 -m playwright install chromium --with-deps || true
 
@@ -125,7 +130,7 @@ jobs:
                                   # clicking a managed challenge from automation does not work)
         run: |
           cd $GITHUB_WORKSPACE/agent
-          PYTHONUNBUFFERED=1 python3 -u submit_one.py
+          PYTHONUNBUFFERED=1 nice -n 10 python3 -u submit_one.py
 
       - name: Save agent memory
         if: always()
@@ -150,3 +155,8 @@ jobs:
           git diff --staged --quiet || git commit -m "indeed: sync applied/dedup state [skip ci]"
           git pull --rebase --autostash || true
           git push || true
+
+      - name: Post-job cleanup (never leave automation Chrome running)
+        if: always()
+        continue-on-error: true
+        run: bash scripts/kill-automation-chrome.sh

@@ -27,6 +27,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Pre-job cleanup (kill orphaned automation Chrome from a previous run)
+        if: always()
+        continue-on-error: true
+        run: bash scripts/kill-automation-chrome.sh
+
       - uses: actions/setup-python@v5
         if: runner.environment == 'github-hosted'
         with:
@@ -67,7 +72,7 @@ jobs:
           # Manual "Run workflow" bypasses the business-hours gate; scheduled runs stay gated.
           LINKEDIN_FORCE_RUN: ${{ github.event_name == 'workflow_dispatch' && '1' || '0' }}
         run: |
-          python3 -u linkedin_pw_apply.py
+          nice -n 10 python3 -u linkedin_pw_apply.py
 
       - name: Persist applied job state (prevent re-applying)
         if: always()
@@ -78,3 +83,8 @@ jobs:
           git diff --staged --quiet || git commit -m "chore: update LinkedIn applied IDs [skip ci]"
           git pull --rebase --autostash origin master || true
           git push || true
+
+      - name: Post-job cleanup (never leave automation Chrome running)
+        if: always()
+        continue-on-error: true
+        run: bash scripts/kill-automation-chrome.sh
