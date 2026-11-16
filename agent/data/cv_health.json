@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-16T04:57:33.446989+00:00",
+  "generated_at": "2026-11-16T05:58:20.591142+00:00",
   "runner": {
     "status": "online",
     "busy": false,
@@ -7,24 +7,24 @@
   },
   "platforms": {
     "indeed": {
-      "last_success": "2026-11-16T04:49:51Z",
-      "last_run": "2026-11-16T04:49:51Z",
+      "last_success": "2026-11-16T05:54:10Z",
+      "last_run": "2026-11-16T05:54:10Z",
       "last_conclusion": "success",
       "expiry_detected": false,
       "confirmed_24h": 2,
       "confirmed_7d": 63
     },
     "dice": {
-      "last_success": "2026-11-16T03:39:35Z",
-      "last_run": "2026-11-16T03:39:35Z",
+      "last_success": "2026-11-16T05:40:10Z",
+      "last_run": "2026-11-16T05:40:10Z",
       "last_conclusion": "success",
       "expiry_detected": false,
       "confirmed_24h": 8,
       "confirmed_7d": 339
     },
     "greenhouse": {
-      "last_success": "2026-11-16T03:12:31Z",
-      "last_run": "2026-11-16T03:12:31Z",
+      "last_success": "2026-11-16T05:11:20Z",
+      "last_run": "2026-11-16T05:11:20Z",
       "last_conclusion": "success",
       "expiry_detected": false,
       "confirmed_24h": 0,
