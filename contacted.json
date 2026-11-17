@@ -19,7 +19,8 @@
     "company": "Pacer Group",
     "url": "https://www.linkedin.com/jobs/view/4490118972",
     "recruiter": "origin allow",
-    "source": "linkedin+guess"
+    "source": "linkedin+guess",
+    "bounced": true
   },
   "746b8f82b1f1": {
     "email": "origin.allow@prudenttechnologiesandconsultinginc.com",
@@ -28,7 +29,8 @@
     "company": "Prudent Technologies and Consulting, Inc.",
     "url": "https://www.linkedin.com/jobs/view/4489589691",
     "recruiter": "origin allow",
-    "source": "linkedin+guess"
+    "source": "linkedin+guess",
+    "bounced": true
   },
   "613459770c80": {
     "email": "origin.allow@consultnettechnologyservicesandsolutions.com",
@@ -37,7 +39,8 @@
     "company": "ConsultNet Technology Services and Solutions",
     "url": "https://www.linkedin.com/jobs/view/4490125153",
     "recruiter": "origin allow",
-    "source": "linkedin+guess"
+    "source": "linkedin+guess",
+    "bounced": true
   },
   "f75e8b249b6d": {
     "email": "origin.allow@prominent.com",
@@ -46,7 +49,8 @@
     "company": "Prominent",
     "url": "https://www.linkedin.com/jobs/view/4478804473",
     "recruiter": "origin allow",
-    "source": "linkedin+guess"
+    "source": "linkedin+guess",
+    "bounced": true
   },
   "2bce1abc8ea1": {
     "email": "origin.allow@apexsystems.com",
@@ -55,7 +59,8 @@
     "company": "Apex Systems",
     "url": "https://www.linkedin.com/jobs/view/4490746937",
     "recruiter": "origin allow",
-    "source": "linkedin+guess"
+    "source": "linkedin+guess",
+    "bounced": true
   },
   "1bd7f1c22eb5": {
     "email": "origin.allow@optomi.com",
@@ -64,7 +69,8 @@
     "company": "Optomi",
     "url": "https://www.linkedin.com/jobs/view/4489585250",
     "recruiter": "origin allow",
-    "source": "linkedin+guess"
+    "source": "linkedin+guess",
+    "bounced": true
   },
   "b5a8336628db": {
     "email": "origin.allow@machinelearningtechnologiesllc.com",
@@ -73,7 +79,8 @@
     "company": "MACHINE LEARNING TECHNOLOGIES LLC",
     "url": "https://www.linkedin.com/jobs/view/4489538375",
     "recruiter": "origin allow",
-    "source": "linkedin+guess"
+    "source": "linkedin+guess",
+    "bounced": true
   },
   "e9857d0bba8e": {
     "email": "origin.allow@insightglobal.com",
@@ -82,6 +89,76 @@
     "company": "Insight Global",
     "url": "https://www.linkedin.com/jobs/view/4489280717",
     "recruiter": "origin allow",
-    "source": "linkedin+guess"
+    "source": "linkedin+guess",
+    "bounced": true
+  },
+  "6c9d59893dee": {
+    "email": "askhr.us@fiserv.com",
+    "date": "2026-11-17T22:01:42.407862",
+    "job": "Full Stack Software Engineer",
+    "company": "Fiserv",
+    "url": "https://www.indeed.com/viewjob?jk=d0ee8fcc8954e84e",
+    "recruiter": null,
+    "smtp_verified": true,
+    "us_score": 1,
+    "us_reasons": [
+      "corp-domain"
+    ]
+  },
+  "39f535e788f4": {
+    "email": "info@akinainc.com",
+    "date": "2026-11-17T22:12:22.810308",
+    "last_contact": "2026-11-17T22:12:22.810308",
+    "job": "Java Developer C2C",
+    "company": "Akina, Inc.",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": true,
+    "re_engage_count": 0
+  },
+  "50d7170dab9c": {
+    "email": "careers@intellibus.com",
+    "date": "2026-11-17T22:12:26.790373",
+    "last_contact": "2026-11-17T22:12:26.790373",
+    "job": "Java Developer C2C",
+    "company": "Intellibus",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": true,
+    "re_engage_count": 0
+  },
+  "30bd027932ba": {
+    "email": "hr@stravexa.com",
+    "date": "2026-11-17T22:12:31.092975",
+    "last_contact": "2026-11-17T22:12:31.092975",
+    "job": "Java Developer C2C",
+    "company": "STRAVEXA",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": true,
+    "re_engage_count": 0
+  },
+  "de3723915b17": {
+    "email": "careers@yochana.com",
+    "date": "2026-11-17T22:12:35.127573",
+    "last_contact": "2026-11-17T22:12:35.127573",
+    "job": "Java Developer C2C",
+    "company": "Yochana",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": true,
+    "re_engage_count": 0
   }
 }
