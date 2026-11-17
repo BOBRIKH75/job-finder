@@ -68,9 +68,10 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: agent/data/agent_memory.db
-          key: agent-memory-v2
+          # Never matches exactly -> always restores the NEWEST agent-memory-* cache (any applier).
+          # (A fixed key is immutable: it pinned dedup memory to a stale Nov-15 snapshot.)
+          key: agent-memory-agent-restore-${{ github.run_id }}
           restore-keys: |
-            agent-memory-v2
             agent-memory-
 
       - name: Restore rate limits
@@ -186,7 +187,7 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: agent/data/agent_memory.db
-          key: agent-memory-v2
+          key: agent-memory-agent-${{ github.run_number }}
 
       - name: Persist agent memory to runner home (durable dedup history)
         if: always()

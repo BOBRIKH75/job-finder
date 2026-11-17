@@ -485,6 +485,15 @@ def _apply_one(page, url, title, db=None, profile=None):
     # detect session-expired redirect (apply needs login) → distinct reason for self-heal
     if 'login' in (page.url or '').lower():
         return 'login_redirect', company
+    # REPEAT GUARD (Nov 2026 audit): same company + same title was applied to again under a
+    # NEW Dice job id (reposts) -- 45 of 523 applies in 10 days (8%). The company|title cache
+    # (applied_titles) was written but never checked, so only the job id blocked repeats.
+    # Company is known only now (page just opened), so check here. Anonymous (no company) is
+    # skipped. 'already_applied' makes the caller record the id so it is never reopened.
+    _nt = _title_key(company, title)
+    if company and _nt and _nt in _load_fresh_applied(APPLIED_FILE):
+        print(f"  ⏭ same company+title already applied ({APPLIED_TTL_DAYS}d) — skip: {title[:40]} @ {company[:20]}")
+        return 'already_applied', company
     # Dice shows an "Applied" state on the APPLY BUTTON for jobs already applied to.
     # Trust ONLY the apply control's own text — NOT a body-text scan. The old code did
     # `document.body.innerText.includes('you applied'/'applied on'/'application sent')`,
