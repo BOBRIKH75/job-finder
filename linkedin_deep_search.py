@@ -184,6 +184,14 @@ def find_recruiter_google(company: str) -> list[dict]:
         return []
 
 
+_NOT_A_NAME = {
+    "origin", "allow", "access", "control", "content", "type", "header", "headers", "google",
+    "linkedin", "search", "cookie", "privacy", "policy", "sign", "login", "join", "view",
+    "profile", "recruiter", "talent", "hiring", "human", "resources", "team", "staffing",
+    "senior", "manager", "director", "united", "states", "inc", "llc", "corp", "group",
+}
+
+
 def find_recruiters_linkedin_google(company: str) -> list[dict]:
     """Find recruiter names at company via Google → LinkedIn profiles (no login).
     Then guess their email using common patterns + verify via MX."""
@@ -214,6 +222,10 @@ def find_recruiters_linkedin_google(company: str) -> list[dict]:
             parts = name.strip().split()
             if len(parts) >= 2:
                 first, last = parts[0], parts[-1]
+                # Scraped HTML/header text is not a person ("Origin Allow" from
+                # Access-Control-Allow-Origin produced 136 bounces). Skip non-names.
+                if {first.lower(), last.lower()} & _NOT_A_NAME:
+                    continue
                 # Guess email patterns
                 guessed = guess_email_patterns(first, last, domain)
                 # Verify which one has valid MX

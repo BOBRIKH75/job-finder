@@ -23,7 +23,7 @@ from pathlib import Path
 
 import requests
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
-from src.mail_guard import is_sensitive_mailbox  # noqa: E402
+from src.mail_guard import is_sensitive_mailbox, cold_outreach_blocked  # noqa: E402
 
 # --- Gmail SMTP (primary) ---
 GMAIL_USER         = os.environ.get("GMAIL_USER", "bobrikh75@gmail.com")
@@ -311,12 +311,13 @@ def load_suppressed() -> set:
 def should_contact(history: dict, email: str, now: datetime,
                    suppressed: set | None = None) -> tuple[bool, int]:
     em = (email or "").strip().lower()
-    # NEVER cold-email accommodation/legal/privacy/security desks (Capital One incident).
-    if is_sensitive_mailbox(em):
+    # NEVER cold-email accommodation/legal/privacy/security desks (Capital One incident),
+    # scraped junk (origin.allow@...), or role inboxes that reject/block cold mail.
+    if is_sensitive_mailbox(em) or cold_outreach_blocked(em):
         return False, -2
-    # NEVER re-contact someone who replied or opted out
-    if suppressed and em in suppressed:
-        return False, -2   # -2 = suppressed (replied/opted-out)
+    # NEVER re-contact someone who replied or opted out (address OR whole bounced domain)
+    if suppressed and (em in suppressed or "@" + em.rpartition("@")[2] in suppressed):
+        return False, -2   # -2 = suppressed (replied/opted-out/bounced)
     entry = history.get(email, {})
     if not entry:
         return True, -1

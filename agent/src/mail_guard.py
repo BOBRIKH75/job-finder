@@ -123,3 +123,60 @@ def on_do_not_contact(addr: str) -> bool:
         return False
     a = (addr or "").strip().lower()
     return a in lines or ("@" + a.rpartition("@")[2]) in lines
+
+
+# ── Cold-outreach deliverability gate (Nov 2026 bounce audit) ──────────────────────
+# ~1/3 of weekly sends bounced: 43% went to scraped junk like origin.allow@domain
+# (HTTP-header text glued into a "name"), 34% to generic role inboxes (recruiting@, info@)
+# that reject or block cold mail. Bounces/blocks wreck Gmail sender reputation, which
+# buries REAL recruiter mail and kills inbound calls. This is the single gate every cold
+# send must pass.
+_JUNK_TOKENS = {
+    "origin", "allow", "example", "test", "sample", "user", "username", "yourname",
+    "email", "name", "firstname", "lastname", "sentry", "wixpress", "localhost",
+    "undefined", "null", "none", "domain", "image", "png", "jpg", "gif", "svg", "css", "js",
+}
+
+
+def is_junk_address(addr: str) -> bool:
+    """True for scraped/placeholder addresses that are not a real person's mailbox."""
+    loc = _local(addr)
+    if not loc:
+        return True
+    tokens = set(re.split(r"[._+-]", loc))
+    if tokens & _JUNK_TOKENS:
+        return True
+    return bool(re.match(r"^[0-9a-f]{16,}$", loc))   # hash-like local part
+
+
+# Measured on 938 vendor sends (Oct-Nov 2026): recruiting@ 50% bounce, recruitment@ 59%,
+# talent@ 63%, staffing@ 60%. careers@/hr@/jobs@/info@ are NOT blocked here: they are
+# learned adaptively (first bounce -> do_not_contact via bounce_harvester.py).
+_NEVER_COLD = {
+    "recruiting", "recruitment", "recruiter", "talent", "staffing",
+    "noreply", "no-reply", "donotreply", "do-not-reply", "notifications", "notification",
+    "mailer-daemon", "postmaster", "system", "auto", "press", "investorrelations",
+    "abuse", "privacy", "legal",
+}
+
+
+def _local_tokens(addr: str) -> set:
+    return set(re.split(r"[._+-]", _local(addr)))
+
+
+def cold_outreach_blocked(addr: str):
+    """Return a reason string if we must NOT cold-email addr, else None."""
+    a = (addr or "").strip().lower()
+    if "@" not in a:
+        return "not an email address"
+    if is_junk_address(a):
+        return "junk/scraped address"
+    if is_sensitive_mailbox(a):
+        return "sensitive mailbox"
+    if _local_tokens(a) & _NEVER_COLD:
+        return "guessed/robot mailbox (bounces 50-60% in our data)"
+    if is_blocked_domain(a):
+        return "help-desk/ticket domain"
+    if on_do_not_contact(a):
+        return "do-not-contact (opt-out or bounced)"
+    return None
