@@ -6,28 +6,6 @@
 "",
 "",
 "Continue Application",
-"Create alert"
-],
-"heads": [
-"Application Systems Java Developer",
-"Dice Job Match Score\u2122",
-"Job Details",
-"Skills",
-"Summary",
-"Company Info"
-],
-"dialog": false,
-"path": "https://www.dice.com/job-detail/ID",
-"title": "Application Systems Java Developer",
-"ts": 1794853172
-},
-{
-"btns": [
-"Career Resources",
-"BR",
-"",
-"",
-"Continue Application",
 "Create alert",
 "",
 "",
@@ -650,5 +628,33 @@
 "path": "https://www.dice.com/job-detail/ID",
 "title": "Software Programmer 4/Senior Java Develo",
 "ts": 1794954721
+},
+{
+"btns": [
+"Career Resources",
+"BR",
+"",
+"",
+"Continue Application",
+"Create alert",
+"",
+"",
+"RHPM Developer JBM with Java",
+"",
+"",
+"Java OSS Architect"
+],
+"heads": [
+"RHPAM Developer",
+"Dice Job Match Score\u2122",
+"Job Details",
+"Skills",
+"Summary",
+"Similar Jobs"
+],
+"dialog": false,
+"path": "https://www.dice.com/job-detail/ID",
+"title": "RHPAM Developer",
+"ts": 1794956738
 }
 ]
