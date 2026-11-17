@@ -6,34 +6,6 @@
 "",
 "",
 "Continue Application",
-"Show more",
-"Create alert",
-"",
-"",
-"Senior Java Backend Developer ",
-"",
-""
-],
-"heads": [
-"Senior Java/Spring Integration Developer",
-"Dice Job Match Score\u2122",
-"Job Details",
-"Skills",
-"Summary",
-"ALL VISA'S ACCEPTED - Only locals to AUSTIN"
-],
-"dialog": false,
-"path": "https://www.dice.com/job-detail/ID",
-"title": "Senior Java/Spring Integration Developer",
-"ts": 1794609919
-},
-{
-"btns": [
-"Career Resources",
-"BR",
-"",
-"",
-"Continue Application",
 "Create alert"
 ],
 "heads": [
@@ -646,5 +618,27 @@
 "path": "https://www.dice.com/job-detail/ID",
 "title": "Senior Java Developer",
 "ts": 1794894980
+},
+{
+"btns": [
+"Career Resources",
+"BR",
+"",
+"",
+"Continue Application",
+"Create alert"
+],
+"heads": [
+"Java Developer",
+"Dice Job Match Score\u2122",
+"Job Details",
+"Skills",
+"Summary",
+"Similar Jobs"
+],
+"dialog": false,
+"path": "https://www.dice.com/job-detail/ID",
+"title": "Java Developer",
+"ts": 1794902226
 }
 ]
