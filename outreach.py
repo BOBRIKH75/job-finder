@@ -457,9 +457,10 @@ def send_outreach(to_email, subject, html):
     try:
         import sys as _s, os as _o
         _s.path.insert(0, _o.path.join(_o.path.dirname(_o.path.abspath(__file__)), 'agent'))
-        from src.mail_guard import is_sensitive_mailbox, is_blocked_domain, on_do_not_contact
-        if is_sensitive_mailbox(to_email) or is_blocked_domain(to_email) or on_do_not_contact(to_email):
-            print(f'  🛑 outreach blocked (sensitive/do-not-contact): @{to_email.split("@")[-1]}')
+        from src.mail_guard import cold_outreach_blocked
+        _why = cold_outreach_blocked(to_email)
+        if _why:
+            print(f'  🛑 outreach blocked ({_why}): @{to_email.split("@")[-1]}')
             return False
     except ImportError:
         return False   # fail closed if the guard is missing

@@ -26,6 +26,13 @@ jobs:
       - name: Install dependencies
         run: pip install requests
 
+      - name: Harvest bounces into do_not_contact (stop re-mailing dead addresses)
+        continue-on-error: true
+        env:
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+        run: python scripts/bounce_harvester.py --days 30
+
       - name: Send vendor outreach emails
         env:
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
@@ -42,7 +49,7 @@ jobs:
           cd $GITHUB_WORKSPACE
           git config user.email "bot@github.actions"
           git config user.name "Outreach Bot"
-          git add agent/data/vendor_outreach_history.json agent/data/vendor_list.json 2>/dev/null || true
+          git add agent/data/vendor_outreach_history.json agent/data/vendor_list.json agent/data/do_not_contact.txt contacted.json 2>/dev/null || true
           git diff --staged --quiet || git commit -m "chore: vendor outreach history $(date +%Y-%m-%d) [skip ci]"
           git pull --rebase --autostash || true
           git push || true

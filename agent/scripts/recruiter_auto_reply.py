@@ -317,7 +317,30 @@ Bob Rikh
 347-268-5917"""
 
 
-def send_reply(to_email: str, subject: str, body: str) -> bool:
+def _decode_subject(msg) -> str:
+    """Decode a (possibly RFC2047-encoded) Subject to clean text.
+
+    Bug fixed (Nov 2026): the old code called str() on decode_header()'s bytes result, so
+    subjects with non-ASCII chars (e.g. an en dash) became the literal "b'Re: ... \\xe2\\x80\\x93 ...'"
+    in replies that recruiters saw.
+    """
+    try:
+        txt = str(email.header.make_header(email.header.decode_header(msg['Subject'] or '')))
+    except Exception:
+        txt = str(msg['Subject'] or '')
+    return ' '.join(txt.split())
+
+
+def _reply_subject(subject: str) -> str:
+    """'Re: x' once, never 'Re: Re: x' and never a bytes-repr artifact."""
+    s = (subject or '').strip()
+    for _ in range(4):   # peel nested 'Re:' and bytes-repr wrappers in any order
+        s = re.sub(r"^(?:\s*re\s*:\s*)+", '', s, flags=re.I)
+        s = re.sub(r"^b'(.*)'$", r'\1', s)
+    return f'Re: {s}' if s else 'Re: your message'
+
+
+def send_reply(to_email: str, subject: str, body: str, in_reply_to: str = '') -> bool:
     """Send reply via Gmail SMTP."""
     if not GMAIL_APP_PASSWORD:
         print(f'  ⚠️ No GMAIL_APP_PASSWORD')
@@ -326,8 +349,10 @@ def send_reply(to_email: str, subject: str, body: str) -> bool:
     msg = MIMEMultipart('alternative')
     msg['From'] = f'Bob Rikh <{GMAIL_USER}>'
     msg['To'] = to_email
-    msg['Subject'] = f'Re: {subject}' if not subject.startswith('Re:') else subject
-    msg['In-Reply-To'] = ''  # Will be set if we have message-id
+    msg['Subject'] = _reply_subject(subject)
+    if in_reply_to:   # real threading so the reply lands in the recruiter's conversation
+        msg['In-Reply-To'] = in_reply_to
+        msg['References'] = in_reply_to
     msg.attach(MIMEText(body, 'plain'))
 
     try:
@@ -394,9 +419,7 @@ def main():
         raw = msg_data[0][1]
         msg = email.message_from_bytes(raw)
 
-        subject = str(email.header.decode_header(msg['Subject'])[0][0] or '')
-        if isinstance(subject, bytes):
-            subject = subject.decode('utf-8', errors='ignore')
+        subject = _decode_subject(msg)
         from_addr = msg['From']
         message_id = msg.get('Message-ID', '')
 
@@ -476,7 +499,7 @@ def main():
             continue
         reply = generate_reply_with_gemini(subject, body, classification)
         if reply and sender_email:
-            success = send_reply(sender_email, subject, reply)
+            success = send_reply(sender_email, subject, reply, message_id)
             if success:
                 print(f'    ✅ Auto-replied ({classification})')
                 replied_count += 1
