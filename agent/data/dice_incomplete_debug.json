@@ -6,60 +6,6 @@
 "",
 "",
 "Continue Application",
-"Show more",
-"Create alert",
-"",
-"",
-"Java Developer with React ( 5 "
-],
-"heads": [
-"Java Developer",
-"Dice Job Match Score\u2122",
-"Job Details",
-"Skills",
-"Summary",
-"Company Info"
-],
-"dialog": false,
-"path": "https://www.dice.com/job-detail/ID",
-"title": "Java Developer",
-"ts": 1794887797
-},
-{
-"btns": [
-"Career Resources",
-"BR",
-"",
-"",
-"Continue Application",
-"Show more",
-"Create alert",
-"",
-"",
-"Spring 2027 Security Engineer ",
-"",
-""
-],
-"heads": [
-"Software Engineer Student Assistant - Spring 2027 ",
-"Dice Job Match Score\u2122",
-"Job Details",
-"Skills",
-"Summary",
-"Similar Jobs"
-],
-"dialog": false,
-"path": "https://www.dice.com/job-detail/ID",
-"title": "Software Engineer Student Assistant - Sp",
-"ts": 1794887937
-},
-{
-"btns": [
-"Career Resources",
-"BR",
-"",
-"",
-"Continue Application",
 "Create alert",
 "",
 "",
@@ -654,5 +600,49 @@
 "path": "https://www.dice.com/job-detail/ID",
 "title": "Senior Backend Engineer \u2013 HIPAA Complian",
 "ts": 1795025738
+},
+{
+"btns": [
+"Career Resources",
+"BR",
+"",
+"",
+"Continue Application",
+"Create alert"
+],
+"heads": [
+"Application Systems Java Developer",
+"Dice Job Match Score\u2122",
+"Job Details",
+"Skills",
+"Summary",
+"Company Info"
+],
+"dialog": false,
+"path": "https://www.dice.com/job-detail/ID",
+"title": "Application Systems Java Developer",
+"ts": 1795040377
+},
+{
+"btns": [
+"Career Resources",
+"BR",
+"",
+"",
+"Continue Application",
+"Create alert"
+],
+"heads": [
+"Senior Java Developer",
+"Dice Job Match Score\u2122",
+"Job Details",
+"Skills",
+"Summary",
+"Company Info"
+],
+"dialog": false,
+"path": "https://www.dice.com/job-detail/ID",
+"title": "Senior Java Developer",
+"ts": 1795040631
 }
 ]
