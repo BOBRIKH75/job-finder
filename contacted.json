@@ -216,5 +216,60 @@
     "replied": false,
     "bounced": true,
     "re_engage_count": 0
+  },
+  "bebce7899746": {
+    "email": "myhr@glic.com",
+    "date": "2026-11-19T01:29:46.113292",
+    "job": "Lead AIOps Engineer",
+    "company": "Guardian Life",
+    "url": "https://www.indeed.com/viewjob?jk=cadac558e78cf672",
+    "recruiter": null,
+    "smtp_verified": true,
+    "us_score": 1,
+    "us_reasons": [
+      "corp-domain"
+    ]
+  },
+  "190c952797ae": {
+    "email": "hr@thoughtbyte.com",
+    "date": "2026-11-19T01:37:42.376306",
+    "last_contact": "2026-11-19T01:37:42.376306",
+    "job": "Java Developer C2C",
+    "company": "THOUGHT BYTE",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": true,
+    "re_engage_count": 0
+  },
+  "f0e817476e30": {
+    "email": "careers@cognizant.com",
+    "date": "2026-11-19T01:37:46.826364",
+    "last_contact": "2026-11-19T01:37:46.826364",
+    "job": "Java Developer C2C",
+    "company": "Cognizant",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": true,
+    "re_engage_count": 0
+  },
+  "22ac3e59bf6b": {
+    "email": "hr@matlensilver.com",
+    "date": "2026-11-19T01:37:59.126110",
+    "last_contact": "2026-11-19T01:37:59.126110",
+    "job": "Java Developer C2C",
+    "company": "Matlen Silver",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": true,
+    "re_engage_count": 0
   }
 }
