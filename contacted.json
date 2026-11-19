@@ -271,5 +271,46 @@
     "replied": false,
     "bounced": true,
     "re_engage_count": 0
+  },
+  "147953a498e1": {
+    "email": "applicationassistance@sailpoint.com",
+    "date": "2026-11-19T21:49:19.014930",
+    "job": "Senior Staff Software Engineer",
+    "company": "SailPoint Technologies",
+    "url": "https://www.indeed.com/viewjob?jk=7bd848324103a39d",
+    "recruiter": null,
+    "smtp_verified": true,
+    "us_score": 1,
+    "us_reasons": [
+      "corp-domain"
+    ]
+  },
+  "a923970ab399": {
+    "email": "info@prominent.com",
+    "date": "2026-11-19T21:55:53.785129",
+    "last_contact": "2026-11-19T21:55:53.785129",
+    "job": "Java Developer C2C",
+    "company": "Prominent",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": true,
+    "re_engage_count": 0
+  },
+  "1a2bdfdea89e": {
+    "email": "hr@megacloudlab.com",
+    "date": "2026-11-19T21:55:55.303357",
+    "last_contact": "2026-11-19T21:55:55.303357",
+    "job": "Java Developer C2C",
+    "company": "Mega Cloud Lab",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": true,
+    "re_engage_count": 0
   }
 }
