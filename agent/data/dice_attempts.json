@@ -6632,7 +6632,7 @@
 "jid": "d9ff606c-dfd8-4049-962e-cde3d18da354",
 "title": "Java Developer",
 "company": "KONNECTINGTREE INC",
-"result": "already_applied",
+"result": "email_confirmed",
 "ts": 1795098089.8785012
 },
 {
@@ -6695,7 +6695,7 @@
 "jid": "37029f99-dc10-4fae-bf2d-f67b5cdc0de2",
 "title": "Software Engineer (Java/Spring Boot, Azure Cloud & DevOps)",
 "company": "StaffRight Associates, LLC",
-"result": "incomplete",
+"result": "email_confirmed",
 "ts": 1795099137.397255
 },
 {
@@ -6732,5 +6732,68 @@
 "company": "Motion Recruitment Partners, LLC",
 "result": "incomplete",
 "ts": 1795099392.652949
+},
+{
+"jid": "7056e686-5d1d-4555-a3a5-1a48be68eaf9",
+"title": "Only W2- Integration Developer",
+"company": "Digitive LLC",
+"result": "email_confirmed",
+"ts": 1795105949.050111
+},
+{
+"jid": "38fd96dd-96e6-45fd-9610-72e530b0564c",
+"title": "Senior Software Engineer (Enterprise Integrations & SaaS Migration - Java/Azure)",
+"company": "StaffRight Associates, LLC",
+"result": "submitted",
+"ts": 1795105983.045272
+},
+{
+"jid": "69cf64ee-9ecb-4cae-9e12-a0b3cd9b1433",
+"title": "Java Developer",
+"company": "Rapsys Technologies",
+"result": "submitted",
+"ts": 1795106017.486835
+},
+{
+"jid": "fc189faf-c1f8-4b86-9667-a81460abb232",
+"title": "Full Stack Developer IV (Java)",
+"company": "S3 Staffing USA",
+"result": "email_confirmed",
+"ts": 1795106056.917328
+},
+{
+"jid": "6595a55a-f518-4176-bd57-7c669835cb2b",
+"title": "Principal Backend Engineer",
+"company": "Charter Global, Inc.",
+"result": "email_confirmed",
+"ts": 1795106094.3163211
+},
+{
+"jid": "29748edb-36c6-452d-8f1e-1a9c4ba46d42",
+"title": "Senior Java Full Stack Developer - Citizen",
+"company": "ADG Tech Consulting, LLC.",
+"result": "email_confirmed",
+"ts": 1795106132.091926
+},
+{
+"jid": "fabdc27b-da65-4a49-abde-633edd0c56db",
+"title": "Senior Java Back-End Developer",
+"company": "Mersoft Technology LLC",
+"result": "email_confirmed",
+"ts": 1795106166.98998
+},
+{
+"jid": "ae981b9c-769b-4225-aa1d-56720d559ff6",
+"title": "Application Java Developer",
+"company": "INFT Solutions inc",
+"result": "email_confirmed",
+"ts": 1795106203.6932778
+},
+{
+"jid": "ecb8f7d2-ad96-4d85-aa2f-e09ab299ab0d",
+"title": "Java Full Stack Developer",
+"company": "Talentrix AI INC",
+"result": "email_confirmed",
+"ts": 1795106398.005675
 }
 ]
