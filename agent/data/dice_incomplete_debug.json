@@ -9,28 +9,6 @@
 "Create alert"
 ],
 "heads": [
-"Application Systems Java Developer",
-"Dice Job Match Score\u2122",
-"Job Details",
-"Skills",
-"Summary",
-"Company Info"
-],
-"dialog": false,
-"path": "https://www.dice.com/job-detail/ID",
-"title": "Application Systems Java Developer",
-"ts": 1795040377
-},
-{
-"btns": [
-"Career Resources",
-"BR",
-"",
-"",
-"Continue Application",
-"Create alert"
-],
-"heads": [
 "Senior Java Developer",
 "Dice Job Match Score\u2122",
 "Job Details",
@@ -671,5 +649,33 @@
 "path": "https://www.dice.com/job-detail/ID",
 "title": "Software engineer",
 "ts": 1795368465
+},
+{
+"btns": [
+"Career Resources",
+"BR",
+"",
+"",
+"Continue Application",
+"Create alert",
+"",
+"",
+"Full Stack Java Developer",
+"",
+"",
+"Full Stack Java Developer-  Ne"
+],
+"heads": [
+"Application Developer UTA-JB-00017",
+"Dice Job Match Score\u2122",
+"Job Details",
+"Skills",
+"Summary",
+"Job Description"
+],
+"dialog": false,
+"path": "https://www.dice.com/job-detail/ID",
+"title": "Application Developer UTA-JB-00017",
+"ts": 1795387856
 }
 ]
