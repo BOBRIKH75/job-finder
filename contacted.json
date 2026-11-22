@@ -164,5 +164,74 @@
     "replied": false,
     "bounced": true,
     "re_engage_count": 0
+  },
+  "004737d5a7c8": {
+    "email": "ssc.customersupport@ey.com",
+    "date": "2026-11-22T20:33:17.396196",
+    "job": "IAM Engineer - Software Engineer - Privileged Access Management - Senior Consultant - SDC",
+    "company": "EY",
+    "url": "https://www.indeed.com/viewjob?jk=292f37b50f8f2749",
+    "recruiter": null,
+    "smtp_verified": true,
+    "us_score": 1,
+    "us_reasons": [
+      "corp-domain"
+    ]
+  },
+  "4ac6dd152a9d": {
+    "email": "careers@amiseq.com",
+    "date": "2026-11-22T20:38:36.984062",
+    "last_contact": "2026-11-22T20:38:36.984062",
+    "job": "Java Developer C2C",
+    "company": "AMISEQ",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": true,
+    "re_engage_count": 0
+  },
+  "1a2bdfdea89e": {
+    "email": "hr@megacloudlab.com",
+    "date": "2026-11-22T20:38:40.821840",
+    "last_contact": "2026-11-22T20:38:40.821840",
+    "job": "Java Developer C2C",
+    "company": "Mega Cloud Lab",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": true,
+    "re_engage_count": 0
+  },
+  "a4c80931a7ff": {
+    "email": "jobs@aquent.com",
+    "date": "2026-11-22T20:38:44.711276",
+    "last_contact": "2026-11-22T20:38:44.711276",
+    "job": "Java Developer C2C",
+    "company": "Aquent",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": true,
+    "re_engage_count": 0
+  },
+  "5ed8bd88ef4d": {
+    "email": "jobs@visionairepartners.com",
+    "date": "2026-11-22T20:38:47.316062",
+    "last_contact": "2026-11-22T20:38:47.316062",
+    "job": "Java Developer C2C",
+    "company": "Visionaire Partners",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": true,
+    "re_engage_count": 0
   }
 }
