@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-22T06:10:33.409744+00:00",
+  "generated_at": "2026-11-22T07:11:06.721788+00:00",
   "runner": {
     "status": "online",
     "busy": true,
@@ -7,8 +7,8 @@
   },
   "platforms": {
     "indeed": {
-      "last_success": "2026-11-22T05:09:54Z",
-      "last_run": "2026-11-22T05:09:54Z",
+      "last_success": "2026-11-22T06:16:39Z",
+      "last_run": "2026-11-22T06:16:39Z",
       "last_conclusion": "success",
       "expiry_detected": false,
       "confirmed_24h": 0,
@@ -23,8 +23,8 @@
       "confirmed_7d": 311
     },
     "greenhouse": {
-      "last_success": "2026-11-22T04:33:01Z",
-      "last_run": "2026-11-22T04:33:01Z",
+      "last_success": "2026-11-22T06:33:46Z",
+      "last_run": "2026-11-22T06:33:46Z",
       "last_conclusion": "success",
       "expiry_detected": false,
       "confirmed_24h": 15,
