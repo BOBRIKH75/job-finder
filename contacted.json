@@ -68,5 +68,31 @@
     "replied": false,
     "bounced": true,
     "re_engage_count": 0
+  },
+  "d9527d56cf98": {
+    "email": "hrhelpnow@intusurg.com",
+    "date": "2026-11-24T23:29:51.432720",
+    "job": "Senior Software Engineer",
+    "company": "Intuitive (Intuitive Surgical)",
+    "url": "https://www.indeed.com/viewjob?jk=9682069ccc46aef1",
+    "recruiter": "People Services",
+    "smtp_verified": false,
+    "us_score": 1,
+    "us_reasons": [
+      "corp-domain"
+    ]
+  },
+  "76fff39b61d9": {
+    "email": "buildyourcareer@hii-co.com",
+    "date": "2026-11-24T23:30:33.212133",
+    "job": "Full Stack Engineer (Level 2 & 3)",
+    "company": "HII",
+    "url": "https://www.indeed.com/viewjob?jk=9f0949746b704773",
+    "recruiter": "Leadership Mindset",
+    "smtp_verified": false,
+    "us_score": 1,
+    "us_reasons": [
+      "corp-domain"
+    ]
   }
 }
