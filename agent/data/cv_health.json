@@ -1,22 +1,22 @@
 {
-  "generated_at": "2026-11-24T03:25:15.811996+00:00",
+  "generated_at": "2026-11-24T04:25:58.746272+00:00",
   "runner": {
     "status": "online",
-    "busy": true,
+    "busy": false,
     "offline_hours": 0
   },
   "platforms": {
     "indeed": {
-      "last_success": "2026-11-24T02:47:46Z",
-      "last_run": "2026-11-24T02:47:46Z",
+      "last_success": "2026-11-24T03:48:41Z",
+      "last_run": "2026-11-24T03:48:41Z",
       "last_conclusion": "success",
       "expiry_detected": false,
       "confirmed_24h": 0,
       "confirmed_7d": 28
     },
     "dice": {
-      "last_success": "2026-11-24T01:43:13Z",
-      "last_run": "2026-11-24T01:43:13Z",
+      "last_success": "2026-11-24T03:44:15Z",
+      "last_run": "2026-11-24T03:44:15Z",
       "last_conclusion": "success",
       "expiry_detected": true,
       "confirmed_24h": 25,
