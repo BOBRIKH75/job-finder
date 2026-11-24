@@ -10,7 +10,10 @@
     "us_score": 1,
     "us_reasons": [
       "corp-domain"
-    ]
+    ],
+    "last_contact": "2026-11-24T01:15:29.424235",
+    "followed_up": true,
+    "followup_date": "2026-11-24T01:15:29.424235"
   },
   "ec1828193b1d": {
     "email": "vwgroupcareers@vw.com",
@@ -23,7 +26,10 @@
     "us_score": 1,
     "us_reasons": [
       "corp-domain"
-    ]
+    ],
+    "last_contact": "2026-11-24T01:15:29.424235",
+    "followed_up": true,
+    "followup_date": "2026-11-24T01:15:29.424235"
   },
   "22ac3e59bf6b": {
     "email": "hr@matlensilver.com",
@@ -240,6 +246,34 @@
     "last_contact": "2026-11-23T00:37:01.140549",
     "job": "Java Developer C2C",
     "company": "eGrove Systems",
+    "recruiter": "Recruiting Team",
+    "title": "Recruiter",
+    "source": "smtp_verified",
+    "url": "",
+    "replied": false,
+    "bounced": true,
+    "re_engage_count": 0
+  },
+  "a387ea7e8f35": {
+    "email": "taposting@wwt.com",
+    "date": "2026-11-24T01:15:26.861534",
+    "job": "Lead Developer - Supply Chain",
+    "company": "World Wide Technology",
+    "url": "https://www.indeed.com/viewjob?jk=d886c7ed5ac63611",
+    "recruiter": null,
+    "smtp_verified": true,
+    "us_score": 3,
+    "us_reasons": [
+      "corp-domain",
+      "us-direct-signal"
+    ]
+  },
+  "3fce0754ea7e": {
+    "email": "jobs@arksolutionsinc.com",
+    "date": "2026-11-24T01:25:02.217329",
+    "last_contact": "2026-11-24T01:25:02.217329",
+    "job": "Java Developer C2C",
+    "company": "ARK Solutions, Inc.",
     "recruiter": "Recruiting Team",
     "title": "Recruiter",
     "source": "smtp_verified",
