@@ -280,6 +280,10 @@ def _profile_answer(question: str, field_type: str, options, profile: dict):
     if not yn_opts and _has_word(q, "salary", "compensation", "rate", "pay expectation",
                                  "hourly", "expected pay", "desired", "amount", "how much",
                                  "enter the amount"):
+        # Annual salary boxes get an annual figure; "75" there reads as $75/year.
+        if _has_word(q, "salary", "annual", "annually", "per year", "yearly") \
+                and not _has_word(q, "hourly", "per hour", "rate"):
+            return str(int(float(rate) * 2080))
         return rate
 
     # Start date / availability / notice
@@ -476,7 +480,10 @@ def _safe_default(question: str, field_type: str, options, profile: dict | None 
     if any(k in q for k in ("years", "how many", "experience")):
         return "0" if unverified else str(profile.get("years_experience", 10))
     if any(k in q for k in ("salary", "rate", "compensation", "pay", "amount", "hourly")):
-        return "85"
+        hourly = str(profile.get("rate_target", 75))
+        if any(k in q for k in ("salary", "annual", "per year", "yearly")) and "hour" not in q:
+            return str(int(float(hourly) * 2080))
+        return hourly
 
     # free text / textarea -> short safe professional blurb
     if field_type == "textarea":
