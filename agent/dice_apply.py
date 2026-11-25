@@ -798,22 +798,28 @@ def main():
                 return False
 
         def _auto_login():
-            # Try Google SSO FIRST (Bob's Dice may be Google-linked → no password exists).
-            if os.environ.get('DICE_LOGIN_METHOD', 'auto') in ('auto', 'google'):
-                if _try_google_login():
-                    return True
+            # Password FIRST: works from any laptop/IP with no browser state. (Nov 2026: Dice
+            # forced a password reset ("We've upgraded our account security"), so the old
+            # password stopped working, and Google SSO times out on the runner.)
+            method = os.environ.get('DICE_LOGIN_METHOD', 'auto')
             email = os.environ.get('DICE_EMAIL', ''); pwd = os.environ.get('DICE_PASSWORD', '')
-            if not email or not pwd:
-                print("  ⚠️ no DICE_EMAIL/DICE_PASSWORD in env — cannot password-login")
-                return False
+            if method in ('auto', 'password') and email and pwd:
+                if _password_login(email, pwd):
+                    return True
+            if method in ('auto', 'google'):
+                return _try_google_login()
+            print("  no DICE_EMAIL/DICE_PASSWORD in env - cannot password-login")
+            return False
+
+        def _password_login(email, pwd):
             try:
                 page.goto('https://www.dice.com/dashboard/login',
                           wait_until='domcontentloaded', timeout=30000)
                 time.sleep(3)
                 print(f"  🔐 login page: {page.url[:70]}")
                 # captcha/challenge check (research: Dice-type sites block automated login)
-                body = (page.content() or '').lower()
-                for sig in ('captcha', 'recaptcha', 'are you a robot', 'verify you are human',
+                body = (page.inner_text('body') or '').lower()   # visible text, not script tags
+                for sig in ('are you a robot', 'verify you are human',
                             'unusual activity', 'px-captcha', 'perimeterx'):
                     if sig in body:
                         print(f"  🛑 login blocked by challenge: '{sig}' — automated login not possible here")
@@ -850,7 +856,10 @@ def main():
                     except Exception:
                         continue
                 if not clicked:
-                    page.keyboard.press('Enter')
+                    try:
+                        page.locator('button[type="submit"]').first.click()
+                    except Exception:
+                        page.keyboard.press('Enter')
                 time.sleep(6)
                 print(f"  → after password step: {page.url[:70]}")
                 ok = _dice_logged_in()
