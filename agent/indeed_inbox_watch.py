@@ -124,7 +124,7 @@ def alert(new_items, dry_run: bool):
     body = "Real people wrote to you on Indeed. Reply here: " + INBOX_URL + "\n\n" + "\n\n".join(
         f"- {m['sender']} ({m['date']}){' — AWAITING YOUR REPLY' if m['awaiting'] else ''}\n  {m['snippet'][:200]}"
         for m in new_items)
-    subject = f"ACTION: {len(new_items)} Indeed recruiter message(s) waiting — {new_items[0]['sender']}"
+    subject = f"ACTION: {len(new_items)} Indeed recruiter message(s) waiting - {new_items[0]['sender']}"
     print(body)
     if dry_run:
         return
@@ -139,10 +139,14 @@ def alert(new_items, dry_run: bool):
         print("  email alert sent")
     topic = os.environ.get("NTFY_TOPIC")
     if topic:
-        req = urllib.request.Request(f"https://ntfy.sh/{topic}", data=body[:3500].encode(),
-                                     headers={"Title": subject[:120], "Priority": "high"})
-        urllib.request.urlopen(req, timeout=15)
-        print("  ntfy push sent")
+        try:  # HTTP headers must be latin-1; a failed push must never lose the email/dedup
+            title = subject[:120].encode("latin-1", "replace").decode("latin-1")
+            req = urllib.request.Request(f"https://ntfy.sh/{topic}", data=body[:3500].encode(),
+                                         headers={"Title": title, "Priority": "high"})
+            urllib.request.urlopen(req, timeout=15)
+            print("  ntfy push sent")
+        except Exception as exc:
+            print(f"::warning::ntfy push failed: {str(exc)[:80]}")
 
 
 def main():
@@ -166,11 +170,11 @@ def main():
     human = [m for m in items if classify(m["snippet"], m["awaiting"]) == "human"]
     new = [m for m in human if args.all or _key(m) not in seen]
     print(f"inbox: {len(items)} conversations, {len(human)} from people, {len(new)} new")
-    if new:
-        alert(new, args.dry_run)
-    if not args.dry_run:
+    if not args.dry_run:  # save first: a failed alert must not cause a repeat every run
         os.makedirs(os.path.dirname(SEEN_FILE), exist_ok=True)
         json.dump(sorted(seen | {_key(m) for m in human}), open(SEEN_FILE, "w"), indent=0)
+    if new:
+        alert(new, args.dry_run)
     return 0
 
 
