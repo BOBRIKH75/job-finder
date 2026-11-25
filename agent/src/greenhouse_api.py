@@ -120,6 +120,74 @@ def _get_job_data_boards_api(company: str, job_id: str) -> Optional[dict]:
     }
 
 
+_EEO = re.compile(r"\b(gender|sex|race|ethnic|hispanic|latin|veteran|disabilit|sexual orientation|"
+                  r"transgender|lgbt|pronoun)\w*", re.I)
+_DECLINE = ("decline", "prefer not", "don't wish", "do not wish", "not to answer", "choose not",
+            "not to disclose", "not wish to", "do not want to", "don't want to", "rather not",
+            "not to say", "not to self-identify", "not specified")
+_ALWAYS_YES = re.compile(r"\b(18|eighteen)\b.*\b(age|older|years)\b|\bat least 18\b|background check|"
+                         r"drug (test|screen)|\bconsent\b|\backnowledge|\bagree\b|\bcertify|"
+                         r"\bprivacy\b|\bterms\b|\baccurate\b|\btruthful", re.I)
+
+
+def _answer_select(label: str, values: list, required: bool, profile: dict) -> Optional[str]:
+    """Truthful choice for a select/radio question, or None (field left empty) when no
+    truthful option exists. Never guesses: a wrong knockout answer (sponsorship 'Yes',
+    '18+' 'No', false veteran/disability) is worse than a skipped application."""
+    if not values:
+        return None
+    labels = [str(v.get("label", "")) for v in values]
+    low = [l.lower() for l in labels]
+
+    def val(idx):
+        return str(values[idx]["value"])
+
+    def first(pred):
+        for k, l in enumerate(low):
+            if pred(l):
+                return val(k)
+        return None
+
+    try:
+        from src.option_matcher import polarity, resolve_option
+    except ImportError:
+        from option_matcher import polarity, resolve_option
+
+    def by_polarity(want):
+        return first(lambda l: polarity(l) == want)
+
+    # EEO / self-identification: always decline, never invent an identity.
+    if _EEO.search(label) and "pronoun" not in label:
+        return first(lambda l: any(d in l for d in _DECLINE))
+    if "pronoun" in label:
+        return first(lambda l: "he/him" in l) or first(lambda l: any(d in l for d in _DECLINE))
+    # Sponsorship: whole-word polarity ('Yes, ... now' must never match 'no').
+    if any(k in label for k in ("sponsor", "visa", "immigration")):
+        return by_polarity("yes" if profile.get("requires_sponsorship") else "no")
+    if any(k in label for k in ("authorized", "eligible", "legally", "right to work", "work authorization")):
+        return by_polarity("yes" if profile.get("work_authorization", True) else "no")
+    if _ALWAYS_YES.search(label):
+        return by_polarity("yes")
+    # Country questions / 'do you live in the United States'.
+    if "country" in label:
+        return first(lambda l: l in ("united states", "usa", "us", "united states of america"))
+    # US state picker (options are states) -> Colorado.
+    if any("colorado" in l for l in low) and len(values) > 10:
+        return first(lambda l: l.startswith("colorado") or l == "co")
+    if "previously" in label and ("employed" in label or "worked" in label):
+        return first(lambda l: "have not" in l or "never" in l) or by_polarity("no")
+    if any(k in label for k in ("hear", "learn about", "source", "referr")):
+        return first(lambda l: "linkedin" in l) or first(lambda l: l.startswith("other")) \
+            or first(lambda l: "job board" in l)
+    # Everything else: the shared truthful matcher (years, onsite location, relocation, skills).
+    pick = resolve_option(label, labels, None, profile)
+    if pick is not None:
+        return val(labels.index(pick))
+    if not required:
+        return first(lambda l: any(d in l for d in _DECLINE))
+    return None   # unknown required question: leave empty rather than lie
+
+
 def _answer_question(question: dict, profile: dict) -> Optional[str]:
     """Return the best answer for one question field as a string."""
     label = question.get("label", "").lower().strip()
@@ -145,7 +213,9 @@ def _answer_question(question: dict, profile: dict) -> Optional[str]:
             return profile.get("first_name", "")
         if "current company" in label or "employer" in label:
             return "Charter Communications"
-        if "salary" in label or "rate" in label or "compensation" in label:
+        if re.search(r"\b(salary|compensation|annual|per year|yearly)\b", label):
+            return str(int(float(profile.get("rate_target", 75)) * 2080))   # annual, not hourly
+        if re.search(r"\b(hourly|bill|pay)?\s*rate\b", label):
             return str(profile.get("rate_target", 75))
         # FIX (cv-health): required free-text questions returned "" and were DROPPED from the
         # POST → Greenhouse answered HTTP 400 (api_400 on every run). Answer the common
@@ -171,61 +241,7 @@ def _answer_question(question: dict, profile: dict) -> Optional[str]:
         return "10+ years Java/Spring Boot experience with Kafka, Kubernetes, AWS. Green Card holder, available immediately, no sponsorship needed."
 
     if ftype in ("multi_value_single_select", "multi_value_multi_select"):
-        values = field.get("values", [])
-        if not values:
-            return None
-
-        def _pick(keyword: str) -> Optional[str]:
-            for v in values:
-                if keyword in str(v.get("label", "")).lower():
-                    return str(v["value"])
-            return None
-
-        # Work authorization / legal eligibility → Yes (Green Card holder)
-        if any(k in label for k in ("authorized", "eligible", "legal", "right to work",
-                                     "legally authorized", "legally eligible")):
-            ans = _pick("yes") or _pick("true")
-            if ans:
-                return ans
-
-        # Sponsorship / visa → No
-        if any(k in label for k in ("sponsor", "visa", "immigration", "work authorization")):
-            ans = _pick("no") or _pick("false")
-            if ans:
-                return ans
-            for v in values:
-                if v["value"] == 0:
-                    return "0"
-
-        # Pronouns → He/him
-        if "pronoun" in label:
-            return _pick("he/him") or str(values[0]["value"])
-
-        # State / province → Colorado
-        if any(k in label for k in ("state", "province", "reside")):
-            return _pick("colorado") or str(values[0]["value"])
-
-        # Previously employed → have not
-        if "previously" in label and "employed" in label:
-            return _pick("have not") or _pick("never") or str(values[0]["value"])
-
-        # How did you hear → LinkedIn
-        if any(k in label for k in ("hear", "learn about", "source", "referr")):
-            return _pick("linkedin") or _pick("other") or str(values[0]["value"])
-
-        # Generic Yes/No: default No (safe conservative answer)
-        if len(values) == 2:
-            lbls = [str(v.get("label", "")).lower() for v in values]
-            if "yes" in lbls and "no" in lbls:
-                return _pick("no")
-
-        # Optional: prefer "decline" / "prefer not to say"
-        if not question.get("required", True):
-            ans = _pick("prefer not") or _pick("decline")
-            if ans:
-                return ans
-
-        return str(values[0]["value"])
+        return _answer_select(label, field.get("values", []), question.get("required", True), profile)
 
     return None
 
