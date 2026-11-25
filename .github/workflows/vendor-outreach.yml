@@ -38,7 +38,7 @@ jobs:
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
           RESEND_KEY: ${{ secrets.RESEND_KEY }}
-          OUTREACH_DAILY_CAP: "60"
+          OUTREACH_DAILY_CAP: "30"   # 0.3% engaged at 60/day + opt-out complaints; protect sender reputation
         run: python scripts/vendor_outreach.py
 
       - name: Save outreach history

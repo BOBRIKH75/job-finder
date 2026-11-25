@@ -78,7 +78,7 @@ SUBJECT = "Senior Java/Spring Boot Dev — C2C Available, Green Card, Parker CO"
 # so each firm gets a fresh-looking, non-duplicate message each cycle.
 SUBJECT_VARIANTS = [
     "Senior Java/Spring Boot Dev — C2C Available (Green Card, Remote)",
-    "Java Backend Engineer, 10+ yrs — Open for C2C Contract (Remote)",
+    "Java Backend Engineer, 4+ yrs — Open for C2C Contract (Remote)",
     "Available for C2C: Senior Java / Spring Boot / AWS (Green Card)",
     "Java/Microservices Contractor Available — C2C, No Sponsorship",
     "Senior Java Developer seeking C2C — Spring Boot, Kafka, AWS (Remote)",
@@ -87,8 +87,8 @@ _GREETINGS = ["Hi {v} team,", "Hello {v} team,", "Hi {v} recruiting team,",
               "Hello {v},", "Hi there {v} team,"]
 _OPENERS = [
     "I'm a Java Backend Developer with 4+ years of experience, looking for C2C contract roles.",
-    "I'm a Senior Java/Spring Boot engineer (10+ yrs) currently open to C2C contract opportunities.",
-    "I'm reaching out as a Senior Java Backend Developer (10+ yrs exp) available for C2C contracts.",
+    "I'm a Java/Spring Boot engineer (4+ yrs) currently open to C2C contract opportunities.",
+    "I'm reaching out as a Java Backend Developer (4+ yrs exp) available for C2C contracts.",
     "I'm a backend Java developer with 4+ years' experience, seeking a C2C contract role.",
 ]
 _CLOSERS = [

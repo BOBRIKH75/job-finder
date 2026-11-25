@@ -42,6 +42,7 @@ Headed. Submits exactly ONE application, then stops.
 
 import json
 import os
+from src import quiet_browser as _quiet
 import random
 import re
 import sqlite3
@@ -1884,12 +1885,14 @@ def main():
             if _STEALTH == 'patchright':
                 # Real Google Chrome (channel="chrome") is required for full stealth.
                 _launch_kw['channel'] = 'chrome'
+            _quiet.apply_launch_kwargs(_launch_kw)
             try:
                 _ctx = pw.chromium.launch_persistent_context(**_launch_kw)
             except Exception:
                 # Fallback: some machines lack channel="chrome" — retry on bundled Chromium.
                 _launch_kw.pop('channel', None)
                 _ctx = pw.chromium.launch_persistent_context(**_launch_kw)
+            _quiet.quiet_context(_ctx)
             # NOTE: secret cookies are NOT blindly added here any more - stale ones would clobber
             # the profile's live session. _ensure_login() below adds them only if needed.
             # launch_persistent_context returns the context (its own browser); reuse

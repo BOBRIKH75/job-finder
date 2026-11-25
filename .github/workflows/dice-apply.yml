@@ -122,6 +122,7 @@ jobs:
       - name: Run Dice applicator
         timeout-minutes: 44
         env:
+          DICE_DAILY_CAP: '60'   # Nov 2026: ~930 Dice confirms, 0 human replies -> fewer, better-fit applies, less laptop time
           PREFER_LOCAL_CHROME: '1'   # use this laptop's logged-in Chrome first, secret as fallback
           DICE_COOKIES: ${{ secrets.DICE_COOKIES }}
           DICE_EMAIL: ${{ secrets.DICE_EMAIL }}
@@ -139,7 +140,7 @@ jobs:
           HEADFUL: '1'               # self-hosted runner has a display; headless is the bot tell
         run: |
           cd $GITHUB_WORKSPACE/agent
-          PYTHONUNBUFFERED=1 nice -n 10 python3 -u dice_apply.py
+          PYTHONUNBUFFERED=1 bash "$GITHUB_WORKSPACE/agent/scripts/run_quiet.sh" python3 -u dice_apply.py
 
       - name: Confirm submits via email
         if: always()

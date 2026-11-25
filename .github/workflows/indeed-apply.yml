@@ -144,7 +144,7 @@ jobs:
                                   # clicking a managed challenge from automation does not work)
         run: |
           cd $GITHUB_WORKSPACE/agent
-          PYTHONUNBUFFERED=1 nice -n 10 python3 -u submit_one.py
+          PYTHONUNBUFFERED=1 bash "$GITHUB_WORKSPACE/agent/scripts/run_quiet.sh" python3 -u submit_one.py
 
       - name: Save agent memory
         if: always()

@@ -75,6 +75,28 @@ def _applied_recently(applied: dict, company, title, now) -> bool:
     return (now - when).days < GH_DEDUP_DAYS
 
 
+GH_COMPANY_CAP = int(os.environ.get('GH_COMPANY_CAP', '3'))
+
+
+def _company_applied_count(applied: dict, company, now) -> int:
+    """Applications to this company inside the dedup window. Evidence (Nov 2026): 50 each
+    to Squarespace and Canonical brought 0 replies; recruiters see a mass-applier."""
+    from datetime import datetime as _dt
+    c = ' '.join((company or '').lower().split())
+    if not c:
+        return 0
+    n = 0
+    for k, v in applied.items():
+        if k.split('|', 1)[0] != c:
+            continue
+        try:
+            if (now - _dt.fromisoformat(str(v).replace('Z', ''))).days < GH_DEDUP_DAYS:
+                n += 1
+        except Exception:
+            n += 1
+    return n
+
+
 def _save_gh_applied(company, title):
     from datetime import datetime as _dt
     key = _gh_key(company, title)
@@ -313,6 +335,9 @@ def main():
                 or application_exists(db, url):   # URL-only = exact same posting
             skipped += 1
             continue
+        if _company_applied_count(_gh_applied, company_name, _now) >= GH_COMPANY_CAP:
+            skipped += 1
+            continue   # per-company cap: a few strong applications beat 50 to one employer
 
         # CV-FIT GATE (Bobur: only apply to jobs that MATCH the CV — Java/Spring/
         # backend/remote/C2C — don't waste time on off-target roles). Same matcher as
@@ -389,6 +414,7 @@ def main():
         if result.get('submitted'):
             applied += 1
             _record_applied(db, company_name, title, url)
+            _gh_applied[_gh_key(company_name, title)] = _now.isoformat()   # count toward company cap now
             if _k:
                 _run_seen.add(_k)   # same-run duplicate guard
             print(f"  ✅ {title} @ {company_name} (API)")
@@ -432,6 +458,7 @@ def main():
             if result2.get('submitted'):
                 applied += 1
                 _record_applied(db, company_name, title, url)
+                _gh_applied[_gh_key(company_name, title)] = _now.isoformat()   # count toward company cap now
                 _k2=_gh_key(company_name, title);  _run_seen.add(_k2) if _k2 else None   # same-run dup guard
                 print(f"  ✅ {title} @ {company_name} (retry {attempt})")
                 retry_success = True

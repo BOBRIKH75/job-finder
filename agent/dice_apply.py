@@ -16,6 +16,7 @@ Run locally:
 import base64
 import json
 import os
+from src import quiet_browser as _quiet
 import random
 import re
 import sys
@@ -339,11 +340,13 @@ def _launch(pw, headful):
     kw = dict(user_data_dir=PROFILE_DIR, headless=not headful, no_viewport=True)
     if _STEALTH == 'patchright':
         kw['channel'] = 'chrome'
+    _quiet.apply_launch_kwargs(kw)
     try:
         ctx = pw.chromium.launch_persistent_context(**kw)
     except Exception:
         kw.pop('channel', None)
         ctx = pw.chromium.launch_persistent_context(**kw)
+    _quiet.quiet_context(ctx)
     # cookies: env secret (CI) or file (local)
     cookies = None
     if os.environ.get('PREFER_LOCAL_CHROME') == '1':

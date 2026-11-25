@@ -10,6 +10,7 @@ Strategy:
 7. Retry up to 3 times, each time smarter than the last
 8. Save what worked for next time
 """
+from src import quiet_browser as _quiet
 import json, os, re, time, random
 from pathlib import Path
 from playwright.sync_api import sync_playwright, TimeoutError as PwTimeout
@@ -2301,12 +2302,14 @@ def run_applications(jobs: list[dict], dry_run: bool = True, max_apps: int = 10,
                     pass
             _kw = dict(user_data_dir=_prof, headless=os.environ.get("GH_HEADLESS") == "1",
                        no_viewport=True, channel="chrome")
+            _quiet.apply_launch_kwargs(_kw)
             try:
                 context = _pw0.chromium.launch_persistent_context(**_kw)
             except Exception as _e1:
                 print(f"  ⚠ real Chrome launch failed ({str(_e1)[:90]}) — bundled Chromium")
                 _kw.pop("channel", None)
                 context = _pw0.chromium.launch_persistent_context(**_kw)
+            _quiet.quiet_context(context)
             print("  🧑 Real Chrome persistent context")
         elif cloakbrowser:
             context = cloakbrowser.launch_context(headless=True)
