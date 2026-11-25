@@ -145,6 +145,12 @@ def should_apply(title, description="", location=""):
         return True, 999, ["filter disabled"]
     min_score = int(os.environ.get("CV_MATCH_MIN", "2"))
     score, reasons = score_job(title, description, location)
+    if score >= min_score:
+        too_senior = _over_senior(title, description)
+        if too_senior:
+            return False, score, reasons + [too_senior]
+        if _title_onsite_outside_colorado(title):
+            return False, score, reasons + ["title says on-site/hybrid/local outside Colorado"]
     if score >= min_score and _onsite_outside_colorado(title, description, location):
         return False, score, reasons + ["on-site/hybrid outside Colorado (Bob is Denver-area/remote)"]
     return (score >= min_score), score, reasons
@@ -166,3 +172,44 @@ def _onsite_outside_colorado(title, description, location):
     if any(p in f" {loc} " for p in _CO_PLACES):
         return False
     return any(w in blob for w in _ONSITE_WORDS)
+
+
+# --- Seniority / experience fit (CV shows ~4 years Java: 09.2022 - present) ---
+# Applying to Lead/Architect/10+ yr roles with this CV gets auto-rejected and teaches
+# recruiters to ignore the profile. Tunable: CV_MAX_REQ_YEARS (default 7), CV_ALLOW_SENIOR=1.
+_SENIOR_TITLE = re.compile(
+    r"\b(lead|principal|staff|architect|manager|director|head of|vp|vice president|"
+    r"chief|distinguished|fellow)\b", re.I)
+_YEARS = re.compile(r"(\d{1,2})\s*\+?\s*(?:-\s*\d{1,2}\s*)?(?:years|yrs|yr)\b", re.I)
+
+
+def _required_years(text):
+    """Smallest 'N+ years' requirement mentioned (None if none). Ignores 'N years ago' noise
+    by only reading values 1-30."""
+    vals = [int(m.group(1)) for m in _YEARS.finditer(text or "") if 1 <= int(m.group(1)) <= 30]
+    return min(vals) if vals else None
+
+
+def _over_senior(title, description=""):
+    """Reason string if the role is clearly above the CV's level, else ''."""
+    if os.environ.get("CV_ALLOW_SENIOR") == "1":
+        return ""
+    if _SENIOR_TITLE.search(title or ""):
+        return "title is lead/architect/principal level (above CV level)"
+    max_years = int(os.environ.get("CV_MAX_REQ_YEARS", "7"))
+    t_years = _required_years(title)
+    if t_years is not None and t_years >= max_years:
+        return f"title requires {t_years}+ years (CV ~4)"
+    d_years = _required_years((description or "")[:4000])
+    if d_years is not None and d_years >= max_years:
+        return f"description requires {d_years}+ years (CV ~4)"
+    return ""
+
+
+def _title_onsite_outside_colorado(title):
+    """Titles like 'Java Dev (Onsite Plano, TX)' or 'Local to Michigan' are not remote even
+    when the board's location field says 'Remote'."""
+    t = f" {_norm(title)} "
+    if "remote" in t or any(p in t for p in _CO_PLACES):
+        return False
+    return any(w in t for w in _ONSITE_WORDS + ("local to", "local only", "in person", "in-person"))

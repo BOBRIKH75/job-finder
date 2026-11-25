@@ -223,6 +223,7 @@ ATTEMPTS_FILE = 'data/dice_attempts.json'
 REASONS_FILE = 'data/dice_failed_reasons.json'
 STATS_FILE = 'data/dice_stats.json'
 DEEP_CV_MAX = int(os.environ.get('DICE_DEEP_CV_MAX', '60'))   # description re-checks per run
+LOGIN_REDIRECT_ABORT = int(os.environ.get('DICE_LOGIN_REDIRECT_ABORT', '3'))
 DAILY_ATTEMPT_CAP = int(os.environ.get('DICE_DAILY_CAP', '150'))   # account-safety ceiling
 DEAD_TTL_DAYS = int(os.environ.get('DEAD_TTL_DAYS', '30'))
 # per-reason retry window (days). Transient reasons retry fast; 'no_apply_button' (usually an
@@ -245,6 +246,15 @@ def _jsave(path, obj):
         pass
 
 
+def _real_attempts_today():
+    """Today's attempts that really opened an apply flow (login_redirect excluded), from the
+    per-attempt log, so a dead session earlier today doesn't block the rest of the day."""
+    today = time.strftime('%Y-%m-%d')
+    return sum(1 for x in _jload(ATTEMPTS_FILE, [])
+               if x.get('result') != 'login_redirect'
+               and time.strftime('%Y-%m-%d', time.localtime(x.get('ts', 0))) == today)
+
+
 def _log_attempt(jid, title, company, result):
     """Truthful per-attempt log (used by check_dice_confirmations to reconcile with Gmail)."""
     a = _jload(ATTEMPTS_FILE, [])
@@ -255,7 +265,10 @@ def _log_attempt(jid, title, company, result):
     day = time.strftime('%Y-%m-%d')
     st = _jload(STATS_FILE, {})
     d = st.setdefault(day, {'attempted': 0, 'signal_submitted': 0, 'email_confirmed': 0})
-    d['attempted'] += 1
+    if result == 'login_redirect':
+        d['login_redirect'] = d.get('login_redirect', 0) + 1   # not a real attempt
+    else:
+        d['attempted'] += 1
     if result == 'submitted':
         d['signal_submitted'] += 1
     _jsave(STATS_FILE, st)
@@ -333,8 +346,16 @@ def _launch(pw, headful):
         ctx = pw.chromium.launch_persistent_context(**kw)
     # cookies: env secret (CI) or file (local)
     cookies = None
+    if os.environ.get('PREFER_LOCAL_CHROME') == '1':
+        try:
+            from refresh_session_secrets import local_chrome_cookies
+            cookies = local_chrome_cookies('dice') or None
+            if cookies:
+                print(f"  🍪 using {len(cookies)} Dice cookies from this machine's logged-in Chrome")
+        except Exception:
+            cookies = None
     env = os.environ.get('DICE_COOKIES', '').strip()
-    if env:
+    if env and cookies is None:
         try:
             cookies = json.loads(base64.b64decode(env).decode() if not env.startswith('[') else env)
         except Exception:
@@ -890,7 +911,7 @@ def main():
             'Spring Boot developer', 'Spring Boot microservices', 'Spring developer',
             'Java microservices', 'Java REST API developer', 'Java full stack developer',
             'backend developer Java', 'Java web services', 'Java application developer',
-            'Lead Java developer', 'Java architect', 'Java consultant',
+            'Java consultant',
             'Java AWS developer', 'Java cloud developer', 'Java API developer',
             'software engineer Java', 'Java backend engineer', 'Java microservices developer',
             # skill-specific Java (each surfaces a different slice — CV skills)
@@ -908,7 +929,7 @@ def main():
             'Java Terraform developer', 'Java Lambda developer', 'Java Elasticsearch developer',
             'Java RabbitMQ developer', 'Java Splunk DataDog developer',
             # seniority + role variations (same CV, different title wording)
-            'Principal Java developer', 'Staff Java engineer', 'Java tech lead',
+            
             'Java backend software engineer', 'Java platform engineer',
             'Java services developer', 'Java integration developer',
             'Java enterprise developer', 'J2EE developer', 'Java EE developer',
@@ -925,7 +946,7 @@ def main():
             #    surface jobs the existing pool never returned (anti-saturation) ──
             'Java developer contract', 'Java developer C2C', 'Java corp to corp',
             'Java developer W2', 'Java developer 1099', 'Java contract to hire',
-            'Java developer hybrid', 'Java developer onsite', 'Java developer remote USA',
+            'Java developer hybrid', 'Java developer remote USA',
             # domain-specific Java (finance/health/insurance/telecom hire heavily in Java)
             'Java developer finance', 'Java developer banking', 'Java developer fintech',
             'Java developer healthcare', 'Java developer insurance', 'Java developer payments',
@@ -1002,9 +1023,11 @@ def main():
 
         submitted = 0
         _deep_checks = 0
-        _today_attempts = _jload(STATS_FILE, {}).get(time.strftime('%Y-%m-%d'), {}).get('attempted', 0)
+        _today_attempts = _real_attempts_today()
         _seen_titles = set()
         _login_redirect_seen = False
+        _login_redirect_streak = 0
+        _session_dead = False
         _run_deadline = _DICE_T0 + int(os.environ.get('DICE_RUN_BUDGET_S', '2280'))
         for url, title, jid in jobs:
             if submitted >= target:
@@ -1041,7 +1064,8 @@ def main():
                     # re-check with the real description before skipping — recovers Java jobs
                     # hidden behind generic titles. Hard negatives (.NET/Python/C++, score<=-10)
                     # skip fast (no wasted page open).
-                    if score is not None and score >= -10 and _deep_checks < DEEP_CV_MAX \
+                    if score is not None and -10 <= score < int(os.environ.get('CV_MATCH_MIN', '2')) \
+                            and _deep_checks < DEEP_CV_MAX \
                             and 'title negative' not in ' '.join(why) and os.environ.get('DICE_DEEP_CV', '1') == '1':
                         _deep_checks += 1
                         try:
@@ -1082,7 +1106,13 @@ def main():
             # still allowing the same title at a DIFFERENT company (fixes global starvation).
             nt = _title_key(company, title)
             _log_attempt(jid, title, company, result)
-            _today_attempts += 1
+            # Login failures are not real attempts: don't burn the daily cap on a dead session,
+            # and stop after a few in a row instead of opening 150 jobs logged out.
+            if result == 'login_redirect':
+                _login_redirect_streak += 1
+            else:
+                _login_redirect_streak = 0
+                _today_attempts += 1
             if result == 'submitted':
                 submitted += 1
                 applied_ids.add(jid); _add_applied(JK_FILE, jid)
@@ -1108,6 +1138,11 @@ def main():
                 _record_dice_lesson(result)   # SELF-LEARNING: next run auto-applies the fix
                 if result == 'login_redirect':
                     _login_redirect_seen = True
+                    if _login_redirect_streak >= LOGIN_REDIRECT_ABORT:
+                        print(f"  🛑 {_login_redirect_streak} login_redirect in a row — Dice session is "
+                              "dead. Stop run. Fix: python3 agent/refresh_session_secrets.py --site dice")
+                        _session_dead = True
+                        break
                 # Bot could not submit → add to Bob's manual-apply list (nothing missed)
                 try:
                     import sys as _sys, os as _os
@@ -1168,7 +1203,12 @@ def main():
         print(f"\n=== Dice: SUBMITTED {submitted} application(s) (page-signal; Gmail reconcile "
               f"in the next step gives the confirmed count) ===")
         ctx.close()
+        if _session_dead and submitted == 0:
+            print("::error::Dice session expired (LOGIN_REQUIRED). "
+                  "Run: python3 agent/refresh_session_secrets.py --site dice")
+            return 3
+    return 0
 
 
 if __name__ == '__main__':
-    main()
+    sys.exit(main() or 0)

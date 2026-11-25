@@ -151,14 +151,14 @@ def _answer_question(question: dict, profile: dict) -> Optional[str]:
         # POST → Greenhouse answered HTTP 400 (api_400 on every run). Answer the common
         # truthful ones from the profile; leave AI/LLM-claims blank on purpose.
         if "years" in label and ("experience" in label or "java" in label or "overall" in label):
-            return str(profile.get("years_experience", 10)).rstrip("+")
+            return str(profile.get("years_experience", 4)).rstrip("+")
         _skills_blob = " ".join(str(s).lower() for s in profile.get("skills", []))
         if "experience" in label and any(
                 k in label and k in _skills_blob
                 for k in ("microservice", "spring", "kafka", "kubernetes", "aws",
                           "java", "rest api", "docker")):
             # Only claim skills that are really in the profile (never invent experience).
-            return "Yes - 10+ years"
+            return "Yes - 4+ years"
         if "linkedin" in label or "profile link" in label:
             return profile.get("linkedin", "")
         if any(k in label for k in ("city", "location", "where are you")):
@@ -168,7 +168,7 @@ def _answer_question(question: dict, profile: dict) -> Optional[str]:
         return ""
 
     if ftype == "textarea":
-        return "10+ years Java/Spring Boot experience with Kafka, Kubernetes, AWS. Green Card holder, available immediately, no sponsorship needed."
+        return "4+ years Java/Spring Boot experience with Kafka, Kubernetes, AWS. Green Card holder, available immediately, no sponsorship needed."
 
     if ftype in ("multi_value_single_select", "multi_value_multi_select"):
         values = field.get("values", [])

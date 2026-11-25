@@ -111,7 +111,7 @@ Only include fields you're confident about. Use exact selector strings as keys."
 def ask_ai_cover_letter(job_title: str, company: str, job_description: str) -> str:
     """Ask Gemini to write a short cover letter for this specific job."""
     if not GEMINI_KEY:
-        return (f"Senior Java Backend Developer with 10+ years of experience in Spring Boot, "
+        return (f"Java Backend Developer with 4+ years of experience in Spring Boot, "
                 f"Kafka, Kubernetes, and AWS. Green Card holder, available immediately for C2C contract.")
 
     prompt = f"""{PROFILE_SUMMARY}
@@ -132,6 +132,6 @@ Be specific to this role. No generic filler. Professional tone. Under 100 words.
             return resp.json()["candidates"][0]["content"]["parts"][0]["text"].strip()
     except Exception:
         pass
-    return (f"I am a Senior Java Backend Developer with 10+ years of experience. "
+    return (f"I am a Java Backend Developer with 4+ years of experience. "
             f"My skills in Spring Boot, Kafka, and Kubernetes align well with the {job_title} role at {company}. "
             f"I am available immediately for C2C contract work.")

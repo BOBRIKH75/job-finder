@@ -37,7 +37,7 @@ PROFILE = {
     'name': 'Bob Rikh',
     'email': GMAIL_USER,
     'role': 'Senior Java Backend Developer',
-    'experience': '8+ years',
+    'experience': '4+ years',
     'skills': 'Java 17, Spring Boot, Spring Cloud, Microservices, Apache Kafka, Kubernetes, Docker, AWS, GraphQL, REST APIs, MongoDB, Cassandra, PostgreSQL, Redis',
     'rate': '$70-95/hr C2C',
     'work_type': 'C2C / Corp-to-Corp',
@@ -230,7 +230,7 @@ Your profile:
 - Work Authorization: Green Card holder, NO sponsorship needed
 - Availability: Available immediately, can start in 1-2 weeks
 - Location: Parker, CO. Remote ONLY (no relocation)
-- Experience: 8+ years Java/Spring Boot/Kafka/Kubernetes/AWS
+- Experience: 4+ years Java/Spring Boot/Kafka/Kubernetes/AWS
 - Contract type: C2C ONLY (no W2)
 - Phone: 347-268-5917
 - Calendar for scheduling: {CALENDAR_LINK}
@@ -296,7 +296,7 @@ Bob Rikh
     if any(w in body_lower for w in ['c2c', 'corp', 'w2', '1099', 'contract type', 'employment type']):
         answers.append('I work on C2C (Corp-to-Corp) basis only.')
     if any(w in body_lower for w in ['experience', 'years', 'background', 'about you']):
-        answers.append('I have 8+ years of experience in Java, Spring Boot, Microservices, Kafka, Kubernetes, AWS, and REST/GraphQL APIs.')
+        answers.append('I have 4+ years of experience in Java, Spring Boot, Microservices, Kafka, Kubernetes, AWS, and REST/GraphQL APIs.')
     if any(w in body_lower for w in ['interested', 'good fit', 'open to', 'consider']):
         answers.append('Yes, I am interested and available. Would love to discuss further!')
 

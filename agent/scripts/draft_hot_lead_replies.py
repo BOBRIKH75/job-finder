@@ -99,7 +99,7 @@ def draft_for(lead):
             f"{greet}\n\n"
             f"Thanks for reaching out about {role} — it looks like a strong fit for my "
             f"background (Java 17, Spring Boot, microservices, Kafka, Kubernetes, AWS, "
-            f"10+ years).\n\n"
+            f"4+ years).\n\n"
             f"I'm actively open to C2C contract work. A few quick questions so I can confirm fit:\n"
             f"  1. Remote, hybrid, or onsite?\n"
             f"  2. Direct client or vendor layer?\n"

@@ -86,10 +86,10 @@ SUBJECT_VARIANTS = [
 _GREETINGS = ["Hi {v} team,", "Hello {v} team,", "Hi {v} recruiting team,",
               "Hello {v},", "Hi there {v} team,"]
 _OPENERS = [
-    "I'm a Senior Java Backend Developer with 10+ years of experience, looking for C2C contract roles.",
+    "I'm a Java Backend Developer with 4+ years of experience, looking for C2C contract roles.",
     "I'm a Senior Java/Spring Boot engineer (10+ yrs) currently open to C2C contract opportunities.",
     "I'm reaching out as a Senior Java Backend Developer (10+ yrs exp) available for C2C contracts.",
-    "I'm a backend Java developer with 10+ years' experience, seeking a C2C contract role.",
+    "I'm a backend Java developer with 4+ years' experience, seeking a C2C contract role.",
 ]
 _CLOSERS = [
     "If you have Java or Spring Boot contract openings, I'd love to connect.",
@@ -126,7 +126,7 @@ def make_body(vendor_name: str, email: str = "") -> str:
         f"{opener}\n\n"
         "Quick summary:\n"
         "  Java 17, Spring Boot, Microservices, Kafka, Kubernetes, Docker, AWS\n"
-        "  10 years experience — enterprise scale (Charter Communications)\n"
+        "  4+ years experience — enterprise scale (Charter Communications)\n"
         "  Green Card holder — no sponsorship needed, no restrictions\n"
         "  Rate: $70-90/hr C2C  |  Available: Immediately  |  Location: Parker CO (100% Remote)\n\n"
         f"Resume:   {RESUME_LINK}\n"

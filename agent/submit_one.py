@@ -98,8 +98,16 @@ def load_cookies():
     # Source order: (1) INDEED_COOKIES env secret (base64 JSON — how CI provides them),
     # (2) local data/indeed_cookies.json file, (3) live Chrome via browser_cookie3.
     c = None
+    if os.environ.get('PREFER_LOCAL_CHROME') == '1':
+        try:
+            from refresh_session_secrets import local_chrome_cookies
+            c = local_chrome_cookies('indeed') or None
+            if c:
+                print(f"  🍪 using {len(c)} Indeed cookies from this machine's logged-in Chrome")
+        except Exception:
+            c = None
     _env = os.environ.get('INDEED_COOKIES', '').strip()
-    if _env:
+    if _env and c is None:
         try:
             import base64 as _b64
             _raw = _b64.b64decode(_env).decode() if not _env.startswith('[') else _env
@@ -1721,8 +1729,9 @@ def main():
                     kept.append(u)
                     if len(nt) >= 12:
                         _seen_titles.add(nt)
-                elif (score is not None and score >= -5
+                elif (score is not None and -5 <= score < int(os.environ.get('CV_MATCH_MIN', '2'))
                       and os.environ.get('INDEED_DEEP_CV', '1') == '1'):
+                    # (score >= min but not ok = a hard gate: lead/years/onsite → never reopen)
                     # Generic-title SOFT reject (e.g. "Software Engineer"): search-result desc is
                     # often empty/truncated, so the TITLE lacks a Java signal but the FULL job page
                     # may be Java. KEEP the url → it gets opened, and the pre-apply gate (which reads
@@ -1913,8 +1922,10 @@ def main():
 
         if not _ensure_login():
             print("  \U0001F6D1 LOGIN_REQUIRED: automatic login failed - cannot apply logged out")
+            print("::error::Indeed session expired (LOGIN_REQUIRED). "
+                  "Run: python3 agent/refresh_session_secrets.py --site indeed")
             b.close()
-            return
+            sys.exit(3)
         print("  🧑 human-like context (rotating UA/viewport/timezone)")
 
         def _page_alive(_pg):
@@ -2018,6 +2029,15 @@ def main():
             return {j for j, c in _load_dead().items() if int(c) >= MAX_FAILS}
         failed_jks = _load_failed()
         dead_jks = _dead_set()
+        # Off-CV verdicts are stable (the JD doesn't change), so remember them: the audit
+        # found ~75% of page opens were the same off-CV jobs reopened run after run.
+        OFFCV_FILE = 'data/offcv_jks.json'
+        try:
+            offcv_jks = set(json.load(open(OFFCV_FILE)))
+        except Exception:
+            offcv_jks = set()
+        if os.environ.get('RECHECK_OFFCV') == '1':
+            offcv_jks = set()
         # TEST/RETRY mode: when RETRY_FAILED=1, do NOT skip previously-failed jobs.
         # After a filler/answer bug fix we WANT to re-attempt the jobs that stalled
         # before, so the fix is proven on a real submit (Bobur: loop until confirmed).
@@ -2040,6 +2060,8 @@ def main():
             if jk and jk in failed_jks:
                 print(f"  ⏭️  previously failed (jk={jk}) — skipping to save time")
                 continue
+            if jk and jk in offcv_jks:
+                continue   # already judged off-CV by its full description — don't reopen
             # RELAUNCH GUARD (fix-list #2): if the browser/context died on a prior
             # job, revive it BEFORE the next goto so we don't cascade time=0s errors.
             if not _page_alive(pg):
@@ -2080,6 +2102,12 @@ def main():
                 # ONLY a verified confirmation permanently dedups + counts.
                 _save_jk(jk)
                 applied_jks.add(jk)
+            elif jk and result == 'off_cv_skip':
+                offcv_jks.add(jk)
+                try:
+                    json.dump(sorted(offcv_jks), open(OFFCV_FILE, 'w'))
+                except Exception:
+                    pass
             elif jk and result in ('stuck', 'no_apply_button',
                                    'submit_click_failed', 'max_steps'):
                 # Genuinely-unapplyable results → failed bucket (retryable via TTL).

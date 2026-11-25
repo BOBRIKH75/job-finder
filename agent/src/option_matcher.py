@@ -138,7 +138,7 @@ def _alias_known(ql, profile):
 def desired_polarity(q: str, ans, profile: dict):
     """Decide yes/no truthfully for a boolean question."""
     ql = q.lower()
-    years = int(profile.get("years_experience", 10) or 10)
+    years = int(profile.get("years_experience", 4) or 4)
     if "sponsor" in ql:
         return "yes" if profile.get("requires_sponsorship", False) else "no"
     if any(k in ql for k in ("authorized to work", "legally authorized", "eligible to work",
@@ -226,7 +226,7 @@ def resolve_option(question: str, opts, ans, profile: dict, field_type: str = "r
     n_rng = sum(1 for o in opts if parse_range(o))
     if n_rng >= max(2, len(opts) - 1) or (n_rng >= 2 and re.search(r"years?\b", ql)):
         if "year" in ql or "experience" in ql:
-            val = 0.0 if _is_unverified_skill_claim(ql, profile) else float(profile.get("years_experience", 10))
+            val = 0.0 if _is_unverified_skill_claim(ql, profile) else float(profile.get("years_experience", 4))
         else:
             m = re.match(r"^\s*(\d+)", a)
             val = float(m.group(1)) if m else None

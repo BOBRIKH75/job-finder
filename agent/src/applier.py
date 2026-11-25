@@ -372,7 +372,7 @@ def fill_form(page, page_data, profile, learned, domain) -> dict:
                 pass
             # Fallback: known-good generic answer — factually correct, not guessed
             if smart_fill(page, sel,
-                          "10+ years of Java/Spring Boot development. "
+                          "4+ years of Java/Spring Boot development. "
                           "Expert in microservices, Kafka, Kubernetes, AWS. "
                           "Available immediately for C2C contract. Green Card holder.",
                           domain):
@@ -827,7 +827,7 @@ def _fill_remaining_required(page, profile: dict) -> int:
         "previously employed": "No", "worked here before": "No", "former employee": "No",
         "worked for": "No", "ever worked": "No", "recording": "Yes", "interview recording": "Yes",
         # Experience
-        "years of experience": "10", "experience": "10",
+        "years of experience": "4", "experience": "4",
         # Education
         "degree": "Bachelor", "highest education": "Bachelor",
         # Remote / in-person (answer Yes to pass form, negotiate terms after interview)
@@ -864,12 +864,12 @@ def _fill_remaining_required(page, profile: dict) -> int:
         # Shift
         "shift": "Day", "work schedule": "Regular",
         # Interest/motivation textareas (generic meaningful answer)
-        "why are you interested": "I'm passionate about the company's mission and believe my 10+ years of distributed systems experience with Java, Spring Boot, Kafka, and cloud-native architectures align well with this role.",
+        "why are you interested": "I'm passionate about the company's mission and believe my 4+ years of distributed systems experience with Java, Spring Boot, Kafka, and cloud-native architectures align well with this role.",
         "what interests you": "The technical challenges and opportunity to apply my expertise in microservices, event-driven architecture, and cloud platforms at scale.",
         "why do you want to work": "I'm drawn to the impactful engineering work and the chance to contribute my decade of experience building scalable backend systems.",
         "what excites you": "The opportunity to solve complex distributed systems challenges and work with a talented engineering team.",
-        "describe your experience": "10+ years building distributed systems with Java/Spring Boot, Apache Kafka, Kubernetes, AWS, MongoDB, Cassandra, PostgreSQL, Redis, Docker. Experienced with event-driven architectures, CI/CD, and observability.",
-        "tell us about": "Senior Java Backend Developer with 10+ years of experience building microservices with Spring Boot, Kafka, Kubernetes, and AWS. Passionate about clean architecture and system reliability.",
+        "describe your experience": "4+ years building distributed systems with Java/Spring Boot, Apache Kafka, Kubernetes, AWS, MongoDB, Cassandra, PostgreSQL, Redis, Docker. Experienced with event-driven architectures, CI/CD, and observability.",
+        "tell us about": "Java Backend Developer with 4+ years of experience building microservices with Spring Boot, Kafka, Kubernetes, and AWS. Passionate about clean architecture and system reliability.",
         # Canonical-specific
         "how many companies": "4",
         "past ten years": "4",
@@ -1345,9 +1345,9 @@ def _fill_remaining_required(page, profile: dict) -> int:
                 # Fallback: generic professional answer for any "why" or "describe" questions
                 if not answer:
                     if any(kw in label_lower for kw in ['why', 'interest', 'motivat', 'excite', 'attract']):
-                        answer = "I'm passionate about the company's mission and believe my 10+ years of distributed systems experience with Java, Spring Boot, Kafka, and cloud-native architectures align well with this role. I'm excited to contribute to impactful engineering challenges."
+                        answer = "I'm passionate about the company's mission and believe my 4+ years of distributed systems experience with Java, Spring Boot, Kafka, and cloud-native architectures align well with this role. I'm excited to contribute to impactful engineering challenges."
                     elif any(kw in label_lower for kw in ['describe', 'experience', 'background', 'about you', 'tell us']):
-                        answer = "Senior Java Backend Developer with 10+ years of experience building microservices with Spring Boot, Kafka, Kubernetes, and AWS. Experienced with event-driven architectures, distributed databases (Cassandra, MongoDB), and observability platforms. Passionate about clean code, system reliability, and team collaboration."
+                        answer = "Java Backend Developer with 4+ years of experience building microservices with Spring Boot, Kafka, Kubernetes, and AWS. Experienced with event-driven architectures, distributed databases (Cassandra, MongoDB), and observability platforms. Passionate about clean code, system reliability, and team collaboration."
                     elif any(kw in label_lower for kw in ['additional', 'anything else', 'comments', 'notes']):
                         answer = "Thank you for the opportunity. I look forward to discussing how my experience can contribute to the team."
                 

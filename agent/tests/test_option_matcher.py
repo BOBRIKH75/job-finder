@@ -19,7 +19,8 @@ YN = ["Yes", "No"]
     ("Do you require visa sponsorship now or in the future?", YN, "Yes", "No"),
     ("Do you require sponsorship?", TF, "No", "False"),
     ("Do you have 15 years of experience with Rust?", YN, "10", "No"),
-    ("Do you have 10 years of experience with Java?", YN, "10", "Yes"),
+    ("Do you have 10 years of experience with Java?", YN, "10", "No"),   # CV ~4 yrs: truthful
+    ("Do you have 3 years of experience with Java?", YN, "10", "Yes"),
     ("Do you have 15 years of experience with Java?", YN, "10", "No"),
     ("Have you worked with containerization technologies?", TF, "True", "True"),
     ("Have you shipped any compiled language to a production environment?", TF, "True", "False"),
@@ -35,9 +36,9 @@ def test_boolean(q, opts, ans, expected):
 
 
 @pytest.mark.parametrize("q,opts,expected", [
-    ("How many years of Java experience do you have?", ["0-1", "1-3", "3-5", "5+", "10+"], "10+"),
+    ("How many years of Java experience do you have?", ["0-1", "1-3", "3-5", "5+", "10+"], "3-5"),
     ("How many years of experience with Fortran?", ["0-1", "1-3", "5+"], "0-1"),
-    ("Years of experience with Spring Boot", ["Less than 1 year", "1-3 years", "3-5 years", "5-10 years", "More than 10 years"], "5-10 years"),
+    ("Years of experience with Spring Boot", ["Less than 1 year", "1-3 years", "3-5 years", "5-10 years", "More than 10 years"], "3-5 years"),
     ("What is your expected annual salary?", ["$80,000-$100,000", "$100,000-$130,000", "$150,000-$170,000", "$170,000+"], "$150,000-$170,000"),
     ("Expected hourly rate?", ["$40-$60", "$60-$80", "$80-$100"], "$60-$80"),
     ("What is your notice period?", ["Immediately", "2 weeks", "1 month"], "Immediately"),
@@ -74,7 +75,7 @@ def test_proficiency_top_level():
 
 def test_sparse_year_options():
     opts = ["Intern/Co-Op", "Entry Level", "1-2 Years", "3-5 Years", "6-9 Years", "10+ Years"]
-    assert resolve_option("Years of Experience (related to this role) required", opts, "10", PROFILE) == "10+ Years"
+    assert resolve_option("Years of Experience (related to this role) required", opts, "10", PROFILE) == "3-5 Years"
 
 
 def test_default_text_is_not_yes():
