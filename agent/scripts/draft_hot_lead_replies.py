@@ -99,7 +99,7 @@ def draft_for(lead):
             f"{greet}\n\n"
             f"Thanks for reaching out about {role} — it looks like a strong fit for my "
             f"background (Java 17, Spring Boot, microservices, Kafka, Kubernetes, AWS, "
-            f"4+ years).\n\n"
+            f"10+ years).\n\n"
             f"I'm actively open to C2C contract work. A few quick questions so I can confirm fit:\n"
             f"  1. Remote, hybrid, or onsite?\n"
             f"  2. Direct client or vendor layer?\n"
@@ -118,7 +118,7 @@ def draft_for(lead):
     body = (
         f"{greet}\n\n"
         f"Thanks for reaching out regarding {role}. I'm a Senior Java Back-End Developer "
-        f"(4+ yrs, Spring Boot / microservices / Kafka / Kubernetes / AWS), Green Card "
+        f"(10+ yrs, Spring Boot / microservices / Kafka / Kubernetes / AWS), Green Card "
         f"holder, available immediately for C2C contract work (remote preferred, CO-based).\n\n"
         f"If this is a fit, I'd love to connect — what are the role details (remote/onsite, "
         f"length, rate)?\n"

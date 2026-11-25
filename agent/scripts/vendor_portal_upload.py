@@ -105,7 +105,7 @@ PROFILE_ANSWERS = {
     "zip": PROFILE.get("zip", "80314"),
     "linkedin": PROFILE.get("linkedin", LINKEDIN_URL),
     "title": PROFILE.get("title", "Senior Java Backend Developer"),
-    "experience": "4",
+    "experience": "10",
     "skills": "Java, Spring Boot, Microservices, Kafka, Kubernetes, Docker, AWS",
     "rate": "75",
     "availability": "Immediate",
@@ -207,7 +207,7 @@ def fill_generic_form(page, portal: dict) -> bool:
             name_attr = (ta.get_attribute("name") or "").lower()
             if any(k in f"{placeholder} {name_attr}" for k in ["message", "summary", "cover", "note", "comment", "skill"]):
                 ta.fill(
-                    f"Java Backend Developer with 4+ years experience. "
+                    f"Senior Java Backend Developer with 10+ years experience. "
                     f"Spring Boot, Kafka, Kubernetes, AWS, Docker. "
                     f"Green Card holder, no sponsorship needed. Available immediately for C2C contract. "
                     f"Rate: $70-90/hr. Location: Parker CO, 100% remote preferred. "

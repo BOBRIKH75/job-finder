@@ -174,35 +174,46 @@ def _onsite_outside_colorado(title, description, location):
     return any(w in blob for w in _ONSITE_WORDS)
 
 
-# --- Seniority / experience fit (CV shows ~4 years Java: 09.2022 - present) ---
-# Applying to Lead/Architect/10+ yr roles with this CV gets auto-rejected and teaches
-# recruiters to ignore the profile. Tunable: CV_MAX_REQ_YEARS (default 7), CV_ALLOW_SENIOR=1.
-_SENIOR_TITLE = re.compile(
-    r"\b(lead|principal|staff|architect|manager|director|head of|vp|vice president|"
-    r"chief|distinguished|fellow)\b", re.I)
+# --- Seniority / experience fit (driven by config/profile.json years_experience) ---
+# Bob is an individual contributor: Senior/Lead/Staff/Principal/Architect fit; people-manager
+# roles do not. Years gate = profile years + CV_YEARS_SLACK (default 2).
+# Tunable: CV_MAX_REQ_YEARS (explicit cap), CV_ALLOW_SENIOR=1 (disable the gate).
+_MANAGER_TITLE = re.compile(
+    r"\b(manager|director|head of|vp|vice president|chief|cto|cio)\b", re.I)
 _YEARS = re.compile(r"(\d{1,2})\s*\+?\s*(?:-\s*\d{1,2}\s*)?(?:years|yrs|yr)\b", re.I)
 
 
+def _profile_years():
+    try:
+        import json
+        path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                            "config", "profile.json")
+        return int(json.load(open(path)).get("years_experience", 10))
+    except Exception:
+        return 10
+
+
 def _required_years(text):
-    """Smallest 'N+ years' requirement mentioned (None if none). Ignores 'N years ago' noise
-    by only reading values 1-30."""
+    """Smallest 'N+ years' requirement mentioned (None if none), values 1-30 only."""
     vals = [int(m.group(1)) for m in _YEARS.finditer(text or "") if 1 <= int(m.group(1)) <= 30]
     return min(vals) if vals else None
 
 
 def _over_senior(title, description=""):
-    """Reason string if the role is clearly above the CV's level, else ''."""
+    """Reason string if the role is clearly outside Bob's level, else ''."""
     if os.environ.get("CV_ALLOW_SENIOR") == "1":
         return ""
-    if _SENIOR_TITLE.search(title or ""):
-        return "title is lead/architect/principal level (above CV level)"
-    max_years = int(os.environ.get("CV_MAX_REQ_YEARS", "7"))
+    if _MANAGER_TITLE.search(title or "") and not re.search(r"\b(engineer|developer)\b", title or "", re.I):
+        return "people-manager title (Bob is an individual contributor)"
+    yrs = _profile_years()
+    max_years = int(os.environ.get("CV_MAX_REQ_YEARS",
+                                   str(yrs + int(os.environ.get("CV_YEARS_SLACK", "2")) + 1)))
     t_years = _required_years(title)
     if t_years is not None and t_years >= max_years:
-        return f"title requires {t_years}+ years (CV ~4)"
+        return f"title requires {t_years}+ years (profile {yrs})"
     d_years = _required_years((description or "")[:4000])
     if d_years is not None and d_years >= max_years:
-        return f"description requires {d_years}+ years (CV ~4)"
+        return f"description requires {d_years}+ years (profile {yrs})"
     return ""
 
 

@@ -220,7 +220,7 @@ def _profile_answer(question: str, field_type: str, options, profile: dict):
         if _is_unverified_skill_claim(q, profile):
             # Candidate has no such skill on record: be honest ("0"), never invent years.
             return pick_option("0", "none", "less than") or "0"
-        yrs = str(profile.get("years_experience", 4))
+        yrs = str(profile.get("years_experience", 10))
         return pick_option(yrs) or yrs
 
     # Yes/No "do you have experience with X?" for X not in profile.json -> honest "No".
@@ -474,7 +474,7 @@ def _safe_default(question: str, field_type: str, options, profile: dict | None 
 
     # number-ish
     if any(k in q for k in ("years", "how many", "experience")):
-        return "0" if unverified else str(profile.get("years_experience", 4))
+        return "0" if unverified else str(profile.get("years_experience", 10))
     if any(k in q for k in ("salary", "rate", "compensation", "pay", "amount", "hourly")):
         return "85"
 
