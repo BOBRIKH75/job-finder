@@ -37,16 +37,17 @@ def test_non_engineering_title_rejected():
     assert not should_apply("Operations Associate", "java spring backend microservices kafka", "")[0]
 
 
-def test_lead_and_architect_titles_skipped():
+def test_senior_ic_titles_allowed_manager_titles_skipped():
     for t in ("Lead Java Developer", "Java Architect", "Principal Java Engineer",
-              "Java Tech Lead - Remote", "Staff Backend Engineer (Java)"):
-        assert not should_apply(t, "java spring boot kafka", "Remote")[0], t
+              "Java Tech Lead - Remote", "Staff Backend Engineer (Java)", "Senior Java Developer - 10+ Years"):
+        assert should_apply(t, "java spring boot kafka", "Remote")[0], t
+    assert not should_apply("Director of Java Platform", "java spring boot", "Remote")[0]
 
 
-def test_years_requirement_gate():
-    assert not should_apply("Java Developer", "Requires 10+ years of Java and Spring", "Remote")[0]
-    assert not should_apply("Java Developer - 12+ Years", "java spring", "Remote")[0]
-    assert should_apply("Sr Java Developer", "5+ years Java, Spring Boot, Kafka", "Remote")[0]
+def test_years_requirement_gate_follows_profile():
+    assert not should_apply("Java Developer", "Requires 15+ years of Java and Spring", "Remote")[0]
+    assert not should_apply("Java Developer - 20+ Years", "java spring", "Remote")[0]
+    assert should_apply("Sr Java Developer", "10+ years Java, Spring Boot, Kafka", "Remote")[0]
 
 
 def test_title_onsite_outside_colorado_skipped_even_if_location_remote():
@@ -58,4 +59,4 @@ def test_title_onsite_outside_colorado_skipped_even_if_location_remote():
 
 def test_allow_senior_override(monkeypatch):
     monkeypatch.setenv("CV_ALLOW_SENIOR", "1")
-    assert should_apply("Lead Java Developer", "java spring boot", "Remote")[0]
+    assert should_apply("Java Developer", "Requires 15+ years of Java", "Remote")[0]

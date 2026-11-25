@@ -113,7 +113,7 @@ def build_rate_reply(recruiter_name: str, role: str, desc: str) -> tuple:
         f"{greet}\n\n"
         f"Thanks for reaching out — this looks like a strong fit on the Spring Boot / "
         f"microservices / Kafka / Kubernetes / AWS side, which is exactly where I've spent "
-        f"the last 4+ years.\n\n"
+        f"the last 10+ years.\n\n"
         f"Before I give a firm C2C number, a few quick questions so I quote accurately:\n"
         f"  1. Is this a direct client or through a vendor layer?\n"
         f"  2. Remote, hybrid, or onsite — any travel expectation?\n"

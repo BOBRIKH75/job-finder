@@ -923,7 +923,7 @@ def main():
             'Spring Boot developer', 'Spring Boot microservices', 'Spring developer',
             'Java microservices', 'Java REST API developer', 'Java full stack developer',
             'backend developer Java', 'Java web services', 'Java application developer',
-            'Java consultant',
+            'Lead Java developer', 'Java architect', 'Java consultant',
             'Java AWS developer', 'Java cloud developer', 'Java API developer',
             'software engineer Java', 'Java backend engineer', 'Java microservices developer',
             # skill-specific Java (each surfaces a different slice — CV skills)
@@ -941,7 +941,7 @@ def main():
             'Java Terraform developer', 'Java Lambda developer', 'Java Elasticsearch developer',
             'Java RabbitMQ developer', 'Java Splunk DataDog developer',
             # seniority + role variations (same CV, different title wording)
-            
+            'Principal Java developer', 'Staff Java engineer', 'Java tech lead',
             'Java backend software engineer', 'Java platform engineer',
             'Java services developer', 'Java integration developer',
             'Java enterprise developer', 'J2EE developer', 'Java EE developer',
