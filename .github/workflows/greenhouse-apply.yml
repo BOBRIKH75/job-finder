@@ -123,7 +123,7 @@ jobs:
           MAX_POSTING_AGE_DAYS: "14"
         run: |
           cd $GITHUB_WORKSPACE
-          nice -n 10 python3 -u greenhouse_apply.py
+          bash "$GITHUB_WORKSPACE/agent/scripts/run_quiet.sh" python3 -u greenhouse_apply.py
 
       - name: Save agent memory
         if: always()
