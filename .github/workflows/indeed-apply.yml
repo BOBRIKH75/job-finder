@@ -127,6 +127,7 @@ jobs:
         if: (github.event.inputs.mode != 'diag' && github.event.inputs.mode != 'login')
         timeout-minutes: 25
         env:
+          PREFER_LOCAL_CHROME: '1'   # use this laptop's logged-in Chrome first, secret as fallback
           INDEED_COOKIES: ${{ secrets.INDEED_COOKIES }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           NOPECHA_API_KEY: ${{ secrets.NOPECHA_API_KEY || '' }}   # optional: empty is tolerated (feature skipped)
@@ -162,12 +163,19 @@ jobs:
           git config user.name "Indeed Bot"
           git add agent/data/applied_jks.json agent/data/applied_titles.json \
                   agent/data/email_confirmed_titles.json agent/data/failed_jks.json \
-                  agent/data/dead_jks.json \
+                  agent/data/dead_jks.json agent/data/offcv_jks.json \
                   agent/data/failed_jobs.json agent/data/indeed_manual_jobs.json \
                   agent/data/dice_manual_jobs.json 2>/dev/null || true
           git diff --staged --quiet || git commit -m "indeed: sync applied/dedup state [skip ci]"
           git pull --rebase --autostash || true
           git push || true
+
+      - name: Keep session secrets fresh from this laptop's Chrome (best-effort)
+        if: always()
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT || github.token }}
+        run: python3 -u refresh_session_secrets.py || echo "Chrome not logged in / not debuggable here - secret unchanged"
 
       - name: Post-job cleanup (never leave automation Chrome running)
         if: always()

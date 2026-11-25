@@ -706,7 +706,7 @@ def _send_info_reply(to_email: str, original_subject: str):
 <tr><td style="padding:4px 15px 4px 0;font-weight:bold">Availability:</td><td>Immediate — can start within 2 weeks</td></tr>
 <tr><td style="padding:4px 15px 4px 0;font-weight:bold">Location:</td><td>Parker, CO — Remote preferred, open to hybrid in Denver metro</td></tr>
 <tr><td style="padding:4px 15px 4px 0;font-weight:bold">Authorization:</td><td>Green Card holder — NO sponsorship required</td></tr>
-<tr><td style="padding:4px 15px 4px 0;font-weight:bold">Experience:</td><td>8+ years Java Backend (Spring Boot, Kafka, K8s, AWS)</td></tr>
+<tr><td style="padding:4px 15px 4px 0;font-weight:bold">Experience:</td><td>4+ years Java Backend (Spring Boot, Kafka, K8s, AWS)</td></tr>
 <tr><td style="padding:4px 15px 4px 0;font-weight:bold">Current Role:</td><td>Java Backend Developer at Charter Communications (Spectrum)</td></tr>
 </table>
 
@@ -725,7 +725,7 @@ Thank you for your reply. Here are my details:
 - Availability: Immediate — can start within 2 weeks
 - Location: Parker, CO — Remote preferred, open to hybrid in Denver metro
 - Authorization: Green Card holder — NO sponsorship required
-- Experience: 8+ years Java Backend (Spring Boot, Kafka, K8s, AWS)
+- Experience: 4+ years Java Backend (Spring Boot, Kafka, K8s, AWS)
 - Current Role: Java Backend Developer at Charter Communications (Spectrum)
 
 Happy to schedule a quick call:

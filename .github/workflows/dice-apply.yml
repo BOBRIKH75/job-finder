@@ -122,6 +122,7 @@ jobs:
       - name: Run Dice applicator
         timeout-minutes: 44
         env:
+          PREFER_LOCAL_CHROME: '1'   # use this laptop's logged-in Chrome first, secret as fallback
           DICE_COOKIES: ${{ secrets.DICE_COOKIES }}
           DICE_EMAIL: ${{ secrets.DICE_EMAIL }}
           DICE_PASSWORD: ${{ secrets.DICE_PASSWORD }}
@@ -177,6 +178,13 @@ jobs:
           git diff --staged --quiet || git commit -m "dice: sync applied/dedup/lessons state [skip ci]"
           git pull --rebase --autostash || true
           git push || true
+
+      - name: Keep session secrets fresh from this laptop's Chrome (best-effort)
+        if: always()
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT || github.token }}
+        run: python3 -u refresh_session_secrets.py || echo "Chrome not logged in / not debuggable here - secret unchanged"
 
       - name: Post-job cleanup (never leave automation Chrome running)
         if: always()

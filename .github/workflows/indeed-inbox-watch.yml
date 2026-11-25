@@ -1,0 +1,44 @@
+name: Indeed Inbox Watch (alert on real recruiter messages)
+
+on:
+  schedule:
+    - cron: '50 */2 * * *'   # every 2h at :50 (between apply runs)
+  workflow_dispatch:
+
+concurrency:
+  group: indeed-apply      # share the Indeed lane: never run alongside the applicator
+  cancel-in-progress: false
+
+defaults:
+  run:
+    working-directory: agent
+
+permissions:
+  contents: write
+
+jobs:
+  watch:
+    runs-on: self-hosted   # Indeed blocks cloud IPs; same laptop as the applicator
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install deps
+        run: python3 -m pip install -q websockets patchright 2>/dev/null || true
+      - name: Check Indeed Messages
+        env:
+          PREFER_LOCAL_CHROME: '1'
+          INDEED_COOKIES: ${{ secrets.INDEED_COOKIES }}
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+        run: python3 -u indeed_inbox_watch.py
+      - name: Persist alert dedup
+        if: always()
+        run: |
+          cd $GITHUB_WORKSPACE
+          git config user.email "bot@bobrikh.dev"
+          git config user.name "Inbox Bot"
+          git add agent/data/indeed_inbox_seen.json 2>/dev/null || true
+          git diff --cached --quiet || git commit -m "inbox: indeed seen state [skip ci]"
+          git pull --rebase --autostash || true
+          git push || true

@@ -203,7 +203,7 @@ def build_recruiter_email(name: str, title: str, company: str) -> tuple[str, str
 <li><strong>Authorization:</strong> Green Card holder — NO sponsorship needed</li>
 </ul>
 
-<p><strong>My background (8+ years):</strong></p>
+<p><strong>My background (4+ years):</strong></p>
 <ul style="margin:5px 0;padding-left:20px">
 <li>Java 17, Spring Boot, Spring Cloud, Spring Security</li>
 <li>Apache Kafka, Kubernetes, Docker, AWS</li>
@@ -237,7 +237,7 @@ WHAT I'M LOOKING FOR:
 - Location: Parker, CO, United States — Remote preferred
 - Authorization: Green Card holder — NO sponsorship needed
 
-MY BACKGROUND (8+ years):
+MY BACKGROUND (4+ years):
 - Java 17, Spring Boot, Spring Cloud, Spring Security
 - Apache Kafka, Kubernetes, Docker, AWS
 - Microservices, GraphQL, REST APIs

@@ -11,7 +11,7 @@ def test_java_in_title_passes():
 
 
 def test_backend_title_with_thin_jd_passes():
-    assert should_apply("Staff Software Engineer - Backend Networking", "backend", "")[0]
+    assert should_apply("Software Engineer - Backend Networking", "backend", "")[0]
 
 
 def test_generic_se_with_stack_rich_jd_passes():
@@ -35,3 +35,27 @@ def test_security_and_sales_roles_rejected():
 
 def test_non_engineering_title_rejected():
     assert not should_apply("Operations Associate", "java spring backend microservices kafka", "")[0]
+
+
+def test_lead_and_architect_titles_skipped():
+    for t in ("Lead Java Developer", "Java Architect", "Principal Java Engineer",
+              "Java Tech Lead - Remote", "Staff Backend Engineer (Java)"):
+        assert not should_apply(t, "java spring boot kafka", "Remote")[0], t
+
+
+def test_years_requirement_gate():
+    assert not should_apply("Java Developer", "Requires 10+ years of Java and Spring", "Remote")[0]
+    assert not should_apply("Java Developer - 12+ Years", "java spring", "Remote")[0]
+    assert should_apply("Sr Java Developer", "5+ years Java, Spring Boot, Kafka", "Remote")[0]
+
+
+def test_title_onsite_outside_colorado_skipped_even_if_location_remote():
+    assert not should_apply("Sr AWS Java Developer (Onsite Plano, TX)", "java spring aws", "Remote")[0]
+    assert not should_apply("Senior Java Developer - Local to Michigan", "java spring", "Remote")[0]
+    assert should_apply("Java software developers - Denver Metropolitan only", "java spring", "Remote")[0]
+    assert should_apply("Java Developer (Hybrid Denver, CO)", "java spring", "Remote")[0]
+
+
+def test_allow_senior_override(monkeypatch):
+    monkeypatch.setenv("CV_ALLOW_SENIOR", "1")
+    assert should_apply("Lead Java Developer", "java spring boot", "Remote")[0]
