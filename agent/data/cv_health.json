@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-27T18:24:37.704032+00:00",
+  "generated_at": "2026-11-27T18:52:09.045406+00:00",
   "runner": {
     "status": "online",
     "busy": false,
@@ -48,12 +48,11 @@
     "expiry_dice",
     "zero_linkedin"
   ],
-  "alerts_sent": [
-    "zero_linkedin"
-  ],
+  "alerts_sent": [],
   "alerts_suppressed": [
     "expiry_indeed",
     "zero_indeed",
-    "expiry_dice"
+    "expiry_dice",
+    "zero_linkedin"
   ]
 }
